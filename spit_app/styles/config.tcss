@@ -1,0 +1,16 @@
+#SaveCancel {height: 20%}
+#EditSettings {height: 80%; border: round $primary}
+#Cancel {height: 20%}
+#SelectConfig {height: 80%; border: round $primary}
+
+ConfigScreen {
+    align: center middle;
+    width: 100%;
+    height: 100%;
+    background: #000000;
+    border: none;
+}
+
+Button {
+    margin: 1 1 1 1
+}

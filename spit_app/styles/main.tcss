@@ -1,0 +1,11 @@
+#text-area { height: 3fr; background: #000000; border: round grey}
+#chat-view { height: 7fr; background: #000000; border: round grey}
+#text-area:focus { height: 3fr; background: #000000; border: round blue}
+#chat-view:focus { height: 7fr; background: #000000; border: round blue}
+
+RequestHeader { background: #3f3f3f; margin: 0 1 0 1; padding: 0 1 0 1;}
+Request { background: #3f3f3f; margin: 0 1 0 1; padding: 0 1 0 1;}
+ResponseHeader { background: #000000; margin: 1 0 0 0; padding: 0 1 0 1;}
+Response { background: #000000; margin: 0 0 0 0; padding: 0 1 0 1;}
+Image { background: #000000; margin: 0 0 1 0; width: auto}
+
