@@ -32,7 +32,7 @@ class SpitApp(App):
 
     def title_update(self) -> None:
         active = self.config.config["active_config"]
-        name = self.config.config["configs"][active]["api"]["name"]
+        name = self.config.config["configs"][active]["name"]
         self.title = f"{self.NAME} v{self.VERSION} - Chat - {name}"
 
     def compose(self) -> ComposeResult:
@@ -77,8 +77,8 @@ class SpitApp(App):
                 return False
         if action == "submit":
             active = self.config.config["active_config"]
-            api = self.config.config["configs"][active]["api"]
-            if self.streaming or not api or self.text_area.text == "":
+            endpoint_url = self.config.config["configs"][active]["endpoint_url"]
+            if self.streaming or not endpoint_url or self.text_area.text == "":
                 return False
         if action == "abort":
             if not self.streaming:

@@ -26,16 +26,16 @@ class ConfigScreen(ModalScreen[None]):
         await self.main_container.mount(self.dyn_container)
         await cs.select_config_screen(self)
 
-    def valid_values(self, slot: str) -> bool:
-        for setting, stype, desc, defvalue, *validators in self.settings[slot]:
-            if not self.query_one(f"#{slot}_{setting}").is_valid:
+    def valid_values(self) -> bool:
+        for setting, stype, desc, defvalue, *validators in self.settings:
+            if not self.query_one(f"#{setting}").is_valid:
                 return False
         return True
 
-    def store_values(self, slot: str) -> None:
-        for setting, stype, desc, defvalue, *validators in self.settings[slot]:
-            newvalue = self.query_one(f"#{slot}_{setting}").value
-            self.config.store(self.cconfig, slot, setting, stype, newvalue)
+    def store_values(self) -> None:
+        for setting, stype, desc, defvalue, *validators in self.settings:
+            newvalue = self.query_one(f"#{setting}").value
+            self.config.store(self.cconfig, setting, stype, newvalue)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":
@@ -45,15 +45,17 @@ class ConfigScreen(ModalScreen[None]):
             self.app.title_update()
             self.dismiss()
         elif event.button.id == "set_active":
+            if self.valid_values():
+                self.store_values()
+                self.config.save()
             self.config.set_active(self.cconfig)
             self.app.title_update()
             self.dismiss()
         elif event.button.id == "save":
-            if (self.valid_values("api") and
-                    self.valid_values("options")):
-                self.store_values("api")
-                self.store_values("options")
+            if self.valid_values():
+                self.store_values()
                 self.config.save()
+                self.app.title_update()
                 self.dismiss()
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:

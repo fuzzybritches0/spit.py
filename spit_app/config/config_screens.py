@@ -3,12 +3,12 @@ from textual.widgets import Input, Label, Button, OptionList
 from textual.widgets.option_list import Option
 from textual.containers import VerticalScroll, Horizontal, Container
 
-async def edit_settings_screen_slot(self, vscroll, slot):
-    for setting, stype, desc, defvalue, *validators in self.settings[slot]:
+async def edit_settings(self, vscroll):
+    for setting, stype, desc, defvalue, *validators in self.settings:
         await vscroll.mount(Label(f"{desc} ({defvalue}):"))
         value = None
-        if setting in self.config.config["configs"][self.cconfig][slot]:
-            value = self.config.config["configs"][self.cconfig][slot][setting]
+        if setting in self.config.config["configs"][self.cconfig]:
+            value = self.config.config["configs"][self.cconfig][setting]
         if value == None:
             value = defvalue
         Validators = []
@@ -16,13 +16,12 @@ async def edit_settings_screen_slot(self, vscroll, slot):
             if stype == float or stype == int:
                 value=str(value)
             Validators.append(Function(validator))
-        await vscroll.mount(Input(validators=Validators, id=f"{slot}_{setting}", value=value))
+        await vscroll.mount(Input(validators=Validators, id=f"{setting}", value=value))
 
 async def edit_settings_screen(self) -> None:
     vscroll = VerticalScroll(id="EditSettings")
     await self.dyn_container.mount(vscroll)
-    await edit_settings_screen_slot(self, vscroll, "api")
-    await edit_settings_screen_slot(self, vscroll, "options")
+    await edit_settings(self, vscroll)
     horiz = Horizontal(id="SaveDeleteCancel")
     await self.dyn_container.mount(horiz)
     await horiz.mount(Button("Save", id="save"))
@@ -36,7 +35,7 @@ async def select_config_screen(self) -> None:
     Options = [ Option("\nCreate new config\n", id="select_new_config") ]
     count=0
     for configs in self.config.config["configs"]:
-        name=self.config.config["configs"][count]["api"]["name"]
+        name=self.config.config["configs"][count]["name"]
         Options.append(Option(f"\nEdit: {name}\n", id=f"select_config_{count}"))
         count+=1
     await vscroll.mount(OptionList(*Options, id="OptionList"))

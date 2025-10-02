@@ -61,7 +61,7 @@ class Validation:
         same = 0
         for config in self.config.config["configs"]:
             if (not count == self.app.cconfig and
-                    config["api"]["name"] == value):
+                    config["name"] == value):
                 same+=1
             count+=1
         if same > 0:

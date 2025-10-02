@@ -12,7 +12,7 @@ class BaseEndpoint(abc.ABC):
                  extra_headers: Dict[str, str] | None = None):
         self.config = config
         self.active = self.config.config["active_config"]
-        self.api_key = self.config.config["configs"][self.active]["api"]["key"]
+        self.api_key = self.config.config["configs"][self.active]["key"]
         if timeout is not None:
             self.timeout = timeout
         if extra_headers:

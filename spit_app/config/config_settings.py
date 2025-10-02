@@ -12,19 +12,19 @@ class ConfigSettings:
 
     def init(self) -> None:
         self.config = { "active_config": 0, "configs": [] }
-        self.config["configs"].append({ "api": {"name": "default config 0"}, "options": {} })
+        self.config["configs"].append({"name": "default config 0", "endpoint_url": None})
 
     def save(self) -> None:
         self.config_file.write_text(json.dumps(self.config))
 
-    def store(self, cconfig: int, slot: str, setting: str, stype: int | float | str, value: str) -> None:
+    def store(self, cconfig: int, setting: str, stype: int | float | str, value: str) -> None:
         if (value.lower() == "none" or value.lower() == "default" or value == ""):
             value = None
         elif stype == float:
             value = float(value)
         elif stype == int:
             value = int(value)
-        self.config["configs"][cconfig][slot][setting] = value
+        self.config["configs"][cconfig][setting] = value
         
     def load(self) -> None:
         if self.config_file.exists():
@@ -34,7 +34,7 @@ class ConfigSettings:
 
     def new(self) -> int:
         ccount = len(self.config["configs"])
-        self.config["configs"].append({ "api": {"name": f"default config {ccount}"}, "options": {} })
+        self.config["configs"].append({"name": f"default config {ccount}", "endpoint_url": None})
         return ccount
 
     def set_active(self, conf: int) -> None:
