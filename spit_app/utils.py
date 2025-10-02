@@ -7,7 +7,7 @@ def load_chat_history(self):
         with open(self.config.CHAT_HISTORY_PATH, "r") as f:
             self.state = json.load(f)
     except FileNotFoundError:
-        self.state = {"messages": [], "thoughts": []}
+        self.state = []
 
 def write_chat_history(self):
     with open(self.config.CHAT_HISTORY_PATH, "w") as f:
@@ -24,13 +24,13 @@ def read_system_prompt(self):
 
 def load_state(self):
     load_chat_history(self)
-    if self.state["messages"] == []:
+    if not self.state:
         system_prompt = read_system_prompt(self)
         if system_prompt:
-            self.state["messages"].append({"role": "system", "content": system_prompt})
+            self.state.append({"role": "system", "content": system_prompt})
 
 async def render_messages(self) -> None:
-    for msg in self.state["messages"]:
+    for msg in self.state:
         if msg["role"] == "user":
             await message.mount(self, "request", "")
             await render_message(self, msg["content"])

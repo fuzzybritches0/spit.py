@@ -17,7 +17,7 @@ async def stream_response(self):
     self.uisocket = ("response", "")
 
     workstream = WorkStream(self.config)
-    async for ctype, buffer, part in workstream.stream(self.state["messages"]):
+    async for ctype, buffer, part in workstream.stream(self.state):
         if not self.streaming:
             break
         if buffer:
@@ -55,9 +55,9 @@ async def stream_response(self):
     self.refresh_bindings()
     await message.update(self, pp.paragraph)
     if content:
-        self.state["messages"].append({"role": "assistant",
+        self.state.append({"role": "assistant",
                             "content": content})
     if reasoning_content:
-        self.state["thoughts"].append({"role": "assistant",
+        self.state.append({"role": "assistant",
                             "reasoning_content": reasoning_content})
     utils.write_chat_history(self)

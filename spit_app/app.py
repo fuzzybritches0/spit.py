@@ -47,7 +47,7 @@ class SpitApp(App):
         await utils.render_messages(self)
 
     async def action_submit(self) -> None:
-        self.state["messages"].append({"role": "user", "content": self.text_area.text})
+        self.state.append({"role": "user", "content": self.text_area.text})
         utils.write_chat_history(self)
         await message.mount(self, "request", "")
         await utils.render_message(self, self.text_area.text)
