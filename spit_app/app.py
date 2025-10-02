@@ -1,8 +1,9 @@
+from textual import work
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll, Container
 from textual.widgets import Footer, Header, TextArea
-from spit_app.work import stream_response
+from spit_app.work import Work
 import spit_app.message as message
 import spit_app.utils as utils
 from spit_app.config.config_app import ConfigScreen
@@ -52,7 +53,12 @@ class SpitApp(App):
         await message.mount(self, "request", "")
         await utils.render_message(self, self.text_area.text)
         self.text_area.text = ""
-        stream_response(self)
+        self.work_stream()
+
+    @work(exclusive=True)
+    async def work_stream(self) -> None:
+        work = Work(self)
+        await work.stream_response()
             
     def action_follow(self) -> None:
         self.follow = True

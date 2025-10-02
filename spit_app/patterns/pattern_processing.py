@@ -19,7 +19,7 @@ patterns = [
 
 class PatternProcessing:
     def __init__(self, app) -> None:
-        self.app = app
+        self.app = app.app
         self.thinking = False
         self.escapeS = False
         self.codelisting = False
