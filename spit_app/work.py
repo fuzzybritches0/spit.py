@@ -1,26 +1,10 @@
 from spit_app.workstream import WorkStream
+from spit_app.tools.tool_call import Tool
 from spit_app.patterns.pattern_processing import PatternProcessing
 import spit_app.message as message
 import spit_app.utils as utils
 from textual import work
 import json
-
-@work(exclusive=True)
-async def work_stream(self) -> None:
-    work = Work(self)
-    await work.stream_response()
-    while work.tool_calls:
-        for tool_call in json.loads(work.tool_calls):
-            tool_response = {"role": "tool",
-                              "tool_call_id": tool_call["id"],
-                              "name": tool_call["function"]["name"],
-                              "content": '{"unit":"celsius","temperature":12}'
-                               }
-            await message.mount(self.app, "request", "")
-            await message.update(self.app, "RESULT: `" + json.dumps(tool_response) + "`")
-            self.state.append(tool_response)
-        work = Work(self)
-        await work.stream_response()
 
 class Work():
     def __init__(self, app) -> None:
@@ -126,3 +110,21 @@ class Work():
             msg["reasoning_content"] = self.reasoning_content
         self.app.state.append(msg)
         utils.write_chat_history(self.app)
+
+async def work_tools(self, work: Work) -> None:
+    while work.tool_calls:
+        for tool_call in json.loads(work.tool_calls):
+            tool = Tool()
+            tool_response = tool.call(tool_call)
+            await message.mount(self.app, "request", "")
+            await message.update(self.app, "RESULT: `" + json.dumps(tool_response) + "`")
+            self.state.append(tool_response)
+            utils.write_chat_history(self.app)
+        work = Work(self)
+        await work.stream_response()
+
+@work(exclusive=True)
+async def work_stream(self) -> None:
+    work = Work(self)
+    await work.stream_response()
+    await work_tools(self, work)
