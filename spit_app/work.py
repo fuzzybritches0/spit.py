@@ -80,19 +80,22 @@ class Work():
         self.app.streaming = False
         self.app.refresh_bindings()
         await message.update(self.app, self.pp.paragraph)
-        if self.reasoning_content:
-            self.app.state.append({"role": "assistant",
-                                "reasoning_content": self.reasoning_content})
-        if self.tool_calls:
+        if not self.reasoning_content:
+            self.reasoning_content = None
+        if not self.tool_calls:
+            tool_calls = None
+        else:
             tool_calls = json.loads(self.tool_calls)
             new_tool_calls = []
             for tool_call in tool_calls:
                 tool_call["function"]["arguments"] = json.dumps(tool_call["function"]["arguments"])
                 new_tool_calls.append(tool_call)
-            self.app.state.append({"role": "assistant",
-                                   "content": None,
-                                   "tool_calls": new_tool_calls})
-        if self.content:
-            self.app.state.append({"role": "assistant",
-                                "content": self.content})
+        if not self.content:
+            self.content = None
+
+        self.app.state.append({"role": "assistant",
+                               "content": self.content,
+                               "tool_calls": tool_calls,
+                               "reasoning_content": self.reasoning_content
+                               })
         utils.write_chat_history(self.app)

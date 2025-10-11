@@ -9,10 +9,7 @@ class LlamaCppEndpoint(BaseEndpoint):
 
     def prepare_payload(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
         payload = {}
-        payload["messages"] = []
-        for message in messages:
-            if "content" in message:
-                payload["messages"].append(message)
+        payload["messages"] = messages
         for setting, value in self.config.config["configs"][self.active].items():
             if value:
                 payload[setting] = value
