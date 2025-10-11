@@ -20,6 +20,7 @@ patterns = [
 class PatternProcessing:
     def __init__(self, app) -> None:
         self.app = app.app
+        self.tool_call = False
         self.thinking = False
         self.escapeS = False
         self.codelisting = False
@@ -39,25 +40,27 @@ class PatternProcessing:
             self.pp_last = buffer[:1]
 
     async def process_patterns(self, streaming: bool, buffer: str) -> None:
-            if self.pp_skip > 0:
-                self.pp_skip -= 1
-                self.pp_last = ""
-                return None
-            conditions = (streaming, self.thinking, self.escapeS, self.codelisting,
-                          self.multiparagraph, self.roster)
-            c = [None, None, None, None, None, None]
-            for pattern, c[0], c[1], c[2], c[3], c[4], c[5], awaitm, method, *args in patterns:
-                if buffer.startswith(pattern):
-                    for pos in range(6):
-                        if c[pos] == None:
-                            continue
-                        else:
-                            if not conditions[pos] == c[pos]:
-                                self.process_patterns_end(buffer)
-                                return None
-                    if awaitm:
-                        await method(self, buffer, pattern, *args)
+        if self.tool_call:
+            return None
+        if self.pp_skip > 0:
+            self.pp_skip -= 1
+            self.pp_last = ""
+            return None
+        conditions = (streaming, self.thinking, self.escapeS, self.codelisting,
+                      self.multiparagraph, self.roster)
+        c = [None, None, None, None, None, None]
+        for pattern, c[0], c[1], c[2], c[3], c[4], c[5], awaitm, method, *args in patterns:
+            if buffer.startswith(pattern):
+                for pos in range(6):
+                    if c[pos] == None:
+                        continue
                     else:
-                        method(self, buffer, pattern, *args)
-                    break
-            self.process_patterns_end(buffer)
+                        if not conditions[pos] == c[pos]:
+                            self.process_patterns_end(buffer)
+                            return None
+                if awaitm:
+                    await method(self, buffer, pattern, *args)
+                else:
+                    method(self, buffer, pattern, *args)
+                break
+        self.process_patterns_end(buffer)

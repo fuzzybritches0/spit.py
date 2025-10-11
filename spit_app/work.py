@@ -2,7 +2,25 @@ from spit_app.workstream import WorkStream
 from spit_app.patterns.pattern_processing import PatternProcessing
 import spit_app.message as message
 import spit_app.utils as utils
+from textual import work
 import json
+
+@work(exclusive=True)
+async def work_stream(self) -> None:
+    work = Work(self)
+    await work.stream_response()
+    while work.tool_calls:
+        for tool_call in json.loads(work.tool_calls):
+            tool_response = {"role": "tool",
+                              "tool_call_id": tool_call["id"],
+                              "name": tool_call["function"]["name"],
+                              "content": '{"unit":"celsius","temperature":12}'
+                               }
+            await message.mount(self.app, "request", "")
+            await message.update(self.app, "RESULT: `" + json.dumps(tool_response) + "`")
+            self.state.append(tool_response)
+        work = Work(self)
+        await work.stream_response()
 
 class Work():
     def __init__(self, app) -> None:
@@ -16,7 +34,11 @@ class Work():
         self.display_thinking = False
 
     def tools(self, buffer: str) -> None:
+        self.pp.tool_call = True
         self.tool_calls+=buffer[:1]
+        if not self.pp.paragraph.startswith("TOOL CALL: `"):
+            self.pp.paragraph = "TOOL CALL: `"
+        self.pp.paragraph+=buffer[:1]
 
     def reasoning(self, buffer: str) -> None:
         self.was_reasoning_content = True
@@ -79,6 +101,8 @@ class Work():
 
         self.app.streaming = False
         self.app.refresh_bindings()
+        if self.pp.tool_call:
+            self.pp.paragraph+="`"
         await message.update(self.app, self.pp.paragraph)
         if not self.reasoning_content:
             self.reasoning_content = None
@@ -93,9 +117,12 @@ class Work():
         if not self.content:
             self.content = None
 
-        self.app.state.append({"role": "assistant",
-                               "content": self.content,
-                               "tool_calls": tool_calls,
-                               "reasoning_content": self.reasoning_content
-                               })
+        msg = {}
+        msg["role"] = "assistant"
+        msg["content"] = self.content
+        if tool_calls:
+            msg["tool_calls"] = tool_calls
+        if self.reasoning_content:
+            msg["reasoning_content"] = self.reasoning_content
+        self.app.state.append(msg)
         utils.write_chat_history(self.app)
