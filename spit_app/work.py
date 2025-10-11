@@ -2,6 +2,7 @@ from spit_app.workstream import WorkStream
 from spit_app.patterns.pattern_processing import PatternProcessing
 import spit_app.message as message
 import spit_app.utils as utils
+import json
 
 class Work():
     def __init__(self, app) -> None:
@@ -13,6 +14,9 @@ class Work():
         self.tool_calls = ""
         self.was_reasoning_content = False
         self.display_thinking = False
+
+    def tools(self, buffer: str) -> None:
+        self.tool_calls+=buffer[:1]
 
     def reasoning(self, buffer: str) -> None:
         self.was_reasoning_content = True
@@ -37,12 +41,20 @@ class Work():
 
     async def buffer(self, buffer: str, ctype: str) -> None:
         await self.pp.process_patterns(True, buffer)
-        if ctype == "content":
+        if ctype == "reasoning_content":
+            self.reasoning(buffer)
+        elif ctype == "content":
             if self.was_reasoning_content:
                 self.pp.thinking = False
             self.fcontent(buffer)
-        if ctype == "reasoning_content":
-            self.reasoning(buffer)
+        elif ctype == "tool_calls":
+            if self.was_reasoning_content:
+                self.pp.thinking = False
+            self.tools(buffer)
+        else:
+            if self.was_reasoning_content:
+                self.pp.thinking = False
+            self.fcontent(buffer)
 
     async def part(self, part: str) -> None:
         if self.pp.thinking:
@@ -71,6 +83,15 @@ class Work():
         if self.reasoning_content:
             self.app.state.append({"role": "assistant",
                                 "reasoning_content": self.reasoning_content})
+        if self.tool_calls:
+            tool_calls = json.loads(self.tool_calls)
+            new_tool_calls = []
+            for tool_call in tool_calls:
+                tool_call["function"]["arguments"] = json.dumps(tool_call["function"]["arguments"])
+                new_tool_calls.append(tool_call)
+            self.app.state.append({"role": "assistant",
+                                   "content": None,
+                                   "tool_calls": new_tool_calls})
         if self.content:
             self.app.state.append({"role": "assistant",
                                 "content": self.content})

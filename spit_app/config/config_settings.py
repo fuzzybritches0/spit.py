@@ -9,6 +9,16 @@ class ConfigSettings:
 
     CHAT_HISTORY_PATH = "chat_history.json"
     SYSTEM_PROMPT_PATH = "system_prompt.txt"
+    TOOL_DESC_PATH = "tools.json"
+
+    def read_tool_desc(self):
+        try:
+            with open(self.TOOL_DESC_PATH, "r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return None
+        except Exception as e:
+            raise e
 
     def init(self) -> None:
         self.config = { "active_config": 0, "configs": [] }
@@ -31,6 +41,7 @@ class ConfigSettings:
             self.config = json.loads(self.config_file.read_text())
         else:
             self.init()
+        self.config["tools"] = self.read_tool_desc()
 
     def new(self) -> int:
         ccount = len(self.config["configs"])

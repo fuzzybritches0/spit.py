@@ -1,3 +1,4 @@
+import json
 from textual import work
 from textual import on
 from textual.app import App, ComposeResult
@@ -59,7 +60,16 @@ class SpitApp(App):
     async def work_stream(self) -> None:
         work = Work(self)
         await work.stream_response()
-            
+        while work.tool_calls:
+            for tool_call in json.loads(work.tool_calls):
+                self.state.append({"role": "tool",
+                                  "tool_call_id": tool_call["id"],
+                                  "name": tool_call["function"]["name"],
+                                  "content": '{"unit":"celsius","temperature":12}'
+                                   })
+            work = Work(self)
+            await work.stream_response()
+
     def action_follow(self) -> None:
         self.follow = True
         self.refresh_bindings()

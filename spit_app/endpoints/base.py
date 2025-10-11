@@ -17,6 +17,11 @@ class BaseEndpoint(abc.ABC):
             self.timeout = timeout
         if extra_headers:
             self.extra_headers = extra_headers
+        self.extra_init()
+
+    @abc.abstractmethod
+    def extra_init(self) -> None:
+        ...
 
     @property
     @abc.abstractmethod
@@ -29,6 +34,10 @@ class BaseEndpoint(abc.ABC):
 
     @abc.abstractmethod
     def extract_fields(self, delta: Dict[str, Any]) -> Generator[Tuple[str, str], None, None]:
+        ...
+
+    @abc.abstractmethod
+    def tool_calls(self, content: str) -> Generator[Tuple[str, str], None, None]:
         ...
 
     async def stream(self, messages: List[Dict[str, Any]]) -> Generator[Tuple[str, str], None, None]:
