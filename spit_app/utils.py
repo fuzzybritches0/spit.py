@@ -31,10 +31,10 @@ def load_state(self):
 
 async def render_messages(self) -> None:
     for msg in self.state:
-        if msg["role"] == "user":
+        if msg["role"] == "user" and msg["content"]:
             await message.mount(self, "request", "")
             await render_message(self, msg["content"])
-        elif msg["role"] == "assistant" and "content" in msg:
+        elif msg["role"] == "assistant" and "content" in msg and msg["content"]:
             await message.mount(self, "response", "")
             await render_message(self, msg["content"])
     self.chat_view.scroll_end(animate=True)
