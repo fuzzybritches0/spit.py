@@ -1,5 +1,7 @@
 # spit.py
 
+![spit.py logo](./assets/images/logo.png)
+
 This is still work in progress.
 
 What works:
