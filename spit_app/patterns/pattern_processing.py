@@ -1,20 +1,24 @@
 import spit_app.patterns.pattern_methods as pm
 
 patterns = [
-        #PATTERN     STREAM THINK  ESCAPE  CODELI MULTIP ROSTER AWAIT  METHOD ARGS...
-        ("<think>",  True,  None,  None,   None,  None,  None,  False, pm.is_thinking),
-        ("</think>", True,  None,  None,   None,  None,  None,  False, pm.is_not_thinking),
-        ("\\",       None,  False, None,   False, None,  None,  False, pm.escape),
-        ("\n|",      None,  False, False,  False, None,  None,  False, pm.is_roster),
-        ("```",      None,  False, False,  None,  None,  False, True,  pm.code_block_start_end),
-        ("\n\n",     None,  False, False,  None,  False, None,  True,  pm.new_paragraph),
-        ("`",        None,  False, False,  None,  False, None,  False, pm.code_listing),
-        ("(",        None,  False, True,   False, None,  False, False, pm.latex_start),
-        (")",        None,  False, True,   False, None,  False, True,  pm.latex_end),
-        ("[",        None,  False, True,   False, None,  False, False, pm.latex_start),
-        ("]",        None,  False, True,   False, None,  False, True,  pm.latex_end, True),
-        ("$$",       None,  False, False,  False, None,  False, True,  pm.latex_start_end, True),
-        ("$",        None,  False, False,  False, None,  False, True,  pm.latex_start_end)
+        #PATTERN      STREAM THINK  ESCAPE  CODELI MULTIP ROSTER AWAIT  METHOD ARGS...
+        ("<think>",   True,  None,  None,   None,  None,  None,  False, pm.is_thinking),
+        ("</think>",  True,  None,  None,   None,  None,  None,  False, pm.is_not_thinking),
+        ("\\",        None,  False, None,   False, None,  None,  False, pm.escape),
+        ("\n|",       None,  False, False,  False, None,  None,  False, pm.is_roster),
+        ("```",       None,  False, False,  None,  None,  False, True,  pm.code_block_start_end),
+        ("\n\n```\n", None,  False, False,  None,  None,  False, False, pm.code_block_start),
+        ("\n```\n\n", None,  False, False,  None,  None,  False, True,  pm.code_block_end),
+        ("\n\n",      None,  False, False,  None,  False, None,  True,  pm.new_paragraph),
+        ("`",         None,  False, False,  None,  False, None,  False, pm.code_listing),
+        ("(",         None,  False, True,   False, None,  False, False, pm.latex_start),
+        (")",         None,  False, True,   False, None,  False, True,  pm.latex_end),
+        ("[",         None,  False, True,   False, None,  False, False, pm.latex_start),
+        ("]",         None,  False, True,   False, None,  False, True,  pm.latex_end, True),
+        ("$$",        None,  False, False,  False, None,  False, True,  pm.latex_start_end, True),
+        ("$",         None,  False, False,  False, None,  False, True,  pm.latex_start_end),
+        ("<",         None,  False, False,  False, None,  None,  False, pm.escape_char),
+        (">",         None,  False, False,  False, None,  None,  False, pm.escape_char)
 ]
 
 class PatternProcessing:

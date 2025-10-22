@@ -56,26 +56,30 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
 
 async def code_block_start_end(self, buffer: str, pattern: str) -> None:
     pp_next = buffer[len(pattern):len(pattern)+1]
-    self.pp_skip = 2
     if not self.paragraph.strip("\n` "):
-        code_block_start(self, buffer, pattern)
+        if not self.codelisting:
+            code_block_start(self, buffer, pattern)
     elif buffer.startswith("```\n"):
-        await code_block_end(self, buffer, pattern)
+        if self.codelisting:
+            await code_block_end(self, buffer, pattern)
     elif self.paragraph.rstrip(" `").endswith("\n") and pp_next.isalnum():
         await new_paragraph(self, buffer, pattern, 0)
         code_block_start(self, buffer, pattern)
     elif self.paragraph.rstrip(" `").endswith("\n"):
-        await code_block_end(self, buffer, pattern)
+        if self.codelisting:
+            await code_block_end(self, buffer, pattern)
 
 def code_block_start(self, buffer: str, pattern: str) -> None:
+    self.pp_skip = len(pattern)-1
     self.multiparagraph = True
     self.codelisting = True
 
 async def code_block_end(self, buffer: str, pattern: str) -> None:
+    self.pp_skip = len(pattern)-1
     self.multiparagraph = False
     self.codelisting = False
-    self.skip_buff_p = 3
-    self.paragraph += "```"
+    self.skip_buff_p = len(pattern)
+    self.paragraph += buffer[0:len(pattern)]
     await new_paragraph(self, buffer, pattern, 0)
 
 def code_listing(self, buffer: str, pattern: str) -> None:
@@ -111,3 +115,6 @@ def is_roster(self, buffer: str, pattern: str) -> None:
 
 def escape(self, buffer: str, pattern: str) -> None:
     self.escapeS = not self.escapeS
+
+def escape_char(self, buffer: str, pattern: str) -> None:
+    self.paragraph+="\\"
