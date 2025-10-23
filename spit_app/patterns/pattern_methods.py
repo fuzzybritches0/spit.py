@@ -3,23 +3,22 @@ import spit_app.latex_math as lm
 
 async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = False) -> None:
     self.pp_skip = len(pattern)-1
-    pp_next = buffer[len(pattern):len(pattern)+1]
     if (not self.pp_last.isalnum() and
-        not pp_next == "'" and
-        not pp_next == '"' and
-        not pp_next == "`" and
+        not self.pp_next == "'" and
+        not self.pp_next == '"' and
+        not self.pp_next == "`" and
         self.seqstart == -1):
         latex_start(self, buffer, pattern)
-    elif (not pp_next.isalnum() and
+    elif (not self.pp_next.isalnum() and
           not self.pp_last == "'" and
           not self.pp_last == '"' and
           not self.pp_last == "`" and
           self.seqstart > -1):
         await latex_end(self, buffer, pattern, is_display)
     elif (not self.pp_last.isalnum() and
-          not pp_next == "'" and
-          not pp_next == '"' and
-          not pp_next == "`"):
+          not self.pp_next == "'" and
+          not self.pp_next == '"' and
+          not self.pp_next == "`"):
         latex_start(self, buffer, pattern)
 
 def latex_start(self, buffer: str, pattern: str) -> None:
@@ -54,32 +53,11 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
         self.skip_buff_p = len(pattern)
         self.seqstart = -1
 
-async def code_block_start_end(self, buffer: str, pattern: str) -> None:
-    pp_next = buffer[len(pattern):len(pattern)+1]
-    self.pp_skip = 2
-    if not self.paragraph.strip("\n` "):
-        code_block_start(self, buffer, pattern)
-    elif buffer.startswith("```\n"):
-        await code_block_end(self, buffer, pattern)
-    elif self.paragraph.rstrip(" `").endswith("\n") and pp_next.isalnum():
-        await new_paragraph(self, buffer, pattern, 0)
-        code_block_start(self, buffer, pattern)
-    elif self.paragraph.rstrip(" `").endswith("\n"):
-        await code_block_end(self, buffer, pattern)
-
-def code_block_start(self, buffer: str, pattern: str) -> None:
-    self.multiparagraph = True
-    self.codelisting = True
-
-async def code_block_end(self, buffer: str, pattern: str) -> None:
-    self.multiparagraph = False
-    self.codelisting = False
-    self.skip_buff_p = 3
-    self.paragraph += "```"
-    await new_paragraph(self, buffer, pattern, 0)
-
-def code_listing(self, buffer: str, pattern: str) -> None:
-    self.codelisting = not self.codelisting
+def code_listing_block(self, buffer: str, pattern: str) -> None:
+    if not self.pp_last == "`" and not self.pp_next == "`":
+        self.codelisting = not self.codelisting
+    elif not self.pp_last == "`":
+        self.codeblock = not self.codeblock
 
 async def new_paragraph(self, buffer: str, pattern: str, skip: int = 1) -> None:
     if self.paragraph.strip("\n "):
@@ -89,8 +67,6 @@ async def new_paragraph(self, buffer: str, pattern: str, skip: int = 1) -> None:
     self.pp_skip = skip
     self.seqstart = -1
     self.roster = False
-    self.codelisting = False
-    self.escapeS = False
 
 def is_thinking(self, buffer: str, pattern: str) -> None:
     if not self.thinkingdone:
@@ -111,3 +87,9 @@ def is_roster(self, buffer: str, pattern: str) -> None:
 
 def escape(self, buffer: str, pattern: str) -> None:
     self.escapeS = not self.escapeS
+
+def escape_ltgt(self, buffer: str, pattern: str) -> None:
+    if pattern == "<" and self.pp_next.isalnum():
+        self.paragraph+="\\"
+    elif pattern == ">" and self.pp_last.isalnum():
+        self.paragraph+="\\"
