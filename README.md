@@ -25,4 +25,38 @@ What does not work:
 
 # Instructions:
 
-- (work in progress) ...
+## Variant I:
+
+- If you haven't already, download the latest Miniconda3 from https://repo.anaconda.com/miniconda/ and install.
+- Run the following commands to set up spit.py:
+
+```
+$ sudo apt install libcairo2-dev
+$ cd ~
+$ git clone https://github.com/fuzzybritches0/spit.py.git
+$ conda create -n spit.py python=3.13.* pip
+$ conda activate spit.py
+$ cd spit.py
+$ pip install -r requirements.txt
+```
+
+Setup a script to run spit.py:
+
+```bash
+#!/bin/bash
+
+~/miniconda3/bin/conda run --no-capture-output -n spit.py ~/spit.py/main.py
+```
+
+## Variant II:
+
+If you prefer not to install with conda, you can do the following:
+
+```
+$ sudo apt install libcairo2-dev
+$ cd ~
+$ git clone https://github.com/fuzzybritches0/spit.py.git
+$ pip install textual platformdirs httpx cairosvg ziamath pillow textual_image
+```
+
+However, if your Python version is too old, it might not work. spit.py was tested with Python >= 3.12. It might work with older versions, too.
