@@ -52,32 +52,24 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
         self.skip_buff_p = len(pattern)
         self.seqstart = -1
 
-async def code_block_start_end(self, buffer: str, pattern: str) -> None:
-    sc=pattern[0:1]
-    if not self.paragraph.strip(f"\n{sc} "):
-        code_block_start(self, buffer, pattern)
-    elif self.pp_next == "\n":
-        await code_block_end(self, buffer, pattern)
-    elif self.paragraph.rstrip(f" {sc}").endswith("\n") and self.pp_next.isalnum():
-        await new_paragraph(self, buffer, pattern)
-        code_block_start(self, buffer, pattern)
-    elif self.paragraph.rstrip(f" {sc}").endswith("\n"):
-        await code_block_end(self, buffer, pattern)
+def code_block_start_end(self, buffer: str, pattern: str) -> None:
+    if not self.pp_last or self.pp_last == "\n":
+        if not self.cur_code_fence:
+            code_block_start(self, buffer, pattern)
+        elif self.cur_code_fence == pattern:
+            code_block_end(self, buffer, pattern)
 
 def code_block_start(self, buffer: str, pattern: str) -> None:
-    if not self.cur_code_fence:
-        self.cur_code_fence = pattern
-        self.multiparagraph = True
-        self.codelisting = True
+    self.cur_code_fence = pattern
+    self.multiparagraph = True
+    self.codelisting = True
 
-async def code_block_end(self, buffer: str, pattern: str) -> None:
-    if self.cur_code_fence == pattern:
-        self.cur_code_fence = ""
-        self.multiparagraph = False
-        self.codelisting = False
-        self.skip_buff_p = len(pattern)
-        self.paragraph += pattern
-        await new_paragraph(self, buffer, pattern)
+def code_block_end(self, buffer: str, pattern: str) -> None:
+    self.cur_code_fence = ""
+    self.multiparagraph = False
+    self.codelisting = False
+    self.skip_buff_p = len(pattern)
+    self.paragraph += pattern
 
 def code_listing(self, buffer: str, pattern: str) -> None:
     self.codelisting = not self.codelisting
@@ -89,7 +81,6 @@ async def new_paragraph(self, buffer: str, pattern: str) -> None:
     self.paragraph = ""
     self.seqstart = -1
     self.roster = False
-    self.codelisting = False
     self.escapeS = False
 
 def is_thinking(self, buffer: str, pattern: str) -> None:
