@@ -53,11 +53,31 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
         self.skip_buff_p = len(pattern)
         self.seqstart = -1
 
-def code_listing_block(self, buffer: str, pattern: str) -> None:
-    if not self.pp_last == "`" and not self.pp_next == "`":
-        self.codelisting = not self.codelisting
-    elif not self.pp_last == "`":
-        self.codeblock = not self.codeblock
+async def code_block_start_end(self, buffer: str, pattern: str) -> None:
+    self.pp_skip = 2
+    if not self.paragraph.strip("\n` "):
+        code_block_start(self, buffer, pattern)
+    elif buffer.startswith("```\n"):
+        await code_block_end(self, buffer, pattern)
+    elif self.paragraph.rstrip(" `").endswith("\n") and self.pp_next.isalnum():
+        await new_paragraph(self, buffer, pattern, 0)
+        code_block_start(self, buffer, pattern)
+    elif self.paragraph.rstrip(" `").endswith("\n"):
+        await code_block_end(self, buffer, pattern)
+
+def code_block_start(self, buffer: str, pattern: str) -> None:
+    self.multiparagraph = True
+    self.codelisting = True
+
+async def code_block_end(self, buffer: str, pattern: str) -> None:
+    self.multiparagraph = False
+    self.codelisting = False
+    self.skip_buff_p = 3
+    self.paragraph += "```"
+    await new_paragraph(self, buffer, pattern, 0)
+
+def code_listing(self, buffer: str, pattern: str) -> None:
+    self.codelisting = not self.codelisting
 
 async def new_paragraph(self, buffer: str, pattern: str, skip: int = 1) -> None:
     if self.paragraph.strip("\n "):
@@ -67,6 +87,8 @@ async def new_paragraph(self, buffer: str, pattern: str, skip: int = 1) -> None:
     self.pp_skip = skip
     self.seqstart = -1
     self.roster = False
+    self.codelisting = False
+    self.escapeS = False
 
 def is_thinking(self, buffer: str, pattern: str) -> None:
     if not self.thinkingdone:
