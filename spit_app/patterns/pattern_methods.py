@@ -54,15 +54,16 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
         self.seqstart = -1
 
 async def code_block_start_end(self, buffer: str, pattern: str) -> None:
-    self.pp_skip = 2
-    if not self.paragraph.strip("\n` "):
+    self.pp_skip = len(pattern)-1
+    sc=pattern[0:1]
+    if not self.paragraph.strip(f"\n{sc} "):
         code_block_start(self, buffer, pattern)
-    elif buffer.startswith("```\n"):
+    elif buffer.startswith(f"{pattern}\n"):
         await code_block_end(self, buffer, pattern)
-    elif self.paragraph.rstrip(" `").endswith("\n") and self.pp_next.isalnum():
+    elif self.paragraph.rstrip(f" {sc}").endswith("\n") and self.pp_next.isalnum():
         await new_paragraph(self, buffer, pattern, 0)
         code_block_start(self, buffer, pattern)
-    elif self.paragraph.rstrip(" `").endswith("\n"):
+    elif self.paragraph.rstrip(f" {sc}").endswith("\n"):
         await code_block_end(self, buffer, pattern)
 
 def code_block_start(self, buffer: str, pattern: str) -> None:
@@ -73,7 +74,7 @@ async def code_block_end(self, buffer: str, pattern: str) -> None:
     self.multiparagraph = False
     self.codelisting = False
     self.skip_buff_p = 3
-    self.paragraph += "```"
+    self.paragraph += pattern
     await new_paragraph(self, buffer, pattern, 0)
 
 def code_listing(self, buffer: str, pattern: str) -> None:

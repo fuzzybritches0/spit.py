@@ -8,6 +8,7 @@ patterns = [
         ("\n|",      None,  False, False,  False, None,  None,  False, pm.is_roster),
         ("\n\n",     None,  False, False,  None,  False, None,  True,  pm.new_paragraph),
         ("```",      None,  False, False,  None,  None,  False, True,  pm.code_block_start_end),
+        ("~~~",      None,  False, False,  None,  None,  False, True,  pm.code_block_start_end),
         ("`",        None,  False, False,  None,  False, None,  False, pm.code_listing),
         ("<",        None,  False, False,  False, None,  None,  False, pm.escape_ltgt),
         (">",        None,  False, False,  False, None,  None,  False, pm.escape_ltgt),
