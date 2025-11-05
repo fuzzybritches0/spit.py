@@ -59,7 +59,7 @@ async def code_block_start_end(self, buffer: str, pattern: str) -> None:
     elif self.pp_next == "\n":
         await code_block_end(self, buffer, pattern)
     elif self.paragraph.rstrip(f" {sc}").endswith("\n") and self.pp_next.isalnum():
-        await new_paragraph(self, buffer, pattern, 0)
+        await new_paragraph(self, buffer, pattern)
         code_block_start(self, buffer, pattern)
     elif self.paragraph.rstrip(f" {sc}").endswith("\n"):
         await code_block_end(self, buffer, pattern)
