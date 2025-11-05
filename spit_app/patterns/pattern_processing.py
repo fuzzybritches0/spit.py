@@ -7,6 +7,7 @@ patterns = [
         ("\\",       None,  False, None,   False, None,  None,  False, pm.escape),
         ("\n|",      None,  False, False,  False, None,  None,  False, pm.is_roster),
         ("\n\n",     None,  False, False,  None,  False, None,  True,  pm.new_paragraph),
+        ("````",     None,  False, False,  None,  None,  False, True,  pm.code_block_start_end),
         ("```",      None,  False, False,  None,  None,  False, True,  pm.code_block_start_end),
         ("~~~",      None,  False, False,  None,  None,  False, True,  pm.code_block_start_end),
         ("`",        None,  False, False,  None,  False, None,  False, pm.code_listing),
@@ -62,6 +63,7 @@ class PatternProcessing:
                         if not conditions[pos] == c[pos]:
                             self.process_patterns_end(buffer)
                             return None
+                self.pp_skip = len(pattern)-1
                 self.pp_next = buffer[len(pattern):len(pattern)+1]
                 if awaitm:
                     await method(self, buffer, pattern, *args)

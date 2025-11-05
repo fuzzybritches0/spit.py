@@ -2,7 +2,6 @@ import spit_app.message as message
 import spit_app.latex_math as lm
 
 async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = False) -> None:
-    self.pp_skip = len(pattern)-1
     if (not self.pp_last.isalnum() and
         not self.pp_next == "'" and
         not self.pp_next == '"' and
@@ -54,11 +53,10 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
         self.seqstart = -1
 
 async def code_block_start_end(self, buffer: str, pattern: str) -> None:
-    self.pp_skip = len(pattern)-1
     sc=pattern[0:1]
     if not self.paragraph.strip(f"\n{sc} "):
         code_block_start(self, buffer, pattern)
-    elif buffer.startswith(f"{pattern}\n"):
+    elif self.pp_next == "\n":
         await code_block_end(self, buffer, pattern)
     elif self.paragraph.rstrip(f" {sc}").endswith("\n") and self.pp_next.isalnum():
         await new_paragraph(self, buffer, pattern, 0)
@@ -69,27 +67,26 @@ async def code_block_start_end(self, buffer: str, pattern: str) -> None:
 def code_block_start(self, buffer: str, pattern: str) -> None:
     if not self.cur_code_fence:
         self.cur_code_fence = pattern
-    self.multiparagraph = True
-    self.codelisting = True
+        self.multiparagraph = True
+        self.codelisting = True
 
 async def code_block_end(self, buffer: str, pattern: str) -> None:
     if self.cur_code_fence == pattern:
         self.cur_code_fence = ""
         self.multiparagraph = False
         self.codelisting = False
-        self.skip_buff_p = 3
+        self.skip_buff_p = len(pattern)
         self.paragraph += pattern
-        await new_paragraph(self, buffer, pattern, 0)
+        await new_paragraph(self, buffer, pattern)
 
 def code_listing(self, buffer: str, pattern: str) -> None:
     self.codelisting = not self.codelisting
 
-async def new_paragraph(self, buffer: str, pattern: str, skip: int = 1) -> None:
+async def new_paragraph(self, buffer: str, pattern: str) -> None:
     if self.paragraph.strip("\n "):
         await message.update(self.app, self.paragraph)
         await message.mount_next(self.app)
     self.paragraph = ""
-    self.pp_skip = skip
     self.seqstart = -1
     self.roster = False
     self.codelisting = False
@@ -98,18 +95,15 @@ async def new_paragraph(self, buffer: str, pattern: str, skip: int = 1) -> None:
 def is_thinking(self, buffer: str, pattern: str) -> None:
     if not self.thinkingdone:
         self.thinking = True
-    self.pp_skip = 6
     self.skip_buff_c = 7
 
 def is_not_thinking(self, buffer: str, pattern: str) -> None:
     self.thinking = False
     self.thinkingdone = True
-    self.pp_skip = 7
     self.skip_buff_c = 8
 
 def is_roster(self, buffer: str, pattern: str) -> None:
     if self.seqstart == -1:
-        self.pp_skip = 1
         self.roster = True
 
 def escape(self, buffer: str, pattern: str) -> None:
