@@ -67,15 +67,19 @@ async def code_block_start_end(self, buffer: str, pattern: str) -> None:
         await code_block_end(self, buffer, pattern)
 
 def code_block_start(self, buffer: str, pattern: str) -> None:
+    if not self.cur_code_fence:
+        self.cur_code_fence = pattern
     self.multiparagraph = True
     self.codelisting = True
 
 async def code_block_end(self, buffer: str, pattern: str) -> None:
-    self.multiparagraph = False
-    self.codelisting = False
-    self.skip_buff_p = 3
-    self.paragraph += pattern
-    await new_paragraph(self, buffer, pattern, 0)
+    if self.cur_code_fence == pattern:
+        self.cur_code_fence = ""
+        self.multiparagraph = False
+        self.codelisting = False
+        self.skip_buff_p = 3
+        self.paragraph += pattern
+        await new_paragraph(self, buffer, pattern, 0)
 
 def code_listing(self, buffer: str, pattern: str) -> None:
     self.codelisting = not self.codelisting

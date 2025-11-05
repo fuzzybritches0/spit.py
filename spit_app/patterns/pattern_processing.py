@@ -27,6 +27,7 @@ class PatternProcessing:
         self.thinking = False
         self.escapeS = False
         self.codelisting = False
+        self.cur_code_fence = ""
         self.multiparagraph = False
         self.roster = False
         self.thinkingdone = False
