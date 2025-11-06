@@ -65,7 +65,7 @@ class Work():
     async def part(self, part: str) -> None:
         if self.pp.thinking:
             if self.display_thinking == False:
-                self.dislplay_thinking = True
+                self.display_thinking = True
                 await message.update(self.app, "Thinking...")
         else:
             await message.update(self.app, self.pp.paragraph)
