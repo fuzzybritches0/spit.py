@@ -56,8 +56,6 @@ async def render_messages(self) -> None:
             await message.mount(self, "request", "")
             await render_message(self, "- RESULT: `" + msg["content"] + "`")
 
-    self.chat_view.scroll_end(animate=True)
-
 async def render_message(self, messagec: str) -> None:
     buffer = ""
     pp = PatternProcessing(self)

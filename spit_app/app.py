@@ -16,8 +16,6 @@ class SpitApp(App):
     BINDINGS = [
             ("ctrl+enter", "submit", "Submit"),
             ("ctrl+escape", "abort", "Abort"),
-            ("ctrl+s", "stop_follow", "Follow stream:[ON]"),
-            ("ctrl+s", "follow", "Follow stream:[OFF]"),
             ("ctrl+m", "config_screen", "Config")
     ]
     CSS_PATH = './styles/main.tcss'
@@ -28,7 +26,6 @@ class SpitApp(App):
         self.config.load()
         self.title_update()
         utils.load_state(self)
-        self.follow = True
         self.work = None
         self.curr_children = 0
 
@@ -58,14 +55,6 @@ class SpitApp(App):
         self.curr_children = len(self.chat_view.children)
         self.work = self.run_worker(work_stream(self))
 
-    def action_follow(self) -> None:
-        self.follow = True
-        self.refresh_bindings()
-
-    def action_stop_follow(self) -> None:
-        self.follow = False
-        self.refresh_bindings()
-
     async def action_abort(self) -> None:
         self.work.cancel()
         utils.remove_last_roles_msgs(self, ["assistant", "tool"])
@@ -80,12 +69,6 @@ class SpitApp(App):
         running = False
         if self.work and self.work.is_running:
             running = True
-        if action == "follow":
-            if self.follow:
-                return False
-        if action == "stop_follow":
-            if not self.follow:
-                return False
         if action == "submit":
             active = self.config.config["active_config"]
             endpoint_url = self.config.config["configs"][active]["endpoint_url"]
