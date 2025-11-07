@@ -36,3 +36,6 @@ async def mount_latex(app, latex_image: Image) -> None:
     await app.chat_view.mount(latex_image)
     follow_stream(app)
 
+async def remove_last_children(app) -> None:
+    while len(app.chat_view.children) > app.curr_children:
+        await app.chat_view.children[-1].remove()
