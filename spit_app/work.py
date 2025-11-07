@@ -3,13 +3,11 @@ from spit_app.tools.tool_call import Tool
 from spit_app.patterns.pattern_processing import PatternProcessing
 import spit_app.message as message
 import spit_app.utils as utils
-from textual import work
 import json
 
 class Work():
     def __init__(self, app) -> None:
         self.app = app
-        self.app.streaming = True
         self.pp = PatternProcessing(self)
         self.content = ""
         self.reasoning_content = ""
@@ -76,14 +74,11 @@ class Work():
 
         workstream = WorkStream(self.app.config)
         async for ctype, buffer, part in workstream.stream(self.app.state):
-            if not self.app.streaming:
-                break
             if buffer:
                 await self.buffer(buffer, ctype)
             if part:
                 await self.part(part)
 
-        self.app.streaming = False
         self.app.refresh_bindings()
         if self.pp.tool_call:
             self.pp.paragraph+="`"
@@ -123,7 +118,6 @@ async def work_tools(self, work: Work) -> None:
         work = Work(self)
         await work.stream_response()
 
-@work(exclusive=True)
 async def work_stream(self) -> None:
     work = Work(self)
     await work.stream_response()

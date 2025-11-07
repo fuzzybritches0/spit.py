@@ -1,5 +1,4 @@
 import json
-from textual import work
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll, Container
@@ -30,7 +29,7 @@ class SpitApp(App):
         self.title_update()
         utils.load_state(self)
         self.follow = True
-        self.streaming = False
+        self.work = None
 
     def title_update(self) -> None:
         active = self.config.config["active_config"]
@@ -54,7 +53,7 @@ class SpitApp(App):
         await message.mount(self, "request", "")
         await utils.render_message(self, self.text_area.text)
         self.text_area.text = ""
-        work_stream(self)
+        self.work = self.run_worker(work_stream(self))
 
     def action_follow(self) -> None:
         self.follow = True
@@ -65,12 +64,16 @@ class SpitApp(App):
         self.refresh_bindings()
 
     def action_abort(self) -> None:
-        self.streaming = False
+        self.work.cancel()
+        self.refresh_bindings()
 
     async def action_config_screen(self) -> None:
         await self.push_screen(ConfigScreen())
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        running = False
+        if self.work and self.work.is_running:
+            running = True
         if action == "follow":
             if self.follow:
                 return False
@@ -80,10 +83,10 @@ class SpitApp(App):
         if action == "submit":
             active = self.config.config["active_config"]
             endpoint_url = self.config.config["configs"][active]["endpoint_url"]
-            if self.streaming or not endpoint_url or self.text_area.text == "":
+            if running or not endpoint_url or self.text_area.text == "":
                 return False
         if action == "abort":
-            if not self.streaming:
+            if not running:
                 return False
         return True
 
