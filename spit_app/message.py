@@ -48,6 +48,7 @@ async def mount_latex(app, latex_image: Image) -> None:
 
 async def remove_last_children(app) -> None:
     is_y_max(app)
-    while len(app.chat_view.children) > app.curr_children:
+    while len(app.chat_view.children) > app.turn_children[-1]:
         await app.chat_view.children[-1].remove()
+    del app.turn_children[-1]
     if_y_max_scroll_end(app)

@@ -43,9 +43,11 @@ def load_state(self):
 async def render_messages(self) -> None:
     for msg in self.state:
         if msg["role"] == "user" and msg["content"]:
+            self.turn_children.append(len(self.chat_view.children))
             await message.mount(self, "request", "")
             await render_message(self, msg["content"])
         elif msg["role"] == "assistant" and "content" in msg and msg["content"]:
+            self.turn_children.append(len(self.chat_view.children))
             await message.mount(self, "response", "")
             await render_message(self, msg["content"])
         elif msg["role"] == "assistant" and "tool_calls" in msg and msg["tool_calls"]:

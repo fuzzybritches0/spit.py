@@ -16,7 +16,8 @@ class SpitApp(App):
     BINDINGS = [
             ("ctrl+enter", "submit", "Submit"),
             ("ctrl+escape", "abort", "Abort"),
-            ("ctrl+m", "config_screen", "Config")
+            ("ctrl+m", "config_screen", "Config"),
+            ("ctrl+r", "remove_last_turn", "Remove last turn")
     ]
     CSS_PATH = './styles/main.tcss'
 
@@ -27,7 +28,7 @@ class SpitApp(App):
         self.title_update()
         utils.load_state(self)
         self.work = None
-        self.curr_children = 0
+        self.turn_children = []
 
     def title_update(self) -> None:
         active = self.config.config["active_config"]
@@ -51,16 +52,26 @@ class SpitApp(App):
                 self.state[-1]["content"]+="\n\n"+self.text_area.text.strip("\n ")
             else:
                 self.state.append({"role": "user", "content": self.text_area.text})
+                self.turn_children.append(len(self.chat_view.children))
             utils.write_chat_history(self)
             await message.mount(self, "request", "")
             await utils.render_message(self, self.text_area.text)
             self.text_area.text = ""
-        self.curr_children = len(self.chat_view.children)
+        self.turn_children.append(len(self.chat_view.children))
         self.work = self.run_worker(work_stream(self))
 
     async def action_abort(self) -> None:
         self.work.cancel()
         utils.remove_last_roles_msgs(self, ["assistant", "tool"])
+        await message.remove_last_children(self)
+        utils.write_chat_history(self)
+        self.refresh_bindings()
+
+    async def action_remove_last_turn(self) -> None:
+        if (len(self.turn_children) %2 == 0):
+            utils.remove_last_roles_msgs(self, ["assistant", "tool"])
+        else:
+            utils.remove_last_roles_msgs(self, ["user"])
         await message.remove_last_children(self)
         utils.write_chat_history(self)
         self.refresh_bindings()
@@ -81,6 +92,9 @@ class SpitApp(App):
                 return False
         if action == "abort":
             if not running:
+                return False
+        if action == "remove_last_turn":
+            if running or not self.state or len(self.state) == 1 and self.state[0]["role"] == "system":
                 return False
         return True
 
