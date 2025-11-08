@@ -47,7 +47,10 @@ class SpitApp(App):
 
     async def action_submit(self) -> None:
         if self.text_area.text:
-            self.state.append({"role": "user", "content": self.text_area.text})
+            if self.state[-1]["role"] == "user":
+                self.state[-1]["content"]+="\n\n"+self.text_area.text.strip("\n ")
+            else:
+                self.state.append({"role": "user", "content": self.text_area.text})
             utils.write_chat_history(self)
             await message.mount(self, "request", "")
             await utils.render_message(self, self.text_area.text)
