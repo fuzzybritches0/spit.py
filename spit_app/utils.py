@@ -40,8 +40,8 @@ def load_state(self):
         if system_prompt:
             self.state.append({"role": "system", "content": system_prompt})
 
-async def render_messages(self) -> None:
-    for msg in self.state:
+async def render_messages(self, from_index: int = 0) -> None:
+    for msg in self.state[from_index:]:
         if msg["role"] == "user" and msg["content"]:
             self.turn_children.append(len(self.chat_view.children))
             await message.mount(self, "request", "")

@@ -120,5 +120,8 @@ async def work_tools(self, work: Work) -> None:
 
 async def work_stream(self) -> None:
     work = Work(self)
+    last_state_index = len(self.state)
     await work.stream_response()
     await work_tools(self, work)
+    await message.remove_last_children(self)
+    await utils.render_messages(self, last_state_index)
