@@ -1,9 +1,9 @@
 from textual_image.widget import Image
-from spit_app.widgets import Request, RequestHeader, Response, ResponseHeader
+from spit_app.widgets import Request, Response, ResponseHeader, ResponseParagraph
 import spit_app.latex_math as lm
 
 mwidgets = { "request": Request, "response": Response,
-            "request_header": RequestHeader, "response_header": ResponseHeader
+            "response_header": ResponseHeader, "response_paragraph": ResponseParagraph
             }
 
 def is_y_max(app) -> None:
@@ -15,10 +15,13 @@ def if_y_max_scroll_end(app) -> None:
     if app.chat_view_y_max:
         app.chat_view.scroll_end(animate=False)
 
-async def mount(app, mtype: str, content: str) -> None:
+async def mount(app, mtype: str, content: str, streaming: bool = False) -> None:
     is_y_max(app)
-    await app.chat_view.mount(mwidgets[mtype + "_header"]())
-    app.mwidget = mwidgets[mtype]()
+    if streaming and mtype == "response":
+        await app.chat_view.mount(mwidgets["response_header"]())
+        app.mwidget = mwidgets["response_paragraph"]()
+    else:
+        app.mwidget = mwidgets[mtype]()
     app.mtype = mtype
     await app.chat_view.mount(app.mwidget)
     if content:
