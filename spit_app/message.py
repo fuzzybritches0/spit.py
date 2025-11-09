@@ -15,13 +15,9 @@ def if_y_max_scroll_end(app) -> None:
     if app.chat_view_y_max:
         app.chat_view.scroll_end(animate=False)
 
-async def mount(app, mtype: str, content: str, streaming: bool = False) -> None:
+async def mount(app, mtype: str, content: str) -> None:
     is_y_max(app)
-    if streaming and mtype == "response":
-        await app.chat_view.mount(mwidgets["response_header"]())
-        app.mwidget = mwidgets["response_paragraph"]()
-    else:
-        app.mwidget = mwidgets[mtype]()
+    app.mwidget = mwidgets[mtype]()
     app.mtype = mtype
     await app.chat_view.mount(app.mwidget)
     if content:
@@ -36,7 +32,11 @@ async def mount_next(app) -> None:
 
 async def update(app, content: str) -> None:
     is_y_max(app)
-    await app.mwidget.update(content)
+    slen=len(app.mwidget.source)
+    if app.mwidget.source == content[:slen]:
+        await app.mwidget.append(content[slen:])
+    else:
+        await app.mwidget.update(content)
     if_y_max_scroll_end(app)
 
 async def remove(app) -> None:

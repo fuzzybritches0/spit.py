@@ -74,15 +74,6 @@ def code_block_end(self, buffer: str, pattern: str) -> None:
 def code_listing(self, buffer: str, pattern: str) -> None:
     self.codelisting = not self.codelisting
 
-async def new_paragraph(self, buffer: str, pattern: str) -> None:
-    if self.paragraph.strip("\n "):
-        await message.update(self.app, self.paragraph)
-        await message.mount_next(self.app)
-    self.paragraph = ""
-    self.seqstart = -1
-    self.roster = False
-    self.escapeS = False
-
 def is_thinking(self, buffer: str, pattern: str) -> None:
     if not self.thinkingdone:
         self.thinking = True

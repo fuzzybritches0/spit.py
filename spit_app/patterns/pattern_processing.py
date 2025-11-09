@@ -6,7 +6,6 @@ patterns = [
         ("</think>", True,  None,  None,   None,  None,  None,  False, pm.is_not_thinking),
         ("\\",       None,  False, None,   False, None,  None,  False, pm.escape),
         ("\n|",      None,  False, False,  False, None,  None,  False, pm.is_roster),
-        ("\n\n",     True,  False, False,  None,  False, None,  True,  pm.new_paragraph),
         ("````",     None,  False, False,  None,  None,  False, False,  pm.code_block_start_end),
         ("```",      None,  False, False,  None,  None,  False, False,  pm.code_block_start_end),
         ("~~~~",      None,  False, False,  None,  None,  False, False,  pm.code_block_start_end),
