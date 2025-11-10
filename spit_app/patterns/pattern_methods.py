@@ -13,7 +13,7 @@ async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = Fa
           not self.pp_last == '"' and
           not self.pp_last == "`" and
           self.seqstart > -1):
-        await latex_end(self, buffer, pattern, is_display)
+        await latex_end(self, buffer, pattern, pattern, is_display)
     elif (not self.pp_last.isalnum() and
           not self.pp_next == "'" and
           not self.pp_next == '"' and
@@ -21,16 +21,18 @@ async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = Fa
         latex_start(self, buffer, pattern)
 
 def latex_start(self, buffer: str, pattern: str) -> None:
-    self.seqstart = len(self.paragraph) + len(pattern)
+    if not self.cur_latex_fence:
+        self.cur_latex_fence = pattern
+        self.seqstart = len(self.paragraph) + len(pattern)
 
-async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -> None:
-    if self.seqstart > -1:
+async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_display: bool = False) -> None:
+    if self.seqstart > -1 and self.cur_latex_fence == exp_latex_fence:
         lenepat = len(pattern)
         lenpat = len(pattern)-2
         if self.escapeS:
             lenpat+=2
             lenepat+=1
-        sequence = self.paragraph[self.seqstart:len(self.paragraph)-lenpat].strip("\n ")
+        sequence = self.paragraph[self.seqstart:len(self.paragraph)-lenpat]
         if not is_display and "\n" in sequence:
             if pattern == "$":
                 sequence = None
@@ -39,9 +41,9 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
             sequence = None
         latex_image = None
         if sequence:
-            latex_image = lm.latex_math(sequence)
-        if latex_image:
+            latex_image = lm.latex_math(sequence.strip(" \n"))
             self.paragraph = self.paragraph[:self.seqstart-lenepat]
+        if latex_image:
             if not self.paragraph.strip(" \n"):
                 await message.remove(self.app)
             else:
@@ -49,8 +51,12 @@ async def latex_end(self, buffer: str, pattern: str, is_display: bool = False) -
             await message.mount_latex(self.app, latex_image)
             await message.mount_next(self.app)
             self.paragraph = ""
+        else:
+            self.paragraph += ("\n```latex\nINFO: unable to render!\n" +
+                               exp_latex_fence + sequence + pattern + "\n```\n")
         self.skip_buff_p = len(pattern)
         self.seqstart = -1
+        self.cur_latex_fence = ""
 
 def code_block_start_end(self, buffer: str, pattern: str) -> None:
     if not self.pp_last or self.pp_last == "\n":

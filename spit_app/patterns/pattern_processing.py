@@ -14,9 +14,9 @@ patterns = [
         ("<",        None,  False, False,  False, None,  False, pm.escape_ltgt),
         (">",        None,  False, False,  False, None,  False, pm.escape_ltgt),
         ("(",        None,  False, True,   False, False, False, pm.latex_start),
-        (")",        None,  False, True,   False, False, True,  pm.latex_end),
+        (")",        None,  False, True,   False, False, True,  pm.latex_end, "("),
         ("[",        None,  False, True,   False, False, False, pm.latex_start),
-        ("]",        None,  False, True,   False, False, True,  pm.latex_end, True),
+        ("]",        None,  False, True,   False, False, True,  pm.latex_end, "[", True),
         ("$$",       None,  False, False,  False, False, True,  pm.latex_start_end, True),
         ("$",        None,  False, False,  False, False, True,  pm.latex_start_end)
 ]
@@ -29,6 +29,7 @@ class PatternProcessing:
         self.escapeS = False
         self.codelisting = False
         self.cur_code_fence = ""
+        self.cur_latex_fence = ""
         self.roster = False
         self.thinkingdone = False
         self.seqstart = -1
