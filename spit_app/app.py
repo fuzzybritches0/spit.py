@@ -14,7 +14,7 @@ class Debug():
         self.file = open("./log.txt", "a")
 
     def log(self, text: str) -> None:
-        self.file.write(text + "\n")
+        self.file.write(repr(text) + "\n")
 
 class SpitApp(App):
     NAME = "spit.py"
@@ -30,7 +30,7 @@ class SpitApp(App):
 
     def __init__(self):
         super().__init__()
-        self.logger = Debug()
+        #self.logger = Debug()
         self.config = ConfigSettings()
         self.config.load()
         self.title_update()

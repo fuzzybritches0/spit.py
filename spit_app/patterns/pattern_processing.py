@@ -56,7 +56,6 @@ class PatternProcessing:
         c = [None, None, None, None, None]
         for pattern, c[0], c[1], c[2], c[3], c[4], awaitm, method, *args in patterns:
             if buffer.startswith(pattern):
-                self.app.logger.log(pattern)
                 for pos in range(5):
                     if c[pos] == None:
                         continue
