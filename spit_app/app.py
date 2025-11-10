@@ -9,6 +9,13 @@ import spit_app.utils as utils
 from spit_app.config.config_app import ConfigScreen
 from spit_app.config.config_settings import ConfigSettings
 
+class Debug():
+    def __init__(self):
+        self.file = open("./log.txt", "a")
+
+    def log(self, text: str) -> None:
+        self.file.write(text + "\n")
+
 class SpitApp(App):
     NAME = "spit.py"
     VERSION = "0.1"
@@ -23,6 +30,7 @@ class SpitApp(App):
 
     def __init__(self):
         super().__init__()
+        self.logger = Debug()
         self.config = ConfigSettings()
         self.config.load()
         self.title_update()
