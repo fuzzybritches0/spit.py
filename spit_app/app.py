@@ -1,5 +1,4 @@
 import json
-from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
 from textual.widgets import Footer, Header, TextArea
@@ -65,8 +64,9 @@ class SpitApp(App):
             await message.mount(self, "request", "")
             await utils.render_message(self, self.text_area.text)
             self.text_area.text = ""
-        self.turn_children.append(len(self.chat_view.children))
-        self.work = self.run_worker(work_stream(self))
+        if self.text_area.text or self.state[-1]["role"] == "user":
+            self.turn_children.append(len(self.chat_view.children))
+            self.work = self.run_worker(work_stream(self))
 
     async def action_abort(self) -> None:
         self.work.cancel()
@@ -94,9 +94,7 @@ class SpitApp(App):
         if action == "submit":
             active = self.config.config["active_config"]
             endpoint_url = self.config.config["configs"][active]["endpoint_url"]
-            if not running and endpoint_url and self.text_area.text == "" and self.state[-1]["role"] == "user":
-                return True
-            if running or not endpoint_url or self.text_area.text == "":
+            if running or not endpoint_url:
                 return False
         if action == "abort":
             if not running:
@@ -105,10 +103,6 @@ class SpitApp(App):
             if running or not self.state or len(self.state) == 1 and self.state[0]["role"] == "system":
                 return False
         return True
-
-    @on(TextArea.Changed)
-    def update_bindings(self) -> None:
-        self.refresh_bindings()
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
