@@ -61,12 +61,10 @@ def code_block_start_end(self, buffer: str, pattern: str) -> None:
 
 def code_block_start(self, buffer: str, pattern: str) -> None:
     self.cur_code_fence = pattern
-    self.multiparagraph = True
     self.codelisting = True
 
 def code_block_end(self, buffer: str, pattern: str) -> None:
     self.cur_code_fence = ""
-    self.multiparagraph = False
     self.codelisting = False
     self.skip_buff_p = len(pattern)
     self.paragraph += pattern
