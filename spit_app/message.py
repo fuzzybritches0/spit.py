@@ -1,10 +1,8 @@
 from textual_image.widget import Image
-from spit_app.widgets import Request, Response, ResponseHeader, ResponseParagraph
+from spit_app.widgets import Request, Response
 import spit_app.latex_math as lm
 
-mwidgets = { "request": Request, "response": Response,
-            "response_header": ResponseHeader, "response_paragraph": ResponseParagraph
-            }
+mwidgets = { "request": Request, "response": Response }
 
 def is_y_max(app) -> None:
     app.chat_view_y_max = False
