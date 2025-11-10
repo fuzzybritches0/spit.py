@@ -92,6 +92,10 @@ def is_roster(self, buffer: str, pattern: str) -> None:
     if self.seqstart == -1:
         self.roster = True
 
+def end_roster(self, buffer: str, pattern: str) -> None:
+    if self.seqstart == -1:
+        self.roster = False
+
 def escape(self, buffer: str, pattern: str) -> None:
     self.escapeS = not self.escapeS
 

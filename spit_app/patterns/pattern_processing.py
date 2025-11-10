@@ -6,10 +6,10 @@ patterns = [
         ("</think>", True,  None,  None,   None,  None,  False, pm.is_not_thinking),
         ("\\",       None,  False, None,   False, None,  False, pm.escape),
         ("\n|",      None,  False, False,  False, None,  False, pm.is_roster),
-        ("````",     None,  False, False,  None,  False, False,  pm.code_block_start_end),
-        ("```",      None,  False, False,  None,  False, False,  pm.code_block_start_end),
-        ("~~~~",      None,  False, False,  None,  False, False,  pm.code_block_start_end),
-        ("~~~",      None,  False, False,  None,  False, False,  pm.code_block_start_end),
+        ("````",     None,  False, False,  None,  False, False, pm.code_block_start_end),
+        ("```",      None,  False, False,  None,  False, False, pm.code_block_start_end),
+        ("~~~~",     None,  False, False,  None,  False, False, pm.code_block_start_end),
+        ("~~~",      None,  False, False,  None,  False, False, pm.code_block_start_end),
         ("`",        None,  False, False,  None,  None,  False, pm.code_listing),
         ("<",        None,  False, False,  False, None,  False, pm.escape_ltgt),
         (">",        None,  False, False,  False, None,  False, pm.escape_ltgt),
@@ -18,7 +18,8 @@ patterns = [
         ("[",        None,  False, True,   False, False, False, pm.latex_start),
         ("]",        None,  False, True,   False, False, True,  pm.latex_end, "[", True),
         ("$$",       None,  False, False,  False, False, True,  pm.latex_start_end, True),
-        ("$",        None,  False, False,  False, False, True,  pm.latex_start_end)
+        ("$",        None,  False, False,  False, False, True,  pm.latex_start_end),
+        ("\n\n",     None,  False, False,  False, None,  False, pm.end_roster)
 ]
 
 class PatternProcessing:
@@ -55,6 +56,7 @@ class PatternProcessing:
         c = [None, None, None, None, None]
         for pattern, c[0], c[1], c[2], c[3], c[4], awaitm, method, *args in patterns:
             if buffer.startswith(pattern):
+                self.app.logger.log(pattern)
                 for pos in range(5):
                     if c[pos] == None:
                         continue
