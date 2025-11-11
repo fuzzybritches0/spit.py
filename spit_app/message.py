@@ -13,7 +13,7 @@ def if_y_max_scroll_end(app) -> None:
     if app.chat_view_y_max:
         app.chat_view.scroll_end(animate=False)
 
-async def mount(app, mtype: str, content: str) -> None:
+async def mount(app, mtype: str, content: str = "") -> None:
     is_y_max(app)
     app.mwidget = mwidgets[mtype]()
     app.mtype = mtype

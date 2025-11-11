@@ -44,6 +44,8 @@ class Work():
                 self.content += buffer[:1]
 
     async def buffer(self, buffer: str, ctype: str) -> None:
+        if ctype == "content":
+            self.pp.thinking = False
         await self.pp.process_patterns(True, buffer)
         if ctype == "reasoning_content":
             self.reasoning(buffer)
@@ -70,7 +72,7 @@ class Work():
 
     async def stream_response(self):
         self.app.refresh_bindings()
-        await message.mount(self.app, "response", "")
+        await message.mount(self.app, "response")
 
         workstream = WorkStream(self.app.config)
         async for ctype, buffer, part in workstream.stream(self.app.state):
@@ -79,7 +81,6 @@ class Work():
             if part:
                 await self.part(part)
 
-        self.app.refresh_bindings()
         if self.pp.tool_call:
             self.pp.paragraph+="`"
         await message.update(self.app, self.pp.paragraph)
@@ -105,6 +106,7 @@ class Work():
             msg["reasoning_content"] = self.reasoning_content
         self.app.state.append(msg)
         utils.write_chat_history(self.app)
+        self.app.refresh_bindings()
 
 async def work_tools(self, work: Work) -> None:
     while work.tool_calls:

@@ -44,23 +44,20 @@ async def render_messages(self, from_index: int = 0) -> None:
     for msg in self.state[from_index:]:
         if msg["role"] == "user" and msg["content"]:
             self.turn_children.append(len(self.chat_view.children))
-            await message.mount(self, "request", "")
-            await render_message(self, msg["content"])
+            await render_message(self, "request", msg["content"])
         elif msg["role"] == "assistant" and "content" in msg and msg["content"]:
             self.turn_children.append(len(self.chat_view.children))
-            await message.mount(self, "response", "")
-            await render_message(self, msg["content"])
+            await render_message(self, "response", msg["content"])
         elif msg["role"] == "assistant" and "tool_calls" in msg and msg["tool_calls"]:
             for tool_call in msg["tool_calls"]:
-                await message.mount(self, "response", "")
-                await render_message(self, "- TOOL CALL: `" + json.dumps(tool_call) + "`")
+                await render_message(self, "response", "- TOOL CALL: `" + json.dumps(tool_call) + "`")
         elif msg["role"] == "tool" and "content" in msg and msg["content"]:
-            await message.mount(self, "request", "")
-            await render_message(self, "- RESULT: `" + msg["content"] + "`")
+            await render_message(self, "request", "- RESULT: `" + msg["content"] + "`")
 
-async def render_message(self, messagec: str) -> None:
+async def render_message(self, mtype: str, messagec: str) -> None:
     buffer = ""
     pp = PatternProcessing(self)
+    await message.mount(self, mtype)
     for char in messagec:
         buffer += char
         if len(buffer) < 8:
@@ -79,4 +76,7 @@ async def render_message(self, messagec: str) -> None:
         else:
             pp.paragraph += buffer[:1]
         buffer = buffer[1:]
-    await message.update(self, pp.paragraph)
+    if not pp.paragraph:
+        await message.remove(self)
+    else:
+        await message.update(self, pp.paragraph)

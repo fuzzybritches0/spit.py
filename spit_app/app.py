@@ -9,11 +9,9 @@ from spit_app.config.config_app import ConfigScreen
 from spit_app.config.config_settings import ConfigSettings
 
 class Debug():
-    def __init__(self):
-        self.file = open("./log.txt", "a")
-
     def log(self, text: str) -> None:
-        self.file.write(repr(text) + "\n")
+        with open("./log.txt", "a") as file:
+            file.write(repr(text) + "\n")
 
 class SpitApp(App):
     NAME = "spit.py"
@@ -61,8 +59,7 @@ class SpitApp(App):
                 self.state.append({"role": "user", "content": self.text_area.text})
                 self.turn_children.append(len(self.chat_view.children))
             utils.write_chat_history(self)
-            await message.mount(self, "request", "")
-            await utils.render_message(self, self.text_area.text)
+            await utils.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
         if self.text_area.text or self.state[-1]["role"] == "user":
             self.turn_children.append(len(self.chat_view.children))
@@ -76,10 +73,10 @@ class SpitApp(App):
         self.refresh_bindings()
 
     async def action_remove_last_turn(self) -> None:
-        if (len(self.turn_children) %2 == 0):
-            utils.remove_last_roles_msgs(self, ["assistant", "tool"])
-        else:
+        if self.state[-1]["role"] == "user":
             utils.remove_last_roles_msgs(self, ["user"])
+        else:
+            utils.remove_last_roles_msgs(self, ["assistant", "tool"])
         await message.remove_last_children(self)
         utils.write_chat_history(self)
         self.refresh_bindings()
