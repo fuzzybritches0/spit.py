@@ -16,7 +16,6 @@ ConfigScreen {
     align: center middle;
     width: 100%;
     height: 100%;
-    background: #000000;
     border: none;
 }
 Button {
