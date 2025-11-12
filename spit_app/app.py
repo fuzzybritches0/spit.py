@@ -10,9 +10,10 @@ from spit_app.config.config_app import ConfigScreen
 from spit_app.config.config_settings import ConfigSettings
 
 class Debug():
-    def log(self, text: str) -> None:
+    def log(text: str) -> None:
         with open("./log.txt", "a") as file:
             file.write(repr(text) + "\n")
+    log("LOG START:")
 
 class SpitApp(App):
     NAME = "spit.py"
