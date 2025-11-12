@@ -110,12 +110,14 @@ class SpitApp(App):
         self.refresh_bindings()
 
     def on_descendant_focus(self, event: events.DescendantFocus) -> None:
+        message.is_y_max(self)
         if self.chat_view.has_focus:
             if self.focused_message:
                 self.focused_message.focus()
         if not self.chat_view.has_focus and not self.text_area.has_focus:
             if event.control.parent.id == "chat-view":
                 self.focused_message = event.control
+        message.if_y_max_scroll_end(self)
 
     def on_text_area_changed(self) -> None:
         if self.text_area.text:
