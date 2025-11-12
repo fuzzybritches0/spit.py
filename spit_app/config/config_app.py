@@ -7,7 +7,7 @@ from spit_app.config.settings import get_settings
 import spit_app.config.config_screens as cs
 
 class ConfigScreen(ModalScreen[None]):
-    CSS_PATH = "../styles/config.tcss"
+    CSS_PATH = "../styles/config.css"
 
     def __init__(self) -> None:
         super().__init__()

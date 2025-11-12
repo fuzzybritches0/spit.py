@@ -14,7 +14,7 @@ def latex_math(latex_str: str) -> None | Image:
         return None
     try:
         pilimage = PILImage.open(BytesIO(png))
-        image = Image(pilimage)
+        image = Image(pilimage, classes="latex-image")
     except:
         return None
     height = round(pilimage.height / 35)

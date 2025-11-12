@@ -1,8 +1,7 @@
 from textual_image.widget import Image
-from spit_app.widgets import Request, Response
+from textual.widgets import Markdown, Static
+from textual.containers import VerticalScroll
 import spit_app.latex_math as lm
-
-mwidgets = { "request": Request, "response": Response }
 
 def is_y_max(app) -> None:
     app.chat_view_y_max = False
@@ -15,17 +14,19 @@ def if_y_max_scroll_end(app) -> None:
 
 async def mount(app, mtype: str, content: str = "") -> None:
     is_y_max(app)
-    app.mwidget = mwidgets[mtype]()
+    app.message_container = VerticalScroll(classes="message-container-"+mtype)
+    app.mwidget = Markdown(classes=mtype)
     app.mtype = mtype
-    await app.chat_view.mount(app.mwidget)
+    await app.chat_view.mount(app.message_container)
+    await app.message_container.mount(app.mwidget)
     if content:
         await app.mwidget.update(content)
     if_y_max_scroll_end(app)
 
 async def mount_next(app) -> None:
     is_y_max(app)
-    app.mwidget = mwidgets[app.mtype]()
-    await app.chat_view.mount(app.mwidget)
+    app.mwidget = Markdown(classes=app.mtype)
+    await app.message_container.mount(app.mwidget)
     if_y_max_scroll_end(app)
 
 async def update(app, content: str) -> None:
@@ -44,7 +45,7 @@ async def remove(app) -> None:
 
 async def mount_latex(app, latex_image: Image) -> None:
     is_y_max(app)
-    await app.chat_view.mount(latex_image)
+    await app.message_container.mount(latex_image)
     if_y_max_scroll_end(app)
 
 async def remove_last_children(app) -> None:

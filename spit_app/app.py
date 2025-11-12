@@ -23,7 +23,7 @@ class SpitApp(App):
             ("ctrl+m", "config_screen", "Config"),
             ("ctrl+r", "remove_last_turn", "Remove last turn")
     ]
-    CSS_PATH = './styles/main.tcss'
+    CSS_PATH = './styles/main.css'
 
     def __init__(self):
         super().__init__()
@@ -63,6 +63,7 @@ class SpitApp(App):
             self.text_area.text = ""
         if self.text_area.text or self.state[-1]["role"] == "user":
             self.turn_children.append(len(self.chat_view.children))
+            self.chat_view.focus()
             self.work = self.run_worker(work_stream(self))
 
     async def action_abort(self) -> None:
