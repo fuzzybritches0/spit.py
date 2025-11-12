@@ -1,0 +1,51 @@
+#text-area {
+	height: 2fr;
+	border: round $primary 40%
+}
+#text-area:focus {
+	height: 14fr;
+	border: round $primary
+}
+#chat-view {
+	height: 7fr;
+	border: round $primary 40%
+}
+#chat-view:focus {
+	height: 7fr;
+	border: round $primary
+}
+
+.latex-image {
+	margin: 0 0 0 0;
+	width: auto
+}
+.request {
+	margin: 0 0 0 0;
+	padding: 0 1 0 1;
+}
+.response {
+	margin: 0 0 0 0;
+	padding: 0 1 0 1;
+}
+.message-container-request {
+	margin: 0 0 0 0;
+	background: $primary 20%;
+	border: tall $primary 40%;
+	height: auto
+}
+.message-container-request:focus {
+	margin: 0 0 0 0;
+	background: $primary 20%;
+	border: tall $primary;
+	height: auto
+}
+.message-container-response {
+	margin: 1 0 1 0;
+	border: tall $primary 40%;
+	height: auto
+}
+.message-container-response:focus {
+	margin: 1 0 1 0;
+	border: tall $primary;
+	height: auto
+}
