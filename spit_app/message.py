@@ -19,6 +19,8 @@ async def mount(app, mtype: str, content: str = "") -> None:
     app.mtype = mtype
     await app.chat_view.mount(app.message_container)
     await app.message_container.mount(app.mwidget)
+    app.message_container.focus()
+    app.focused_message = app.message_container
     if content:
         await app.mwidget.update(content)
     if_y_max_scroll_end(app)

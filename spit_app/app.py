@@ -1,4 +1,5 @@
 import json
+from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
 from textual.widgets import Footer, Header, TextArea
@@ -18,6 +19,7 @@ class SpitApp(App):
     VERSION = "0.1"
     AUTO_FOCUS = "#text-area"
     BINDINGS = [
+            ("escape", "change_focus", "Focus"),
             ("ctrl+enter", "submit", "Submit"),
             ("ctrl+escape", "abort", "Abort"),
             ("ctrl+m", "config_screen", "Config"),
@@ -33,6 +35,7 @@ class SpitApp(App):
         self.title_update()
         utils.load_state(self)
         self.work = None
+        self.focused_message = None
 
     def title_update(self) -> None:
         active = self.config.config["active_config"]
@@ -50,6 +53,9 @@ class SpitApp(App):
     async def on_mount(self) -> None:
         await utils.render_messages(self)
 
+    def action_change_focus(self) -> None:
+            self.text_area.focus()
+
     async def action_submit(self) -> None:
         if self.text_area.text:
             if self.state[-1]["role"] == "user":
@@ -60,7 +66,6 @@ class SpitApp(App):
             await utils.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
         if self.text_area.text or self.state[-1]["role"] == "user":
-            self.chat_view.focus()
             self.work = self.run_worker(work_stream(self))
 
     async def action_abort(self) -> None:
@@ -101,3 +106,11 @@ class SpitApp(App):
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
+
+    def on_descendant_focus(self, event: events.DescendantFocus) -> None:
+        if self.chat_view.has_focus:
+            if self.focused_message:
+                self.focused_message.focus()
+        if not self.chat_view.has_focus and not self.text_area.has_focus:
+            if event.control.parent.id == "chat-view":
+                self.focused_message = event.control
