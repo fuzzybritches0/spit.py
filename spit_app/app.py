@@ -33,7 +33,6 @@ class SpitApp(App):
         self.title_update()
         utils.load_state(self)
         self.work = None
-        self.turn_children = []
 
     def title_update(self) -> None:
         active = self.config.config["active_config"]
@@ -57,19 +56,17 @@ class SpitApp(App):
                 self.state[-1]["content"]+="\n\n"+self.text_area.text.strip("\n ")
             else:
                 self.state.append({"role": "user", "content": self.text_area.text})
-                self.turn_children.append(len(self.chat_view.children))
             utils.write_chat_history(self)
             await utils.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
         if self.text_area.text or self.state[-1]["role"] == "user":
-            self.turn_children.append(len(self.chat_view.children))
             self.chat_view.focus()
             self.work = self.run_worker(work_stream(self))
 
     async def action_abort(self) -> None:
         self.work.cancel()
         utils.remove_last_roles_msgs(self, ["assistant", "tool"])
-        await message.remove_last_children(self)
+        await message.remove_last_turn(self)
         utils.write_chat_history(self)
         self.refresh_bindings()
 
@@ -78,7 +75,7 @@ class SpitApp(App):
             utils.remove_last_roles_msgs(self, ["user"])
         else:
             utils.remove_last_roles_msgs(self, ["assistant", "tool"])
-        await message.remove_last_children(self)
+        await message.remove_last_turn(self)
         utils.write_chat_history(self)
         self.refresh_bindings()
 
