@@ -19,11 +19,11 @@ class SpitApp(App):
     VERSION = "0.1"
     AUTO_FOCUS = "#text-area"
     BINDINGS = [
-            ("escape", "change_focus", "Focus"),
             ("ctrl+enter", "submit", "Submit"),
             ("ctrl+escape", "abort", "Abort"),
             ("ctrl+m", "config_screen", "Config"),
-            ("ctrl+r", "remove_last_turn", "Remove last turn")
+            ("ctrl+r", "remove_last_turn", "Remove last turn"),
+            ("escape", "change_focus", "Focus")
     ]
     CSS_PATH = './styles/main.css'
 
@@ -37,6 +37,7 @@ class SpitApp(App):
         utils.load_state(self)
         self.work = None
         self.focused_message = None
+        self.text_area_was_empty = True
 
     def title_update(self) -> None:
         active = self.config.config["active_config"]
@@ -95,7 +96,7 @@ class SpitApp(App):
         if action == "submit":
             active = self.config.config["active_config"]
             endpoint_url = self.config.config["configs"][active]["endpoint_url"]
-            if running or not endpoint_url:
+            if running or not endpoint_url or not self.state[-1]["role"] == "user" and not self.text_area.text:
                 return False
         if action == "abort":
             if not running:
@@ -115,3 +116,13 @@ class SpitApp(App):
         if not self.chat_view.has_focus and not self.text_area.has_focus:
             if event.control.parent.id == "chat-view":
                 self.focused_message = event.control
+
+    def on_text_area_changed(self) -> None:
+        if self.text_area.text:
+            if self.text_area_was_empty:
+                self.refresh_bindings()
+                self.text_area_was_empty = False
+        else:
+            if not self.text_area_was_empty:
+                self.refresh_bindings()
+                self.text_area_was_empty = True
