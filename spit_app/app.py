@@ -93,6 +93,9 @@ class SpitApp(App):
         running = False
         if self.work and self.work.is_running:
             running = True
+        if action == "config_screen":
+            if running:
+                return False
         if action == "submit":
             active = self.config.config["active_config"]
             endpoint_url = self.config.config["configs"][active]["endpoint_url"]
