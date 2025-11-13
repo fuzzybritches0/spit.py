@@ -51,9 +51,10 @@ async def mount_latex(app, latex_image: Image) -> None:
     if_y_max_scroll_end(app)
 
 async def remove_last_turn(app) -> None:
-    is_y_max(app)
-    if app.chat_view.children[-1] == app.focused_message:
-        if len(app.chat_view.children) > 1:
-            app.focused_message = app.chat_view.children[-2]
-    await app.chat_view.children[-1].remove()
-    if_y_max_scroll_end(app)
+    if app.chat_view.children:
+        is_y_max(app)
+        if app.chat_view.children[-1] == app.focused_message:
+            if len(app.chat_view.children) > 1:
+                app.focused_message = app.chat_view.children[-2]
+        await app.chat_view.children[-1].remove()
+        if_y_max_scroll_end(app)
