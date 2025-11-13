@@ -86,12 +86,10 @@ class Work():
         await message.update(self.app, self.pp.paragraph)
         if not self.reasoning_content:
             self.reasoning_content = None
-        if not self.tool_calls:
-            tool_calls = None
-        else:
-            tool_calls = json.loads(self.tool_calls)
+        if self.tool_calls:
+            self.tool_calls = json.loads(self.tool_calls)
             new_tool_calls = []
-            for tool_call in tool_calls:
+            for tool_call in self.tool_calls:
                 tool_call["function"]["arguments"] = json.dumps(tool_call["function"]["arguments"])
                 new_tool_calls.append(tool_call)
         if not self.content:
@@ -100,27 +98,30 @@ class Work():
         msg = {}
         msg["role"] = "assistant"
         msg["content"] = self.content
-        if tool_calls:
-            msg["tool_calls"] = tool_calls
+        if self.tool_calls:
+            msg["tool_calls"] = new_tool_calls
         if self.reasoning_content:
             msg["reasoning_content"] = self.reasoning_content
         self.app.state.append(msg)
         utils.write_chat_history(self.app)
         self.app.refresh_bindings()
 
-async def work_tools(self, work: Work) -> None:
-    while work.tool_calls:
-        for tool_call in json.loads(work.tool_calls):
+async def work_tools(self, tool_calls: list) -> None:
+    while tool_calls:
+        for tool_call in tool_calls:
             tool = Tool()
             tool_response = tool.call(tool_call)
-            await message.mount(self.app, "request", "")
-            await message.update(self.app, "RESULT: `" + json.dumps(tool_response) + "`")
+            await message.mount(self.app, "request", "RESULT: `" + json.dumps(tool_response) + "`")
             self.state.append(tool_response)
             utils.write_chat_history(self.app)
         work = Work(self)
         await work.stream_response()
+        tool_calls = work.tool_calls
 
 async def work_stream(self) -> None:
-    work = Work(self)
-    await work.stream_response()
-    await work_tools(self, work)
+    if "tool_calls" in self.state[-1]:
+        await work_tools(self, self.state[-1]["tool_calls"])
+    else:
+        work = Work(self)
+        await work.stream_response()
+        await work_tools(self, work.tool_calls)

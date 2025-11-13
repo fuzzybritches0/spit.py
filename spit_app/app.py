@@ -23,7 +23,8 @@ class SpitApp(App):
             ("ctrl+escape", "abort", "Abort"),
             ("ctrl+m", "config_screen", "Config"),
             ("ctrl+r", "remove_last_turn", "Remove last turn"),
-            ("escape", "change_focus", "Focus")
+            ("escape", "change_focus", "Focus"),
+            ("ctrl+q", "exit_app", "Quit")
     ]
     CSS_PATH = './styles/main.css'
 
@@ -67,21 +68,21 @@ class SpitApp(App):
             utils.write_chat_history(self)
             await utils.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
-        if self.text_area.text or self.state[-1]["role"] == "user":
+        if (self.text_area.text or self.state[-1]["role"] == "user" or
+            self.state[-1]["role"] == "tool" or self.state[-1]["tool_calls"]):
             self.work = self.run_worker(work_stream(self))
 
     async def action_abort(self) -> None:
         self.work.cancel()
-        utils.remove_last_roles_msgs(self, ["assistant", "tool"])
-        await message.remove_last_turn(self)
-        utils.write_chat_history(self)
+        count_state = len(self.state)
+        if self.state[0]["role"] == "system":
+            count_state-=1
+        while len(self.chat_view.children) > count_state:
+            await message.remove_last_turn(self)
         self.refresh_bindings()
 
     async def action_remove_last_turn(self) -> None:
-        if self.state[-1]["role"] == "user":
-            utils.remove_last_roles_msgs(self, ["user"])
-        else:
-            utils.remove_last_roles_msgs(self, ["assistant", "tool"])
+        utils.remove_last_message(self)
         await message.remove_last_turn(self)
         utils.write_chat_history(self)
         self.refresh_bindings()
@@ -89,25 +90,42 @@ class SpitApp(App):
     async def action_config_screen(self) -> None:
         await self.push_screen(ConfigScreen())
 
+    async def action_exit_app(self) -> None:
+        self.exit()
+
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         running = False
         if self.work and self.work.is_running:
             running = True
         if action == "config_screen":
-            if running:
-                return False
+            if not running:
+                return True
         if action == "submit":
             active = self.config.config["active_config"]
-            endpoint_url = self.config.config["configs"][active]["endpoint_url"]
-            if running or not endpoint_url or not self.state[-1]["role"] == "user" and not self.text_area.text:
-                return False
+            if not running and self.config.config["configs"][active]["endpoint_url"]:
+                if self.text_area.text and self.state[-1]["role"] == "system":
+                    return True                                 # Begin of chat
+                if (self.text_area.text and self.state[-1]["role"] == "assistant" and
+                    self.state[-1]["content"]):
+                    return True                                 # Normal turn
+                if self.state[-1]["role"] == "user":
+                    return True                                 # There is a user request
+                if (self.state[-1]["role"] == "assistant" and
+                    "tool_calls" in self.state[-1] and not self.text_area.text):
+                    return True                                 # There are TOOL CALLS to call
+                if self.state[-1]["role"] == "tool" and not self.text_area.text:
+                    return True                                 # There are TOOL CALL results to process
         if action == "abort":
-            if not running:
-                return False
+            if running:
+                return True
         if action == "remove_last_turn":
-            if running or not self.state or len(self.state) == 1 and self.state[0]["role"] == "system":
-                return False
-        return True
+            if not running and self.state and not self.state[-1]["role"] == "system":
+                return True
+        if action == "change_focus":
+            return True
+        if action == "exit_app":
+            return True
+        return False
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
