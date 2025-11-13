@@ -29,20 +29,23 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
     if self.seqstart > -1 and self.cur_latex_fence == exp_latex_fence:
         lenepat = len(pattern)
         lenpat = len(pattern)-2
+        esc=""
         if self.escapeS:
+            esc="\\"
             lenpat+=2
             lenepat+=1
-        sequence = self.paragraph[self.seqstart:len(self.paragraph)-lenpat]
+        sequence = self.paragraph[self.seqstart:len(self.paragraph)-lenpat].strip("\n ")
         if not is_display and "\n" in sequence:
             if pattern == "$":
                 sequence = None
                 latex_start(self, buffer, pattern)
+        render = True
         if (sequence == "..." or sequence == "…" or sequence == "and"):
-            sequence = None
+            render = False
         latex_image = None
-        if sequence:
+        self.paragraph = self.paragraph[:self.seqstart-lenepat]
+        if sequence and render:
             latex_image = lm.latex_math(sequence.strip(" \n"))
-            self.paragraph = self.paragraph[:self.seqstart-lenepat]
         if latex_image:
             if not self.paragraph.strip(" \n"):
                 await message.remove(self.app)
@@ -52,8 +55,10 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
             await message.mount_next(self.app)
             self.paragraph = ""
         else:
-            self.paragraph += ("\n```latex\nINFO: unable to render!\n" +
-                               exp_latex_fence + sequence + pattern + "\n```\n")
+            if "\n" in sequence:
+                self.paragraph += "\n```latex\n" + esc + exp_latex_fence + sequence + esc + pattern + "\n```\n"
+            else:
+                self.paragraph += "`" + esc + exp_latex_fence + sequence + esc + pattern + "`"
         self.skip_buff_p = len(pattern)
         self.seqstart = -1
         self.cur_latex_fence = ""
