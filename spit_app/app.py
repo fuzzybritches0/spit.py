@@ -18,8 +18,13 @@ class SpitApp(App):
             ("ctrl+escape", "abort", "Abort"),
             ("ctrl+m", "config_screen", "Config"),
             ("ctrl+r", "remove_last_turn", "Remove last turn"),
-            ("escape", "change_focus", "Focus"),
-            ("ctrl+q", "exit_app", "Quit")
+            ("ctrl+q", "exit_app", "Quit"),
+            ("ctrl+enter", "save_edit", "Save"),
+            ("ctrl+escape", "cancel_edit", "Cancel"),
+            ("ctrl+g", "edit_content", "Edit content"),
+            ("ctrl+h", "edit_cot", "Edit CoT"),
+            ("ctrl+j", "edit_tool", "Edit tool call"),
+            ("escape", "change_focus", "Focus")
     ]
     CSS_PATH = './styles/main.css'
 
@@ -31,6 +36,7 @@ class SpitApp(App):
         self.title_update()
         utils.load_state(self)
         self.work = None
+        self.edit = False
         self.focused_message = None
         self.text_area_was_empty = True
 
@@ -95,10 +101,16 @@ class SpitApp(App):
         running = False
         if self.work and self.work.is_running:
             running = True
+        if action == "save_edit" or action == "cancel_edit":
+            if self.edit:
+                return True
+            return False
         if action == "config_screen":
-            if not running:
+            if not running and not self.edit:
                 return True
         if action == "continue":
+            if self.edit:
+                return False
             active = self.config.config["active_config"]
             if not running and self.config.config["configs"][active]["endpoint_url"]:
                 if self.text_area.text and self.state[-1]["role"] == "system":
@@ -115,10 +127,31 @@ class SpitApp(App):
                     return True                                 # There are TOOL CALL results to process
             return False
         if action == "abort":
-            if not running:
+            if not running or self.edit:
                 return False
         if action == "remove_last_turn":
-            if running and self.state or self.state[-1]["role"] == "system":
+            if running:
+                return False
+            if not self.state:
+                return False
+            if self.state[-1]["role"] == "system":
+                return False
+        if action.startswith("edit_"):
+            if running:
+                return False
+            if self.focused == self.focused_message:
+                id=int(self.focused.id[3:])
+                if action == "edit_content":
+                    if "content" in self.state[id]:
+                        return True
+                if action == "edit_cot":
+                    if "reasoning_content" in self.state[id]:
+                        return True
+                if action == "edit_tool":
+                    if "tool_calls" in self.state[id]:
+                        return True
+                return False
+            else:
                 return False
         return True
 
