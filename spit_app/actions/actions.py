@@ -100,13 +100,13 @@ class ActionsMixIn:
             if self.focused == self.focused_message:
                 id=int(self.focused.id[3:])
                 if action == "edit_content":
-                    if "content" in self.state[id]:
+                    if "content" in self.state[id] and self.state[id]["content"]:
                         return True
                 if action == "edit_cot":
-                    if "reasoning_content" in self.state[id]:
+                    if "reasoning_content" in self.state[id] and self.state[id]["reasoning_content"]:
                         return True
                 if action == "edit_tool":
-                    if "tool_calls" in self.state[id]:
+                    if "tool_calls" in self.state[id] and self.state[id]["tool_calls"]:
                         return True
                 return False
             else:
