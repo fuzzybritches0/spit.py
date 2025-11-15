@@ -18,8 +18,8 @@ class Work():
     def tools(self, buffer: str) -> None:
         self.pp.tool_call = True
         self.tool_calls+=buffer[:1]
-        if not self.pp.paragraph.startswith("TOOL CALL: `"):
-            self.pp.paragraph = "TOOL CALL: `"
+        if not self.pp.paragraph.startswith("- TOOL CALL: `"):
+            self.pp.paragraph = "- TOOL CALL: `"
         self.pp.paragraph+=buffer[:1]
 
     def reasoning(self, buffer: str) -> None:
@@ -111,7 +111,7 @@ async def work_tools(self, tool_calls: list) -> None:
         for tool_call in tool_calls:
             tool = Tool()
             tool_response = tool.call(tool_call)
-            await message.mount(self.app, "request", "RESULT: `" + json.dumps(tool_response) + "`")
+            await message.mount(self.app, "request", "- RESULT: `" + json.dumps(tool_response) + "`")
             self.state.append(tool_response)
             utils.write_chat_history(self.app)
         work = Work(self)
