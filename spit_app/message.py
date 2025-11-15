@@ -14,13 +14,17 @@ def if_y_max_scroll_end(app) -> None:
 
 async def mount(app, mtype: str, content: str = "") -> None:
     is_y_max(app)
-    id=len(app.chat_view.children)
-    if len(app.state) > 0 and app.state[0]["role"] == "system":
-        id+=1
-    app.message_container = VerticalScroll(classes="message-container-"+mtype, id="id_"+str(id))
+    if app.edit:
+        app.message_container = app.edit_container
+    else:
+        id=len(app.chat_view.children)
+        if len(app.state) > 0 and app.state[0]["role"] == "system":
+            id+=1
+        app.message_container = VerticalScroll(classes="message-container-"+mtype, id="id_"+str(id))
     app.mwidget = Markdown(classes=mtype)
     app.mtype = mtype
-    await app.chat_view.mount(app.message_container)
+    if not app.edit:
+        await app.chat_view.mount(app.message_container)
     await app.message_container.mount(app.mwidget)
     app.message_container.focus()
     app.focused_message = app.message_container

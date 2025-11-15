@@ -1,3 +1,4 @@
+import json
 from spit_app.work import work_stream
 import spit_app.message as message
 import spit_app.utils as utils
@@ -18,6 +19,59 @@ bindings = [
 ]
 
 class ActionsMixIn:
+    def action_cancel_edit(self):
+        self.text_area.text = self.text_area_text_tmp
+        self.edit = False
+
+    async def action_save_edit(self) -> None:
+        id=int(self.edit_container.id[3:])
+        if self.edit_ctype == "tool_calls" or self.edit_role == "tool":
+            try:
+                self.state[id][self.edit_ctype] = json.loads(self.text_area.text)
+            except:
+                return None
+        else:
+            self.state[id][self.edit_ctype] = self.text_area.text
+        utils.write_chat_history(self)
+        if self.edit_role == "user" or self.edit_role == "tool":
+            role = "request"
+        else:
+            role = "response"
+        await self.edit_container.remove_children()
+        prepend = append = ""
+        if self.edit_ctype == "tool_calls":
+            prepend = "- TOOL CALL: `"
+            append = "`"
+        if self.edit_role == "tool":
+            prepend = "- RESULT: `"
+            append = "`"
+        await utils.render_message(self, role, prepend + self.text_area.text + append)
+        self.text_area.text = self.text_area_text_tmp
+        self.edit = False
+
+    def action_edit_content(self) -> None:
+        self.edit_message("content")
+
+    def action_edit_cot(self) -> None:
+        self.edit_message("reasoning_content")
+
+    def action_edit_tool(self) -> None:
+        self.edit_message("tool_calls")
+
+    def edit_message(self, ctype: str) -> None:
+        self.text_area_text_tmp = self.text_area.text
+        id=int(self.focused.id[3:])
+        self.edit_role = self.state[id]["role"]
+        self.edit_message_undo = self.state[id][ctype]
+        if ctype == "tool_calls" or self.edit_role == "tool":
+            self.text_area.text = json.dumps(self.state[id][ctype])
+        else:
+            self.text_area.text = self.state[id][ctype]
+        self.edit = True
+        self.edit_ctype = ctype
+        self.edit_container = self.focused
+        self.text_area.focus()
+
     def action_change_focus(self) -> None:
             self.text_area.focus()
     
@@ -64,8 +118,8 @@ class ActionsMixIn:
                 return True
             return False
         if action == "config_screen":
-            if not running and not self.edit:
-                return True
+            if running or self.edit:
+                return False
         if action == "continue":
             if self.edit:
                 return False
@@ -88,14 +142,14 @@ class ActionsMixIn:
             if not running or self.edit:
                 return False
         if action == "remove_last_turn":
-            if running:
+            if running or self.edit:
                 return False
             if not self.state:
                 return False
             if self.state[-1]["role"] == "system":
                 return False
         if action.startswith("edit_"):
-            if running:
+            if running or self.edit:
                 return False
             if self.focused == self.focused_message:
                 id=int(self.focused.id[3:])
