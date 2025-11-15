@@ -3,6 +3,20 @@ import spit_app.message as message
 import spit_app.utils as utils
 from spit_app.config.config_app import ConfigScreen
 
+bindings = [
+        ("ctrl+enter", "continue", "Continue"),
+        ("ctrl+escape", "abort", "Abort"),
+        ("ctrl+m", "config_screen", "Config"),
+        ("ctrl+r", "remove_last_turn", "Remove last turn"),
+        ("ctrl+q", "exit_app", "Quit"),
+        ("ctrl+enter", "save_edit", "Save"),
+        ("ctrl+escape", "cancel_edit", "Cancel"),
+        ("ctrl+g", "edit_content", "Edit content"),
+        ("ctrl+h", "edit_cot", "Edit CoT"),
+        ("ctrl+j", "edit_tool", "Edit tool call"),
+        ("escape", "change_focus", "Focus")
+]
+
 class ActionsMixIn:
     def action_change_focus(self) -> None:
             self.text_area.focus()
