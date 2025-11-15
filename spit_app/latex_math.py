@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 import cairosvg
 import ziamath
 from PIL import Image as PILImage

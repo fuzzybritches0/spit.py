@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from typing import Generator, Tuple, List, Dict, Any
 from .base import BaseEndpoint
 

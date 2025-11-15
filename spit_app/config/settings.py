@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from spit_app.config.validation import Validation
 
 def get_settings(self) -> dict:

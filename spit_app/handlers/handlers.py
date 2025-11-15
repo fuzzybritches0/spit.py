@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from textual import events
 import spit_app.message as message
 import spit_app.utils as utils

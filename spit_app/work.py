@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from spit_app.workstream import WorkStream
 from spit_app.tools.tool_call import Tool
 from spit_app.patterns.pattern_processing import PatternProcessing

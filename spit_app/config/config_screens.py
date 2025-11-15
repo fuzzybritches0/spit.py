@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from textual.validation import Function
 from textual.widgets import Input, Label, Button, OptionList
 from textual.widgets.option_list import Option

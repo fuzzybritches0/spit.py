@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 class Validation:
     def __init__(self, app) -> None:
         self.config = app.config

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from platformdirs import user_config_dir, site_config_dir
 from pathlib import Path
 import json

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 import json
 from spit_app.work import work_stream
 import spit_app.message as message

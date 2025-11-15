@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 import json
 import spit_app.message as message
 from spit_app.patterns.pattern_processing import PatternProcessing

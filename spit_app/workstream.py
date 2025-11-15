@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from typing import Iterable, Generator, Tuple, List, Dict,Optional
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 

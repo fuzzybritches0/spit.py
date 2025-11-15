@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 class Tool:
     def call(self, tool_call: dict) -> dict:
         return {"role": "tool",

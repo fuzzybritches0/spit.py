@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 from textual import on
 from textual.widgets import Button, Header, Footer, OptionList
 from textual.app import ComposeResult
