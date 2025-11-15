@@ -9,11 +9,6 @@ import spit_app.utils as utils
 from spit_app.config.config_app import ConfigScreen
 from spit_app.config.config_settings import ConfigSettings
 
-class Debug():
-    def log(app, text: str) -> None:
-        with open("./log.txt", "a") as file:
-            file.write(repr(text) + "\n")
-
 class SpitApp(App):
     NAME = "spit.py"
     VERSION = "0.1"
@@ -30,8 +25,7 @@ class SpitApp(App):
 
     def __init__(self):
         super().__init__()
-        #self.logger = Debug()
-        #self.logger.log("LOG START:")
+        #self.applog("LOG START:")
         self.config = ConfigSettings()
         self.config.load()
         self.title_update()
@@ -39,6 +33,10 @@ class SpitApp(App):
         self.work = None
         self.focused_message = None
         self.text_area_was_empty = True
+
+    def applog(self, text: str) -> None:
+        with open("./log.txt", "a") as file:
+            file.write(repr(text) + "\n")
 
     def title_update(self) -> None:
         active = self.config.config["active_config"]
