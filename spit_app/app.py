@@ -19,7 +19,7 @@ class SpitApp(App):
     VERSION = "0.1"
     AUTO_FOCUS = "#text-area"
     BINDINGS = [
-            ("ctrl+enter", "submit", "Submit"),
+            ("ctrl+enter", "continue", "Continue"),
             ("ctrl+escape", "abort", "Abort"),
             ("ctrl+m", "config_screen", "Config"),
             ("ctrl+r", "remove_last_turn", "Remove last turn"),
@@ -59,7 +59,7 @@ class SpitApp(App):
     def action_change_focus(self) -> None:
             self.text_area.focus()
 
-    async def action_submit(self) -> None:
+    async def action_continue(self) -> None:
         if self.text_area.text:
             if self.state[-1]["role"] == "user":
                 self.state[-1]["content"]+="\n\n"+self.text_area.text.strip("\n ")
@@ -100,7 +100,7 @@ class SpitApp(App):
         if action == "config_screen":
             if not running:
                 return True
-        if action == "submit":
+        if action == "continue":
             active = self.config.config["active_config"]
             if not running and self.config.config["configs"][active]["endpoint_url"]:
                 if self.text_area.text and self.state[-1]["role"] == "system":
@@ -115,17 +115,14 @@ class SpitApp(App):
                     return True                                 # There are TOOL CALLS to call
                 if self.state[-1]["role"] == "tool" and not self.text_area.text:
                     return True                                 # There are TOOL CALL results to process
+            return False
         if action == "abort":
-            if running:
-                return True
+            if not running:
+                return False
         if action == "remove_last_turn":
-            if not running and self.state and not self.state[-1]["role"] == "system":
-                return True
-        if action == "change_focus":
-            return True
-        if action == "exit_app":
-            return True
-        return False
+            if running and self.state or self.state[-1]["role"] == "system":
+                return False
+        return True
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
