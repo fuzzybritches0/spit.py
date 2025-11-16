@@ -103,8 +103,7 @@ class Work():
             msg["tool_calls"] = new_tool_calls
         if self.reasoning_content:
             msg["reasoning_content"] = self.reasoning_content
-        self.app.state.append(msg)
-        utils.write_chat_history(self.app)
+        utils.save_message(self.app, msg)
         self.app.refresh_bindings()
 
 async def work_tools(self, tool_calls: list) -> None:
@@ -113,8 +112,7 @@ async def work_tools(self, tool_calls: list) -> None:
             tool = Tool()
             tool_response = tool.call(tool_call)
             await message.mount(self.app, "request", "- RESULT: `" + json.dumps(tool_response) + "`")
-            self.state.append(tool_response)
-            utils.write_chat_history(self.app)
+            utils.save_message(self.app, tool_response)
         work = Work(self)
         await work.stream_response()
         tool_calls = work.tool_calls

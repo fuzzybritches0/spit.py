@@ -11,6 +11,12 @@ def load_chat_history(self):
         self.state = []
 
 def write_chat_history(self):
+def save_message(self, message: dict) -> None:
+    self.state.append(message)
+    append_undo_state(self)
+    write_chat_history(self)
+
+def write_chat_history(self) -> None:
     with open(self.config.CHAT_HISTORY_PATH, "w") as f:
         json.dump(self.state, f)
 
