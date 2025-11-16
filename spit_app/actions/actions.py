@@ -112,18 +112,24 @@ class ActionsMixIn:
         running = False
         if self.work and self.work.is_running:
             running = True
+        if running or self.edit:
+            if (action == "undo" or action == "redo" or action == "config_screen" or
+                action == "continue" or action.startswith("edit_")):
+                return False
+        if action == "undo":
+            if self.undo_index == 0:
+                return False
+        if action == "redo":
+            if self.undo_index == len(self.undo)-1:
+                return False
         if action == "save_edit" or action == "cancel_edit":
             if self.edit:
                 return True
             return False
-        if action == "config_screen":
-            if running or self.edit:
-                return False
         if action == "continue":
-            if self.edit:
-                return False
             active = self.config.config["active_config"]
-            if not running and self.config.config["configs"][active]["endpoint_url"]:
+            endpoint_url = self.config.config["configs"][active]["endpoint_url"]
+            if endpoint_url:
                 if self.text_area.text and self.state[-1]["role"] == "system":
                     return True                                 # Begin of chat
                 if (self.text_area.text and self.state[-1]["role"] == "assistant" and
@@ -141,20 +147,18 @@ class ActionsMixIn:
             if not running or self.edit:
                 return False
         if action.startswith("edit_"):
-            if running or self.edit:
-                return False
-            if self.focused == self.focused_message:
+            if not self.focused == self.text_area and not self.focused == self.chat_view:
                 id=int(self.focused.id[3:])
-                if action == "edit_content":
-                    if "content" in self.state[id] and self.state[id]["content"]:
-                        return True
-                if action == "edit_cot":
-                    if "reasoning_content" in self.state[id] and self.state[id]["reasoning_content"]:
-                        return True
-                if action == "edit_tool":
-                    if "tool_calls" in self.state[id] and self.state[id]["tool_calls"]:
-                        return True
-                return False
             else:
                 return False
+            if action == "edit_content":
+                if "content" in self.state[id] and self.state[id]["content"]:
+                    return True
+            if action == "edit_cot":
+                if "reasoning_content" in self.state[id] and self.state[id]["reasoning_content"]:
+                    return True
+            if action == "edit_tool":
+                if "tool_calls" in self.state[id] and self.state[id]["tool_calls"]:
+                    return True
+            return False
         return True
