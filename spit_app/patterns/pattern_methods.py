@@ -30,7 +30,7 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         lenepat = len(pattern)
         lenpat = len(pattern)-2
         esc=""
-        if self.escapeS:
+        if self.escaped:
             esc="\\"
             lenpat+=2
             lenepat+=1
@@ -102,7 +102,7 @@ def end_roster(self, buffer: str, pattern: str) -> None:
         self.roster = False
 
 def escape(self, buffer: str, pattern: str) -> None:
-    self.escapeS = not self.escapeS
+    self.escaped = not self.escaped
 
 def escape_ltgt(self, buffer: str, pattern: str) -> None:
     if buffer.startswith("<br>"):

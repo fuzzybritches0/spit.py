@@ -27,7 +27,7 @@ class PatternProcessing:
         self.app = app.app
         self.tool_call = False
         self.thinking = False
-        self.escapeS = False
+        self.escaped = False
         self.codelisting = False
         self.cur_code_fence = ""
         self.cur_latex_fence = ""
@@ -42,7 +42,7 @@ class PatternProcessing:
     
     def process_patterns_end(self, buffer) -> None:
         if not buffer[:1] == "\\":
-            self.escapeS = False
+            self.escaped = False
             self.pp_last = buffer[:1]
 
     async def process_patterns(self, streaming: bool, buffer: str) -> None:
@@ -52,7 +52,7 @@ class PatternProcessing:
             self.pp_skip -= 1
             self.pp_last = ""
             return None
-        conditions = (streaming, self.thinking, self.escapeS, self.codelisting, self.roster)
+        conditions = (streaming, self.thinking, self.escaped, self.codelisting, self.roster)
         c = [None, None, None, None, None]
         for pattern, c[0], c[1], c[2], c[3], c[4], awaitm, method, *args in patterns:
             if buffer.startswith(pattern):
