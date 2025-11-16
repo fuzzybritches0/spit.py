@@ -1,16 +1,38 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
+import copy
 import spit_app.message as message
 from spit_app.patterns.pattern_processing import PatternProcessing
 
 def load_chat_history(self):
     try:
         with open(self.config.CHAT_HISTORY_PATH, "r") as f:
-            self.state = json.load(f)
+            return json.load(f)
     except FileNotFoundError:
-        self.state = []
+        return []
 
-def write_chat_history(self):
+async def state_undo(self) -> None:
+    if self.undo_index > 0:
+        self.undo_index-=1
+        self.state = copy.deepcopy(self.undo[self.undo_index])
+        await self.chat_view.remove_children()
+        await render_messages(self)
+
+async def state_redo(self) -> None:
+    if self.undo_index < len(self.undo)-1:
+        self.undo_index+=1
+        self.state = copy.deepcopy(self.undo[self.undo_index])
+        await self.chat_view.remove_children()
+        await render_messages(self)
+
+def append_undo_state(self) -> None:
+    while len(self.undo)-1 > self.undo_index:
+        del self.undo[-1]
+    while len(self.undo) > 100:
+        del self.undo[0]
+    self.undo.append(copy.deepcopy(self.state))
+    self.undo_index=len(self.undo)-1
+
 def save_message(self, message: dict) -> None:
     self.state.append(message)
     append_undo_state(self)
@@ -29,12 +51,15 @@ def read_system_prompt(self):
     except Exception as e:
         raise e
 
-def load_state(self):
-    load_chat_history(self)
+def load_state(self) -> None:
+    self.state = load_chat_history(self)
     if not self.state:
         system_prompt = read_system_prompt(self)
         if system_prompt:
             self.state.append({"role": "system", "content": system_prompt})
+    self.undo = []
+    self.undo.append(copy.deepcopy(self.state))
+    self.undo_index=0
 
 async def render_messages(self, from_index: int = 0) -> None:
     for msg in self.state[from_index:]:

@@ -9,6 +9,8 @@ bindings = [
         ("ctrl+enter", "continue", "Continue"),
         ("ctrl+escape", "abort", "Abort"),
         ("ctrl+m", "config_screen", "Config"),
+        ("ctrl+i", "undo", "Undo"),
+        ("ctrl+r", "redo", "Redo"),
         ("ctrl+q", "exit_app", "Quit"),
         ("ctrl+enter", "save_edit", "Save"),
         ("ctrl+escape", "cancel_edit", "Cancel"),
@@ -23,6 +25,12 @@ class ActionsMixIn:
         self.text_area.text = self.text_area_text_tmp
         self.edit = False
 
+    async def action_undo(self) -> None:
+        await utils.state_undo(self)
+
+    async def action_redo(self) -> None:
+        await utils.state_redo(self)
+
     async def action_save_edit(self) -> None:
         id=int(self.edit_container.id[3:])
         if self.edit_ctype == "tool_calls" or self.edit_role == "tool":
@@ -32,6 +40,7 @@ class ActionsMixIn:
                 return None
         else:
             self.state[id][self.edit_ctype] = self.text_area.text
+        utils.append_undo_state(self)
         utils.write_chat_history(self)
         if self.edit_role == "user" or self.edit_role == "tool":
             role = "request"
