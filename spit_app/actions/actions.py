@@ -77,11 +77,7 @@ class ActionsMixIn:
     
     async def action_continue(self) -> None:
         if self.text_area.text:
-            if self.state[-1]["role"] == "user":
-                self.state[-1]["content"]+="\n\n"+self.text_area.text.strip("\n ")
-            else:
-                self.state.append({"role": "user", "content": self.text_area.text})
-            utils.write_chat_history(self)
+            utils.save_message(self, {"role": "user", "content": self.text_area.text})
             await utils.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
         if (self.text_area.text or self.state[-1]["role"] == "user" or
