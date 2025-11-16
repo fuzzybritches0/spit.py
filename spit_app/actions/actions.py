@@ -85,7 +85,7 @@ class ActionsMixIn:
             await utils.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
         if (self.text_area.text or self.state[-1]["role"] == "user" or
-            self.state[-1]["role"] == "tool" or self.state[-1]["tool_calls"]):
+            self.state[-1]["role"] == "tool" or "tool_calls" in self.state[-1]):
             self.work = self.run_worker(work_stream(self))
     
     async def action_abort(self) -> None:
