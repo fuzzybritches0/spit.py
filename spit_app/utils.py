@@ -3,10 +3,6 @@ import json
 import spit_app.message as message
 from spit_app.patterns.pattern_processing import PatternProcessing
 
-def remove_last_message(self) -> None:
-    if self.state[-1] and not self.state[-1]["role"] == "system":
-        del self.state[-1]
-
 def load_chat_history(self):
     try:
         with open(self.config.CHAT_HISTORY_PATH, "r") as f:

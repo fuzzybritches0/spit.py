@@ -9,7 +9,6 @@ bindings = [
         ("ctrl+enter", "continue", "Continue"),
         ("ctrl+escape", "abort", "Abort"),
         ("ctrl+m", "config_screen", "Config"),
-        ("ctrl+r", "remove_last_turn", "Remove last turn"),
         ("ctrl+q", "exit_app", "Quit"),
         ("ctrl+enter", "save_edit", "Save"),
         ("ctrl+escape", "cancel_edit", "Cancel"),
@@ -98,12 +97,6 @@ class ActionsMixIn:
             await message.remove_last_turn(self)
         self.refresh_bindings()
     
-    async def action_remove_last_turn(self) -> None:
-        utils.remove_last_message(self)
-        await message.remove_last_turn(self)
-        utils.write_chat_history(self)
-        self.refresh_bindings()
-    
     async def action_config_screen(self) -> None:
         await self.push_screen(ConfigScreen())
     
@@ -141,13 +134,6 @@ class ActionsMixIn:
             return False
         if action == "abort":
             if not running or self.edit:
-                return False
-        if action == "remove_last_turn":
-            if running or self.edit:
-                return False
-            if not self.state:
-                return False
-            if self.state[-1]["role"] == "system":
                 return False
         if action.startswith("edit_"):
             if running or self.edit:
