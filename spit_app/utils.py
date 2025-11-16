@@ -42,7 +42,7 @@ def write_chat_history(self) -> None:
     with open(self.config.CHAT_HISTORY_PATH, "w") as f:
         json.dump(self.state, f)
 
-def read_system_prompt(self):
+def read_system_prompt(self) -> str | None:
     try:
         with open(self.config.SYSTEM_PROMPT_PATH, "r") as f:
             return f.read()
