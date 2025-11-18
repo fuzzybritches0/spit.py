@@ -71,6 +71,9 @@ def code_block_start_end(self, buffer: str, pattern: str) -> None:
             code_block_end(self, buffer, pattern)
 
 def code_block_start(self, buffer: str, pattern: str) -> None:
+    if not self.paragraph.strip(" \n"):
+        await message.remove(self.app)
+    await message.mount_code(self.app)
     self.cur_code_fence = pattern
     self.codelisting = True
 
@@ -79,6 +82,8 @@ def code_block_end(self, buffer: str, pattern: str) -> None:
     self.codelisting = False
     self.skip_buff_p = len(pattern)
     self.paragraph += pattern
+    await message.update(self.app, self.paragraph)
+    await message.mount_next(self.app)
 
 def code_listing(self, buffer: str, pattern: str) -> None:
     self.codelisting = not self.codelisting
