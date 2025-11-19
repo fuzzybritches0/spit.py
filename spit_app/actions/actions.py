@@ -67,7 +67,6 @@ class ActionsMixIn:
             prepend = "- RESULT: `"
             append = "`"
         await utils.render_message(self, role, prepend + self.text_area.text + append)
-        self.text_area.text = self.text_area_text_tmp
         self.edit = False
 
     def action_edit_content(self) -> None:
@@ -80,7 +79,6 @@ class ActionsMixIn:
         self.edit_message("tool_calls")
 
     def edit_message(self, ctype: str) -> None:
-        self.text_area_text_tmp = self.text_area.text
         id=int(self.focused.id[3:])
         self.edit_role = self.state[id]["role"]
         self.edit_message_undo = self.state[id][ctype]
