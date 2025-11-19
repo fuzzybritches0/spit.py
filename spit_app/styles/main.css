@@ -16,7 +16,7 @@
 }
 
 .latex-image {
-	margin: 0 0 1 0;
+	margin: 0 0 0 0;
 	width: auto
 }
 .request {
@@ -45,6 +45,28 @@
 	height: auto
 }
 .message-container-response:focus {
+	margin: 1 0 1 0;
+	border: tall $primary;
+	height: auto
+}
+.code-listing-request {
+	margin: 1 0 1 0;
+	background: $primary 20%;
+	border: tall $primary 40%;
+	height: auto
+}
+.code-listing-request:focus {
+	margin: 1 0 1 0;
+	background: $primary 20%;
+	border: tall $primary;
+	height: auto
+}
+.code-listing-response {
+	margin: 1 0 1 0;
+	border: tall $primary 40%;
+	height: auto
+}
+.code-listing-response:focus {
 	margin: 1 0 1 0;
 	border: tall $primary;
 	height: auto
