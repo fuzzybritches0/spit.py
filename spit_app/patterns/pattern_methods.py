@@ -94,7 +94,8 @@ async def code_block_end(self, buffer: str, pattern: str) -> None:
     await message.mount_next(self.app)
 
 def code_listing(self, buffer: str, pattern: str) -> None:
-    self.codelisting = not self.codelisting
+    if not self.cur_code_fence:
+        self.codelisting = not self.codelisting
 
 def is_thinking(self, buffer: str, pattern: str) -> None:
     if not self.thinkingdone:

@@ -66,7 +66,9 @@ class ActionsMixIn:
         if self.edit_role == "tool":
             prepend = "- RESULT: `"
             append = "`"
-        await utils.render_message(self, role, prepend + self.text_area.text + append)
+        new_content = self.text_area.text
+        self.text_area.text = ""
+        await utils.render_message(self, role, prepend + new_content + append)
         self.edit = False
 
     def action_edit_content(self) -> None:

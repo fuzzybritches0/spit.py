@@ -16,7 +16,7 @@ class HandlersMixIn:
             if self.focused_message:
                 self.focused_message.focus()
         if not self.chat_view.has_focus and not self.text_area.has_focus:
-            if event.control.parent.id == "chat-view":
+            if not event.control.parent.id == "text-area":
                 self.focused_message = event.control
         message.if_y_max_scroll_end(self)
 
