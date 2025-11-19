@@ -7,7 +7,7 @@ from textual.containers import Container
 from spit_app.config.settings import get_settings
 import spit_app.config.config_screens as cs
 
-class ConfigScreen(ModalScreen[None]):
+class ConfigApp(ModalScreen):
     CSS_PATH = "../styles/config.css"
 
     def __init__(self) -> None:

@@ -3,12 +3,12 @@ import json
 from spit_app.work import work_stream
 import spit_app.message as message
 import spit_app.utils as utils
-from spit_app.config.config_app import ConfigScreen
+from spit_app.config.config_app import ConfigApp
 
 bindings = [
         ("ctrl+enter", "continue", "Continue"),
         ("ctrl+escape", "abort", "Abort"),
-        ("ctrl+m", "config_screen", "Config"),
+        ("ctrl+m", "config_app", "Config"),
         ("ctrl+i", "undo", "Undo"),
         ("ctrl+r", "redo", "Redo"),
         ("ctrl+q", "exit_app", "Quit"),
