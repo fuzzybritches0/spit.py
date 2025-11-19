@@ -101,9 +101,9 @@ class ActionsMixIn:
         while len(self.chat_view.children) > count_state:
             await message.remove_last_turn(self)
         self.refresh_bindings()
-    
-    async def action_config_screen(self) -> None:
-        await self.push_screen(ConfigScreen())
+
+    async def action_config_app(self) -> None:
+        await self.push_screen(ConfigApp())
     
     async def action_exit_app(self) -> None:
         self.exit()
