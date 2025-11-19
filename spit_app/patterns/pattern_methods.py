@@ -52,8 +52,10 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
             else:
                 await message.update(self.app, self.paragraph)
             await message.mount_latex(self.app, latex_image)
-            await message.mount_next(self.app)
+            turn_id=len(self.app.latex_listings)-1
+            self.app.latex_listings[turn_id].append(sequence)
             self.paragraph = ""
+            await message.mount_next(self.app)
         else:
             if "\n" in sequence:
                 self.paragraph += "\n```latex\n" + esc + exp_latex_fence + sequence + esc + pattern + "\n```\n"
@@ -63,26 +65,32 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         self.seqstart = -1
         self.cur_latex_fence = ""
 
-def code_block_start_end(self, buffer: str, pattern: str) -> None:
+async def code_block_start_end(self, buffer: str, pattern: str) -> None:
     if not self.pp_last or self.pp_last == "\n":
         if not self.cur_code_fence:
-            code_block_start(self, buffer, pattern)
+            await code_block_start(self, buffer, pattern)
         elif self.cur_code_fence == pattern:
-            code_block_end(self, buffer, pattern)
+            await code_block_end(self, buffer, pattern)
 
-def code_block_start(self, buffer: str, pattern: str) -> None:
+async def code_block_start(self, buffer: str, pattern: str) -> None:
     if not self.paragraph.strip(" \n"):
         await message.remove(self.app)
+    else:
+        await message.update(self.app, self.paragraph)
+        self.paragraph = ""
     await message.mount_code(self.app)
     self.cur_code_fence = pattern
     self.codelisting = True
 
-def code_block_end(self, buffer: str, pattern: str) -> None:
+async def code_block_end(self, buffer: str, pattern: str) -> None:
     self.cur_code_fence = ""
     self.codelisting = False
     self.skip_buff_p = len(pattern)
     self.paragraph += pattern
     await message.update(self.app, self.paragraph)
+    turn_id=len(self.app.code_listings)-1
+    self.app.code_listings[turn_id].append(self.paragraph.strip("`~\n "))
+    self.paragraph = ""
     await message.mount_next(self.app)
 
 def code_listing(self, buffer: str, pattern: str) -> None:

@@ -17,10 +17,22 @@ bindings = [
         ("ctrl+g", "edit_content", "Edit content"),
         ("ctrl+h", "edit_cot", "Edit CoT"),
         ("ctrl+j", "edit_tool", "Edit tool call"),
+        ("ctrl+x", "copy_listing", "Copy"),
         ("escape", "change_focus", "Focus")
 ]
 
 class ActionsMixIn:
+    def action_copy_listing(self) -> None:
+        id = self.focused.id
+        if id.startswith("code_listing_"):
+            id = id[13:]
+            listing = self.code_listings
+        elif id.startswith("latex_listing_"):
+            id = id[14:]
+            listing = self.latex_listings
+        id = id.split("_")
+        self.copy_to_clipboard(listing[int(id[0])][int(id[1])])
+
     def action_cancel_edit(self):
         self.text_area.text = self.text_area_text_tmp
         self.edit = False

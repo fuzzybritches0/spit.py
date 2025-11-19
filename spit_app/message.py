@@ -17,6 +17,9 @@ async def mount(self, mtype: str, content: str = "") -> None:
     is_y_max(self)
     if self.edit:
         self.message_container = self.edit_container
+        id = int(self.message_container.id[3:])
+        self.code_listings[id] = []
+        self.latex_listings[id] = []
     else:
         id=len(self.chat_view.children)
         if len(self.state) > 0 and self.state[0]["role"] == "system":
@@ -26,6 +29,8 @@ async def mount(self, mtype: str, content: str = "") -> None:
     self.mtype = mtype
     if not self.edit:
         await self.chat_view.mount(self.message_container)
+        self.code_listings.append([])
+        self.latex_listings.append([])
     await self.message_container.mount(self.mwidget)
     self.message_container.focus()
     self.focused_message = self.message_container
@@ -53,9 +58,25 @@ async def remove(self) -> None:
     await self.mwidget.remove()
     if_y_max_scroll_end(self)
 
+async def mount_code(self) -> None:
+    is_y_max(self)
+    turn_id=len(self.code_listings)-1
+    code_id=len(self.code_listings[turn_id])
+    id="code_listing_"+str(turn_id)+"_"+str(code_id)
+    self.code_listing_container = VerticalScroll(classes="code-listing-"+self.mtype, id=id)
+    self.mwidget = Markdown(classes=self.mtype)
+    await self.message_container.mount(self.code_listing_container)
+    await self.code_listing_container.mount(self.mwidget)
+    if_y_max_scroll_end(self)
+
 async def mount_latex(self, latex_image: Image) -> None:
     is_y_max(self)
-    await self.message_container.mount(latex_image)
+    turn_id=len(self.latex_listings)-1
+    latex_id=len(self.latex_listings[turn_id])
+    id="latex_listing_"+str(turn_id)+"_"+str(latex_id)
+    self.latex_listing_container = VerticalScroll(classes="code-listing-"+self.mtype, id=id)
+    await self.message_container.mount(self.latex_listing_container)
+    await self.latex_listing_container.mount(latex_image)
     if_y_max_scroll_end(self)
 
 async def remove_last_turn(self) -> None:
@@ -65,4 +86,6 @@ async def remove_last_turn(self) -> None:
             if len(self.chat_view.children) > 1:
                 self.focused_message = self.chat_view.children[-2]
         await self.chat_view.children[-1].remove()
+        del self.code_listings[-1]
+        del self.latex_listings[-1]
         if_y_max_scroll_end(self)

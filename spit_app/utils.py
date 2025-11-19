@@ -53,10 +53,15 @@ def read_system_prompt(self) -> str | None:
 
 def load_state(self) -> None:
     self.state = load_chat_history(self)
+    self.code_listings = []
+    self.latex_listings = []
     if not self.state:
         system_prompt = read_system_prompt(self)
         if system_prompt:
             self.state.append({"role": "system", "content": system_prompt})
+    if self.state[0]["role"] == "system":
+        self.code_listings.append([])
+        self.latex_listings.append([])
     self.undo = []
     self.undo.append(copy.deepcopy(self.state))
     self.undo_index=0
