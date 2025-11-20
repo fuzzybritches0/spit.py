@@ -70,10 +70,14 @@ class ConfigApp(ModalScreen):
     def action_exit_app(self) -> None:
         self.app.exit()
 
+    def is_edit_settings(self) -> bool:
+        if self.dyn_container.children[0].id == "EditSettings":
+            return True
+        return False
+
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "save" or action == "delete" or action == "set_active":
-            if self.dyn_container.children[0].id == "SelectConfig":
-                return False
+            return self.is_edit_settings()
         return True
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
