@@ -24,11 +24,11 @@ class ConfigApp(ModalScreen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Container(id="Main")
+        self.main_container = Container()
+        yield self.main_container
         yield Footer()
 
     async def on_mount(self) -> None:
-        self.main_container = self.query_one("#Main")
         self.dyn_container = Container()
         await self.main_container.mount(self.dyn_container)
         await cs.select_config_screen(self)

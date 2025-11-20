@@ -40,12 +40,10 @@ async def select_config_screen(self) -> None:
         Options.append(Option(f"\nEdit: {name}\n", id=f"select_config_{count}"))
         count+=1
     await vscroll.mount(OptionList(*Options, id="OptionList"))
-    vscroll.children[0].focus()
     horiz = Horizontal(id="Cancel")
     await self.dyn_container.mount(horiz)
     await horiz.mount(Button("Cancel", id="cancel"))
+    vscroll.children[0].focus()
 
 async def clean_dyn_container(self) -> None:
-    await self.dyn_container.remove()
-    self.dyn_container = Container()
-    await self.main_container.mount(self.dyn_container)
+    await self.dyn_container.remove_children()
