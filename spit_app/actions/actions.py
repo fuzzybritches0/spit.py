@@ -118,7 +118,7 @@ class ActionsMixIn:
         await self.push_screen(ConfigApp())
     
     async def action_exit_app(self) -> None:
-        self.exit()
+        await self.exit()
 
     def is_working(self) -> bool:
         if self.work and self.work.is_running:
