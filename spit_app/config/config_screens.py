@@ -29,6 +29,7 @@ async def edit_settings_screen(self) -> None:
     await horiz.mount(Button("Delete", id="delete"))
     await horiz.mount(Button("Set Active", id="set_active"))
     await horiz.mount(Button("Cancel", id="cancel"))
+    vscroll.focus()
 
 async def select_config_screen(self) -> None:
     vscroll = VerticalScroll(id="SelectConfig")
