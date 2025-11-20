@@ -126,7 +126,7 @@ class ActionsMixIn:
         return False
 
     def get_id_edit(self) -> int | None:
-        if "id_" in self.focused.id:
+        if self.focused and "id_" in self.focused.id:
             return int(self.focused.id[3:])
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
@@ -139,7 +139,7 @@ class ActionsMixIn:
             if self.is_working() or self.edit or self.undo_index == len(self.undo)-1:
                 return False
         elif action == "copy_listing":
-            if not "_listing_" in self.focused.id:
+            if not self.focused or not "_listing_" in self.focused.id:
                 return False
         elif action == "edit_content":
             if self.is_working() or self.edit:
