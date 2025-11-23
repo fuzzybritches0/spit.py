@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+from spit_app.helpers.dot2obj import dot2obj
 from typing import Generator, Tuple, List, Dict, Any
 from .base import BaseEndpoint
 
@@ -6,16 +7,22 @@ class LlamaCppEndpoint(BaseEndpoint):
 
     @property
     def api_endpoint(self) -> str:
-        return self.config.config["configs"][self.active]["endpoint_url"] + "/v1/chat/completions"
+        if "endpoint_url" in self.config.configs[self.active]["values"]:
+            return self.config.configs[self.active]["values"]["endpoint_url"] + "/v1/chat/completions"
+        return None
 
     def prepare_payload(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
         payload = {}
         payload["messages"] = messages
-        for setting, value in self.config.config["configs"][self.active].items():
-            if value:
-                payload[setting] = value
-        if self.config.config["tools"]:
-            payload["tools"] = self.config.config["tools"]
+        for setting, value in self.config.configs[self.active]["values"].items():
+            if not setting == "name" and not setting == "endpoint_url" and not setting == "key":
+                if "." in setting and value:
+                    payload = dot2obj(payload, setting, value)
+                else:
+                    if value:
+                        payload[setting] = value
+        if self.config.tools:
+            payload["tools"] = self.config.tools
             payload["tool_choice"] = "auto"
         payload["n_predict"] = -1
         payload["cache_prompt"] = True
