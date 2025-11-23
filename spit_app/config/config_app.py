@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.widgets import Button, Header, Footer, OptionList
+from textual.widgets import Button, Header, Footer, OptionList, Select
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from textual.containers import Container
-from spit_app.config.settings import get_settings
-import spit_app.config.config_screens as cs
+from spit_app.config.config_screens import ConfigScreensMixIn
+from spit_app.config.validation import Validation
 
-class ConfigApp(ModalScreen):
+class ConfigApp(ModalScreen, ConfigScreensMixIn):
     CSS_PATH = "../styles/config.css"
     BINDINGS = [
         ("ctrl+q", "exit_app", "Quit"),
@@ -20,7 +20,7 @@ class ConfigApp(ModalScreen):
         super().__init__()
         self.title = f"{self.app.NAME} v{self.app.VERSION} - Configuration"
         self.config = self.app.config
-        self.settings = get_settings(self)
+        self.val = Validation(self)
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -31,17 +31,36 @@ class ConfigApp(ModalScreen):
     async def on_mount(self) -> None:
         self.dyn_container = Container()
         await self.main_container.mount(self.dyn_container)
-        await cs.select_config_screen(self)
+        await self.select_config_screen()
 
-    def valid_values(self) -> bool:
-        for setting, stype, desc, defvalue, *validators in self.settings:
-            if not self.query_one(f"#{setting}").is_valid:
+    def valid_values_add(self) -> bool:
+        if not self.query_one("#NewSetting").is_valid:
+            return False
+        if not self.query_one("#NewDescription").is_valid:
+            return False
+        stype = self.query_one("#CustomSettingSelectAdd").value
+        if stype == "Select":
+            if not self.query_one("#NewSelectValues").is_valid:
                 return False
         return True
 
+    def valid_values_edit(self) -> bool:
+        for setting, stype, desc, array in self.config.configs[self.cconfig]["custom"]:
+            id = setting.replace(".", "-")
+            if not stype == "Boolean" and not stype == "Select" and not stype == "Text":
+                if not self.query_one(f"#{id}").is_valid:
+                    return False
+        return True
+
     def store_values(self) -> None:
-        for setting, stype, desc, defvalue, *validators in self.settings:
-            newvalue = self.query_one(f"#{setting}").value
+        for setting, stype, desc, array in self.config.configs[self.cconfig]["custom"]:
+            id = setting.replace(".", "-")
+            if stype == "Text":
+                newvalue = self.query_one(f"#{id}").text
+            else:
+                newvalue = self.query_one(f"#{id}").value
+            if newvalue == Select.BLANK:
+                newvalue = ""
             self.config.store(self.cconfig, setting, stype, newvalue)
 
     def action_delete(self) -> None:
@@ -50,7 +69,7 @@ class ConfigApp(ModalScreen):
         self.dismiss()
 
     def action_set_active(self) -> None:
-        if self.valid_values():
+        if self.valid_values_edit():
             self.store_values()
             self.config.save()
         self.config.set_active(self.cconfig)
@@ -58,11 +77,35 @@ class ConfigApp(ModalScreen):
         self.dismiss()
 
     def action_save(self) -> None:
-        if self.valid_values():
+        if self.valid_values_edit():
             self.store_values()
             self.config.save()
             self.app.title_update()
             self.dismiss()
+
+    async def action_add_setting(self) -> None:
+        if self.valid_values_add():
+            setting = self.query_one("#NewSetting").value
+            stype = self.query_one("#CustomSettingSelectAdd").value
+            desc = self.query_one("#NewDescription").value
+            sarray = []
+            if stype == "Select":
+                value = self.query_one("#NewSelectValues").value
+                array = value.split(",")
+                for el in array:
+                    sarray.append(el.strip())
+            self.config.add_custom_setting(self.cconfig, setting, stype, desc, sarray)
+            self.config.save()
+            await self.clean_dyn_container()
+            await self.edit_settings_screen()
+
+    async def action_remove_setting(self) -> None:
+        remove = self.query_one("#CustomSettingSelectRemove").value
+        if not remove == Select.BLANK:
+            self.config.remove_custom_setting(self.cconfig, remove)
+            self.config.save()
+            await self.clean_dyn_container()
+            await self.edit_settings_screen()
 
     def action_dismiss(self) -> None:
         self.dismiss()
@@ -80,7 +123,7 @@ class ConfigApp(ModalScreen):
             return self.is_edit_settings()
         return True
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":
             self.action_dismiss()
         elif event.button.id == "delete":
@@ -89,13 +132,17 @@ class ConfigApp(ModalScreen):
             self.action_set_active()
         elif event.button.id == "save":
             self.action_save()
+        elif event.button.id == "ButtonRemoveSetting":
+            await self.action_remove_setting()
+        elif event.button.id == "ButtonAddSetting":
+            await self.action_add_setting()
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "select_new_config":
             self.cconfig = self.config.new()
-            await cs.clean_dyn_container(self)
-            await cs.edit_settings_screen(self)
+            await self.clean_dyn_container()
+            await self.edit_settings_screen()
         else:
             self.cconfig = int(event.option.id[14:])
-            await cs.clean_dyn_container(self)
-            await cs.edit_settings_screen(self)
+            await self.clean_dyn_container()
+            await self.edit_settings_screen()
