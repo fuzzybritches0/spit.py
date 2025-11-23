@@ -1,70 +1,57 @@
 # SPDX-License-Identifier: GPL-2.0
 class Validation:
     def __init__(self, app) -> None:
-        self.config = app.config
         self.app = app
 
+    def is_empty(self, value) -> bool:
+        if value:
+            return False
+        return True
+
     def is_url(self, value) -> bool:
-        if self.is_default(value):
-            return True
         if value.startswith("http://"):
             return True
         if value.startswith("https://"):
             return True
         return False
     
-    def is_default(self, value) -> bool:
-        if (value.lower() == "default" or
-            value == ""):
-            return True
-        return False
-    
-    def is_float(self, value: str) -> bool:
-        try:
-            value = float(value)
-            return True
-        except:
-            return False
-    
-    def is_int(self, value: str) -> bool:
-        if "." in value:
-            return False
-        try:
-            value = int(value)
-            return True
-        except:
-            return False
-    
-    def is_valid_int(self, value: str) -> bool:
-        if self.is_default(value):
-            return True
-        if self.is_int(value):
-            return True
-        return False
-    
-    def is_valid_float(self, value: str) -> bool:
-        if self.is_default(value):
-            return True
-        if self.is_float(value):
-            return True
-        return False
-    
-    def is_anything(self, value: str) -> bool:
-        return True
-
-    def is_not_empty(self, value: str) -> bool:
-        if not value or value.lower() == "default" or value.lower() == "none":
-            return False
-        return True
-
     def is_unique_name(self, value: str) -> bool:
-        count = 0
-        same = 0
-        for config in self.config.config["configs"]:
-            if (not count == self.app.cconfig and
-                    config["name"] == value):
-                same+=1
-            count+=1
-        if same > 0:
+        if self.is_empty(value):
             return False
+        count = 0
+        for config in self.app.config.configs:
+            if (not count == self.app.cconfig and
+                    config["values"]["name"] == value):
+                return False
+            count+=1
+        return True
+
+    def is_unique_custom(self, value: str) -> bool:
+        if self.is_empty(value):
+            return False
+        same = 0
+        for name, stype, desc, sarray in self.app.config.configs[self.app.cconfig]["custom"]:
+            if name == value:
+                return False
+        return True
+
+    def is_valid_setting(self, value: str) -> bool:
+        value = value.strip()
+        if not value:
+            return False
+        if value.startswith("_") or value.endswith("_"):
+            return False
+        if value.startswith(".") or value.endswith("."):
+            return False
+        if value[0:1].isdecimal():
+            return False
+        return True
+
+    def is_valid_selection(self, value: str) -> bool:
+        values = value.split(",")
+        if len(values) < 1:
+            return False
+        for value in values:
+            if not self.is_valid_setting(value):
+                return False
         return True
