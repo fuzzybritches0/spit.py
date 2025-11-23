@@ -16,7 +16,7 @@ class ConfigScreensMixIn:
                                        validators=Validators,
                                        restrict=r"[0-9a-z_.]*",
                                        valid_empty=False,
-                                       max_length=256))
+                                       max_length=128))
         await self.vscroll.mount(Label(f"Description for {stype} value:"))
         await self.vscroll.mount(Input(id="NewDescription", valid_empty=False))
         if stype == "Select":
