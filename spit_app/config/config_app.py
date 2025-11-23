@@ -11,8 +11,8 @@ class ConfigApp(ModalScreen):
     BINDINGS = [
         ("ctrl+q", "exit_app", "Quit"),
         ("ctrl+enter", "save", "Save"),
-        ("ctrl+d", "delete", "Delete"),
-        ("ctrl+a", "set_active", "Set active"),
+        ("ctrl+r", "delete", "Delete"),
+        ("ctrl+s", "set_active", "Set active"),
         ("escape", "dismiss", "Cancel")
     ]
 
