@@ -21,3 +21,6 @@ ConfigScreen {
 Button {
     margin: 1 1 1 1
 }
+TextArea {
+	height: 5
+}
