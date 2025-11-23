@@ -164,9 +164,9 @@ class ActionsMixIn:
         elif action  == "cancel_edit":
             return self.edit
         elif action == "continue":
-            active = self.config.config["active_config"]
+            active = self.config.active_config
             if (self.is_working() or not
-                    self.config.config["configs"][active]["endpoint_url"]):
+                    self.config.configs[active]["values"]["endpoint_url"]):
                 return False
             if self.text_area.text and self.state[-1]["role"] == "system":
                 return True                                 # Begin of chat
