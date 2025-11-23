@@ -145,7 +145,7 @@ class ActionsMixIn:
             if self.is_working() or self.edit:
                 return False
             id=self.get_id_edit()
-            if not id or not self.state[id]["contnet"]:
+            if not id or not self.state[id]["content"]:
                 return False
         elif action == "edit_cot":
             if self.is_working() or self.edit:
