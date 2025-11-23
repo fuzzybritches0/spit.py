@@ -3,12 +3,12 @@ from typing import Iterable, Generator, Tuple, List, Dict,Optional
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 
 class WorkStream:
-    def __init__(self, config) -> None:
+    def __init__(self, app) -> None:
         self.buffer = ""
         self.buffer_size_max = 8
         self.parts: List[str] = []
         self.ctypes: List[str] = []
-        self.endpoint = LlamaCppEndpoint(config)
+        self.endpoint = LlamaCppEndpoint(app)
 
     async def stream(self, messages: List[Dict[str, str]]
                ) -> Generator[Tuple[str, Optional[str], Optional[str]], None, None]:

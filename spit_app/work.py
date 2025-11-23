@@ -75,7 +75,7 @@ class Work():
         self.app.refresh_bindings()
         await message.mount(self.app, "response")
 
-        workstream = WorkStream(self.app.config)
+        workstream = WorkStream(self.app)
         async for ctype, buffer, part in workstream.stream(self.app.state):
             if buffer:
                 await self.buffer(buffer, ctype)
