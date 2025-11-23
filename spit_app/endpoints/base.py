@@ -5,15 +5,18 @@ import httpx
 from typing import Generator, Tuple, List, Dict, Any
 
 class BaseEndpoint(abc.ABC):
-    api_key: str
+    api_key: str | None
     timeout: float | None = None
     extra_headers: Dict[str, str] = {}
 
-    def __init__(self, config, timeout: float | None = None,
+    def __init__(self, app, timeout: float | None = None,
                  extra_headers: Dict[str, str] | None = None):
-        self.config = config
-        self.active = self.config.config["active_config"]
-        self.api_key = self.config.config["configs"][self.active]["key"]
+        self.config = app.config
+        self.app = app
+        self.active = self.config.active_config
+        self.api_key = None
+        if "key" in self.config.configs[self.active]["values"]:
+            self.api_key = self.config.configs[self.active]["values"]["key"]
         if timeout is not None:
             self.timeout = timeout
         if extra_headers:
