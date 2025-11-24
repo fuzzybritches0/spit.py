@@ -172,6 +172,8 @@ class ActionsMixIn:
         elif action  == "cancel_edit":
             return self.edit
         elif action == "remove_last":
+            if len(self.chat_view.children) == 0:
+                return False
             if not self.focused == self.chat_view.children[-1]:
                 return False
         elif action == "continue":
