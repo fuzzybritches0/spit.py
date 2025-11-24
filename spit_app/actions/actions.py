@@ -84,7 +84,6 @@ class ActionsMixIn:
     def edit_message(self, ctype: str) -> None:
         id=int(self.focused.id[3:])
         self.edit_role = self.messages[id]["role"]
-        self.edit_message_undo = self.messages[id][ctype]
         self.text_area_temp = self.text_area.text
         if ctype == "tool_calls" or self.edit_role == "tool":
             self.text_area.text = json.dumps(self.messages[id][ctype])
