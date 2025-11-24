@@ -11,36 +11,36 @@ def load_chat_history(self):
     except FileNotFoundError:
         return []
 
-async def state_undo(self) -> None:
+async def undo(self) -> None:
     if self.undo_index > 0:
         self.undo_index-=1
-        self.state = copy.deepcopy(self.undo[self.undo_index])
+        self.messages = copy.deepcopy(self.undo[self.undo_index])
         await self.chat_view.remove_children()
         await render_messages(self)
 
-async def state_redo(self) -> None:
+async def redo(self) -> None:
     if self.undo_index < len(self.undo)-1:
         self.undo_index+=1
-        self.state = copy.deepcopy(self.undo[self.undo_index])
+        self.messages = copy.deepcopy(self.undo[self.undo_index])
         await self.chat_view.remove_children()
         await render_messages(self)
 
-def append_undo_state(self) -> None:
+def append_undo(self) -> None:
     while len(self.undo)-1 > self.undo_index:
         del self.undo[-1]
     while len(self.undo) > 100:
         del self.undo[0]
-    self.undo.append(copy.deepcopy(self.state))
+    self.undo.append(copy.deepcopy(self.messages))
     self.undo_index=len(self.undo)-1
 
 def save_message(self, message: dict) -> None:
-    self.state.append(message)
-    append_undo_state(self)
+    self.messages.append(message)
+    append_undo(self)
     write_chat_history(self)
 
 def write_chat_history(self) -> None:
     with open(self.config.CHAT_HISTORY_PATH, "w") as f:
-        json.dump(self.state, f)
+        json.dump(self.messages, f)
 
 def read_system_prompt(self) -> str | None:
     try:
@@ -51,23 +51,23 @@ def read_system_prompt(self) -> str | None:
     except Exception as e:
         raise e
 
-def load_state(self) -> None:
-    self.state = load_chat_history(self)
+def load_messages(self) -> None:
+    self.messages = load_chat_history(self)
     self.code_listings = []
     self.latex_listings = []
-    if not self.state:
+    if not self.messages:
         system_prompt = read_system_prompt(self)
         if system_prompt:
-            self.state.append({"role": "system", "content": system_prompt})
-    if self.state[0]["role"] == "system":
+            self.messages.append({"role": "system", "content": system_prompt})
+    if self.messages[0]["role"] == "system":
         self.code_listings.append([])
         self.latex_listings.append([])
     self.undo = []
-    self.undo.append(copy.deepcopy(self.state))
+    self.undo.append(copy.deepcopy(self.messages))
     self.undo_index=0
 
 async def render_messages(self, from_index: int = 0) -> None:
-    for msg in self.state[from_index:]:
+    for msg in self.messages[from_index:]:
         if msg["role"] == "user" and msg["content"]:
             await render_message(self, "request", msg["content"])
         elif msg["role"] == "assistant" and "content" in msg and msg["content"]:

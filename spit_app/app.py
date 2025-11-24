@@ -23,7 +23,7 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
         self.config = ConfigSettings()
         self.config.load()
         self.title_update()
-        utils.load_state(self)
+        utils.load_messages(self)
         self.work = None
         self.edit = False
         self.focused_message = None

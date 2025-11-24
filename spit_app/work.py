@@ -76,7 +76,7 @@ class Work():
         await message.mount(self.app, "response")
 
         workstream = WorkStream(self.app)
-        async for ctype, buffer, part in workstream.stream(self.app.state):
+        async for ctype, buffer, part in workstream.stream(self.app.messages):
             if buffer:
                 await self.buffer(buffer, ctype)
             if part:
@@ -118,8 +118,8 @@ async def work_tools(self, tool_calls: list) -> None:
         tool_calls = work.tool_calls
 
 async def work_stream(self) -> None:
-    if "tool_calls" in self.state[-1]:
-        await work_tools(self, self.state[-1]["tool_calls"])
+    if "tool_calls" in self.messages[-1]:
+        await work_tools(self, self.messages[-1]["tool_calls"])
     else:
         work = Work(self)
         await work.stream_response()

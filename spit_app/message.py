@@ -22,7 +22,7 @@ async def mount(self, mtype: str, content: str = "") -> None:
         self.latex_listings[id] = []
     else:
         id=len(self.chat_view.children)
-        if len(self.state) > 0 and self.state[0]["role"] == "system":
+        if len(self.messages) > 0 and self.messages[0]["role"] == "system":
             id+=1
         self.message_container = VerticalScroll(classes="message-container-"+mtype, id="id-"+str(id))
     self.mwidget = Markdown(classes=mtype)
