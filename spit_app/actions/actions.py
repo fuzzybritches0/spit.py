@@ -34,15 +34,15 @@ class ActionsMixIn:
         id = id.split("-")
         self.copy_to_clipboard(listing[int(id[0])][int(id[1])])
 
-    def action_cancel_edit(self):
-        self.edit = False
-        self.text_area.text = ""
-
     async def action_undo(self) -> None:
         await utils.state_undo(self)
 
     async def action_redo(self) -> None:
         await utils.state_redo(self)
+
+    def action_cancel_edit(self):
+        self.edit = False
+        self.text_area.text = self.text_area_temp
 
     async def action_save_edit(self) -> None:
         id=int(self.edit_container.id[3:])
@@ -68,7 +68,7 @@ class ActionsMixIn:
             prepend = "- RESULT: `"
             append = "`"
         new_content = self.text_area.text
-        self.text_area.text = ""
+        self.text_area.text = self.text_area_temp
         await utils.render_message(self, role, prepend + new_content + append)
         self.edit = False
 
@@ -85,6 +85,7 @@ class ActionsMixIn:
         id=int(self.focused.id[3:])
         self.edit_role = self.state[id]["role"]
         self.edit_message_undo = self.state[id][ctype]
+        self.text_area_temp = self.text_area.text
         if ctype == "tool_calls" or self.edit_role == "tool":
             self.text_area.text = json.dumps(self.state[id][ctype])
         else:
