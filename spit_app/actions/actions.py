@@ -165,7 +165,7 @@ class ActionsMixIn:
             return self.edit
         elif action == "continue":
             active = self.config.active_config
-            if (self.is_working() or not
+            if (self.is_working() or self.edit or not
                     self.config.configs[active]["values"]["endpoint_url"]):
                 return False
             if self.text_area.text and self.state[-1]["role"] == "system":
