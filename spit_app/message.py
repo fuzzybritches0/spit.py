@@ -24,7 +24,7 @@ async def mount(self, mtype: str, content: str = "") -> None:
         id=len(self.chat_view.children)
         if len(self.state) > 0 and self.state[0]["role"] == "system":
             id+=1
-        self.message_container = VerticalScroll(classes="message-container-"+mtype, id="id_"+str(id))
+        self.message_container = VerticalScroll(classes="message-container-"+mtype, id="id-"+str(id))
     self.mwidget = Markdown(classes=mtype)
     self.mtype = mtype
     if not self.edit:
@@ -62,7 +62,7 @@ async def mount_code(self) -> None:
     is_y_max(self)
     turn_id=len(self.code_listings)-1
     code_id=len(self.code_listings[turn_id])
-    id="code_listing_"+str(turn_id)+"_"+str(code_id)
+    id="code-listing-"+str(turn_id)+"-"+str(code_id)
     self.code_listing_container = VerticalScroll(classes="code-listing-"+self.mtype, id=id)
     self.mwidget = Markdown(classes=self.mtype)
     await self.message_container.mount(self.code_listing_container)
@@ -73,7 +73,7 @@ async def mount_latex(self, latex_image: Image) -> None:
     is_y_max(self)
     turn_id=len(self.latex_listings)-1
     latex_id=len(self.latex_listings[turn_id])
-    id="latex_listing_"+str(turn_id)+"_"+str(latex_id)
+    id="latex-listing-"+str(turn_id)+"-"+str(latex_id)
     self.latex_listing_container = VerticalScroll(classes="code-listing-"+self.mtype, id=id)
     await self.message_container.mount(self.latex_listing_container)
     await self.latex_listing_container.mount(latex_image)

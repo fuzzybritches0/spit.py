@@ -34,13 +34,13 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
         await self.select_config_screen()
 
     def valid_values_add(self) -> bool:
-        if not self.query_one("#NewSetting").is_valid:
+        if not self.query_one("#new-setting").is_valid:
             return False
-        if not self.query_one("#NewDescription").is_valid:
+        if not self.query_one("#new-description").is_valid:
             return False
-        stype = self.query_one("#CustomSettingSelectAdd").value
+        stype = self.query_one("#custom-setting-select-add").value
         if stype == "Select":
-            if not self.query_one("#NewSelectValues").is_valid:
+            if not self.query_one("#new-select-values").is_valid:
                 return False
         return True
 
@@ -85,12 +85,12 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
 
     async def action_add_setting(self) -> None:
         if self.valid_values_add():
-            setting = self.query_one("#NewSetting").value
-            stype = self.query_one("#CustomSettingSelectAdd").value
-            desc = self.query_one("#NewDescription").value
+            setting = self.query_one("#new-setting").value
+            stype = self.query_one("#custom-setting-select-add").value
+            desc = self.query_one("#new-description").value
             sarray = []
             if stype == "Select":
-                value = self.query_one("#NewSelectValues").value
+                value = self.query_one("#new-select-values").value
                 array = value.split(",")
                 for el in array:
                     sarray.append(el.strip())
@@ -100,7 +100,7 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
             await self.edit_settings_screen()
 
     async def action_remove_setting(self) -> None:
-        remove = self.query_one("#CustomSettingSelectRemove").value
+        remove = self.query_one("#custom-setting-select-remove").value
         if not remove == Select.BLANK:
             self.config.remove_custom_setting(self.cconfig, remove)
             self.config.save()
@@ -114,7 +114,7 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
         self.app.exit()
 
     def is_edit_settings(self) -> bool:
-        if self.dyn_container.children[0].id == "EditSettings":
+        if self.dyn_container.children[0].id == "edit-settings":
             return True
         return False
 
@@ -128,17 +128,17 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
             self.action_dismiss()
         elif event.button.id == "delete":
             self.action_delete()
-        elif event.button.id == "set_active":
+        elif event.button.id == "set-active":
             self.action_set_active()
         elif event.button.id == "save":
             self.action_save()
-        elif event.button.id == "ButtonRemoveSetting":
+        elif event.button.id == "button-remove-setting":
             await self.action_remove_setting()
-        elif event.button.id == "ButtonAddSetting":
+        elif event.button.id == "button-add-setting":
             await self.action_add_setting()
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        if event.option.id == "select_new_config":
+        if event.option.id == "select-new-config":
             self.cconfig = self.config.new()
             await self.clean_dyn_container()
             await self.edit_settings_screen()

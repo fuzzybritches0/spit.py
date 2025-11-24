@@ -24,13 +24,13 @@ bindings = [
 class ActionsMixIn:
     def action_copy_listing(self) -> None:
         id = self.focused.id
-        if id.startswith("code_listing_"):
+        if id.startswith("code-listing-"):
             id = id[13:]
             listing = self.code_listings
-        elif id.startswith("latex_listing_"):
+        elif id.startswith("latex-listing-"):
             id = id[14:]
             listing = self.latex_listings
-        id = id.split("_")
+        id = id.split("-")
         self.copy_to_clipboard(listing[int(id[0])][int(id[1])])
 
     def action_cancel_edit(self):
@@ -126,7 +126,7 @@ class ActionsMixIn:
         return False
 
     def get_id_edit(self) -> int | None:
-        if self.focused and "id_" in self.focused.id:
+        if self.focused and "id-" in self.focused.id:
             return int(self.focused.id[3:])
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
@@ -139,7 +139,7 @@ class ActionsMixIn:
             if self.is_working() or self.edit or self.undo_index == len(self.undo)-1:
                 return False
         elif action == "copy_listing":
-            if not self.focused or not "_listing_" in self.focused.id:
+            if not self.focused or not "-listing-" in self.focused.id:
                 return False
         elif action == "edit_content":
             if self.is_working() or self.edit:
