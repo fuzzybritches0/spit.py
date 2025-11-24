@@ -34,8 +34,8 @@ class ActionsMixIn:
         self.copy_to_clipboard(listing[int(id[0])][int(id[1])])
 
     def action_cancel_edit(self):
-        self.text_area.text = self.text_area_text_tmp
         self.edit = False
+        self.text_area.text = ""
 
     async def action_undo(self) -> None:
         await utils.state_undo(self)
