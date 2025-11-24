@@ -18,6 +18,7 @@ bindings = [
         ("ctrl+h", "edit_cot", "Edit CoT"),
         ("ctrl+j", "edit_tool", "Edit tool call"),
         ("ctrl+x", "copy_listing", "Copy"),
+        ("ctrl+x", "remove_last", "Remove turn"),
         ("escape", "change_focus", "Focus")
 ]
 
@@ -114,6 +115,12 @@ class ActionsMixIn:
             await message.remove_last_turn(self)
         self.refresh_bindings()
 
+    async def action_remove_last(self) -> None:
+        del self.state[-1]
+        utils.append_undo_state(self)
+        utils.write_chat_history(self)
+        await message.remove_last_turn(self)
+        
     async def action_config_app(self) -> None:
         await self.push_screen(ConfigApp())
     
@@ -163,6 +170,9 @@ class ActionsMixIn:
             return self.edit
         elif action  == "cancel_edit":
             return self.edit
+        elif action == "remove_last":
+            if not self.focused == self.chat_view.children[-1]:
+                return False
         elif action == "continue":
             active = self.config.active_config
             if (self.is_working() or self.edit or not
