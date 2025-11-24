@@ -137,62 +137,63 @@ class ActionsMixIn:
             return int(self.focused.id[3:])
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if action == "abort":
-            return self.is_working()
-        elif action == "undo":
-            if self.is_working() or self.edit or self.undo_index == 0:
+        match action:
+            case "abort":
+                return self.is_working()
+            case "undo":
+                if self.is_working() or self.edit or self.undo_index == 0:
+                    return False
+            case "redo":
+                if self.is_working() or self.edit or self.undo_index == len(self.undo)-1:
+                    return False
+            case "copy_listing":
+                if not self.focused or not "-listing-" in self.focused.id:
+                    return False
+            case "edit_content":
+                if self.is_working() or self.edit:
+                    return False
+                id=self.get_id_edit()
+                if not id or not self.messages[id]["content"]:
+                    return False
+            case "edit_cot":
+                if self.is_working() or self.edit:
+                    return False
+                id=self.get_id_edit()
+                if not id or not "reasoning_content" in self.messages[id]:
+                    return False
+            case "edit_tool":
+                if self.is_working() or self.edit:
+                    return False
+                id=self.get_id_edit()
+                if not id or not "tool_calls" in self.messages[id]:
+                    return False
+            case "save_edit":
+                return self.edit
+            case "cancel_edit":
+                return self.edit
+            case "remove_last":
+                if self.edit or self.is_working():
+                    return False
+                if len(self.chat_view.children) == 0:
+                    return False
+                if not self.focused == self.chat_view.children[-1]:
+                    return False
+            case "continue":
+                active = self.config.active_config
+                if (self.is_working() or self.edit or not
+                        self.config.configs[active]["values"]["endpoint_url"]):
+                    return False
+                if self.text_area.text and self.messages[-1]["role"] == "system":
+                    return True                             # Begin of chat
+                if (self.text_area.text and self.messages[-1]["role"] == "assistant" and
+                        self.messages[-1]["content"]):
+                    return True                             # Normal turn
+                if self.messages[-1]["role"] == "user":
+                    return True                             # There is a user request
+                if (self.messages[-1]["role"] == "assistant" and
+                        "tool_calls" in self.messages[-1] and not self.text_area.text):
+                    return True                             # There are TOOL CALLS to call
+                if self.messages[-1]["role"] == "tool" and not self.text_area.text:
+                    return True                             # There are TOOL CALL results to process
                 return False
-        elif action == "redo":
-            if self.is_working() or self.edit or self.undo_index == len(self.undo)-1:
-                return False
-        elif action == "copy_listing":
-            if not self.focused or not "-listing-" in self.focused.id:
-                return False
-        elif action == "edit_content":
-            if self.is_working() or self.edit:
-                return False
-            id=self.get_id_edit()
-            if not id or not self.messages[id]["content"]:
-                return False
-        elif action == "edit_cot":
-            if self.is_working() or self.edit:
-                return False
-            id=self.get_id_edit()
-            if not id or not "reasoning_content" in self.messages[id]:
-                return False
-        elif action == "edit_tool":
-            if self.is_working() or self.edit:
-                return False
-            id=self.get_id_edit()
-            if not id or not "tool_calls" in self.messages[id]:
-                return False
-        elif action == "save_edit":
-            return self.edit
-        elif action  == "cancel_edit":
-            return self.edit
-        elif action == "remove_last":
-            if self.edit or self.is_working():
-                return False
-            if len(self.chat_view.children) == 0:
-                return False
-            if not self.focused == self.chat_view.children[-1]:
-                return False
-        elif action == "continue":
-            active = self.config.active_config
-            if (self.is_working() or self.edit or not
-                    self.config.configs[active]["values"]["endpoint_url"]):
-                return False
-            if self.text_area.text and self.messages[-1]["role"] == "system":
-                return True                                 # Begin of chat
-            if (self.text_area.text and self.messages[-1]["role"] == "assistant" and
-                    self.messages[-1]["content"]):
-                return True                                 # Normal turn
-            if self.messages[-1]["role"] == "user":
-                return True                                 # There is a user request
-            if (self.messages[-1]["role"] == "assistant" and
-                    "tool_calls" in self.messages[-1] and not self.text_area.text):
-                return True                                 # There are TOOL CALLS to call
-            if self.messages[-1]["role"] == "tool" and not self.text_area.text:
-                return True                                 # There are TOOL CALL results to process
-            return False
         return True
