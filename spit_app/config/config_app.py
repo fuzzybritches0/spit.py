@@ -75,12 +75,13 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
         self.app.title_update()
         self.dismiss()
 
-    def action_save(self) -> None:
+    async def action_save(self) -> None:
         if self.valid_values_edit():
             self.store_values()
             self.config.save()
             self.app.title_update()
-            self.dismiss()
+            await self.clean_dyn_container()
+            await self.select_config_screen()
 
     async def action_add_setting(self) -> None:
         if self.valid_values_add():
@@ -106,8 +107,12 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
             await self.clean_dyn_container()
             await self.edit_settings_screen()
 
-    def action_dismiss(self) -> None:
-        self.dismiss()
+    async def action_dismiss(self) -> None:
+        if self.dyn_container.children[0].id == "select-config":
+            self.dismiss()
+        else:
+            await self.clean_dyn_container()
+            await self.select_config_screen()
 
     def is_edit_settings(self) -> bool:
         if self.dyn_container.children[0].id == "edit-settings":
