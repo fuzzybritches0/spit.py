@@ -27,7 +27,7 @@ class SettingsMixIn(ModalScreen):
     async def clean_dyn_container(self) -> None:
         await self.dyn_container.remove_children()
 
-class EndpointSettings(SettingsMixIn, EndpointMixIn, EndpointScreensMixIn):
+class EndpointSettings(EndpointMixIn, EndpointScreensMixIn, SettingsMixIn):
     MODULE = "Endpoint"
     CSS_PATH = "../styles/endpoint.css"
     BINDINGS = [
