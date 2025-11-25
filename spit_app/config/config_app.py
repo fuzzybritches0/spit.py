@@ -9,7 +9,6 @@ from spit_app.config.validation import Validation
 class ConfigApp(ModalScreen, ConfigScreensMixIn):
     CSS_PATH = "../styles/config.css"
     BINDINGS = [
-        ("ctrl+q", "exit_app", "Quit"),
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
         ("ctrl+s", "set_active", "Set active"),
@@ -109,9 +108,6 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
 
     def action_dismiss(self) -> None:
         self.dismiss()
-
-    def action_exit_app(self) -> None:
-        self.app.exit()
 
     def is_edit_settings(self) -> bool:
         if self.dyn_container.children[0].id == "edit-settings":
