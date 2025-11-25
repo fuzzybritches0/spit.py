@@ -23,13 +23,13 @@ class ConfigSettings:
 
     def init(self) -> None:
         self.active_config = 0
-        self.configs = []
+        self.endpoints = []
         self.new()
 
     def save(self) -> None:
         config = {}
         config["active_config"] = self.active_config
-        config["configs"] = self.configs
+        config["configs"] = self.endpoints
         self.config_file.write_text(json.dumps(config))
 
     def store(self, cconfig: int, setting: str, stype: str, value: str | bool) -> None:
@@ -37,20 +37,20 @@ class ConfigSettings:
             value = float(value)
         elif stype == "Integer" and value:
             value = int(value)
-        self.configs[cconfig]["values"][setting] = value
+        self.endpoints[cconfig]["values"][setting] = value
         
     def load(self) -> None:
         if self.config_file.exists():
             config = json.loads(self.config_file.read_text())
             self.active_config = config["active_config"]
-            self.configs = config["configs"]
+            self.endpoints = config["configs"]
         else:
             self.init()
         self.tools = self.read_tool_desc()
 
     def new(self) -> int:
-        ccount = len(self.configs)
-        self.configs.append(
+        ccount = len(self.endpoints)
+        self.endpoints.append(
             {
                 "values": {
                     "name": f"default config {ccount}",
@@ -76,23 +76,23 @@ class ConfigSettings:
 
     def delete_config(self, conf: int) -> None:
         active = self.active_config
-        del self.configs[conf]
+        del self.endpoints[conf]
         if active == conf:
             self.active_config = 0
-        if len(self.configs) < 1:
+        if len(self.endpoints) < 1:
             self.init()
         self.save()
 
     def remove_custom_setting(self, conf: int, rsetting: str) -> None:
         custom = []
         values = {}
-        for setting, stype, desc, sarray in self.configs[conf]["custom"]:
+        for setting, stype, desc, sarray in self.endpoints[conf]["custom"]:
             if not rsetting == setting:
                 custom.append((setting, stype, desc, sarray))
-                if setting in self.configs[conf]["values"]:
-                    values[setting] = self.configs[conf]["values"][setting]
-        self.configs[conf]["custom"] = custom
-        self.configs[conf]["values"] = values
+                if setting in self.endpoints[conf]["values"]:
+                    values[setting] = self.endpoints[conf]["values"][setting]
+        self.endpoints[conf]["custom"] = custom
+        self.endpoints[conf]["values"] = values
 
     def add_custom_setting(self, conf: int, setting: str, stype: str, desc: str, sarray: list) -> None:
-        self.configs[conf]["custom"].append((setting, stype, desc, sarray))
+        self.endpoints[conf]["custom"].append((setting, stype, desc, sarray))

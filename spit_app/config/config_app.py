@@ -44,7 +44,7 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
         return True
 
     def valid_values_edit(self) -> bool:
-        for setting, stype, desc, array in self.config.configs[self.cconfig]["custom"]:
+        for setting, stype, desc, array in self.config.endpoints[self.cconfig]["custom"]:
             id = setting.replace(".", "-")
             if not stype == "Boolean" and not stype == "Select" and not stype == "Text":
                 if not self.query_one(f"#{id}").is_valid:
@@ -52,7 +52,7 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
         return True
 
     def store_values(self) -> None:
-        for setting, stype, desc, array in self.config.configs[self.cconfig]["custom"]:
+        for setting, stype, desc, array in self.config.endpoints[self.cconfig]["custom"]:
             id = setting.replace(".", "-")
             if stype == "Text":
                 newvalue = self.query_one(f"#{id}").text

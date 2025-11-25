@@ -181,7 +181,7 @@ class ActionsMixIn:
             case "continue":
                 active = self.config.active_config
                 if (self.is_working() or self.edit or not
-                        self.config.configs[active]["values"]["endpoint_url"]):
+                        self.config.endpoints[active]["values"]["endpoint_url"]):
                     return False
                 if self.text_area.text and self.messages[-1]["role"] == "system":
                     return True                             # Begin of chat

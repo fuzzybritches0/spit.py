@@ -19,7 +19,7 @@ class Validation:
         if self.is_empty(value):
             return False
         count = 0
-        for config in self.app.config.configs:
+        for config in self.app.config.endpoints:
             if (not count == self.app.cconfig and
                     config["values"]["name"] == value):
                 return False
@@ -30,7 +30,7 @@ class Validation:
         if self.is_empty(value):
             return False
         same = 0
-        for name, stype, desc, sarray in self.app.config.configs[self.app.cconfig]["custom"]:
+        for name, stype, desc, sarray in self.app.config.endpoints[self.app.cconfig]["custom"]:
             if name == value:
                 return False
         return True

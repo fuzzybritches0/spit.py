@@ -35,7 +35,7 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
 
     def title_update(self) -> None:
         active = self.config.active_config
-        name = self.config.configs[active]["values"]["name"]
+        name = self.config.endpoints[active]["values"]["name"]
         self.title = f"{self.NAME} v{self.VERSION} - Chat - {name}"
 
     def compose(self) -> ComposeResult:

@@ -39,7 +39,7 @@ class ConfigScreensMixIn:
 
     async def edit_settings_remove_custom(self) -> None:
         names = []
-        for setting, *others in self.config.configs[self.cconfig]["custom"]:
+        for setting, *others in self.config.endpoints[self.cconfig]["custom"]:
             if (not setting == "name" and
                 not setting == "endpoint_url" and
                 not setting == "key"):
@@ -49,12 +49,12 @@ class ConfigScreensMixIn:
         await self.vscroll.mount(Button("Remove", id=f"button-remove-setting"))
 
     async def edit_settings(self) -> None:
-        for setting, stype, desc, amore in self.config.configs[self.cconfig]["custom"]:
+        for setting, stype, desc, amore in self.config.endpoints[self.cconfig]["custom"]:
             id = setting.replace(".", "-")
             await self.vscroll.mount(Label(f"{desc}: ({stype})"))
             value = None
-            if setting in self.config.configs[self.cconfig]["values"]:
-                value = self.config.configs[self.cconfig]["values"][setting]
+            if setting in self.config.endpoints[self.cconfig]["values"]:
+                value = self.config.endpoints[self.cconfig]["values"][setting]
             if value == None:
                 value = ""
             Validators = []
@@ -106,8 +106,8 @@ class ConfigScreensMixIn:
         await self.dyn_container.mount(self.vscroll)
         Options = [ Option("\nCreate new config\n", id="select-new-config") ]
         count=0
-        for configs in self.config.configs:
-            name=self.config.configs[count]["values"]["name"]
+        for endpoints in self.config.endpoints:
+            name=self.config.endpoints[count]["values"]["name"]
             Options.append(Option(f"\nEdit: {name}\n", id=f"select-config-{count}"))
             count+=1
         await self.vscroll.mount(OptionList(*Options, id="option-list"))

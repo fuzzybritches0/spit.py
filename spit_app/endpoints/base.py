@@ -15,8 +15,8 @@ class BaseEndpoint(abc.ABC):
         self.app = app
         self.active = self.config.active_config
         self.api_key = None
-        if "key" in self.config.configs[self.active]["values"]:
-            self.api_key = self.config.configs[self.active]["values"]["key"]
+        if "key" in self.config.endpoints[self.active]["values"]:
+            self.api_key = self.config.endpoints[self.active]["values"]["key"]
         if timeout is not None:
             self.timeout = timeout
         if extra_headers:
