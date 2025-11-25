@@ -6,7 +6,7 @@ import json
 class Settings:
     settings_path = Path(user_config_dir("spit.py", "fuzzybritches0"))
     settings_path.mkdir(parents=True, exist_ok=True)
-    settings_file = settings_path / "settings.json"
+    settings_file = settings_path / "endpoints.json"
 
     CHAT_HISTORY_PATH = "chat_history.json"
     SYSTEM_PROMPT_PATH = "system_prompt.txt"
