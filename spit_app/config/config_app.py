@@ -63,7 +63,7 @@ class SettingsApp(ModalScreen, ConfigScreensMixIn):
             self.settings.store(self.cur_endpoint, setting, stype, newvalue)
 
     async def action_delete(self) -> None:
-        self.settings.delete_config(self.cur_endpoint)
+        self.settings.delete_endpoint(self.cur_endpoint)
         self.app.title_update()
         await self.clean_dyn_container()
         await self.select_config_screen()
