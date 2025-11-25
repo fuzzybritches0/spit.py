@@ -6,4 +6,3 @@ def dot2obj(data: dict, dotpath: str, value: str|int|float) -> None:
             cur[key] = {}
         cur = cur[key]
     cur[path[-1]] = value
-    return data

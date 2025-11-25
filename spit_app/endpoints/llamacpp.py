@@ -17,7 +17,7 @@ class LlamaCppEndpoint(BaseEndpoint):
         for setting, value in self.config.configs[self.active]["values"].items():
             if not setting == "name" and not setting == "endpoint_url" and not setting == "key":
                 if "." in setting and value:
-                    payload = dot2obj(payload, setting, value)
+                    dot2obj(payload, setting, value)
                 else:
                     if value:
                         payload[setting] = value
