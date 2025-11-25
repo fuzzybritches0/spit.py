@@ -62,13 +62,13 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
                 newvalue = ""
             self.config.store(self.cconfig, setting, stype, newvalue)
 
-    def action_delete(self) -> None:
+    async def action_delete(self) -> None:
         self.config.delete_config(self.cconfig)
         self.app.title_update()
         await self.clean_dyn_container()
         await self.select_config_screen()
 
-    def action_set_active(self) -> None:
+    async def action_set_active(self) -> None:
         if self.valid_values_edit():
             self.store_values()
             self.config.save()
