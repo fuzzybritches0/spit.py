@@ -3,10 +3,10 @@ from textual.widgets import Button, Header, Footer, OptionList, Select
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from textual.containers import Container
-from spit_app.config.config_screens import ConfigScreensMixIn
-from spit_app.config.validation import Validation
+from spit_app.settings.endpoint_screens import EndpointScreensMixIn
+from spit_app.settings.validation import Validation
 
-class SettingsApp(ModalScreen, ConfigScreensMixIn):
+class SettingsApp(ModalScreen, EndpointScreensMixIn):
     CSS_PATH = "../styles/config.css"
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),

@@ -3,7 +3,7 @@ import json
 from spit_app.work import work_stream
 import spit_app.message as message
 import spit_app.utils as utils
-from spit_app.config.config_app import SettingsApp
+from spit_app.settings.settings_app import SettingsApp
 
 bindings = [
         ("ctrl+enter", "continue", "Continue"),

@@ -4,7 +4,7 @@ from textual.widgets import Input, TextArea, Switch, Label, Button, OptionList, 
 from textual.widgets.option_list import Option
 from textual.containers import VerticalScroll, Horizontal
 
-class ConfigScreensMixIn:
+class EndpointScreensMixIn:
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.control.id == "custom-setting-select-add":
             await self.mount_settings_add_custom(event.value)
