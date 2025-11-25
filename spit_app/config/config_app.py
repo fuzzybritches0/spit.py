@@ -30,7 +30,7 @@ class SettingsApp(ModalScreen, ConfigScreensMixIn):
     async def on_mount(self) -> None:
         self.dyn_container = Container()
         await self.main_container.mount(self.dyn_container)
-        await self.select_config_screen()
+        await self.select_endpoints_screen()
 
     def valid_values_add(self) -> bool:
         if not self.query_one("#new-setting").is_valid:
@@ -66,7 +66,7 @@ class SettingsApp(ModalScreen, ConfigScreensMixIn):
         self.settings.delete_endpoint(self.cur_endpoint)
         self.app.title_update()
         await self.clean_dyn_container()
-        await self.select_config_screen()
+        await self.select_endpoints_screen()
 
     async def action_set_active(self) -> None:
         if self.valid_values_edit():
@@ -75,7 +75,7 @@ class SettingsApp(ModalScreen, ConfigScreensMixIn):
             self.settings.set_active(self.cur_endpoint)
             self.app.title_update()
             await self.clean_dyn_container()
-            await self.select_config_screen()
+            await self.select_endpoints_screen()
 
     async def action_save(self) -> None:
         if self.valid_values_edit():
@@ -83,7 +83,7 @@ class SettingsApp(ModalScreen, ConfigScreensMixIn):
             self.settings.save()
             self.app.title_update()
             await self.clean_dyn_container()
-            await self.select_config_screen()
+            await self.select_endpoints_screen()
 
     async def action_add_setting(self) -> None:
         if self.valid_values_add():
@@ -114,7 +114,7 @@ class SettingsApp(ModalScreen, ConfigScreensMixIn):
             self.dismiss()
         else:
             await self.clean_dyn_container()
-            await self.select_config_screen()
+            await self.select_endpoints_screen()
 
     def is_edit_settings(self) -> bool:
         if self.dyn_container.children[0].id == "edit-settings":

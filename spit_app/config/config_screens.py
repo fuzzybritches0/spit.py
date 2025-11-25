@@ -101,7 +101,7 @@ class ConfigScreensMixIn:
         await horiz.mount(Button("Cancel", id="cancel"))
         self.vscroll.focus()
 
-    async def select_config_screen(self) -> None:
+    async def select_endpoints_screen(self) -> None:
         self.vscroll = VerticalScroll(id="select-config")
         await self.dyn_container.mount(self.vscroll)
         Options = [ Option("\nCreate new config\n", id="select-new-config") ]
