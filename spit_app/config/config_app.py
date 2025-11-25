@@ -65,15 +65,17 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
     def action_delete(self) -> None:
         self.config.delete_config(self.cconfig)
         self.app.title_update()
-        self.dismiss()
+        await self.clean_dyn_container()
+        await self.select_config_screen()
 
     def action_set_active(self) -> None:
         if self.valid_values_edit():
             self.store_values()
             self.config.save()
-        self.config.set_active(self.cconfig)
-        self.app.title_update()
-        self.dismiss()
+            self.config.set_active(self.cconfig)
+            self.app.title_update()
+            await self.clean_dyn_container()
+            await self.select_config_screen()
 
     async def action_save(self) -> None:
         if self.valid_values_edit():
