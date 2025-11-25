@@ -3,12 +3,12 @@ import json
 from spit_app.work import work_stream
 import spit_app.message as message
 import spit_app.utils as utils
-from spit_app.config.config_app import ConfigApp
+from spit_app.config.config_app import SettingsApp
 
 bindings = [
         ("ctrl+enter", "continue", "Continue"),
         ("ctrl+escape", "abort", "Abort"),
-        ("ctrl+m", "config_app", "Config"),
+        ("ctrl+m", "settings_endpoints", "Endpoints"),
         ("ctrl+i", "undo", "Undo"),
         ("ctrl+r", "redo", "Redo"),
         ("ctrl+q", "exit_app", "Quit"),
@@ -121,8 +121,8 @@ class ActionsMixIn:
         utils.write_chat_history(self)
         await message.remove_last_turn(self)
         
-    async def action_config_app(self) -> None:
-        await self.push_screen(ConfigApp())
+    async def action_settings_endpoints(self) -> None:
+        await self.push_screen(SettingsApp())
     
     async def action_exit_app(self) -> None:
         self.exit()
@@ -179,9 +179,9 @@ class ActionsMixIn:
                 if not self.focused == self.chat_view.children[-1]:
                     return False
             case "continue":
-                active = self.config.active_endpoint
+                active = self.settings.active_endpoint
                 if (self.is_working() or self.edit or not
-                        self.config.endpoints[active]["values"]["endpoint_url"]):
+                        self.settings.endpoints[active]["values"]["endpoint_url"]):
                     return False
                 if self.text_area.text and self.messages[-1]["role"] == "system":
                     return True                             # Begin of chat

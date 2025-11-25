@@ -19,9 +19,9 @@ class Validation:
         if self.is_empty(value):
             return False
         count = 0
-        for config in self.app.config.endpoints:
+        for endpoint in self.app.settings.endpoints:
             if (not count == self.app.cur_endpoint and
-                    config["values"]["name"] == value):
+                    endpoint["values"]["name"] == value):
                 return False
             count+=1
         return True
@@ -30,7 +30,7 @@ class Validation:
         if self.is_empty(value):
             return False
         same = 0
-        for name, stype, desc, sarray in self.app.config.endpoints[self.app.cur_endpoint]["custom"]:
+        for name, stype, desc, sarray in self.app.settings.endpoints[self.app.cur_endpoint]["custom"]:
             if name == value:
                 return False
         return True

@@ -5,7 +5,7 @@ from textual.containers import VerticalScroll
 from textual.widgets import Footer, Header, TextArea
 import spit_app.message as message
 import spit_app.utils as utils
-from spit_app.config.config_settings import ConfigSettings
+from spit_app.config.config_settings import Settings
 from spit_app.actions.actions import ActionsMixIn
 from spit_app.actions.actions import bindings
 from spit_app.handlers.handlers import HandlersMixIn
@@ -20,8 +20,8 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
     def __init__(self):
         super().__init__()
         #self.applog("LOG START:")
-        self.config = ConfigSettings()
-        self.config.load()
+        self.settings = Settings()
+        self.settings.load()
         self.title_update()
         utils.load_messages(self)
         self.work = None
@@ -34,8 +34,8 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
             file.write(repr(text) + "\n")
 
     def title_update(self) -> None:
-        active = self.config.active_endpoint
-        name = self.config.endpoints[active]["values"]["name"]
+        active = self.settings.active_endpoint
+        name = self.settings.endpoints[active]["values"]["name"]
         self.title = f"{self.NAME} v{self.VERSION} - Chat - {name}"
 
     def compose(self) -> ComposeResult:

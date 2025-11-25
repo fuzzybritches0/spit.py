@@ -6,7 +6,7 @@ from spit_app.patterns.pattern_processing import PatternProcessing
 
 def load_chat_history(self):
     try:
-        with open(self.config.CHAT_HISTORY_PATH, "r") as f:
+        with open(self.settings.CHAT_HISTORY_PATH, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         return []
@@ -39,12 +39,12 @@ def save_message(self, message: dict) -> None:
     write_chat_history(self)
 
 def write_chat_history(self) -> None:
-    with open(self.config.CHAT_HISTORY_PATH, "w") as f:
+    with open(self.settings.CHAT_HISTORY_PATH, "w") as f:
         json.dump(self.messages, f)
 
 def read_system_prompt(self) -> str | None:
     try:
-        with open(self.config.SYSTEM_PROMPT_PATH, "r") as f:
+        with open(self.settings.SYSTEM_PROMPT_PATH, "r") as f:
             return f.read()
     except FileNotFoundError:
         return None

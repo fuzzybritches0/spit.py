@@ -3,10 +3,10 @@ from platformdirs import user_config_dir
 from pathlib import Path
 import json
 
-class ConfigSettings:
-    config_path = Path(user_config_dir("spit.py", "fuzzybritches0"))
-    config_path.mkdir(parents=True, exist_ok=True)
-    config_file = config_path / "settings.json"
+class Settings:
+    settings_path = Path(user_config_dir("spit.py", "fuzzybritches0"))
+    settings_path.mkdir(parents=True, exist_ok=True)
+    settings_file = settings_path / "settings.json"
 
     CHAT_HISTORY_PATH = "chat_history.json"
     SYSTEM_PROMPT_PATH = "system_prompt.txt"
@@ -27,10 +27,10 @@ class ConfigSettings:
         self.new()
 
     def save(self) -> None:
-        config = {}
-        config["active_config"] = self.active_endpoint
-        config["configs"] = self.endpoints
-        self.config_file.write_text(json.dumps(config))
+        settings = {}
+        settings["active_endpoint"] = self.active_endpoint
+        settings["endpoints"] = self.endpoints
+        self.settings_file.write_text(json.dumps(settings))
 
     def store(self, cur_endpoint: int, setting: str, stype: str, value: str | bool) -> None:
         if stype == "Float" and value:
@@ -40,10 +40,10 @@ class ConfigSettings:
         self.endpoints[cur_endpoint]["values"][setting] = value
         
     def load(self) -> None:
-        if self.config_file.exists():
-            config = json.loads(self.config_file.read_text())
-            self.active_endpoint = config["active_config"]
-            self.endpoints = config["configs"]
+        if self.settings_file.exists():
+            settings = json.loads(self.settings_file.read_text())
+            self.active_endpoint = settings["active_endpoint"]
+            self.endpoints = settings["endpoints"]
         else:
             self.init()
         self.tools = self.read_tool_desc()
@@ -53,7 +53,7 @@ class ConfigSettings:
         self.endpoints.append(
             {
                 "values": {
-                    "name": f"default config {ccount}",
+                    "name": f"default endpoint {ccount}",
                     "endpoint_url": "http://127.0.0.1:8080",
                     "key": None
                 },
@@ -74,7 +74,7 @@ class ConfigSettings:
         self.active_endpoint = conf
         self.save()
 
-    def delete_config(self, conf: int) -> None:
+    def delete_endpoint(self, conf: int) -> None:
         active = self.active_endpoint
         del self.endpoints[conf]
         if active == conf:

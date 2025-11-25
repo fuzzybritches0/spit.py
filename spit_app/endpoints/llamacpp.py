@@ -7,22 +7,22 @@ class LlamaCppEndpoint(BaseEndpoint):
 
     @property
     def api_endpoint(self) -> str:
-        if "endpoint_url" in self.config.endpoints[self.active]["values"]:
-            return self.config.endpoints[self.active]["values"]["endpoint_url"] + "/v1/chat/completions"
+        if "endpoint_url" in self.settings.endpoints[self.active]["values"]:
+            return self.settings.endpoints[self.active]["values"]["endpoint_url"] + "/v1/chat/completions"
         return None
 
     def prepare_payload(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
         payload = {}
         payload["messages"] = messages
-        for setting, value in self.config.endpoints[self.active]["values"].items():
+        for setting, value in self.settings.endpoints[self.active]["values"].items():
             if not setting == "name" and not setting == "endpoint_url" and not setting == "key":
                 if "." in setting and value:
                     dot2obj(payload, setting, value)
                 else:
                     if value:
                         payload[setting] = value
-        if self.config.tools:
-            payload["tools"] = self.config.tools
+        if self.settings.tools:
+            payload["tools"] = self.settings.tools
             payload["tool_choice"] = "auto"
         payload["n_predict"] = -1
         payload["cache_prompt"] = True

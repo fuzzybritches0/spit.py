@@ -11,12 +11,12 @@ class BaseEndpoint(abc.ABC):
 
     def __init__(self, app, timeout: float | None = None,
                  extra_headers: Dict[str, str] | None = None):
-        self.config = app.config
+        self.settings = app.settings
         self.app = app
-        self.active = self.config.active_endpoint
+        self.active = self.settings.active_endpoint
         self.api_key = None
-        if "key" in self.config.endpoints[self.active]["values"]:
-            self.api_key = self.config.endpoints[self.active]["values"]["key"]
+        if "key" in self.settings.endpoints[self.active]["values"]:
+            self.api_key = self.settings.endpoints[self.active]["values"]["key"]
         if timeout is not None:
             self.timeout = timeout
         if extra_headers:
