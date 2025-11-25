@@ -128,13 +128,13 @@ class ConfigApp(ModalScreen, ConfigScreensMixIn):
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":
-            self.action_dismiss()
+            await self.action_dismiss()
         elif event.button.id == "delete":
-            self.action_delete()
+            await self.action_delete()
         elif event.button.id == "set-active":
-            self.action_set_active()
+            await self.action_set_active()
         elif event.button.id == "save":
-            self.action_save()
+            await self.action_save()
         elif event.button.id == "button-remove-setting":
             await self.action_remove_setting()
         elif event.button.id == "button-add-setting":
