@@ -32,12 +32,12 @@ class EndpointScreensMixIn:
         if not stype == Select.BLANK:
             await self.mount_custom_setting_form(stype)
 
-    async def edit_settings_add_custom(self) -> None:
+    async def edit_endpoint_add_custom(self) -> None:
         types = [ "Integer", "Float", "Boolean", "String", "Text", "Select" ]
         await self.vscroll.mount(Label("Add custom setting:"))
         await self.vscroll.mount(Select.from_values(types, id="custom-setting-select-add"))
 
-    async def edit_settings_remove_custom(self) -> None:
+    async def edit_endpoint_remove_custom(self) -> None:
         names = []
         for setting, *others in self.settings.endpoints[self.cur_endpoint]["custom"]:
             if (not setting == "name" and
@@ -48,7 +48,7 @@ class EndpointScreensMixIn:
         await self.vscroll.mount(Select.from_values(names, id="custom-setting-select-remove"))
         await self.vscroll.mount(Button("Remove", id=f"button-remove-setting"))
 
-    async def edit_settings(self) -> None:
+    async def edit_endpoint(self) -> None:
         for setting, stype, desc, amore in self.settings.endpoints[self.cur_endpoint]["custom"]:
             id = setting.replace(".", "-")
             await self.vscroll.mount(Label(f"{desc}: ({stype})"))
@@ -85,14 +85,14 @@ class EndpointScreensMixIn:
                 await self.vscroll.mount(Input(type=vtype, validators=Validators, valid_empty=valid_empty,
                                                id=f"{setting}", value=value))
 
-    async def edit_settings_screen(self) -> None:
-        self.vscroll = VerticalScroll(id="edit-settings")
+    async def edit_endpoint_screen(self) -> None:
+        self.vscroll = VerticalScroll(id="edit-endpoint")
         await self.dyn_container.mount(self.vscroll)
-        await self.edit_settings()
+        await self.edit_endpoint()
         await self.vscroll.mount(Rule())
-        await self.edit_settings_remove_custom()
+        await self.edit_endpoint_remove_custom()
         await self.vscroll.mount(Rule())
-        await self.edit_settings_add_custom()
+        await self.edit_endpoint_add_custom()
         horiz = Horizontal(id="save-delete-cancel")
         await self.dyn_container.mount(horiz)
         await horiz.mount(Button("Save", id="save"))
@@ -101,14 +101,14 @@ class EndpointScreensMixIn:
         await horiz.mount(Button("Cancel", id="cancel"))
         self.vscroll.focus()
 
-    async def select_endpoints_screen(self) -> None:
-        self.vscroll = VerticalScroll(id="select-config")
+    async def select_main_screen(self) -> None:
+        self.vscroll = VerticalScroll(id="select-main")
         await self.dyn_container.mount(self.vscroll)
-        Options = [ Option("\nCreate new config\n", id="select-new-config") ]
+        Options = [ Option("\nCreate new endpoint\n", id="select-new-endpoint") ]
         count=0
         for endpoints in self.settings.endpoints:
             name=self.settings.endpoints[count]["values"]["name"]
-            Options.append(Option(f"\nEdit: {name}\n", id=f"select-config-{count}"))
+            Options.append(Option(f"\nEdit: {name}\n", id=f"select-endpoint-{count}"))
             count+=1
         await self.vscroll.mount(OptionList(*Options, id="option-list"))
         horiz = Horizontal(id="cancel-container")

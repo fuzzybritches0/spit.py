@@ -22,7 +22,7 @@ class SettingsMixIn(ModalScreen):
     async def on_mount(self) -> None:
         self.dyn_container = Container()
         await self.main_container.mount(self.dyn_container)
-        await self.select_endpoints_screen()
+        await self.select_main_screen()
 
     async def clean_dyn_container(self) -> None:
         await self.dyn_container.remove_children()
