@@ -22,13 +22,13 @@ class ConfigSettings:
             raise e
 
     def init(self) -> None:
-        self.active_config = 0
+        self.active_endpoint = 0
         self.endpoints = []
         self.new()
 
     def save(self) -> None:
         config = {}
-        config["active_config"] = self.active_config
+        config["active_config"] = self.active_endpoint
         config["configs"] = self.endpoints
         self.config_file.write_text(json.dumps(config))
 
@@ -42,7 +42,7 @@ class ConfigSettings:
     def load(self) -> None:
         if self.config_file.exists():
             config = json.loads(self.config_file.read_text())
-            self.active_config = config["active_config"]
+            self.active_endpoint = config["active_config"]
             self.endpoints = config["configs"]
         else:
             self.init()
@@ -71,14 +71,14 @@ class ConfigSettings:
         return ccount
 
     def set_active(self, conf: int) -> None:
-        self.active_config = conf
+        self.active_endpoint = conf
         self.save()
 
     def delete_config(self, conf: int) -> None:
-        active = self.active_config
+        active = self.active_endpoint
         del self.endpoints[conf]
         if active == conf:
-            self.active_config = 0
+            self.active_endpoint = 0
         if len(self.endpoints) < 1:
             self.init()
         self.save()

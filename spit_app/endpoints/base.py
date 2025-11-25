@@ -13,7 +13,7 @@ class BaseEndpoint(abc.ABC):
                  extra_headers: Dict[str, str] | None = None):
         self.config = app.config
         self.app = app
-        self.active = self.config.active_config
+        self.active = self.config.active_endpoint
         self.api_key = None
         if "key" in self.config.endpoints[self.active]["values"]:
             self.api_key = self.config.endpoints[self.active]["values"]["key"]

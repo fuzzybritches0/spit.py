@@ -34,7 +34,7 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
             file.write(repr(text) + "\n")
 
     def title_update(self) -> None:
-        active = self.config.active_config
+        active = self.config.active_endpoint
         name = self.config.endpoints[active]["values"]["name"]
         self.title = f"{self.NAME} v{self.VERSION} - Chat - {name}"
 

@@ -179,7 +179,7 @@ class ActionsMixIn:
                 if not self.focused == self.chat_view.children[-1]:
                     return False
             case "continue":
-                active = self.config.active_config
+                active = self.config.active_endpoint
                 if (self.is_working() or self.edit or not
                         self.config.endpoints[active]["values"]["endpoint_url"]):
                     return False
