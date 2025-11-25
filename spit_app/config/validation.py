@@ -20,7 +20,7 @@ class Validation:
             return False
         count = 0
         for config in self.app.config.endpoints:
-            if (not count == self.app.cconfig and
+            if (not count == self.app.cur_endpoint and
                     config["values"]["name"] == value):
                 return False
             count+=1
@@ -30,7 +30,7 @@ class Validation:
         if self.is_empty(value):
             return False
         same = 0
-        for name, stype, desc, sarray in self.app.config.endpoints[self.app.cconfig]["custom"]:
+        for name, stype, desc, sarray in self.app.config.endpoints[self.app.cur_endpoint]["custom"]:
             if name == value:
                 return False
         return True

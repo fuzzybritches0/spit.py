@@ -39,7 +39,7 @@ class ConfigScreensMixIn:
 
     async def edit_settings_remove_custom(self) -> None:
         names = []
-        for setting, *others in self.config.endpoints[self.cconfig]["custom"]:
+        for setting, *others in self.config.endpoints[self.cur_endpoint]["custom"]:
             if (not setting == "name" and
                 not setting == "endpoint_url" and
                 not setting == "key"):
@@ -49,12 +49,12 @@ class ConfigScreensMixIn:
         await self.vscroll.mount(Button("Remove", id=f"button-remove-setting"))
 
     async def edit_settings(self) -> None:
-        for setting, stype, desc, amore in self.config.endpoints[self.cconfig]["custom"]:
+        for setting, stype, desc, amore in self.config.endpoints[self.cur_endpoint]["custom"]:
             id = setting.replace(".", "-")
             await self.vscroll.mount(Label(f"{desc}: ({stype})"))
             value = None
-            if setting in self.config.endpoints[self.cconfig]["values"]:
-                value = self.config.endpoints[self.cconfig]["values"][setting]
+            if setting in self.config.endpoints[self.cur_endpoint]["values"]:
+                value = self.config.endpoints[self.cur_endpoint]["values"][setting]
             if value == None:
                 value = ""
             Validators = []

@@ -32,12 +32,12 @@ class ConfigSettings:
         config["configs"] = self.endpoints
         self.config_file.write_text(json.dumps(config))
 
-    def store(self, cconfig: int, setting: str, stype: str, value: str | bool) -> None:
+    def store(self, cur_endpoint: int, setting: str, stype: str, value: str | bool) -> None:
         if stype == "Float" and value:
             value = float(value)
         elif stype == "Integer" and value:
             value = int(value)
-        self.endpoints[cconfig]["values"][setting] = value
+        self.endpoints[cur_endpoint]["values"][setting] = value
         
     def load(self) -> None:
         if self.config_file.exists():
