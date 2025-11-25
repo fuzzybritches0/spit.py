@@ -115,6 +115,3 @@ class EndpointScreensMixIn:
         await self.dyn_container.mount(horiz)
         await horiz.mount(Button("Cancel", id="cancel"))
         self.vscroll.children[0].focus()
-
-    async def clean_dyn_container(self) -> None:
-        await self.dyn_container.remove_children()

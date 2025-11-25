@@ -3,7 +3,7 @@ import json
 from spit_app.work import work_stream
 import spit_app.message as message
 import spit_app.utils as utils
-from spit_app.settings.settings_app import SettingsApp
+from spit_app.settings.settings_app import EndpointSettings
 
 bindings = [
         ("ctrl+enter", "continue", "Continue"),
@@ -122,7 +122,7 @@ class ActionsMixIn:
         await message.remove_last_turn(self)
         
     async def action_settings_endpoints(self) -> None:
-        await self.push_screen(SettingsApp())
+        await self.push_screen(EndpointSettings())
     
     async def action_exit_app(self) -> None:
         self.exit()
