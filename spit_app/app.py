@@ -42,7 +42,6 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
         yield Header()
         self.chat_view = VerticalScroll(id="chat-view")
         yield self.chat_view
-        self.chat_view.anchor()
         self.text_area = TextArea(id="text-area", tab_behavior="indent")
         yield self.text_area
         yield Footer()
