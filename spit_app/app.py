@@ -13,7 +13,6 @@ from spit_app.handlers.handlers import HandlersMixIn
 class SpitApp(HandlersMixIn, ActionsMixIn, App):
     NAME = "spit.py"
     VERSION = "0.1"
-    AUTO_FOCUS = "#text-area"
     CSS_PATH = './styles/main.css'
     BINDINGS = bindings
 

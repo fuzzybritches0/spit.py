@@ -6,6 +6,8 @@ import spit_app.utils as utils
 class HandlersMixIn:
     async def on_ready(self) -> None:
         await utils.render_messages(self)
+        if len(self.chat_view.children) == 0:
+            self.text_area.focus()
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
