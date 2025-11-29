@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual import events
-import spit_app.message as message
 import spit_app.utils as utils
 
 class HandlersMixIn:
@@ -13,11 +12,9 @@ class HandlersMixIn:
         self.refresh_bindings()
 
     def on_descendant_focus(self, event: events.DescendantFocus) -> None:
-        message.is_y_max(self)
         if self.chat_view == event.control:
             if self.focused_message:
                 self.focused_message.focus()
-        message.if_y_max_scroll_end(self)
 
     def on_text_area_changed(self) -> None:
         if self.text_area.text:
