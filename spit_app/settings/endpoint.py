@@ -87,6 +87,7 @@ class EndpointMixIn():
         if self.dyn_container.children[0].id == "select-main":
             self.dismiss()
         else:
+            self.settings.load()
             await self.clean_dyn_container()
             await self.select_main_screen()
 
