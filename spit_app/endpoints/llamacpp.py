@@ -16,10 +16,10 @@ class LlamaCppEndpoint(BaseEndpoint):
         payload["messages"] = messages
         for setting, value in self.settings.endpoints[self.active]["values"].items():
             if not setting == "name" and not setting == "endpoint_url" and not setting == "key":
-                if "." in setting and value:
+                if "." in setting and (value or value == False):
                     dot2obj(payload, setting, value)
                 else:
-                    if value:
+                    if value or value == False:
                         payload[setting] = value
         if self.settings.tools:
             payload["tools"] = self.settings.tools

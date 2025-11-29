@@ -1,4 +1,4 @@
-def dot2obj(data: dict, dotpath: str, value: str|int|float) -> None:
+def dot2obj(data: dict, dotpath: str, value: str|int|float|bool) -> None:
     path = dotpath.split(".")
     cur = data
     for key in path[:-1]:
