@@ -95,8 +95,9 @@ class ActionsMixIn:
         self.text_area.focus()
 
     def action_change_focus(self) -> None:
-            self.text_area.focus()
-    
+        self.focused_message = self.focused
+        self.text_area.focus()
+
     async def action_continue(self) -> None:
         if self.text_area.text:
             utils.save_message(self, {"role": "user", "content": self.text_area.text})
