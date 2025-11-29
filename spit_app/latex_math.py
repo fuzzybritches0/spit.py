@@ -5,9 +5,11 @@ from PIL import Image as PILImage
 from io import BytesIO
 from textual_image.widget import Image
 
-def latex_math(latex_str: str) -> None | Image:
-    ziamath.config.math.color = 'white'
-    ziamath.config.math.background = 'black'
+def latex_math(self, latex_str: str) -> None | Image:
+    color = self.app.mwidget.styles.color.css
+    background = self.app.mwidget.styles.background.css
+    ziamath.config.math.color = color
+    ziamath.config.math.background = background
     try:
         expr = ziamath.Latex(latex_str)
         png = cairosvg.svg2png(expr.svg(), scale=2)

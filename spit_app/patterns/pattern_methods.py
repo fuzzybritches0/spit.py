@@ -45,7 +45,7 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         latex_image = None
         self.paragraph = self.paragraph[:self.seqstart-lenepat]
         if sequence and render:
-            latex_image = lm.latex_math(sequence.strip(" \n"))
+            latex_image = lm.latex_math(self, sequence.strip(" \n"))
         if latex_image:
             if not self.paragraph.strip(" \n"):
                 await message.remove(self.app)
