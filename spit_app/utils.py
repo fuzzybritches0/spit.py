@@ -66,8 +66,8 @@ def load_messages(self) -> None:
     self.undo.append(copy.deepcopy(self.messages))
     self.undo_index=0
 
-async def render_messages(self, from_index: int = 0) -> None:
-    for msg in self.messages[from_index:]:
+async def render_messages(self) -> None:
+    for msg in self.messages:
         if msg["role"] == "user" and msg["content"]:
             await render_message(self, "request", msg["content"])
         elif msg["role"] == "assistant" and "content" in msg and msg["content"]:
