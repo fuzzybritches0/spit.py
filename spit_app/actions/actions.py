@@ -134,8 +134,8 @@ class ActionsMixIn:
         return False
 
     def get_id_edit(self) -> int | None:
-        if self.focused and self.focused.id and "id-" in self.focused.id:
-            return int(self.focused.id[3:])
+        if self.focused and self.focused.id and "message-id-" in self.focused.id:
+            return int(self.focused.id[11:])
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         match action:
