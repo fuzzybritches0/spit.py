@@ -53,7 +53,7 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
                 await message.update(self.app, self.paragraph)
             await message.mount_latex(self.app, latex_image)
             turn_id=len(self.app.latex_listings)-1
-            self.app.latex_listings[turn_id].append(sequence)
+            self.app.latex_listings[turn_id].append(esc + exp_latex_fence + sequence + esc + pattern)
             self.paragraph = ""
             await message.mount_next(self.app)
         else:
