@@ -11,7 +11,7 @@ def is_y_max(self) -> None:
 
 def if_y_max_scroll_end(self) -> None:
     if self.chat_view_y_max:
-        self.chat_view.scroll_end(animate=False)
+        self.chat_view.scroll_end(animate=False, force=True)
 
 async def mount(self, mtype: str, content: str = "") -> None:
     is_y_max(self)
