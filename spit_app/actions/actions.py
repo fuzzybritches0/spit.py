@@ -197,4 +197,7 @@ class ActionsMixIn:
                 if self.messages[-1]["role"] == "tool" and not self.text_area.text:
                     return True                             # There are TOOL CALL results to process
                 return False
+            case "exit_app":
+                if self.edit or self.is_working():
+                    return False
         return True
