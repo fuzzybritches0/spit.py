@@ -22,7 +22,7 @@ async def mount(self, mtype: str, content: str = "") -> None:
         self.code_listings.append([])
         self.latex_listings.append([])
     await self.message_container.mount(self.mwidget)
-    self.message_container.focus()
+    self.message_container.focus(scroll_visible=False)
     self.focused_message = self.message_container
     if content:
         await self.mwidget.update(content)
