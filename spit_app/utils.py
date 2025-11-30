@@ -77,7 +77,6 @@ async def render_messages(self) -> None:
                 await render_message(self, "response", "- TOOL CALL: `" + json.dumps(tool_call) + "`")
         elif msg["role"] == "tool" and "content" in msg and msg["content"]:
             await render_message(self, "request", "- RESULT: `" + msg["content"] + "`")
-        self.chat_view.scroll_end()
 
 async def render_message(self, mtype: str, messagec: str) -> None:
     buffer = ""
