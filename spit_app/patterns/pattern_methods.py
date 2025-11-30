@@ -45,8 +45,8 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         latex_image = None
         self.paragraph = self.paragraph[:self.seqstart-lenepat]
         if sequence and render:
-            color = self.app.mwidget.styles.color.css
-            background = self.app.mwidget.styles.background.css
+            color = self.app.message_container.styles.color.css
+            background = self.app.message_container.styles.background.css
             latex_image = lm.latex_math(self, sequence.strip(" \n"), color, background)
         if latex_image:
             if not self.paragraph.strip(" \n"):
