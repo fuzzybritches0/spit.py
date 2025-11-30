@@ -15,6 +15,8 @@ class HandlersMixIn:
         if self.chat_view == event.control:
             if self.focused_message:
                 self.focused_message.focus(scroll_visible=False)
+        elif not self.text_area == event.control:
+            self.focused_message = event.control
 
     def on_text_area_changed(self) -> None:
         if self.text_area.text:
