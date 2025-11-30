@@ -1,73 +1,80 @@
 #text-area {
 	height: 2fr;
-	border: round $primary 40%
+	color: $foreground;
+	background: $background;
+	border: round $border-blurred
 }
 #text-area:focus {
 	height: 14fr;
-	border: round $primary
+	color: $foreground;
+	background: $background;
+	border: round $border
 }
 #chat-view {
 	height: 7fr;
-	border: round $primary 40%
+	border: round $border-blurred
 }
 #chat-view:focus {
 	height: 7fr;
-	border: round $primary
+	border: round $border-blurred
 }
-
 .latex-image {
 	margin: 0 0 0 0;
 	width: auto
 }
-.request {
-	margin: 0 0 0 0;
-	padding: 0 1 0 1;
-}
-.response {
-	margin: 0 0 0 0;
-	padding: 0 1 0 1;
-}
 .message-container-request {
 	margin: 0 0 0 0;
-	background: $primary 20%;
-	border: tall $primary 40%;
+	color: $foreground;
+	background: $background-lighten-1;
+	border: tall $border-blurred;
 	height: auto
 }
 .message-container-request:focus {
 	margin: 0 0 0 0;
-	background: $primary 20%;
-	border: tall $primary;
+	color: $foreground;
+	background: $background-lighten-1;
+	border: tall $border;
 	height: auto
 }
 .message-container-response {
 	margin: 1 0 1 0;
-	border: tall $primary 40%;
+	color: $foreground;
+	background: $background;
+	border: tall $border-blurred;
 	height: auto
 }
 .message-container-response:focus {
 	margin: 1 0 1 0;
-	border: tall $primary;
+	color: $foreground;
+	background: $background;
+	border: tall $border;
 	height: auto
 }
 .code-listing-request {
 	margin: 1 0 1 0;
-	background: $primary 20%;
-	border: tall $primary 40%;
+	color: $foreground;
+	background: $background-lighten-1;
+	border: tall $border-blurred;
 	height: auto
 }
 .code-listing-request:focus {
 	margin: 1 0 1 0;
-	background: $primary 20%;
-	border: tall $primary;
+	color: $foreground;
+	background: $background-lighten-1;
+	border: tall $border;
 	height: auto
 }
 .code-listing-response {
 	margin: 1 0 1 0;
-	border: tall $primary 40%;
+	color: $foreground;
+	background: $background;
+	border: tall $border-blurred;
 	height: auto
 }
 .code-listing-response:focus {
 	margin: 1 0 1 0;
-	border: tall $primary;
+	color: $foreground;
+	background: $background;
+	border: tall $border;
 	height: auto
 }
