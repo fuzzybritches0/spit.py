@@ -2,7 +2,6 @@
 from textual_image.widget import Image
 from textual.widgets import Markdown, Static
 from textual.containers import VerticalScroll
-import spit_app.latex_math as lm
 
 async def mount(self, mtype: str, content: str = "") -> None:
     if self.edit:
