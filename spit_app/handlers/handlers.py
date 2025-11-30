@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual import events
 import spit_app.utils as utils
+import spit_app.latex_math as lm
 
 class HandlersMixIn:
     async def on_ready(self) -> None:
@@ -27,3 +28,26 @@ class HandlersMixIn:
             if not self.text_area_was_empty:
                 self.refresh_bindings()
                 self.text_area_was_empty = True
+
+    async def on_theme_changed(self, old_value:str, new_value:str) -> None:
+        cont_count=0
+        self.app.settings.theme = self.theme
+        self.app.settings.save()
+        for message_container in self.latex_listings:
+            latex_count=0
+            for latex in message_container:
+                id="latex-listing-"+str(cont_count)+"-"+str(latex_count)
+                container=self.query_one("#"+id)
+                color = container.parent.styles.color.css
+                background = container.parent.styles.background.css
+                sequence = self.latex_listings[cont_count][latex_count]
+                if sequence.startswith("$") and not sequence.startswith("$$"):
+                    sequence = sequence[1:-1]
+                else:
+                    sequence = sequence[2:-2]
+                latex_image = lm.latex_math(self, sequence.strip(" \n"), color, background)
+                if latex_image:
+                    await container.remove_children()
+                    await container.mount(latex_image)
+                latex_count+=1
+            cont_count+=1

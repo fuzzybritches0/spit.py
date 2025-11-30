@@ -28,6 +28,7 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
         self.edit = False
         self.focused_message = None
         self.text_area_was_empty = True
+        self.watch(self.app, "theme", self.on_theme_changed, init=False)
 
     def applog(self, text: str) -> None:
         with open("./log.txt", "a") as file:
