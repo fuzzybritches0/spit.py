@@ -5,9 +5,7 @@ from PIL import Image as PILImage
 from io import BytesIO
 from textual_image.widget import Image
 
-def latex_math(self, latex_str: str) -> None | Image:
-    color = self.app.mwidget.styles.color.css
-    background = self.app.mwidget.styles.background.css
+def latex_math(self, latex_str: str, color: str, background: str) -> None | Image:
     ziamath.config.math.color = color
     ziamath.config.math.background = background
     try:
