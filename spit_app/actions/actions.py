@@ -45,7 +45,7 @@ class ActionsMixIn:
         self.text_area.text = self.text_area_temp
 
     async def action_save_edit(self) -> None:
-        id=int(self.edit_container.id[3:])
+        id=int(self.edit_container.id[11:])
         if self.edit_ctype == "tool_calls" or self.edit_role == "tool":
             try:
                 self.messages[id][self.edit_ctype] = json.loads(self.text_area.text)
@@ -82,7 +82,7 @@ class ActionsMixIn:
         self.edit_message("tool_calls")
 
     def edit_message(self, ctype: str) -> None:
-        id=int(self.focused.id[3:])
+        id=int(self.focused.id[11:])
         self.edit_role = self.messages[id]["role"]
         self.text_area_temp = self.text_area.text
         if ctype == "tool_calls" or self.edit_role == "tool":
