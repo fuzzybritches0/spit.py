@@ -16,7 +16,7 @@
 }
 #chat-view:focus {
 	height: 7fr;
-	border: round $border-blurred
+	border: round $border
 }
 .latex-image {
 	margin: 0 0 0 0;
