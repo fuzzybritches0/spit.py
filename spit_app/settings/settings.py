@@ -28,6 +28,7 @@ class Settings:
 
     def save(self) -> None:
         settings = {}
+        settings["theme"] = self.theme
         settings["active_endpoint"] = self.active_endpoint
         settings["endpoints"] = self.endpoints
         self.settings_file.write_text(json.dumps(settings))
@@ -42,6 +43,7 @@ class Settings:
     def load(self) -> None:
         if self.settings_file.exists():
             settings = json.loads(self.settings_file.read_text())
+            self.theme = settings["theme"]
             self.active_endpoint = settings["active_endpoint"]
             self.endpoints = settings["endpoints"]
         else:
