@@ -62,10 +62,13 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
             self.app.latex_listings[turn_id].append(esc + exp_latex_fence + sequence + esc + pattern)
             await message.mount_next(self.app)
         else:
+            await _remove_empty(self)
+            await message.mount_code(self.app)
             if "\n" in sequence:
                 self.paragraph += "\n```latex\n" + esc + exp_latex_fence + sequence + esc + pattern + "\n```\n"
             else:
                 self.paragraph += "`" + esc + exp_latex_fence + sequence + esc + pattern + "`"
+            await _code_block_end(self)
         self.skip_buff_p = len(pattern)
         self.seqstart = -1
         self.cur_latex_fence = ""
@@ -83,11 +86,7 @@ async def code_block_start(self, buffer: str, pattern: str) -> None:
     self.cur_code_fence = pattern
     self.codelisting = True
 
-async def code_block_end(self, buffer: str, pattern: str) -> None:
-    self.cur_code_fence = ""
-    self.codelisting = False
-    self.skip_buff_p = len(pattern)
-    self.paragraph += pattern
+async def _code_block_end(self) -> None:
     await message.update(self.app, self.paragraph)
     turn_id=len(self.app.code_listings)-1
     code = self.paragraph.strip("`~\n ")
@@ -95,6 +94,13 @@ async def code_block_end(self, buffer: str, pattern: str) -> None:
     self.app.code_listings[turn_id].append(code)
     self.paragraph = ""
     await message.mount_next(self.app)
+
+async def code_block_end(self, buffer: str, pattern: str) -> None:
+    self.cur_code_fence = ""
+    self.codelisting = False
+    self.skip_buff_p = len(pattern)
+    self.paragraph += pattern
+    await _code_block_end(self)
 
 def code_listing(self, buffer: str, pattern: str) -> None:
     if not self.cur_code_fence:
