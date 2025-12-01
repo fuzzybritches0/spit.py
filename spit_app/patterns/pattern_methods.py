@@ -1,6 +1,13 @@
 import spit_app.message as message
 import spit_app.latex_math as lm
 
+async def _remove_empty(self) -> None:
+    if not self.paragraph.strip(" \n"):
+        await message.remove(self.app)
+    else:
+        await message.update(self.app, self.paragraph)
+    self.paragraph = ""
+
 async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = False) -> None:
     if (not self.pp_last.isalnum() and
         not self.pp_next == "'" and
@@ -49,14 +56,10 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
             background = self.app.message_container.styles.background.css
             latex_image = lm.latex_math(self, sequence.strip(" \n"), color, background)
         if latex_image:
-            if not self.paragraph.strip(" \n"):
-                await message.remove(self.app)
-            else:
-                await message.update(self.app, self.paragraph)
+            await _remove_empty(self)
             await message.mount_latex(self.app, latex_image)
             turn_id=len(self.app.latex_listings)-1
             self.app.latex_listings[turn_id].append(esc + exp_latex_fence + sequence + esc + pattern)
-            self.paragraph = ""
             await message.mount_next(self.app)
         else:
             if "\n" in sequence:
@@ -75,11 +78,7 @@ async def code_block_start_end(self, buffer: str, pattern: str) -> None:
             await code_block_end(self, buffer, pattern)
 
 async def code_block_start(self, buffer: str, pattern: str) -> None:
-    if not self.paragraph.strip(" \n"):
-        await message.remove(self.app)
-    else:
-        await message.update(self.app, self.paragraph)
-        self.paragraph = ""
+    await _remove_empty(self)
     await message.mount_code(self.app)
     self.cur_code_fence = pattern
     self.codelisting = True
