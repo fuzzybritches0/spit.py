@@ -64,10 +64,10 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         else:
             await _remove_empty(self)
             await message.mount_code(self.app)
-            if "\n" in sequence:
-                self.paragraph += "\n```latex\n" + esc + exp_latex_fence + sequence + esc + pattern + "\n```\n"
-            else:
-                self.paragraph += "`" + esc + exp_latex_fence + sequence + esc + pattern + "`"
+            if pattern == "$$" or pattern == "]":
+                exp_latex_fence += "\n"
+                pattern = "\n" + pattern
+            self.paragraph += "\n```latex\n" + esc + exp_latex_fence + sequence + esc + pattern + "\n```\n"
             await _code_block_end(self)
         self.skip_buff_p = len(pattern)
         self.seqstart = -1
