@@ -15,6 +15,7 @@ async def undo(self) -> None:
     if self.undo_index > 0:
         self.undo_index-=1
         self.messages = copy.deepcopy(self.undo[self.undo_index])
+        write_chat_history(self)
         await self.chat_view.remove_children()
         await render_messages(self)
 
@@ -22,6 +23,7 @@ async def redo(self) -> None:
     if self.undo_index < len(self.undo)-1:
         self.undo_index+=1
         self.messages = copy.deepcopy(self.undo[self.undo_index])
+        write_chat_history(self)
         await self.chat_view.remove_children()
         await render_messages(self)
 
