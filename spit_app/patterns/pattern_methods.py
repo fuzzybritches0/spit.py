@@ -89,8 +89,13 @@ async def code_block_start(self, buffer: str, pattern: str) -> None:
 async def _code_block_end(self) -> None:
     await message.update(self.app, self.paragraph)
     turn_id=len(self.app.code_listings)-1
-    code = self.paragraph.strip("`~\n ")
-    code = code.split("\n",1)[1]
+    code = self.paragraph.strip("`~")
+    code = code.split("\n",1)
+    if len(code) == 2:
+        code = code[1]
+    else:
+        code = code[0]
+    code = code.strip("\n ")
     self.app.code_listings[turn_id].append(code)
     self.paragraph = ""
     await message.mount_next(self.app)
