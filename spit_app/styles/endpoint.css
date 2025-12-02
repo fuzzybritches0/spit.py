@@ -1,26 +1,32 @@
 #SaveCancel {
 	height: 20%
 }
-#EditSettings {
+#edit-endpoint {
+	width: 100%;
 	height: 80%;
-	border: round $primary
+	border: round $border
 }
 #Cancel {
 	height: 20%
 }
-#SelectConfig {
+#select-main {
+	width: 100%;
 	height: 80%;
-	border: round $primary
+	border: round $border
 }
-ConfigScreen {
+EndpointSettings {
     align: center middle;
     width: 100%;
     height: 100%;
     border: none;
 }
 Button {
+    color: $foreground;
+    background: $background-lighten-1;
     margin: 1 1 1 1
 }
 TextArea {
+	color: $foreground;
+	background: $background;
 	height: 5
 }
