@@ -109,11 +109,7 @@ class ActionsMixIn:
     
     async def action_abort(self) -> None:
         self.work.cancel()
-        count = len(self.messages)
-        if self.messages[0]["role"] == "system":
-            count-=1
-        while len(self.chat_view.children) > count:
-            await message.remove_last_turn(self)
+        await message.remove_last_turn(self)
         self.refresh_bindings()
 
     async def action_remove_last(self) -> None:
