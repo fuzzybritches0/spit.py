@@ -6,7 +6,7 @@ from textual.containers import VerticalScroll
 async def mount(self, mtype: str, content: str = "") -> None:
     if self.edit:
         self.message_container = self.edit_container
-        id = int(self.message_container.id[3:])
+        id = int(self.message_container.id[11:])
         self.code_listings[id] = []
         self.latex_listings[id] = []
     else:
