@@ -133,10 +133,16 @@ class ActionsMixIn:
             case "abort":
                 return self.is_working()
             case "undo":
-                if self.is_working() or self.edit or self.undo_index == 0:
+                if self.is_working() or self.edit:
+                    return False
+                if self.undo_index == -1:
                     return False
             case "redo":
-                if self.is_working() or self.edit or self.undo_index == len(self.undo)-1:
+                if self.is_working() or self.edit:
+                    return False
+                if self.undo_index == len(self.undo)-1:
+                    return False
+                if len(self.undo) == 0:
                     return False
             case "copy_listing":
                 if not self.focused or not self.focused.id or not "-listing-" in self.focused.id:
