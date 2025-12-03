@@ -11,6 +11,12 @@ def load_chat_history(self):
     except FileNotFoundError:
         return []
 
+def get_mtype(self, role) -> str:
+    if role == "user" or role == "tool":
+        return "request"
+    else:
+        return "response"
+
 async def undo(self) -> None:
     if self.undo_index >= 0:
         operation, message, index = self.undo[self.undo_index]

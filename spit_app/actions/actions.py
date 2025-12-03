@@ -55,11 +55,7 @@ class ActionsMixIn:
         else:
             self.messages[id][self.edit_ctype] = self.text_area.text
         utils.write_chat_history(self)
-        if self.edit_role == "user" or self.edit_role == "tool":
-            role = "request"
-        else:
-            role = "response"
-        await self.edit_container.remove_children()
+        mtype = utils.get_mtype(self, self.edit_role)
         prepend = append = ""
         if self.edit_ctype == "tool_calls":
             prepend = "- TOOL CALL: `"
@@ -69,7 +65,7 @@ class ActionsMixIn:
             append = "`"
         new_content = self.text_area.text
         self.text_area.text = self.text_area_temp
-        await utils.render_message(self, role, prepend + new_content + append)
+        await utils.render_message(self, mtype, prepend + new_content + append)
         self.edit = False
 
     def action_edit_content(self) -> None:
