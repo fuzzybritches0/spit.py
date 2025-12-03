@@ -66,12 +66,12 @@ def write_chat_history(self) -> None:
     with open(self.settings.CHAT_HISTORY_PATH, "w") as f:
         json.dump(self.messages, f)
 
-def read_system_prompt(self) -> str | None:
+def load_system_prompt(self) -> None:
     try:
         with open(self.settings.SYSTEM_PROMPT_PATH, "r") as f:
-            return f.read()
+            self.system_prompt = f.read()
     except FileNotFoundError:
-        return None
+        self.system_prompt = None
     except Exception as e:
         raise e
 
@@ -79,16 +79,8 @@ def load_messages(self) -> None:
     self.messages = load_chat_history(self)
     self.code_listings = []
     self.latex_listings = []
-    if not self.messages:
-        system_prompt = read_system_prompt(self)
-        if system_prompt:
-            self.messages.append({"role": "system", "content": system_prompt})
-    if self.messages[0]["role"] == "system":
-        self.code_listings.append([])
-        self.latex_listings.append([])
     self.undo = []
-    self.undo.append(copy(self.messages))
-    self.undo_index=0
+    self.undo_index=-1
 
 async def render_messages(self) -> None:
     for msg in self.messages:

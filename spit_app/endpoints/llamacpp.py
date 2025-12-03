@@ -13,7 +13,10 @@ class LlamaCppEndpoint(BaseEndpoint):
 
     def prepare_payload(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
         payload = {}
-        payload["messages"] = messages
+        if self.app.system_prompt:
+            payload["messages"] = [{"role": "system", "content": self.app.system_prompt}] + messages
+        else:
+            payload["messages"] = messages
         for setting, value in self.settings.endpoints[self.active]["values"].items():
             if not setting == "name" and not setting == "endpoint_url" and not setting == "key":
                 if "." in setting and (value or value == False):

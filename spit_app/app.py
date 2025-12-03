@@ -24,6 +24,7 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
         self.theme = self.settings.theme
         self.title_update()
         utils.load_messages(self)
+        utils.load_system_prompt(self)
         self.work = None
         self.edit = False
         self.focused_message = None
