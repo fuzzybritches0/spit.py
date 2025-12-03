@@ -126,6 +126,7 @@ class ActionsMixIn:
     def get_id_edit(self) -> int | None:
         if self.focused and self.focused.id and "message-id-" in self.focused.id:
             return int(self.focused.id[11:])
+        return None
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         match action:
@@ -144,19 +145,19 @@ class ActionsMixIn:
                 if self.is_working() or self.edit:
                     return False
                 id=self.get_id_edit()
-                if not id or not self.messages[id]["content"]:
+                if id == None or not self.messages[id]["content"]:
                     return False
             case "edit_cot":
                 if self.is_working() or self.edit:
                     return False
                 id=self.get_id_edit()
-                if not id or not "reasoning_content" in self.messages[id]:
+                if id == None or not "reasoning_content" in self.messages[id]:
                     return False
             case "edit_tool":
                 if self.is_working() or self.edit:
                     return False
                 id=self.get_id_edit()
-                if not id or not "tool_calls" in self.messages[id]:
+                if id == None or not "tool_calls" in self.messages[id]:
                     return False
             case "save_edit":
                 return self.edit
