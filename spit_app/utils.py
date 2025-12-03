@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
-import copy
+from copy import copy
 import spit_app.message as message
 from spit_app.patterns.pattern_processing import PatternProcessing
 
@@ -15,13 +15,13 @@ async def undo(self) -> None:
     if self.undo_index >= 0:
         operation, message, index = self.undo[self.undo_index]
         if operation == "remove":
-            self.messages.append(copy.copy(message))
+            self.messages.append(copy(message))
         if operation == "append":
             del self.messages[-1]
         if operation == "change":
-            temp_message = copy.copy(self.messages[index])
-            self.messages[index] = copy.copy(message)
-            self.undo[self.undo_index] = [operation, copy.copy(temp_message), index]
+            temp_message = copy(self.messages[index])
+            self.messages[index] = copy(message)
+            self.undo[self.undo_index] = [operation, copy(temp_message), index]
         write_chat_history(self)
         self.undo_index-=1
         await self.chat_view.remove_children()
@@ -34,11 +34,11 @@ async def redo(self) -> None:
         if operation == "remove":
             del self.messages[-1]
         if operation == "append":
-            self.messages.append(copy.copy(message))
+            self.messages.append(copy(message))
         if operation == "change":
-            temp_message = copy.copy(self.messages[index])
-            self.messages[index] = copy.copy(message)
-            self.undo[self.undo_index] = [operation, copy.copy(temp_message), index]
+            temp_message = copy(self.messages[index])
+            self.messages[index] = copy(message)
+            self.undo[self.undo_index] = [operation, copy(temp_message), index]
         write_chat_history(self)
         await self.chat_view.remove_children()
         await render_messages(self)
@@ -48,7 +48,7 @@ def append_undo(self, operation: str, message: dict, index: int = -1) -> None:
         del self.undo[-1]
     while len(self.undo) > 100:
         del self.undo[0]
-    self.undo.append([operation, copy.copy(message), index])
+    self.undo.append([operation, copy(message), index])
     self.undo_index=len(self.undo)-1
 
 def save_message(self, message: dict) -> None:
@@ -81,7 +81,7 @@ def load_messages(self) -> None:
         self.code_listings.append([])
         self.latex_listings.append([])
     self.undo = []
-    self.undo.append(copy.copy(self.messages))
+    self.undo.append(copy(self.messages))
     self.undo_index=0
 
 async def render_messages(self) -> None:
