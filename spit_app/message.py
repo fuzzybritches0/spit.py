@@ -9,6 +9,7 @@ async def mount(self, mtype: str, content: str = "") -> None:
         id = int(self.message_container.id[11:])
         self.code_listings[id] = []
         self.latex_listings[id] = []
+        await self.edit_container.remove_children()
     else:
         id=len(self.chat_view.children)
         self.message_container = VerticalScroll(classes="message-container-"+mtype, id="message-id-"+str(id))
