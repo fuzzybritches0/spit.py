@@ -12,32 +12,48 @@ def load_chat_history(self):
         return []
 
 async def undo(self) -> None:
-    if self.undo_index > 0:
-        self.undo_index-=1
-        self.messages = copy.deepcopy(self.undo[self.undo_index])
+    if self.undo_index >= 0:
+        operation, message, index = self.undo[self.undo_index]
+        if operation == "remove":
+            self.messages.append(copy.copy(message))
+        if operation == "append":
+            del self.messages[-1]
+        if operation == "change":
+            temp_message = copy.copy(self.messages[index])
+            self.messages[index] = copy.copy(message)
+            self.undo[self.undo_index] = [operation, copy.copy(temp_message), index]
         write_chat_history(self)
+        self.undo_index-=1
         await self.chat_view.remove_children()
         await render_messages(self)
 
 async def redo(self) -> None:
     if self.undo_index < len(self.undo)-1:
         self.undo_index+=1
-        self.messages = copy.deepcopy(self.undo[self.undo_index])
+        operation, message, index = self.undo[self.undo_index]
+        if operation == "remove":
+            del self.messages[-1]
+        if operation == "append":
+            self.messages.append(copy.copy(message))
+        if operation == "change":
+            temp_message = copy.copy(self.messages[index])
+            self.messages[index] = copy.copy(message)
+            self.undo[self.undo_index] = [operation, copy.copy(temp_message), index]
         write_chat_history(self)
         await self.chat_view.remove_children()
         await render_messages(self)
 
-def append_undo(self) -> None:
+def append_undo(self, operation: str, message: dict, index: int = -1) -> None:
     while len(self.undo)-1 > self.undo_index:
         del self.undo[-1]
     while len(self.undo) > 100:
         del self.undo[0]
-    self.undo.append(copy.deepcopy(self.messages))
+    self.undo.append([operation, copy.copy(message), index])
     self.undo_index=len(self.undo)-1
 
 def save_message(self, message: dict) -> None:
     self.messages.append(message)
-    append_undo(self)
+    append_undo(self, "append", message)
     write_chat_history(self)
 
 def write_chat_history(self) -> None:
@@ -65,7 +81,7 @@ def load_messages(self) -> None:
         self.code_listings.append([])
         self.latex_listings.append([])
     self.undo = []
-    self.undo.append(copy.deepcopy(self.messages))
+    self.undo.append(copy.copy(self.messages))
     self.undo_index=0
 
 async def render_messages(self) -> None:

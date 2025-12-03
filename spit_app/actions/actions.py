@@ -46,6 +46,7 @@ class ActionsMixIn:
 
     async def action_save_edit(self) -> None:
         id=int(self.edit_container.id[11:])
+        utils.append_undo(self, "change", self.messages[id], id)
         if self.edit_ctype == "tool_calls" or self.edit_role == "tool":
             try:
                 self.messages[id][self.edit_ctype] = json.loads(self.text_area.text)
@@ -53,7 +54,6 @@ class ActionsMixIn:
                 return None
         else:
             self.messages[id][self.edit_ctype] = self.text_area.text
-        utils.append_undo(self)
         utils.write_chat_history(self)
         if self.edit_role == "user" or self.edit_role == "tool":
             role = "request"
@@ -113,8 +113,8 @@ class ActionsMixIn:
         self.refresh_bindings()
 
     async def action_remove_last(self) -> None:
+        utils.append_undo(self, "remove", self.messages[-1])
         del self.messages[-1]
-        utils.append_undo(self)
         utils.write_chat_history(self)
         await message.remove_last_turn(self)
         
