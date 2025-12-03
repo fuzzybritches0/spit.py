@@ -99,13 +99,11 @@ class ActionsMixIn:
         self.text_area.focus()
 
     async def action_continue(self) -> None:
-        if self.text_area.text:
+        if self.text_area.text and (not self.messages or self.messages[-1]["role"] == "assistant"):
             utils.save_message(self, {"role": "user", "content": self.text_area.text})
             await utils.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
-        if (self.text_area.text or self.messages[-1]["role"] == "user" or
-            self.messages[-1]["role"] == "tool" or "tool_calls" in self.messages[-1]):
-            self.work = self.run_worker(work_stream(self))
+        self.work = self.run_worker(work_stream(self))
     
     async def action_abort(self) -> None:
         self.work.cancel()
