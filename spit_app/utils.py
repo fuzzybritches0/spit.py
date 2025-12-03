@@ -19,35 +19,45 @@ def get_mtype(self, role) -> str:
 
 async def undo(self) -> None:
     if self.undo_index >= 0:
-        operation, message, index = self.undo[self.undo_index]
+        operation, umessage, index = self.undo[self.undo_index]
+        mtype = get_mtype(self, umessage["role"])
         if operation == "remove":
-            self.messages.append(copy(message))
+            self.messages.append(copy(umessage))
+            await render_message(self, mtype, umessage["content"])
         if operation == "append":
             del self.messages[-1]
+            await message.remove_last_turn(self)
         if operation == "change":
             temp_message = copy(self.messages[index])
-            self.messages[index] = copy(message)
+            self.messages[index] = copy(umessage)
             self.undo[self.undo_index] = [operation, copy(temp_message), index]
+            self.edit = True
+            self.edit_container = self.chat_view.children[index]
+            await render_message(self, mtype, umessage["content"])
+            self.edit = False
         write_chat_history(self)
         self.undo_index-=1
-        await self.chat_view.remove_children()
-        await render_messages(self)
 
 async def redo(self) -> None:
     if self.undo_index < len(self.undo)-1:
         self.undo_index+=1
-        operation, message, index = self.undo[self.undo_index]
+        operation, umessage, index = self.undo[self.undo_index]
+        mtype = get_mtype(self, umessage["role"])
         if operation == "remove":
             del self.messages[-1]
+            await message.remove_last_turn(self)
         if operation == "append":
-            self.messages.append(copy(message))
+            self.messages.append(copy(umessage))
+            await render_message(self, mtype, umessage["content"])
         if operation == "change":
             temp_message = copy(self.messages[index])
-            self.messages[index] = copy(message)
+            self.messages[index] = copy(umessage)
             self.undo[self.undo_index] = [operation, copy(temp_message), index]
+            self.edit = True
+            self.edit_container = self.chat_view.children[index]
+            await render_message(self, mtype, umessage["content"])
+            self.edit = False
         write_chat_history(self)
-        await self.chat_view.remove_children()
-        await render_messages(self)
 
 def append_undo(self, operation: str, message: dict, index: int = -1) -> None:
     while len(self.undo)-1 > self.undo_index:
