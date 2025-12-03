@@ -180,19 +180,13 @@ class ActionsMixIn:
                 if (self.is_working() or self.edit or not
                         self.settings.endpoints[active]["values"]["endpoint_url"]):
                     return False
-                if self.text_area.text and self.messages[-1]["role"] == "system":
-                    return True                             # Begin of chat
-                if (self.text_area.text and self.messages[-1]["role"] == "assistant" and
-                        self.messages[-1]["content"]):
-                    return True                             # Normal turn
-                if self.messages[-1]["role"] == "user":
-                    return True                             # There is a user request
-                if (self.messages[-1]["role"] == "assistant" and
-                        "tool_calls" in self.messages[-1] and not self.text_area.text):
-                    return True                             # There are TOOL CALLS to call
-                if self.messages[-1]["role"] == "tool" and not self.text_area.text:
-                    return True                             # There are TOOL CALL results to process
-                return False
+                if not self.messages and not self.text_area.text:
+                    return False
+                if self.messages:
+                    if self.messages[-1]["role"] == "user" and self.text_area.text:
+                        return False
+                    if self.messages[-1]["role"] == "assistant" and not self.text_area.text:
+                        return False
             case "exit_app":
                 if self.edit or self.is_working():
                     return False
