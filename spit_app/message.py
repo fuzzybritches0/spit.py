@@ -11,6 +11,22 @@ def get_mtype(self, role) -> None:
     else:
         return "response"
 
+async def render_message_undo(self, umessage) -> None:
+    mtype = get_mtype(self, umessage["role"])
+    if umessage["role"] == "tool":
+        await render_tool_response(self, umessage["content"])
+    elif umessage["role"] == "assistant" and "tool_calls" in umessage:
+        await render_tool_calls(self, umessage["tool_calls"])
+    else:
+        await render_message(self, mtype, umessage["content"])
+
+async def render_tool_calls(self, tool_calls) -> None:
+    for tool_call in tool_calls:
+        await render_message(self, "response", "- TOOL CALL: `" + json.dumps(tool_call) + "`")
+
+async def render_tool_response(self, tool_response) -> None:
+    await render_message(self, "request", "- RESULT: `" + tool_response + "`")
+
 async def render_messages(self) -> None:
     for msg in self.messages:
         if msg["role"] == "user" and msg["content"]:
@@ -18,10 +34,9 @@ async def render_messages(self) -> None:
         elif msg["role"] == "assistant" and "content" in msg and msg["content"]:
             await render_message(self, "response", msg["content"])
         elif msg["role"] == "assistant" and "tool_calls" in msg and msg["tool_calls"]:
-            for tool_call in msg["tool_calls"]:
-                await render_message(self, "response", "- TOOL CALL: `" + json.dumps(tool_call) + "`")
+            await render_tool_calls(self, msg["tool_calls"])
         elif msg["role"] == "tool" and "content" in msg and msg["content"]:
-            await render_message(self, "request", "- RESULT: `" + msg["content"] + "`")
+            await render_tool_response(self, msg["content"])
 
 async def render_message(self, mtype: str, messagec: str) -> None:
     buffer = ""

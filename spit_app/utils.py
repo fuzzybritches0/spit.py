@@ -9,19 +9,12 @@ def load_chat_history(self):
     except FileNotFoundError:
         return []
 
-def get_mtype(self, role) -> str:
-    if role == "user" or role == "tool":
-        return "request"
-    else:
-        return "response"
-
 async def undo(self) -> None:
     if self.undo_index >= 0:
         operation, umessage, index = self.undo[self.undo_index]
-        mtype = get_mtype(self, umessage["role"])
         if operation == "remove":
             self.messages.append(umessage.copy())
-            await message.render_message(self, mtype, umessage["content"])
+            await message.render_message_undo(self, umessage)
         if operation == "append":
             del self.messages[-1]
             await message.remove_last_turn(self)
@@ -31,7 +24,7 @@ async def undo(self) -> None:
             self.undo[self.undo_index] = [operation, temp_umessage.copy(), index]
             self.edit = True
             self.edit_container = self.chat_view.children[index]
-            await message.render_message(self, mtype, umessage["content"])
+            await message.render_message_undo(self, umessage)
             self.edit = False
         write_chat_history(self)
         self.undo_index-=1
@@ -40,20 +33,19 @@ async def redo(self) -> None:
     if self.undo_index < len(self.undo)-1:
         self.undo_index+=1
         operation, umessage, index = self.undo[self.undo_index]
-        mtype = get_mtype(self, umessage["role"])
         if operation == "remove":
             del self.messages[-1]
             await message.remove_last_turn(self)
         if operation == "append":
             self.messages.append(umessage.copy())
-            await message.render_message(self, mtype, umessage["content"])
+            await message.render_message_undo(self, umessage)
         if operation == "change":
             temp_umessage = self.messages[index].copy()
             self.messages[index] = umessage.copy()
             self.undo[self.undo_index] = [operation, temp_umessage.copy(), index]
             self.edit = True
             self.edit_container = self.chat_view.children[index]
-            await message.render_message(self, mtype, umessage["content"])
+            await message.render_message_undo(self, umessage)
             self.edit = False
         write_chat_history(self)
 
