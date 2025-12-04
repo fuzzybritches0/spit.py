@@ -95,7 +95,8 @@ class ActionsMixIn:
         self.text_area.focus()
 
     async def action_continue(self) -> None:
-        if self.text_area.text and (not self.messages or self.messages[-1]["role"] == "assistant"):
+        if (self.text_area.text and
+            (not self.messages or self.messages[-1]["role"] == "assistant")):
             utils.save_message(self, {"role": "user", "content": self.text_area.text})
             await message.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
@@ -124,11 +125,13 @@ class ActionsMixIn:
         return False
 
     def get_id_edit(self) -> int | None:
-        if self.focused and self.focused.id and "message-id-" in self.focused.id:
+        if (self.focused and self.focused.id and
+            "message-id-" in self.focused.id):
             return int(self.focused.id[11:])
         return None
 
-    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+    def check_action(self, action: str,
+                     parameters: tuple[object, ...]) -> bool | None:
         match action:
             case "abort":
                 return self.is_working()
@@ -145,7 +148,8 @@ class ActionsMixIn:
                 if len(self.undo) == 0:
                     return False
             case "copy_listing":
-                if not self.focused or not self.focused.id or not "-listing-" in self.focused.id:
+                if (not self.focused or not self.focused.id or
+                    not "-listing-" in self.focused.id):
                     return False
             case "edit_content":
                 if self.is_working() or self.edit:
@@ -186,7 +190,8 @@ class ActionsMixIn:
                 if self.messages:
                     if self.messages[-1]["role"] == "user" and self.text_area.text:
                         return False
-                    if (self.messages[-1]["role"] == "assistant" and not self.text_area.text and
+                    if (self.messages[-1]["role"] == "assistant" and
+                        not self.text_area.text and
                         not "tool_calls" in self.messages[-1]):
                         return False
             case "exit_app":
