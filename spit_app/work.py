@@ -11,9 +11,9 @@ class Work():
         self.app = app
         self.pp = PatternProcessing(self)
         self.content = ""
-        self.reasoning_content = ""
+        self.reasoning = ""
         self.tool_calls = ""
-        self.was_reasoning_content = False
+        self.was_reasoning = False
         self.display_thinking = False
 
     def tools(self, buffer: str) -> None:
@@ -23,15 +23,15 @@ class Work():
             self.pp.paragraph = "- TOOL CALL: `"
         self.pp.paragraph+=buffer[:1]
 
-    def reasoning(self, buffer: str) -> None:
-        self.was_reasoning_content = True
+    def freasoning(self, buffer: str) -> None:
+        self.was_reasoning = True
         self.pp.thinking = True
         self.content = ""
         self.pp.paragraph = ""
         if self.pp.skip_buff_c > 0:
             self.pp.skip_buff_c -= 1
         else:
-            self.reasoning_content+=buffer[:1]
+            self.reasoning+=buffer[:1]
 
     def fcontent(self, buffer: str) -> None:
         if not self.pp.thinking:
@@ -48,18 +48,18 @@ class Work():
         if ctype == "content":
             self.pp.thinking = False
         await self.pp.process_patterns(True, buffer)
-        if ctype == "reasoning_content":
-            self.reasoning(buffer)
+        if ctype == "reasoning":
+            self.freasoning(buffer)
         elif ctype == "content":
-            if self.was_reasoning_content:
+            if self.was_reasoning:
                 self.pp.thinking = False
             self.fcontent(buffer)
         elif ctype == "tool_calls":
-            if self.was_reasoning_content:
+            if self.was_reasoning:
                 self.pp.thinking = False
             self.tools(buffer)
         else:
-            if self.was_reasoning_content:
+            if self.was_reasoning:
                 self.pp.thinking = False
             self.fcontent(buffer)
 
@@ -85,8 +85,8 @@ class Work():
         if self.pp.tool_call:
             self.pp.paragraph+="`"
         await message.update(self.app, self.pp.paragraph)
-        if not self.reasoning_content:
-            self.reasoning_content = None
+        if not self.reasoning:
+            self.reasoning = None
         if self.tool_calls:
             self.tool_calls = json.loads(self.tool_calls)
             new_tool_calls = []
@@ -101,8 +101,8 @@ class Work():
         msg["content"] = self.content
         if self.tool_calls:
             msg["tool_calls"] = new_tool_calls
-        if self.reasoning_content:
-            msg["reasoning_content"] = self.reasoning_content
+        if self.reasoning:
+            msg["reasoning"] = self.reasoning
         utils.save_message(self.app, msg)
         self.app.refresh_bindings()
 
