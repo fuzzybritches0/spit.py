@@ -42,7 +42,8 @@ class EndpointScreensMixIn:
         for setting, *others in self.settings.endpoints[self.cur_endpoint]["custom"]:
             if (not setting == "name" and
                 not setting == "endpoint_url" and
-                not setting == "key"):
+                not setting == "key" and
+                not setting == "reasoning_key"):
                 names.append(setting)
         await self.vscroll.mount(Label("Remove custom setting:"))
         await self.vscroll.mount(Select.from_values(names, id="custom-setting-select-remove", allow_blank=False))
