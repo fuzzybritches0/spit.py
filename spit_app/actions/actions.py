@@ -72,7 +72,7 @@ class ActionsMixIn:
         self.edit_message("content")
 
     def action_edit_cot(self) -> None:
-        self.edit_message("reasoning_content")
+        self.edit_message("reasoning")
 
     def action_edit_tool(self) -> None:
         self.edit_message("tool_calls")
@@ -157,7 +157,7 @@ class ActionsMixIn:
                 if self.is_working() or self.edit:
                     return False
                 id=self.get_id_edit()
-                if id == None or not "reasoning_content" in self.messages[id]:
+                if id == None or not "reasoning" in self.messages[id]:
                     return False
             case "edit_tool":
                 if self.is_working() or self.edit:
