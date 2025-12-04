@@ -59,12 +59,14 @@ class Settings:
                 "values": {
                     "name": f"default endpoint {ccount}",
                     "endpoint_url": "http://127.0.0.1:8080",
-                    "key": None
+                    "key": None,
+                    "reasoning_key": "reasoning_content"
                 },
                 "custom": [
                     ("name", "String", "Name", []),
                     ("endpoint_url", "String", "Endpoint URL", []),
                     ("key", "String", "API Access Key", []),
+                    ("reasoning_key", "Select", "Reasoning Key", ["reasoning_content", "reasoning"]),
                     ("temperature", "Float", "Temperature", []),
                     ("top_p", "Float", "TOP-P", []),
                     ("min_p", "Float", "MIN-P", []),
