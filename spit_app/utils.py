@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
-from copy import copy
 import spit_app.message as message
 
 def load_chat_history(self):
@@ -21,15 +20,15 @@ async def undo(self) -> None:
         operation, umessage, index = self.undo[self.undo_index]
         mtype = get_mtype(self, umessage["role"])
         if operation == "remove":
-            self.messages.append(copy(umessage))
+            self.messages.append(umessage.copy())
             await message.render_message(self, mtype, umessage["content"])
         if operation == "append":
             del self.messages[-1]
             await message.remove_last_turn(self)
         if operation == "change":
-            temp_message = copy(self.messages[index])
-            self.messages[index] = copy(umessage)
-            self.undo[self.undo_index] = [operation, copy(temp_message), index]
+            temp_umessage = self.messages[index].copy()
+            self.messages[index] = umessage.copy()
+            self.undo[self.undo_index] = [operation, temp_umessage.copy, index]
             self.edit = True
             self.edit_container = self.chat_view.children[index]
             await message.render_message(self, mtype, umessage["content"])
@@ -46,29 +45,29 @@ async def redo(self) -> None:
             del self.messages[-1]
             await message.remove_last_turn(self)
         if operation == "append":
-            self.messages.append(copy(umessage))
+            self.messages.append(umessage.copy())
             await message.render_message(self, mtype, umessage["content"])
         if operation == "change":
-            temp_message = copy(self.messages[index])
-            self.messages[index] = copy(umessage)
-            self.undo[self.undo_index] = [operation, copy(temp_message), index]
+            temp_umessage = self.messages[index].copy()
+            self.messages[index] = umessage.copy()
+            self.undo[self.undo_index] = [operation, temp_umessage.copy(), index]
             self.edit = True
             self.edit_container = self.chat_view.children[index]
             await message.render_message(self, mtype, umessage["content"])
             self.edit = False
         write_chat_history(self)
 
-def append_undo(self, operation: str, message: dict, index: int = -1) -> None:
+def append_undo(self, operation: str, umessage: dict, index: int = -1) -> None:
     while len(self.undo)-1 > self.undo_index:
         del self.undo[-1]
     while len(self.undo) > 100:
         del self.undo[0]
-    self.undo.append([operation, copy(message), index])
+    self.undo.append([operation, umessage.copy(), index])
     self.undo_index=len(self.undo)-1
 
-def save_message(self, message: dict) -> None:
-    self.messages.append(message)
-    append_undo(self, "append", message)
+def save_message(self, umessage: dict) -> None:
+    self.messages.append(umessage)
+    append_undo(self, "append", umessage)
     write_chat_history(self)
 
 def write_chat_history(self) -> None:

@@ -3,7 +3,6 @@ import json
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
 from textual.widgets import Footer, Header, TextArea
-import spit_app.message as message
 import spit_app.utils as utils
 from spit_app.settings.settings import Settings
 from spit_app.actions.actions import ActionsMixIn
