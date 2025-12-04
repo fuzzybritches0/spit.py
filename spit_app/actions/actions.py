@@ -65,7 +65,7 @@ class ActionsMixIn:
             append = "`"
         new_content = self.text_area.text
         self.text_area.text = self.text_area_temp
-        await utils.render_message(self, mtype, prepend + new_content + append)
+        await message.render_message(self, mtype, prepend + new_content + append)
         self.edit = False
 
     def action_edit_content(self) -> None:
@@ -97,7 +97,7 @@ class ActionsMixIn:
     async def action_continue(self) -> None:
         if self.text_area.text and (not self.messages or self.messages[-1]["role"] == "assistant"):
             utils.save_message(self, {"role": "user", "content": self.text_area.text})
-            await utils.render_message(self, "request", self.text_area.text)
+            await message.render_message(self, "request", self.text_area.text)
             self.text_area.text = ""
         self.work = self.run_worker(work_stream(self))
     

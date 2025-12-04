@@ -2,6 +2,46 @@
 from textual_image.widget import Image
 from textual.widgets import Markdown, Static
 from textual.containers import VerticalScroll
+from spit_app.patterns.pattern_processing import PatternProcessing
+
+async def render_messages(self) -> None:
+    for msg in self.messages:
+        if msg["role"] == "user" and msg["content"]:
+            await render_message(self, "request", msg["content"])
+        elif msg["role"] == "assistant" and "content" in msg and msg["content"]:
+            await render_message(self, "response", msg["content"])
+        elif msg["role"] == "assistant" and "tool_calls" in msg and msg["tool_calls"]:
+            for tool_call in msg["tool_calls"]:
+                await render_message(self, "response", "- TOOL CALL: `" + json.dumps(tool_call) + "`")
+        elif msg["role"] == "tool" and "content" in msg and msg["content"]:
+            await render_message(self, "request", "- RESULT: `" + msg["content"] + "`")
+
+async def render_message(self, mtype: str, messagec: str) -> None:
+    buffer = ""
+    pp = PatternProcessing(self)
+    await mount(self, mtype)
+    for char in messagec:
+        buffer += char
+        if len(buffer) < 8:
+            continue
+        await pp.process_patterns(False, buffer)
+        if pp.skip_buff_p > 0:
+            pp.skip_buff_p -= 1
+        else:
+            pp.paragraph += buffer[:1]
+        buffer = buffer[1:]
+
+    for char in buffer:
+        await pp.process_patterns(False, buffer)
+        if pp.skip_buff_p > 0:
+            pp.skip_buff_p -= 1
+        else:
+            pp.paragraph += buffer[:1]
+        buffer = buffer[1:]
+    if not pp.paragraph:
+        await remove(self)
+    else:
+        await update(self, pp.paragraph)
 
 async def mount(self, mtype: str, content: str = "") -> None:
     if self.edit:

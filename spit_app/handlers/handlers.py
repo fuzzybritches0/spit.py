@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual import events
-import spit_app.utils as utils
+import spit_app.message as message
 import spit_app.latex_math as lm
 from spit_app.overlays.loading_screen import LoadingScreen
 
 class HandlersMixIn:
     async def on_ready(self) -> None:
         await self.push_screen(LoadingScreen())
-        await utils.render_messages(self)
+        await message.render_messages(self)
         await self.pop_screen()
         if len(self.chat_view.children) == 0:
             self.text_area.focus()
