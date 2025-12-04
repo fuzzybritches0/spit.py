@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+import json
 from textual_image.widget import Image
 from textual.widgets import Markdown, Static
 from textual.containers import VerticalScroll
