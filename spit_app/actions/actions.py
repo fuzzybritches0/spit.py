@@ -186,7 +186,8 @@ class ActionsMixIn:
                 if self.messages:
                     if self.messages[-1]["role"] == "user" and self.text_area.text:
                         return False
-                    if self.messages[-1]["role"] == "assistant" and not self.text_area.text:
+                    if (self.messages[-1]["role"] == "assistant" and not self.text_area.text and
+                        not "tool_calls" in self.messages[-1]):
                         return False
             case "exit_app":
                 if self.edit or self.is_working():
