@@ -41,9 +41,11 @@ class Settings:
         self.endpoints[cur_endpoint]["values"][setting] = value
         
     def load(self) -> None:
+        self.theme = None
         if self.settings_file.exists():
             settings = json.loads(self.settings_file.read_text())
-            self.theme = settings["theme"]
+            if "theme" in settings:
+                self.theme = settings["theme"]
             self.active_endpoint = settings["active_endpoint"]
             self.endpoints = settings["endpoints"]
         else:

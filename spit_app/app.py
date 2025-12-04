@@ -21,7 +21,8 @@ class SpitApp(HandlersMixIn, ActionsMixIn, App):
         #self.applog("LOG START:")
         self.settings = Settings()
         self.settings.load()
-        self.theme = self.settings.theme
+        if self.settings.theme:
+            self.theme = self.settings.theme
         self.title_update()
         utils.load_messages(self)
         utils.load_system_prompt(self)
