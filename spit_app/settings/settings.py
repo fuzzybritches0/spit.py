@@ -66,7 +66,7 @@ class Settings:
                     ("name", "String", "Name", []),
                     ("endpoint_url", "String", "Endpoint URL", []),
                     ("key", "String", "API Access Key", []),
-                    ("reasoning_key", "Select", "Reasoning Key", ["reasoning_content", "reasoning"]),
+                    ("reasoning_key", "Select_no_default", "Reasoning Key", ["reasoning_content", "reasoning"]),
                     ("temperature", "Float", "Temperature", []),
                     ("top_p", "Float", "TOP-P", []),
                     ("min_p", "Float", "MIN-P", []),

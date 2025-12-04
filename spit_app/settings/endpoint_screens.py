@@ -19,7 +19,7 @@ class EndpointScreensMixIn:
                                        max_length=128))
         await self.vscroll.mount(Label(f"Description for {stype} value:"))
         await self.vscroll.mount(Input(id="new-description", valid_empty=False))
-        if stype == "Select":
+        if stype == "Select" or stype == "Select_no_default":
             await self.vscroll.mount(Label("Select values (separate with ','):"))
             Validators = [ Function(self.val.is_valid_selection) ]
             await self.vscroll.mount(Input(id="new-select-values", validators=Validators,
@@ -33,9 +33,9 @@ class EndpointScreensMixIn:
             await self.mount_custom_setting_form(stype)
 
     async def edit_endpoint_add_custom(self) -> None:
-        types = [ "Integer", "Float", "Boolean", "String", "Text", "Select" ]
+        types = [ "Integer", "Float", "Boolean", "String", "Text", "Select", "Select_no_default" ]
         await self.vscroll.mount(Label("Add custom setting:"))
-        await self.vscroll.mount(Select.from_values(types, id="custom-setting-select-add"))
+        await self.vscroll.mount(Select.from_values(types, id="custom-setting-select-add", allow_blank=False))
 
     async def edit_endpoint_remove_custom(self) -> None:
         names = []
@@ -45,7 +45,7 @@ class EndpointScreensMixIn:
                 not setting == "key"):
                 names.append(setting)
         await self.vscroll.mount(Label("Remove custom setting:"))
-        await self.vscroll.mount(Select.from_values(names, id="custom-setting-select-remove"))
+        await self.vscroll.mount(Select.from_values(names, id="custom-setting-select-remove", allow_blank=False))
         await self.vscroll.mount(Button("Remove", id=f"button-remove-setting"))
 
     async def edit_endpoint(self) -> None:
@@ -76,7 +76,11 @@ class EndpointScreensMixIn:
             if stype == "Select":
                 if not value:
                     value = Select.BLANK
-                await self.vscroll.mount(Select.from_values(amore, id=id, value=value))
+                await self.vscroll.mount(Select.from_values(amore, id=id, value=value, prompt="Default"))
+            elif stype == "Select_no_default":
+                if not value:
+                    value = amore[0]
+                await self.vscroll.mount(Select.from_values(amore, id=id, value=value, allow_blank=False))
             elif stype == "Boolean":
                 await self.vscroll.mount(Switch(id=id, value=value))
             elif stype == "Text":

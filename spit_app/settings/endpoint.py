@@ -12,7 +12,7 @@ class EndpointMixIn():
         if not self.query_one("#new-description").is_valid:
             return False
         stype = self.query_one("#custom-setting-select-add").value
-        if stype == "Select":
+        if stype == "Select" or stype == "Select_no_default":
             if not self.query_one("#new-select-values").is_valid:
                 return False
         return True
@@ -20,7 +20,8 @@ class EndpointMixIn():
     def valid_values_edit(self) -> bool:
         for setting, stype, desc, array in self.settings.endpoints[self.cur_endpoint]["custom"]:
             id = setting.replace(".", "-")
-            if not stype == "Boolean" and not stype == "Select" and not stype == "Text":
+            if (not stype == "Boolean" and not stype == "Select" and
+                not stype == "Select_no_default" and not stype == "Text"):
                 if not self.query_one(f"#{id}").is_valid:
                     return False
         return True
@@ -65,7 +66,7 @@ class EndpointMixIn():
             stype = self.query_one("#custom-setting-select-add").value
             desc = self.query_one("#new-description").value
             sarray = []
-            if stype == "Select":
+            if stype == "Select" or stype == "Select_no_default":
                 value = self.query_one("#new-select-values").value
                 array = value.split(",")
                 for el in array:
