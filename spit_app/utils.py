@@ -28,7 +28,7 @@ async def undo(self) -> None:
         if operation == "change":
             temp_umessage = self.messages[index].copy()
             self.messages[index] = umessage.copy()
-            self.undo[self.undo_index] = [operation, temp_umessage.copy, index]
+            self.undo[self.undo_index] = [operation, temp_umessage.copy(), index]
             self.edit = True
             self.edit_container = self.chat_view.children[index]
             await message.render_message(self, mtype, umessage["content"])
