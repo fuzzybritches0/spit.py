@@ -111,8 +111,8 @@ async def work_tools(self, tool_calls: list) -> None:
         for tool_call in tool_calls:
             tool = Tool()
             tool_response = tool.call(tool_call)
-            await message.mount(self.app, "request", "- RESULT: `" + json.dumps(tool_response) + "`")
             utils.save_message(self.app, tool_response)
+            await message.render_message(self.app, self.messages[-1])
         work = Work(self)
         await work.stream_response()
         tool_calls = work.tool_calls

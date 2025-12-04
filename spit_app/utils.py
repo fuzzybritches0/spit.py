@@ -14,7 +14,7 @@ async def undo(self) -> None:
         operation, umessage, index = self.undo[self.undo_index]
         if operation == "remove":
             self.messages.append(umessage.copy())
-            await message.render_message_undo(self, umessage)
+            await message.render_message(self, umessage)
         if operation == "append":
             del self.messages[-1]
             await message.remove_last_turn(self)
@@ -24,7 +24,7 @@ async def undo(self) -> None:
             self.undo[self.undo_index] = [operation, temp_umessage.copy(), index]
             self.edit = True
             self.edit_container = self.chat_view.children[index]
-            await message.render_message_undo(self, umessage)
+            await message.render_message(self, umessage)
             self.edit = False
         write_chat_history(self)
         self.undo_index-=1
@@ -38,14 +38,14 @@ async def redo(self) -> None:
             await message.remove_last_turn(self)
         if operation == "append":
             self.messages.append(umessage.copy())
-            await message.render_message_undo(self, umessage)
+            await message.render_message(self, umessage)
         if operation == "change":
             temp_umessage = self.messages[index].copy()
             self.messages[index] = umessage.copy()
             self.undo[self.undo_index] = [operation, temp_umessage.copy(), index]
             self.edit = True
             self.edit_container = self.chat_view.children[index]
-            await message.render_message_undo(self, umessage)
+            await message.render_message(self, umessage)
             self.edit = False
         write_chat_history(self)
 

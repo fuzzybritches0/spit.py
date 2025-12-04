@@ -55,17 +55,8 @@ class ActionsMixIn:
         else:
             self.messages[id][self.edit_ctype] = self.text_area.text
         utils.write_chat_history(self)
-        mtype = message.get_mtype(self, self.edit_role)
-        prepend = append = ""
-        if self.edit_ctype == "tool_calls":
-            prepend = "- TOOL CALL: `"
-            append = "`"
-        if self.edit_role == "tool":
-            prepend = "- RESULT: `"
-            append = "`"
-        new_content = self.text_area.text
         self.text_area.text = self.text_area_temp
-        await message.render_message(self, mtype, prepend + new_content + append)
+        await message.render_message(self, self.messages[id])
         self.edit = False
 
     def action_edit_content(self) -> None:
@@ -98,7 +89,7 @@ class ActionsMixIn:
         if (self.text_area.text and
             (not self.messages or self.messages[-1]["role"] == "assistant")):
             utils.save_message(self, {"role": "user", "content": self.text_area.text})
-            await message.render_message(self, "request", self.text_area.text)
+            await message.render_message(self, self.messages[-1])
             self.text_area.text = ""
         self.work = self.run_worker(work_stream(self))
     
