@@ -12,13 +12,19 @@ class LlamaCppEndpoint(BaseEndpoint):
         return None
 
     def prepare_payload(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        self.reasoning_key = self.settings.endpoints[self.active]["values"]["reasoning_key"]
         payload = {}
+        payload["messages"] = []
         if self.app.system_prompt:
-            payload["messages"] = [{"role": "system", "content": self.app.system_prompt}] + messages
-        else:
-            payload["messages"] = messages
+            payload["messages"].append({"role": "system", "content": self.app.system_prompt})
+        for message in messages:
+            if "reasoning" in message:
+                message[self.reasoning_key] = message["reasoning"]
+                del message["reasoning"]
+            payload["messages"].append(message)
         for setting, value in self.settings.endpoints[self.active]["values"].items():
-            if not setting == "name" and not setting == "endpoint_url" and not setting == "key":
+            if (not setting == "name" and not setting == "endpoint_url" and
+                not setting == "key" and not setting == "reasoning_key"):
                 if "." in setting and (value or value == False):
                     dot2obj(payload, setting, value)
                 else:
@@ -73,8 +79,8 @@ class LlamaCppEndpoint(BaseEndpoint):
 
         if content := choice.get("content"):
             yield "content", content
-        elif content := choice.get("reasoning_content"):
-            yield "reasoning_content", content
+        elif content := choice.get(self.reasoning_key):
+            yield "reasoning", content
         elif content := choice.get("tool_calls"):
             for t, c in self.tool_calls(content[0]):
                 yield t, c
