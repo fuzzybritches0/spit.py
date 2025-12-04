@@ -5,6 +5,12 @@ from textual.widgets import Markdown, Static
 from textual.containers import VerticalScroll
 from spit_app.patterns.pattern_processing import PatternProcessing
 
+def get_mtype(self, role) -> None:
+    if role == "user" or role == "tool":
+        return "request"
+    else:
+        return "response"
+
 async def render_messages(self) -> None:
     for msg in self.messages:
         if msg["role"] == "user" and msg["content"]:

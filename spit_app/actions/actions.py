@@ -55,7 +55,7 @@ class ActionsMixIn:
         else:
             self.messages[id][self.edit_ctype] = self.text_area.text
         utils.write_chat_history(self)
-        mtype = utils.get_mtype(self, self.edit_role)
+        mtype = message.get_mtype(self, self.edit_role)
         prepend = append = ""
         if self.edit_ctype == "tool_calls":
             prepend = "- TOOL CALL: `"
