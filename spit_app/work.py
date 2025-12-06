@@ -73,7 +73,7 @@ class Work():
 
     async def stream_response(self):
         self.app.refresh_bindings()
-        await message.mount(self.app, "response")
+        await message.mount(self.app, "response", False)
 
         workstream = WorkStream(self.app)
         async for ctype, buffer, part in workstream.stream(self.app.messages):

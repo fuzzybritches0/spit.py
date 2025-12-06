@@ -56,7 +56,7 @@ class ActionsMixIn:
             self.messages[id][self.edit_ctype] = self.text_area.text
         utils.write_chat_history(self)
         self.text_area.text = self.text_area_temp
-        await message.render_message(self, self.messages[id])
+        await message.render_message(self, self.messages[id], True)
         self.edit = False
 
     def action_edit_content(self) -> None:
@@ -90,6 +90,7 @@ class ActionsMixIn:
             (not self.messages or self.messages[-1]["role"] == "assistant")):
             utils.save_message(self, {"role": "user", "content": self.text_area.text})
             await message.render_message(self, self.messages[-1])
+            self.chat_view.scroll_end(animate=False)
             self.text_area.text = ""
         self.work = self.run_worker(work_stream(self))
     

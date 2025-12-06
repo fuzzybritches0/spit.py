@@ -9,27 +9,31 @@ async def render_messages(self) -> None:
     for umessage in self.messages:
         await render_message(self, umessage)
 
-async def render_message(self, umessage) -> None:
+async def render_message(self, umessage, scroll_visible: bool = False) -> None:
     if umessage["role"] == "user" and umessage["content"]:
-        await _render_message(self, "request", umessage["content"])
+        await _render_message(self, "request", umessage["content"], scroll_visible)
     elif umessage["role"] == "assistant" and "content" in umessage and umessage["content"]:
-        await _render_message(self, "response", umessage["content"])
+        await _render_message(self, "response", umessage["content"], scroll_visible)
     elif umessage["role"] == "assistant" and "tool_calls" in umessage and umessage["tool_calls"]:
-        await _render_tool_calls(self, umessage["tool_calls"])
+        await _render_tool_calls(self, umessage["tool_calls"], scroll_visible)
     elif umessage["role"] == "tool" and "content" in umessage and umessage["content"]:
-        await _render_tool_response(self, umessage["content"])
+        await _render_tool_response(self, umessage["content"], scroll_visible)
 
-async def _render_tool_calls(self, tool_calls) -> None:
+async def _render_tool_calls(self, tool_calls, scroll_visible: bool) -> None:
     for tool_call in tool_calls:
-        await _render_message(self, "response", "- TOOL CALL: `" + json.dumps(tool_call) + "`")
+        await _render_message(self, "response",
+                              "- TOOL CALL: `" + json.dumps(tool_call) + "`",
+                              scroll_visible)
 
 async def _render_tool_response(self, tool_response) -> None:
-    await _render_message(self, "request", "- RESULT: `" + json.dumps(tool_response) + "`")
+    await _render_message(self, "request",
+                          "- RESULT: `" + json.dumps(tool_response) + "`",
+                          scroll_visible)
 
-async def _render_message(self, mtype: str, messagec: str) -> None:
+async def _render_message(self, mtype: str, messagec: str, scroll_visible: bool) -> None:
     buffer = ""
     pp = PatternProcessing(self)
-    await mount(self, mtype)
+    await mount(self, mtype, scroll_visible)
     for char in messagec:
         buffer += char
         if len(buffer) < 8:
@@ -53,7 +57,7 @@ async def _render_message(self, mtype: str, messagec: str) -> None:
     else:
         await update(self, pp.paragraph)
 
-async def mount(self, mtype: str, content: str = "") -> None:
+async def mount(self, mtype: str, scroll_visible: bool, content: str = "") -> None:
     if self.edit:
         self.message_container = self.edit_container
         id = int(self.message_container.id[11:])
@@ -70,7 +74,7 @@ async def mount(self, mtype: str, content: str = "") -> None:
         self.code_listings.append([])
         self.latex_listings.append([])
     await self.message_container.mount(self.mwidget)
-    self.message_container.focus(scroll_visible=False)
+    self.message_container.focus(scroll_visible=scroll_visible)
     self.focused_message = self.message_container
     if content:
         await self.mwidget.update(content)
