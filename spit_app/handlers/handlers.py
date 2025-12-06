@@ -6,9 +6,10 @@ from spit_app.overlays.loading_screen import LoadingScreen
 
 class HandlersMixIn:
     async def on_ready(self) -> None:
-        await self.push_screen(LoadingScreen())
+        self.loading_screen = LoadingScreen()
+        await self.push_screen(self.loading_screen)
         await message.render_messages(self)
-        await self.pop_screen()
+        self.loading_screen.dismiss()
         if len(self.chat_view.children) == 0:
             self.text_area.focus()
 
