@@ -108,7 +108,7 @@ async def mount_latex(self, latex_image: Image) -> None:
 
 async def remove_last_turn(self) -> None:
     if self.chat_view.children:
-        if self.chat_view.children[-1] == self.focused_message:
+        if self.chat_view.children[-1] is self.focused_message:
             if len(self.chat_view.children) > 1:
                 self.focused_message = self.chat_view.children[-2]
         await self.chat_view.children[-1].remove()

@@ -146,19 +146,19 @@ class ActionsMixIn:
                 if self.is_working() or self.edit:
                     return False
                 id=self.get_id_edit()
-                if id == None or not self.messages[id]["content"]:
+                if id is None or not self.messages[id]["content"]:
                     return False
             case "edit_cot":
                 if self.is_working() or self.edit:
                     return False
                 id=self.get_id_edit()
-                if id == None or not "reasoning" in self.messages[id]:
+                if id is None or not "reasoning" in self.messages[id]:
                     return False
             case "edit_tool":
                 if self.is_working() or self.edit:
                     return False
                 id=self.get_id_edit()
-                if id == None or not "tool_calls" in self.messages[id]:
+                if id is None or not "tool_calls" in self.messages[id]:
                     return False
             case "save_edit":
                 return self.edit
@@ -169,7 +169,7 @@ class ActionsMixIn:
                     return False
                 if len(self.chat_view.children) == 0:
                     return False
-                if not self.focused == self.chat_view.children[-1]:
+                if not self.focused is self.chat_view.children[-1]:
                     return False
             case "continue":
                 active = self.settings.active_endpoint

@@ -56,7 +56,7 @@ class EndpointScreensMixIn:
             value = None
             if setting in self.settings.endpoints[self.cur_endpoint]["values"]:
                 value = self.settings.endpoints[self.cur_endpoint]["values"][setting]
-            if value == None:
+            if value is None:
                 value = ""
             Validators = []
             vtype = "text"

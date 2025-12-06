@@ -57,10 +57,10 @@ class PatternProcessing:
         for pattern, c[0], c[1], c[2], c[3], c[4], awaitm, method, *args in patterns:
             if buffer.startswith(pattern):
                 for pos in range(5):
-                    if c[pos] == None:
+                    if c[pos] is None:
                         continue
                     else:
-                        if not conditions[pos] == c[pos]:
+                        if not conditions[pos] is c[pos]:
                             self.process_patterns_end(buffer)
                             return None
                 self.pp_skip = len(pattern)-1

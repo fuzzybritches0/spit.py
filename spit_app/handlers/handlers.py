@@ -16,12 +16,12 @@ class HandlersMixIn:
         self.refresh_bindings()
 
     def on_descendant_focus(self, event: events.DescendantFocus) -> None:
-        if self.chat_view == event.control:
+        if self.chat_view is event.control:
             if self.focused_message:
                 self.focused_message.focus(scroll_visible=False)
-        elif not self.text_area == event.control and not self.chat_view == event.control and not self.edit:
+        elif not self.text_area is event.control and not self.chat_view is event.control and not self.edit:
             self.focused_message = event.control
-        elif self.edit and not event.control == self.text_area:
+        elif self.edit and not event.control is self.text_area:
             self.focused_message.focus(scroll_visible=False)
 
     def on_text_area_changed(self) -> None:
