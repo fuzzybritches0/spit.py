@@ -3,12 +3,12 @@ import json
 from spit_app.work import work_stream
 import spit_app.message as message
 import spit_app.utils as utils
-from spit_app.settings.settings_app import EndpointSettings
+from spit_app.manage.main import Main as ManageMain
 
 bindings = [
         ("ctrl+enter", "continue", "Continue"),
         ("ctrl+escape", "abort", "Abort"),
-        ("ctrl+m", "settings_endpoints", "Endpoints"),
+        ("ctrl+m", "manage", "Manage"),
         ("ctrl+i", "undo", "Undo"),
         ("ctrl+r", "redo", "Redo"),
         ("ctrl+q", "exit_app", "Quit"),
@@ -105,8 +105,8 @@ class ActionsMixIn:
         utils.write_chat_history(self)
         await message.remove_last_turn(self)
         
-    async def action_settings_endpoints(self) -> None:
-        await self.push_screen(EndpointSettings())
+    async def action_manage(self) -> None:
+        await self.push_screen(ManageMain())
     
     async def action_exit_app(self) -> None:
         self.exit()
