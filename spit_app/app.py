@@ -4,10 +4,10 @@ from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
 from textual.widgets import Footer, Header, TextArea
 import spit_app.utils as utils
-from spit_app.settings.settings import Settings
-from spit_app.actions.actions import ActionsMixIn
-from spit_app.actions.actions import bindings
-from spit_app.handlers.handlers import HandlersMixIn
+from spit_app.settings import Settings
+from spit_app.actions import ActionsMixIn
+from spit_app.actions import bindings
+from spit_app.handlers import HandlersMixIn
 
 class SpitApp(HandlersMixIn, ActionsMixIn, App):
     NAME = "spit.py"
