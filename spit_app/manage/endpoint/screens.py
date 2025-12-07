@@ -4,7 +4,7 @@ from textual.widgets import Input, TextArea, Switch, Label, Button, OptionList, 
 from textual.widgets.option_list import Option
 from textual.containers import VerticalScroll, Horizontal
 
-class EndpointScreensMixIn:
+class ScreensMixIn:
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.control.id == "custom-setting-select-add":
             await self.mount_settings_add_custom(event.value)
@@ -106,7 +106,7 @@ class EndpointScreensMixIn:
         await horiz.mount(Button("Cancel", id="cancel"))
         self.vscroll.focus()
 
-    async def select_main_screen(self) -> None:
+    async def select_endpoint_screen(self) -> None:
         self.vscroll = VerticalScroll(id="select-main")
         await self.dyn_container.mount(self.vscroll)
         Options = [ Option("\nCreate new endpoint\n", id="select-new-endpoint") ]
