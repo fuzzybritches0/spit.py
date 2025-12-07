@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
-from spit_app.helpers.dot2obj import dot2obj
+from spit_app.helpers import dot2obj
 from typing import Generator, Tuple, List, Dict, Any
 from .base import BaseEndpoint
 
