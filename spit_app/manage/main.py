@@ -73,9 +73,9 @@ class Main(ModalScreen):
     async def on_mount(self) -> None:
         self.query_one("#main-option-list").focus()
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":
-            await self.dismiss()
+            self.dismiss()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "manage-endpoints-screen":
