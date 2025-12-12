@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.widgets import Select
 
 class ValidationMixIn():
     def valid_values_add(self) -> bool:
@@ -21,14 +20,3 @@ class ValidationMixIn():
                 if not self.query_one(f"#{id}").is_valid:
                     return False
         return True
-
-    def store_values(self) -> None:
-        for setting, stype, desc, array in self.settings.endpoints[self.cur_endpoint]["custom"]:
-            id = setting.replace(".", "-")
-            if stype == "Text":
-                newvalue = self.query_one(f"#{id}").text
-            else:
-                newvalue = self.query_one(f"#{id}").value
-            if newvalue == Select.BLANK:
-                newvalue = ""
-            self.settings.store(self.cur_endpoint, setting, stype, newvalue)
