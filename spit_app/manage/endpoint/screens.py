@@ -110,11 +110,9 @@ class ScreensMixIn:
         self.vscroll = VerticalScroll(id="select-main")
         await self.dyn_container.mount(self.vscroll)
         Options = [ Option("\nCreate new endpoint\n", id="select-new-endpoint") ]
-        count=0
-        for endpoints in self.settings.endpoints:
-            name=self.settings.endpoints[count]["values"]["name"]
-            Options.append(Option(f"\nEdit: {name}\n", id=f"select-endpoint-{count}"))
-            count+=1
+        for endpoint in self.settings.endpoints.keys():
+            name=self.settings.endpoints[endpoint]["values"]["name"]
+            Options.append(Option(f"\nEdit: {name}\n", id=f"select-endpoint-{endpoint}"))
         await self.vscroll.mount(OptionList(*Options, id="option-list"))
         horiz = Horizontal(id="cancel-container")
         await self.dyn_container.mount(horiz)

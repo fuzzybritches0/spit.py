@@ -174,7 +174,7 @@ class ActionsMixIn:
                     return False
             case "continue":
                 active = self.settings.active_endpoint
-                if (self.is_working() or self.edit or not
+                if (self.is_working() or self.edit or not active or not
                         self.settings.endpoints[active]["values"]["endpoint_url"]):
                     return False
                 if not self.messages and not self.text_area.text:

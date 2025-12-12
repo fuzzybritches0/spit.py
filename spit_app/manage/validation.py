@@ -18,12 +18,10 @@ class Validation:
     def is_unique_name(self, value: str) -> bool:
         if self.is_empty(value):
             return False
-        count = 0
-        for endpoint in self.app.settings.endpoints:
-            if (not count == self.app.cur_endpoint and
-                    endpoint["values"]["name"] == value):
+        for endpoint in self.app.settings.endpoints.keys():
+            if (not endpoint == self.app.cur_endpoint and
+                    self.app.settings.endpoints[endpoint]["values"]["name"] == value):
                 return False
-            count+=1
         return True
 
     def is_unique_custom(self, value: str) -> bool:

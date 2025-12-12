@@ -22,6 +22,6 @@ class HandlersMixIn():
             await self.clean_dyn_container()
             await self.edit_endpoint_screen()
         else:
-            self.cur_endpoint = int(event.option.id[16:])
+            self.cur_endpoint = str(event.option.id[16:])
             await self.clean_dyn_container()
             await self.edit_endpoint_screen()

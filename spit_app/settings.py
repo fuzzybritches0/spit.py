@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 from platformdirs import user_config_dir
 from pathlib import Path
+from uuid import uuid4
 import json
 
 class Settings:
@@ -22,8 +23,8 @@ class Settings:
             raise e
 
     def init(self) -> None:
-        self.active_endpoint = 0
-        self.endpoints = []
+        self.endpoints = {}
+        self.active_endpoint = None
         self.new()
 
     def save(self) -> None:
@@ -42,49 +43,51 @@ class Settings:
         
     def load(self) -> None:
         self.theme = None
+        self.endpoints = {}
+        self.active_endpoint = None
         if self.settings_file.exists():
             settings = json.loads(self.settings_file.read_text())
             if "theme" in settings:
                 self.theme = settings["theme"]
-            self.active_endpoint = settings["active_endpoint"]
-            self.endpoints = settings["endpoints"]
-        else:
+            if "active_endpoint" in settings:
+                self.active_endpoint = settings["active_endpoint"]
+        if self.endpoints_file.exists():
+            self.endpoints = json.loads(self.endpoints_file.read_text())
+        if not self.endpoints:
             self.init()
         self.tools = self.read_tool_desc()
 
-    def new(self) -> int:
+    def new(self) -> str:
         ccount = len(self.endpoints)
-        self.endpoints.append(
-            {
-                "values": {
-                    "name": f"default endpoint {ccount}",
-                    "endpoint_url": "http://127.0.0.1:8080",
-                    "key": None,
-                    "reasoning_key": "reasoning_content"
-                },
-                "custom": [
-                    ("name", "String", "Name", []),
-                    ("endpoint_url", "String", "Endpoint URL", []),
-                    ("key", "String", "API Access Key", []),
-                    ("reasoning_key", "Select_no_default", "Reasoning Key", ["reasoning_content", "reasoning"]),
-                    ("temperature", "Float", "Temperature", []),
-                    ("top_p", "Float", "TOP-P", []),
-                    ("min_p", "Float", "MIN-P", []),
-                    ("top_k", "Float", "TOP-K", [])
-                ]
-            }
-        )
-        return ccount
+        uuid = str(uuid4())
+        self.endpoints[uuid] = {
+            "values": {
+                "name": f"default endpoint {ccount}",
+                "endpoint_url": "http://127.0.0.1:8080",
+                "key": None,
+                "reasoning_key": "reasoning_content"
+            },
+            "custom": [
+                ("name", "String", "Name", []),
+                ("endpoint_url", "String", "Endpoint URL", []),
+                ("key", "String", "API Access Key", []),
+                ("reasoning_key", "Select_no_default", "Reasoning Key", ["reasoning_content", "reasoning"]),
+                ("temperature", "Float", "Temperature", []),
+                ("top_p", "Float", "TOP-P", []),
+                ("min_p", "Float", "MIN-P", []),
+                ("top_k", "Float", "TOP-K", [])
+            ]
+        }
+        return uuid
 
     def set_active(self, conf: int) -> None:
         self.active_endpoint = conf
         self.save()
 
     def delete_endpoint(self, conf: int) -> None:
-        active = self.active_endpoint
         del self.endpoints[conf]
-        if active == conf:
-            self.active_endpoint = 0
+        if self.active_endpoint == conf:
+            self.active_endpoint = None
         if len(self.endpoints) < 1:
             self.init()
         self.save()
