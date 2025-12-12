@@ -1,10 +1,15 @@
 # SPDX-License-Identifier: GPL-2.0
-from platformdirs import user_config_dir
+from platformdirs import user_config_dir, user_data_dir
 from pathlib import Path
 from uuid import uuid4
 import json
 
 class Settings:
+    data_path = Path(user_data_dir("spit.py", "fuzzybritches0"))
+    data_path.mkdir(parents=True, exist_ok=True)
+    system_prompts_file = data_path / "prompts.json"
+    endpoints_file = data_path / "endpoints.json"
+    chat_histories_file = data_path / "chat_hitories.json"
     settings_path = Path(user_config_dir("spit.py", "fuzzybritches0"))
     settings_path.mkdir(parents=True, exist_ok=True)
     settings_file = settings_path / "settings.json"
@@ -31,8 +36,8 @@ class Settings:
         settings = {}
         settings["theme"] = self.theme
         settings["active_endpoint"] = self.active_endpoint
-        settings["endpoints"] = self.endpoints
         self.settings_file.write_text(json.dumps(settings))
+        self.endpoints_file.write_text(json.dumps(self.endpoints))
 
     def store(self, cur_endpoint: int, setting: str, stype: str, value: str | bool) -> None:
         if stype == "Float" and value:
@@ -44,6 +49,8 @@ class Settings:
     def load(self) -> None:
         self.theme = None
         self.endpoints = {}
+        self.system_prompts = {}
+        self.chat_histories = {}
         self.active_endpoint = None
         if self.settings_file.exists():
             settings = json.loads(self.settings_file.read_text())
@@ -53,6 +60,8 @@ class Settings:
                 self.active_endpoint = settings["active_endpoint"]
         if self.endpoints_file.exists():
             self.endpoints = json.loads(self.endpoints_file.read_text())
+        if self.chat_histories_file.exists():
+            self.chat_hitories = json.loads(self.chat_histories_file.read_text())
         if not self.endpoints:
             self.init()
         self.tools = self.read_tool_desc()
