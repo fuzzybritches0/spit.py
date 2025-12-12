@@ -106,7 +106,7 @@ class ActionsMixIn:
         await message.remove_last_turn(self)
         
     async def action_manage(self) -> None:
-        await self.push_screen(ManageMain())
+        await self.push_screen(ManageMain("Main"))
     
     async def action_exit_app(self) -> None:
         self.exit()
