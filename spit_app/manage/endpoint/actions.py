@@ -6,7 +6,7 @@ class ActionsMixIn():
         self.settings.delete_endpoint(self.cur_endpoint)
         self.app.title_update()
         await self.clean_dyn_container()
-        await self.select_endpoint_screen()
+        await self.select_main_screen()
 
     async def action_set_active(self) -> None:
         if self.valid_values_edit():
@@ -15,7 +15,7 @@ class ActionsMixIn():
             self.settings.set_active(self.cur_endpoint)
             self.app.title_update()
             await self.clean_dyn_container()
-            await self.select_endpoint_screen()
+            await self.select_main_screen()
 
     async def action_save(self) -> None:
         if self.valid_values_edit():
@@ -23,7 +23,7 @@ class ActionsMixIn():
             self.settings.save()
             self.app.title_update()
             await self.clean_dyn_container()
-            await self.select_endpoint_screen()
+            await self.select_main_screen()
 
     async def action_add_setting(self) -> None:
         if self.valid_values_add():
@@ -55,7 +55,7 @@ class ActionsMixIn():
         else:
             self.settings.load()
             await self.clean_dyn_container()
-            await self.select_endpoint_screen()
+            await self.select_main_screen()
 
     def is_edit_endpoint(self) -> bool:
         if self.dyn_container.children[0].id == "edit-endpoint":

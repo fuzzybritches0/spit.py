@@ -106,7 +106,7 @@ class ScreensMixIn:
         await horiz.mount(Button("Cancel", id="cancel"))
         self.vscroll.focus()
 
-    async def select_endpoint_screen(self) -> None:
+    async def select_main_screen(self) -> None:
         self.vscroll = VerticalScroll(id="select-main")
         await self.dyn_container.mount(self.vscroll)
         Options = [ Option("\nCreate new endpoint\n", id="select-new-endpoint") ]
