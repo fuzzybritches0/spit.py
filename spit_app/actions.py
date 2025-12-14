@@ -82,7 +82,9 @@ class ActionsMixIn:
         self.text_area.focus()
 
     def action_change_focus(self) -> None:
-        self.focused_message = self.focused
+        if self.focused.id and ("message-id-" in self.focused.id or
+                                "-listing-" in self.focused.id):
+            self.focused_message = self.focused
         self.text_area.focus()
 
     async def action_continue(self) -> None:
