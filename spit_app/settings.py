@@ -61,7 +61,7 @@ class Settings:
         if self.endpoints_file.exists():
             self.endpoints = json.loads(self.endpoints_file.read_text())
         if self.chat_histories_file.exists():
-            self.chat_hitories = json.loads(self.chat_histories_file.read_text())
+            self.chat_histories = json.loads(self.chat_histories_file.read_text())
         if not self.endpoints:
             self.init()
         self.tools = self.read_tool_desc()
