@@ -67,11 +67,10 @@ class Settings:
         self.tools = self.read_tool_desc()
 
     def new(self) -> str:
-        ccount = len(self.endpoints)
         uuid = str(uuid4())
         self.endpoints[uuid] = {
             "values": {
-                "name": f"default endpoint {ccount}",
+                "name": uuid,
                 "endpoint_url": "http://127.0.0.1:8080",
                 "key": None,
                 "reasoning_key": "reasoning_content"
@@ -93,7 +92,7 @@ class Settings:
         self.active_endpoint = conf
         self.save()
 
-    def delete_endpoint(self, conf: int) -> None:
+    def delete_endpoint(self, conf: str) -> None:
         del self.endpoints[conf]
         if self.active_endpoint == conf:
             self.active_endpoint = None
