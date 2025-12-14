@@ -39,6 +39,9 @@ class Settings:
         self.settings_file.write_text(json.dumps(settings))
         self.endpoints_file.write_text(json.dumps(self.endpoints))
 
+    def save_system_prompts(self) -> None:
+        self.system_prompts_file.write_text(json.dumps(self.system_prompts))
+
     def store(self, cur_endpoint: int, setting: str, stype: str, value: str | bool) -> None:
         if stype == "Float" and value:
             value = float(value)
@@ -62,6 +65,8 @@ class Settings:
             self.endpoints = json.loads(self.endpoints_file.read_text())
         if self.chat_histories_file.exists():
             self.chat_histories = json.loads(self.chat_histories_file.read_text())
+        if self.system_prompts_file.exists():
+            self.system_prompts = json.loads(self.system_prompts_file.read_text())
         if not self.endpoints:
             self.init()
         self.tools = self.read_tool_desc()
@@ -88,6 +93,14 @@ class Settings:
         }
         return uuid
 
+    def new_system_prompt(self) -> str:
+        uuid = str(uuid4())
+        self.system_prompts[uuid] = {
+                "name": uuid,
+                "text": "You are a friendly AI assistant."
+        }
+        return uuid
+
     def set_active(self, conf: int) -> None:
         self.active_endpoint = conf
         self.save()
@@ -99,6 +112,10 @@ class Settings:
         if len(self.endpoints) < 1:
             self.init()
         self.save()
+
+    def delete_system_prompt(self, prompt: str) -> None:
+        del self.system_prompts[prompt]
+        self.save_system_prompts()
 
     def remove_custom_setting(self, conf: int, rsetting: str) -> None:
         custom = []
