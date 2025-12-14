@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 
-class ValidationMixIn():
+class ValidationMixIn:
     def valid_values_add(self) -> bool:
         if not self.query_one("#new-setting").is_valid:
             return False

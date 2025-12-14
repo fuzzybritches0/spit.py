@@ -3,10 +3,10 @@ class Validation:
     def __init__(self, app) -> None:
         self.app = app
 
-    def is_empty(self, value) -> bool:
+    def is_not_empty(self, value) -> bool:
         if value:
-            return False
-        return True
+            return True
+        return False
 
     def is_url(self, value) -> bool:
         if value.startswith("http://"):
@@ -16,7 +16,7 @@ class Validation:
         return False
     
     def is_unique_name(self, value: str) -> bool:
-        if self.is_empty(value):
+        if not value:
             return False
         for endpoint in self.app.settings.endpoints.keys():
             if (not endpoint == self.app.cur_endpoint and
@@ -25,7 +25,7 @@ class Validation:
         return True
 
     def is_unique_custom(self, value: str) -> bool:
-        if self.is_empty(value):
+        if not value:
             return False
         same = 0
         for name, stype, desc, sarray in self.app.settings.endpoints[self.app.cur_endpoint]["custom"]:

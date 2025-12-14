@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual.widgets import Select
 
-class ActionsMixIn():
+class ActionsMixIn:
     async def action_delete(self) -> None:
         self.settings.delete_endpoint(self.cur_endpoint)
         self.app.title_update()

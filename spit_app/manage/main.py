@@ -3,6 +3,7 @@ from textual.widgets.option_list import Option
 from textual.containers import VerticalScroll, Horizontal
 from .common import CommonMixIn
 from .endpoint.main import Endpoints 
+from .prompt.main import Prompts
 
 class Main(CommonMixIn):
     CSS_PATH = "../styles/manage.css"
@@ -31,3 +32,5 @@ class Main(CommonMixIn):
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "manage-endpoints-screen":
             self.app.push_screen(Endpoints("Endpoints"))
+        elif event.option.id == "manage-prompts-screen":
+            self.app.push_screen(Prompts("System Prompts"))

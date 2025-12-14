@@ -1,12 +1,12 @@
 from textual.widgets import Select
-from .actions import ActionsMixIn as EndpointActions
-from .handlers import HandlersMixIn as EndpointHandlers
-from .screens import ScreensMixIn as EndpointScreens
-from .validation import ValidationMixIn as EndpointValidations
+from .actions import ActionsMixIn
+from .handlers import HandlersMixIn
+from .screens import ScreensMixIn
+from .validation import ValidationMixIn
 from spit_app.manage.common import CommonMixIn
 
-class Endpoints(EndpointActions, EndpointHandlers,
-                EndpointScreens, EndpointValidations,
+class Endpoints(ActionsMixIn, HandlersMixIn,
+                ScreensMixIn, ValidationMixIn,
                 CommonMixIn):
     CSS_PATH = "../../styles/manage.css"
     BINDINGS = [

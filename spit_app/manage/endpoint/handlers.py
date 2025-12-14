@@ -1,7 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.widgets import Button, OptionList
+from textual.widgets import Button, OptionList, Select
 
-class HandlersMixIn():
+class HandlersMixIn:
+    async def on_select_changed(self, event: Select.Changed) -> None:
+        if event.control.id == "custom-setting-select-add":
+            await self.mount_settings_add_custom(event.value)
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":
             await self.action_dismiss()
