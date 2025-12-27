@@ -1,28 +1,36 @@
 # SPDX-License-Identifier: GPL-2.0
+import json
+import httpx
 from spit_app.helpers import dot2obj
 from typing import Generator, Tuple, List, Dict, Any
-from .base import BaseEndpoint
 
-class LlamaCppEndpoint(BaseEndpoint):
+class LlamaCppEndpoint:
+    def __init__(self, messages, endpoint, system_prompt, tools):
+        self.messages = messages
+        self.endpoint = endpoint
+        self.api_endpoint = self.endpoint["values"]["endpoint_url" ] + "/v1/chat/completions"
+        self.system_prompt = system_prompt
+        self.tools = tools
+        self.timeout = 15
+        self.b_tool_calls = False
+        self.tid = None
+        self.ttype = None
+        self.fname = None
+        self.ffunction = False
+        self.farguments = False
 
-    @property
-    def api_endpoint(self) -> str:
-        if "endpoint_url" in self.settings.endpoints[self.active]["values"]:
-            return self.settings.endpoints[self.active]["values"]["endpoint_url"] + "/v1/chat/completions"
-        return None
-
-    def prepare_payload(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
-        self.reasoning_key = self.settings.endpoints[self.active]["values"]["reasoning_key"]
+    def prepare_payload(self) -> Dict[str, Any]:
+        self.reasoning_key = self.endpoint["values"]["reasoning_key"]
         payload = {}
         payload["messages"] = []
-        if self.app.system_prompt:
-            payload["messages"].append({"role": "system", "content": self.app.system_prompt})
-        for message in messages:
+        if self.system_prompt:
+            payload["messages"].append({"role": "system", "content": self.system_prompt})
+        for message in self.messages:
             if "reasoning" in message:
                 message[self.reasoning_key] = message["reasoning"]
                 del message["reasoning"]
             payload["messages"].append(message)
-        for setting, value in self.settings.endpoints[self.active]["values"].items():
+        for setting, value in self.endpoint["values"].items():
             if (not setting == "name" and not setting == "endpoint_url" and
                 not setting == "key" and not setting == "reasoning_key"):
                 if "." in setting and (value or value is False):
@@ -30,21 +38,13 @@ class LlamaCppEndpoint(BaseEndpoint):
                 else:
                     if value or value is False:
                         payload[setting] = value
-        if self.settings.tools:
-            payload["tools"] = self.settings.tools
+        if self.tools:
+            payload["tools"] = self.tools
             payload["tool_choice"] = "auto"
         payload["n_predict"] = -1
         payload["cache_prompt"] = True
         payload["stream"] = True
         return payload
-
-    def extra_init(self) -> None:
-        self.b_tool_calls = False
-        self.tid = None
-        self.ttype = None
-        self.fname = None
-        self.ffunction = False
-        self.farguments = False
 
     def tool_calls(self, content: dict) -> Generator[Tuple[str, str], None, None]:
         if not self.b_tool_calls:
@@ -76,7 +76,6 @@ class LlamaCppEndpoint(BaseEndpoint):
 
     def extract_fields(self, delta: Dict[str, Any]) -> Generator[Tuple[str, str], None, None]:
         choice = delta["choices"][0]["delta"]
-
         if content := choice.get("content"):
             yield "content", content
         elif content := choice.get(self.reasoning_key):
@@ -87,3 +86,32 @@ class LlamaCppEndpoint(BaseEndpoint):
         else:
             if self.b_tool_calls:
                 yield "tool_calls", '}}]'
+
+    async def stream(self) -> Generator[Tuple[str, str], None, None]:
+        headers = {}
+        api_key = self.endpoint["values"]["key"]
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        headers["Content-Type"] = "application/json"
+        payload = self.prepare_payload()
+
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with client.stream("POST", self.api_endpoint, headers=headers, json=payload) as resp:
+                if resp.status_code != 200:
+                    raise RuntimeError(f"Endpoint returned {resp.status_code}: {resp.text}")
+
+                async for raw_line in resp.aiter_lines():
+                    if not raw_line or not raw_line.startswith("data:"):
+                        continue
+
+                    line = raw_line[5:].strip()
+                    if not line:
+                        continue
+
+                    try:
+                        delta = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+
+                    for field, value in self.extract_fields(delta):
+                        yield field, value
