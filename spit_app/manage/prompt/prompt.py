@@ -1,19 +1,23 @@
-from textual.widgets import Select
+from textual.containers import Vertical
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
 from .validation import ValidationMixIn
-from spit_app.manage.common import CommonMixIn
+from spit_app.manage.validation import Validation
 
-class Prompts(ActionsMixIn, HandlersMixIn,
-              ScreensMixIn, ValidationMixIn,
-              CommonMixIn):
-    CSS_PATH = "../../styles/manage.css"
+class Prompts(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
-        ("escape", "dismiss", "Cancel")
+        ("escape", "cancel", "Cancel")
     ]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.settings = self.app.settings
+        self.id = "manage-prompts"
+        self.classes = "manage"
+        self.val = Validation(self)
 
     def store_values(self) -> None:
         name = self.query_one("#name").value
