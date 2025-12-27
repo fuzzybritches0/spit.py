@@ -5,18 +5,17 @@ from uuid import uuid4
 import json
 
 class Settings:
-    data_path = Path(user_data_dir("spit.py", "fuzzybritches0"))
-    data_path.mkdir(parents=True, exist_ok=True)
-    system_prompts_file = data_path / "prompts.json"
-    endpoints_file = data_path / "endpoints.json"
-    chat_histories_file = data_path / "chat_hitories.json"
-    settings_path = Path(user_config_dir("spit.py", "fuzzybritches0"))
-    settings_path.mkdir(parents=True, exist_ok=True)
-    settings_file = settings_path / "settings.json"
-
-    CHAT_HISTORY_PATH = "chat_history.json"
-    SYSTEM_PROMPT_PATH = "system_prompt.txt"
     TOOL_DESC_PATH = "tools.json"
+
+    def __init__(self, app) -> None:
+        self.app = app
+        self.data_path = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
+        self.data_path.mkdir(parents=True, exist_ok=True)
+        self.system_prompts_file = self.data_path / "prompts.json"
+        self.endpoints_file = self.data_path / "endpoints.json"
+        self.settings_path = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
+        self.settings_path.mkdir(parents=True, exist_ok=True)
+        self.settings_file = self.settings_path / "settings.json"
 
     def read_tool_desc(self):
         try:
@@ -29,13 +28,15 @@ class Settings:
 
     def init(self) -> None:
         self.endpoints = {}
+        self.active_chat = None
         self.active_endpoint = None
         self.new()
 
     def save(self) -> None:
         settings = {}
-        settings["theme"] = self.theme
+        settings["theme"] = self.app.theme
         settings["active_endpoint"] = self.active_endpoint
+        settings["active_chat"] = self.active_chat
         self.settings_file.write_text(json.dumps(settings))
         self.endpoints_file.write_text(json.dumps(self.endpoints))
 
@@ -53,18 +54,18 @@ class Settings:
         self.theme = None
         self.endpoints = {}
         self.system_prompts = {}
-        self.chat_histories = {}
         self.active_endpoint = None
+        self.active_chat = None
         if self.settings_file.exists():
             settings = json.loads(self.settings_file.read_text())
             if "theme" in settings:
-                self.theme = settings["theme"]
+                self.app.theme = settings["theme"]
             if "active_endpoint" in settings:
                 self.active_endpoint = settings["active_endpoint"]
+            if "active_chat" in settings:
+                self.active_chat = settings["active_chat"]
         if self.endpoints_file.exists():
             self.endpoints = json.loads(self.endpoints_file.read_text())
-        if self.chat_histories_file.exists():
-            self.chat_histories = json.loads(self.chat_histories_file.read_text())
         if self.system_prompts_file.exists():
             self.system_prompts = json.loads(self.system_prompts_file.read_text())
         if not self.endpoints:
