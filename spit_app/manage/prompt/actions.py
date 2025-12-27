@@ -15,12 +15,7 @@ class ActionsMixIn:
         await self.remove_children()
         await self.select_main_screen()
 
-    def is_edit_prompt(self) -> bool:
-        if self.children and self.children[0].id == "edit-prompt":
-            return True
-        return False
-
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if action == "cancel" or action == "save" or action == "delete":
-            return self.is_edit_prompt()
+        if self.children and self.children[0].id == "option-list":
+            return False
         return True
