@@ -7,14 +7,6 @@ class ActionsMixIn:
         await self.remove_children()
         await self.select_main_screen()
 
-    async def action_set_active(self) -> None:
-        if self.valid_values_edit():
-            self.store_values()
-            self.settings.save()
-            self.settings.set_active(self.cur_endpoint)
-            await self.remove_children()
-            await self.select_main_screen()
-
     async def action_save(self) -> None:
         if self.valid_values_edit():
             self.store_values()
