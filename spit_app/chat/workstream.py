@@ -8,11 +8,17 @@ class WorkStream:
         self.buffer_size_max = 8
         self.parts: List[str] = []
         self.ctypes: List[str] = []
-        self.endpoint = LlamaCppEndpoint(app)
+        endpoint = app.settings.endpoints[app.chat_endpoint]
+        if app.chat_prompt:
+            system_prompt = app.settings.system_prompts[app.chat_prompt]
+        else:
+            system_prompt = None
+        tools = app.settings.tools
+        self.endpoint = LlamaCppEndpoint(app.messages, endpoint, system_prompt, tools)
 
     async def stream(self, messages: List[Dict[str, str]]
                ) -> Generator[Tuple[str, Optional[str], Optional[str]], None, None]:
-        async for _ctype, part in self.endpoint.stream(messages):
+        async for _ctype, part in self.endpoint.stream():
             self.parts.append(part)
             self.ctypes.append(_ctype)
             for char in part:
