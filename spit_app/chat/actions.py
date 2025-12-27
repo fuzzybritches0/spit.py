@@ -182,8 +182,7 @@ class TextAreaActionsMixIn:
             case "cancel_edit":
                 return self.chat.edit
             case "continue":
-                active = self.app.settings.active_endpoint
-                if (is_working(self.chat) or self.chat.edit or not active or not
+                if (is_working(self.chat) or self.chat.edit or not
                         self.app.settings.endpoints[active]["values"]["endpoint_url"]):
                     return False
                 if not self.chat.messages and not self.text:
