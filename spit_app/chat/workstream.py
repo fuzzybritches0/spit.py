@@ -10,7 +10,7 @@ class WorkStream:
         self.ctypes: List[str] = []
         endpoint = app.settings.endpoints[app.chat_endpoint]
         if app.chat_prompt:
-            prompt = app.settings.prompts[app.chat_prompt]
+            prompt = app.settings.prompts[app.chat_prompt]["text"]
         else:
             prompt = None
         tools = app.settings.tools
