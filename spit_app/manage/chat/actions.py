@@ -31,11 +31,6 @@ class ActionsMixIn:
         await self.remove_children()
         await self.select_main_screen()
 
-    def is_edit_chat(self) -> bool:
-        if self.children and self.children[0].id == "edit-chat":
-            return True
-        return False
-
     def is_loaded(self) -> bool:
         try:
             self.app.query_one("#main").query_one(f"#{self.cur_chat}")
@@ -91,6 +86,6 @@ class ActionsMixIn:
         await self.app.query_one("#side-panel").option_selected(id)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if action == "cancel" or action == "save" or action == "delete":
-            return self.is_edit_chat()
+        if self.children and self.children[0].id == "option-list":
+            return False
         return True
