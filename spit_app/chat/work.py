@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: GPL-2.0
-from spit_app.workstream import WorkStream
+from spit_app.chat.workstream import WorkStream
 from spit_app.tools.tool_call import Tool
-from spit_app.patterns.pattern_processing import PatternProcessing
-import spit_app.message as message
-import spit_app.utils as utils
+import spit_app.chat.render as render
+import spit_app.chat.message as message
 import json
 
 class Work():
-    def __init__(self, app) -> None:
-        self.app = app
-        self.pp = PatternProcessing(self)
+    def __init__(self, chat) -> None:
+        self.app = chat.app
+        self.chat = chat
+        self.pp = self.chat.pattern_processing(self.chat)
         self.content = ""
         self.reasoning = ""
         self.tool_calls = ""
@@ -67,16 +67,16 @@ class Work():
         if self.pp.thinking:
             if self.display_thinking is False:
                 self.display_thinking = True
-                await message.update(self.app, "Thinking...")
+                await message.update(self.chat, "Thinking...")
         else:
-            await message.update(self.app, self.pp.paragraph)
+            await message.update(self.chat, self.pp.paragraph)
 
     async def stream_response(self):
         self.app.refresh_bindings()
-        await message.mount(self.app, "response", False)
+        await message.mount(self.chat, "response", False)
 
-        workstream = WorkStream(self.app)
-        async for ctype, buffer, part in workstream.stream(self.app.messages):
+        workstream = WorkStream(self.chat)
+        async for ctype, buffer, part in workstream.stream(self.chat.messages):
             if buffer:
                 await self.buffer(buffer, ctype)
             if part:
@@ -84,7 +84,7 @@ class Work():
 
         if self.pp.tool_call:
             self.pp.paragraph+="`"
-        await message.update(self.app, self.pp.paragraph)
+        await message.update(self.chat, self.pp.paragraph)
         if not self.reasoning:
             self.reasoning = None
         if self.tool_calls:
@@ -103,7 +103,7 @@ class Work():
             msg["tool_calls"] = new_tool_calls
         if self.reasoning:
             msg["reasoning"] = self.reasoning
-        utils.save_message(self.app, msg)
+        self.chat.save_message(msg)
         self.app.refresh_bindings()
 
 async def work_tools(self, tool_calls: list) -> None:
@@ -111,8 +111,8 @@ async def work_tools(self, tool_calls: list) -> None:
         for tool_call in tool_calls:
             tool = Tool()
             tool_response = tool.call(tool_call)
-            utils.save_message(self.app, tool_response)
-            await message.render_message(self.app, self.messages[-1])
+            self.chat.save_message(tool_response)
+            await render.message(self.chat, self.messages[-1])
         work = Work(self)
         await work.stream_response()
         tool_calls = work.tool_calls
