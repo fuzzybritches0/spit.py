@@ -51,12 +51,7 @@ class ActionsMixIn:
         await self.remove_children()
         await self.select_main_screen()
 
-    def is_edit_endpoint(self) -> bool:
-        if self.children and self.children[0].id == "edit-endpoint":
-            return True
-        return False
-
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if action == "cancel" or action == "save" or action == "delete" or action == "set_active":
-            return self.is_edit_endpoint()
+        if self.children and self.children[0].id == "option-list":
+            return False
         return True
