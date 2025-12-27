@@ -1,4 +1,4 @@
-import spit_app.patterns.pattern_methods as pm
+import spit_app.chat.patterns.pattern_methods as pm
 
 patterns = [
         #PATTERN     STREAM THINK  ESCAPE  CODELI ROSTER AWAIT  METHOD ARGS...
@@ -23,8 +23,8 @@ patterns = [
 ]
 
 class PatternProcessing:
-    def __init__(self, app) -> None:
-        self.app = app.app
+    def __init__(self, chat) -> None:
+        self.chat = chat
         self.tool_call = False
         self.thinking = False
         self.escaped = False

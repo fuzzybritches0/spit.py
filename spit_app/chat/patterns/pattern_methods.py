@@ -1,11 +1,11 @@
-import spit_app.message as message
+import spit_app.chat.message as message
 import spit_app.latex_math as lm
 
 async def _remove_empty(self) -> None:
     if not self.paragraph.strip(" \n"):
-        await message.remove(self.app)
+        await message.remove(self.chat)
     else:
-        await message.update(self.app, self.paragraph)
+        await message.update(self.chat, self.paragraph)
     self.paragraph = ""
 
 async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = False) -> None:
@@ -52,18 +52,18 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         latex_image = None
         self.paragraph = self.paragraph[:self.seqstart-lenepat]
         if sequence and render:
-            color = self.app.message_container.styles.color.css
-            background = self.app.message_container.styles.background.css
+            color = self.chat.message_container.styles.color.css
+            background = self.chat.message_container.styles.background.css
             latex_image = lm.latex_math(self, sequence.strip(" \n"), color, background)
         if latex_image:
             await _remove_empty(self)
-            await message.mount_latex(self.app, latex_image)
-            turn_id=len(self.app.latex_listings)-1
-            self.app.latex_listings[turn_id].append(esc + exp_latex_fence + sequence + esc + pattern)
-            await message.mount_next(self.app)
+            await message.mount_latex(self.chat, latex_image)
+            turn_id=len(self.chat.latex_listings)-1
+            self.chat.latex_listings[turn_id].append(esc + exp_latex_fence + sequence + esc + pattern)
+            await message.mount_next(self.chat)
         else:
             await _remove_empty(self)
-            await message.mount_code(self.app)
+            await message.mount_code(self.chat)
             if pattern == "$$" or pattern == "]":
                 exp_latex_fence += "\n"
                 pattern = "\n" + pattern
@@ -74,31 +74,43 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         self.cur_latex_fence = ""
 
 async def code_block_start_end(self, buffer: str, pattern: str) -> None:
-    if not self.pp_last or self.pp_last == "\n":
-        if not self.cur_code_fence:
+    if not self.cur_code_fence:
+        self.code_line_offset = 0
+        if not self.pp_last or self.pp_last == "\n":
             await code_block_start(self, buffer, pattern)
-        elif self.cur_code_fence == pattern:
-            await code_block_end(self, buffer, pattern)
+        elif self.paragraph.rstrip(" ").endswith("\n"):
+            self.code_line_offset = len(self.paragraph) - len(self.paragraph.rstrip(" "))
+            await code_block_start(self, buffer, pattern)
+    elif self.cur_code_fence == pattern:
+        await code_block_end(self, buffer, pattern)
 
 async def code_block_start(self, buffer: str, pattern: str) -> None:
     await _remove_empty(self)
-    await message.mount_code(self.app)
+    await message.mount_code(self.chat)
     self.cur_code_fence = pattern
     self.codelisting = True
 
+def _code_line_offset(offset, code) -> str:
+    code_lines = code.split("\n")
+    code_ret = []
+    for code_line in code_lines:
+        code_ret.append(code_line[offset:])
+    return "\n".join(code_ret)
+
 async def _code_block_end(self) -> None:
-    await message.update(self.app, self.paragraph)
-    turn_id=len(self.app.code_listings)-1
+    await message.update(self.chat, self.paragraph)
+    turn_id=len(self.chat.code_listings)-1
     code = self.paragraph.strip("`~")
     code = code.split("\n",1)
     if len(code) == 2:
         code = code[1]
     else:
         code = code[0]
-    code = code.strip("\n ")
-    self.app.code_listings[turn_id].append(code)
+    if self.code_line_offset > 0:
+        code = _code_line_offset(self.code_line_offset, code)
+    self.chat.code_listings[turn_id].append(code.strip("\n"))
     self.paragraph = ""
-    await message.mount_next(self.app)
+    await message.mount_next(self.chat)
 
 async def code_block_end(self, buffer: str, pattern: str) -> None:
     self.cur_code_fence = ""
