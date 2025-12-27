@@ -53,7 +53,6 @@ class Chat(HandlersMixIn, ActionsMixIn, Vertical):
         self.latex_listings = []
         self.undo = []
         self.undo_index = -1
-        self.system_prompt = "You are a helpful AI assistant."
         self.focused_message = None
         self.pattern_processing = PatternProcessing
 

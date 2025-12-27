@@ -11,7 +11,7 @@ class Settings:
         self.app = app
         self.data_path = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
         self.data_path.mkdir(parents=True, exist_ok=True)
-        self.system_prompts_file = self.data_path / "prompts.json"
+        self.prompts_file = self.data_path / "prompts.json"
         self.endpoints_file = self.data_path / "endpoints.json"
         self.settings_path = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
         self.settings_path.mkdir(parents=True, exist_ok=True)
@@ -40,8 +40,8 @@ class Settings:
         self.settings_file.write_text(json.dumps(settings))
         self.endpoints_file.write_text(json.dumps(self.endpoints))
 
-    def save_system_prompts(self) -> None:
-        self.system_prompts_file.write_text(json.dumps(self.system_prompts))
+    def save_prompts(self) -> None:
+        self.prompts_file.write_text(json.dumps(self.prompts))
 
     def store(self, cur_endpoint: int, setting: str, stype: str, value: str | bool) -> None:
         if stype == "Float" and value:
@@ -53,7 +53,7 @@ class Settings:
     def load(self) -> None:
         self.theme = None
         self.endpoints = {}
-        self.system_prompts = {}
+        self.prompts = {}
         self.active_endpoint = None
         self.active_chat = None
         if self.settings_file.exists():
@@ -66,8 +66,8 @@ class Settings:
                 self.active_chat = settings["active_chat"]
         if self.endpoints_file.exists():
             self.endpoints = json.loads(self.endpoints_file.read_text())
-        if self.system_prompts_file.exists():
-            self.system_prompts = json.loads(self.system_prompts_file.read_text())
+        if self.prompts_file.exists():
+            self.prompts = json.loads(self.prompts_file.read_text())
         if not self.endpoints:
             self.init()
         self.tools = self.read_tool_desc()
@@ -94,9 +94,9 @@ class Settings:
         }
         return uuid
 
-    def new_system_prompt(self) -> str:
+    def new_prompt(self) -> str:
         uuid = str(uuid4())
-        self.system_prompts[uuid] = {
+        self.prompts[uuid] = {
                 "name": uuid,
                 "text": "You are a friendly AI assistant."
         }
@@ -114,9 +114,9 @@ class Settings:
             self.init()
         self.save()
 
-    def delete_system_prompt(self, prompt: str) -> None:
-        del self.system_prompts[prompt]
-        self.save_system_prompts()
+    def delete_prompt(self, prompt: str) -> None:
+        del self.prompts[prompt]
+        self.save_prompts()
 
     def remove_custom_setting(self, conf: int, rsetting: str) -> None:
         custom = []

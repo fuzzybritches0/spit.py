@@ -22,7 +22,7 @@ class Prompts(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertic
     def store_values(self) -> None:
         name = self.query_one("#name").value
         text = self.query_one("#text").text
-        self.settings.system_prompts[self.cur_system_prompt] = {
+        self.settings.prompts[self.cur_prompt] = {
                 "name": name,
                 "text": text
         }

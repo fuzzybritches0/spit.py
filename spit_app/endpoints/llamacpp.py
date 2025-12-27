@@ -5,11 +5,11 @@ from spit_app.helpers import dot2obj
 from typing import Generator, Tuple, List, Dict, Any
 
 class LlamaCppEndpoint:
-    def __init__(self, messages, endpoint, system_prompt, tools):
+    def __init__(self, messages, endpoint, prompt, tools):
         self.messages = messages
         self.endpoint = endpoint
         self.api_endpoint = self.endpoint["values"]["endpoint_url" ] + "/v1/chat/completions"
-        self.system_prompt = system_prompt
+        self.prompt = prompt
         self.tools = tools
         self.timeout = 15
         self.b_tool_calls = False
@@ -23,8 +23,8 @@ class LlamaCppEndpoint:
         self.reasoning_key = self.endpoint["values"]["reasoning_key"]
         payload = {}
         payload["messages"] = []
-        if self.system_prompt:
-            payload["messages"].append({"role": "system", "content": self.system_prompt})
+        if self.prompt:
+            payload["messages"].append({"role": "system", "content": self.prompt})
         for message in self.messages:
             if "reasoning" in message:
                 message[self.reasoning_key] = message["reasoning"]

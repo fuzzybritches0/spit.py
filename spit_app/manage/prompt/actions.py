@@ -1,13 +1,13 @@
 class ActionsMixIn:
     async def action_delete(self) -> None:
-        self.settings.delete_system_prompt(self.cur_system_prompt)
+        self.settings.delete__prompt(self.cur_prompt)
         await self.remove_children()
         await self.select_main_screen()
 
     async def action_save(self) -> None:
         if self.valid_values_edit():
             self.store_values()
-            self.settings.save_system_prompts()
+            self.settings.save_prompts()
             await self.remove_children()
             await self.select_main_screen()
 

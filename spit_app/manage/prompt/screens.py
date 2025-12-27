@@ -6,18 +6,18 @@ from textual.containers import Horizontal
 class ScreensMixIn:
     async def select_main_screen(self) -> None:
         Options = [Option("\nCreate new System Prompt\n", id="select-new-prompt")]
-        for prompt in self.settings.system_prompts.keys():
-            name=self.settings.system_prompts[prompt]["name"]
+        for prompt in self.settings.prompts.keys():
+            name=self.settings.prompts[prompt]["name"]
             Options.append(Option(f"\nEdit: {name}\n", id=f"select-prompt-{prompt}"))
         await self.mount(OptionList(*Options, id="option-list"))
         self.children[0].focus()
 
     async def edit_prompt_screen(self) -> None:
-        value = self.settings.system_prompts[self.cur_system_prompt]["name"]
+        value = self.settings.prompts[self.cur_prompt]["name"]
         await self.mount(Label("Name:"))
         await self.mount(Input(type="text", validators=[Function(self.val.is_not_empty)],
                                   id="name", value=value))
-        text = self.settings.system_prompts[self.cur_system_prompt]["text"]
+        text = self.settings.prompts[self.cur_prompt]["text"]
         await self.mount(Label("Text:"))
         await self.mount(TextArea(text, id="text"))
         await self.mount(Horizontal(

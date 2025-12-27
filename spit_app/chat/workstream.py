@@ -10,11 +10,11 @@ class WorkStream:
         self.ctypes: List[str] = []
         endpoint = app.settings.endpoints[app.chat_endpoint]
         if app.chat_prompt:
-            system_prompt = app.settings.system_prompts[app.chat_prompt]
+            prompt = app.settings.prompts[app.chat_prompt]
         else:
-            system_prompt = None
+            prompt = None
         tools = app.settings.tools
-        self.endpoint = LlamaCppEndpoint(app.messages, endpoint, system_prompt, tools)
+        self.endpoint = LlamaCppEndpoint(app.messages, endpoint, prompt, tools)
 
     async def stream(self, messages: List[Dict[str, str]]
                ) -> Generator[Tuple[str, Optional[str], Optional[str]], None, None]:
