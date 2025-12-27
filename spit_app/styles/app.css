@@ -1,3 +1,26 @@
+#main {
+	height: 100%;
+	width: 10fr;
+	border: none
+}
+#side-panel {
+	height: 100%;
+	width: 3fr;
+	border: none
+}
+.chat {
+	height: 100%;
+	width: 100%;
+	border: none
+}
+#chat-view {
+	height: 7fr;
+	border: round $border-blurred
+}
+#chat-view:focus {
+	height: 7fr;
+	border: round $border
+}
 #text-area {
 	height: 2fr;
 	color: $foreground;
@@ -10,41 +33,33 @@
 	background: $background;
 	border: round $border
 }
-#chat-view {
-	height: 7fr;
-	border: round $border-blurred
-}
-#chat-view:focus {
-	height: 7fr;
-	border: round $border
-}
 .latex-image {
 	margin: 0 0 0 0;
 	width: auto
 }
 .message-container-request {
-	margin: 0 0 0 0;
+	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border-blurred;
 	height: auto
 }
 .message-container-request:focus {
-	margin: 0 0 0 0;
+	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border;
 	height: auto
 }
 .message-container-response {
-	margin: 1 0 1 0;
+	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border-blurred;
 	height: auto
 }
 .message-container-response:focus {
-	margin: 1 0 1 0;
+	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border;
@@ -77,4 +92,22 @@
 	background: $background;
 	border: tall $border;
 	height: auto
+}
+.manage:focus {
+	border: round $border
+}
+.manage {
+	border: round $border-blurred
+}
+#save-delete-cancel {
+	height: 4
+}
+Button {
+	margin: 1 1 1 1
+}
+Input {
+	margin: 0 1 1 1
+}
+.text-area {
+	height: 10
 }
