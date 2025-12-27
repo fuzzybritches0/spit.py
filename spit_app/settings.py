@@ -29,13 +29,11 @@ class Settings:
     def init(self) -> None:
         self.endpoints = {}
         self.active_chat = None
-        self.active_endpoint = None
         self.new()
 
     def save(self) -> None:
         settings = {}
         settings["theme"] = self.app.theme
-        settings["active_endpoint"] = self.active_endpoint
         settings["active_chat"] = self.active_chat
         self.settings_file.write_text(json.dumps(settings))
         self.endpoints_file.write_text(json.dumps(self.endpoints))
@@ -54,14 +52,11 @@ class Settings:
         self.theme = None
         self.endpoints = {}
         self.prompts = {}
-        self.active_endpoint = None
         self.active_chat = None
         if self.settings_file.exists():
             settings = json.loads(self.settings_file.read_text())
             if "theme" in settings:
                 self.app.theme = settings["theme"]
-            if "active_endpoint" in settings:
-                self.active_endpoint = settings["active_endpoint"]
             if "active_chat" in settings:
                 self.active_chat = settings["active_chat"]
         if self.endpoints_file.exists():
@@ -102,14 +97,8 @@ class Settings:
         }
         return uuid
 
-    def set_active(self, conf: int) -> None:
-        self.active_endpoint = conf
-        self.save()
-
     def delete_endpoint(self, conf: str) -> None:
         del self.endpoints[conf]
-        if self.active_endpoint == conf:
-            self.active_endpoint = None
         if len(self.endpoints) < 1:
             self.init()
         self.save()
