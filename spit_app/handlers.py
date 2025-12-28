@@ -18,3 +18,5 @@ class HandlersMixIn:
             else:
                 self.settings.active_chat = None
                 self.settings.save()
+        if not self.query_one("#side-panel").highlighted:
+            self.query_one("#side-panel").highlighted = 0
