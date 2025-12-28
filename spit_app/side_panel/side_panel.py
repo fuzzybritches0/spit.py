@@ -17,6 +17,7 @@ class SidePanel(OptionList):
 
     def option_list(self) -> None:
         Options = []
+        Options.append(Option("\nManage Chats\n", id="manage-chats"))
         for chat in os.listdir(self.app.settings.data_path):
             if chat.startswith("chat-") and chat.endswith(".json"):
                 with open(self.app.settings.data_path / chat, "r") as file:
@@ -25,9 +26,9 @@ class SidePanel(OptionList):
                 desc = content["desc"]
                 ctime = datetime.fromtimestamp(int(content["ctime"]))
                 Options.append(Option(f"\n{desc}\n{ctime}\n", id=id))
+        Options.append(None)
         Options.append(Option("\nManage Endpoints\n", id="manage-endpoints"))
         Options.append(Option("\nManage System Prompts\n", id="manage-prompts"))
-        Options.append(Option("\nManage Chats\n", id="manage-chats"))
         Options.append(None)
         Options.append(Option("\nHelp\n", id="help"))
         Options.append(Option("\nAbout\n", id="about"))
