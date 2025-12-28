@@ -16,6 +16,7 @@ class ActionsMixIn:
             await self.select_main_screen()
 
     async def action_cancel(self) -> None:
+        self.settings.load()
         await self.remove_children()
         await self.select_main_screen()
 
