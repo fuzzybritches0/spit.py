@@ -1,6 +1,6 @@
 class ActionsMixIn:
     async def action_delete(self) -> None:
-        self.settings.delete__prompt(self.cur_prompt)
+        self.settings.delete_prompt(self.cur_prompt)
         await self.remove_children()
         await self.select_main_screen()
 
