@@ -6,8 +6,7 @@ class HandlersMixIn:
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":
-            await self.remove_children()
-            await self.select_main_screen()
+            await self.action_cancel()
         elif event.button.id == "delete":
             await self.action_delete()
         elif event.button.id == "save":
