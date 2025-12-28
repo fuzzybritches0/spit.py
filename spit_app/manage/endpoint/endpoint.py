@@ -18,6 +18,7 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         self.settings = self.app.settings
         self.id = "manage-endpoints"
         self.classes = "manage"
+        self.new_endpoint = False
         self.val = Validation(self)
 
     def store_values(self) -> None:

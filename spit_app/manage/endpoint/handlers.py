@@ -23,10 +23,12 @@ class HandlersMixIn:
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "select-new-endpoint":
+            self.new_endpoint = True
             self.cur_endpoint = self.settings.new()
             await self.remove_children()
             await self.edit_endpoint_screen()
         else:
+            self.new_endpoint = False
             self.cur_endpoint = str(event.option.id[16:])
             await self.remove_children()
             await self.edit_endpoint_screen()

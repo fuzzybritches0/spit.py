@@ -85,12 +85,19 @@ class ScreensMixIn:
 
     async def edit_endpoint_screen(self) -> None:
         await self.edit_endpoint()
-        await self.mount(Horizontal(
-                Button("Save", id="save"),
-                Button("Delete", id="delete"),
-                Button("Cancel", id="cancel"),
-                id="save-delete-cancel"
-        ))
+        if self.new_endpoint:
+            await self.mount(Horizontal(
+                    Button("Save", id="save"),
+                    Button("Cancel", id="cancel"),
+                    id="save-delete-cancel"
+            ))
+        else:
+            await self.mount(Horizontal(
+                    Button("Save", id="save"),
+                    Button("Delete", id="delete"),
+                    Button("Cancel", id="cancel"),
+                    id="save-delete-cancel"
+            ))
         await self.mount(Rule())
         await self.edit_endpoint_remove_custom()
         await self.mount(Rule())
