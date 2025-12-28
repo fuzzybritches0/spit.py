@@ -23,4 +23,6 @@ class ActionsMixIn:
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":
             return False
+        if action == "delete" and self.new_prompt:
+            return False
         return True

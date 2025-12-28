@@ -20,10 +20,17 @@ class ScreensMixIn:
         text = self.settings.prompts[self.cur_prompt]["text"]
         await self.mount(Label("Text:"))
         await self.mount(TextArea(text, id="text"))
-        await self.mount(Horizontal(
-            Button("Save", id="save"),
-            Button("Delete", id="delete"),
-            Button("Cancel", id="cancel"),
-            id="save-delete-cancel"
-        ))
+        if self.new_prompt:
+            await self.mount(Horizontal(
+                Button("Save", id="save"),
+                Button("Cancel", id="cancel"),
+                id="save-delete-cancel"
+            ))
+        else:
+            await self.mount(Horizontal(
+                Button("Save", id="save"),
+                Button("Delete", id="delete"),
+                Button("Cancel", id="cancel"),
+                id="save-delete-cancel"
+            ))
         self.children[1].focus()

@@ -17,6 +17,7 @@ class Prompts(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertic
         self.settings = self.app.settings
         self.id = "manage-prompts"
         self.classes = "manage"
+        self.new_prompt = False
         self.val = Validation(self)
 
     def store_values(self) -> None:
