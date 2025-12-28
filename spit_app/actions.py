@@ -7,14 +7,14 @@ bindings = [
 
 class ActionsMixIn:
     async def action_side_panel(self) -> None:
-        chat_list = self.query_one("#side-panel")
-        if not chat_list is self.focused:
-            chat_list.display = True
-            chat_list.disable = False
-            chat_list.focus()
+        side_panel = self.query_one("#side-panel")
+        if not side_panel is self.focused:
+            side_panel.display = True
+            side_panel.disable = False
+            side_panel.focus()
         else:
-            chat_list.display = False
-            chat_list.disable = True
+            side_panel.display = False
+            side_panel.disable = True
             index = 0
             for child in self.query_one("#main").children:
                 if child.display:
