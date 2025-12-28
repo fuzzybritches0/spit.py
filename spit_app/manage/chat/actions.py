@@ -44,6 +44,7 @@ class ActionsMixIn:
         file_name = self.cur_chat + ".json"
         os.remove(self.settings.data_path / file_name)
         self.app.query_one("#side-panel").remove_option(self.cur_chat)
+        self.app.query_one("#side-panel").highlighted-=1
 
     def update(self, desc: str, endpoint: str, prompt: str) -> None:
         if self.is_loaded():
