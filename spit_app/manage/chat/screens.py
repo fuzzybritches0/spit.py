@@ -60,10 +60,17 @@ class ScreensMixIn:
             await self.mount(Label("System Prompt:"))
             await self.mount(Select(((name, key) for name, key in self.prompt_list()),
                                 id="prompt", prompt="None"))
-        await self.mount(Horizontal(
-            Button("Save", id="save"),
-            Button("Delete", id="delete"),
-            Button("Cancel", id="cancel"),
-            id="save-delete-cancel"
-        ))
+        if chat:
+            await self.mount(Horizontal(
+                Button("Save", id="save"),
+                Button("Delete", id="delete"),
+                Button("Cancel", id="cancel"),
+                id="save-delete-cancel"
+            ))
+        else:
+            await self.mount(Horizontal(
+                Button("Save", id="save"),
+                Button("Cancel", id="cancel"),
+                id="save-delete-cancel"
+            ))
         self.children[1].focus()
