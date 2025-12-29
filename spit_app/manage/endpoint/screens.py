@@ -33,16 +33,19 @@ class ScreensMixIn:
         await self.mount(Label("Add custom setting:"))
         await self.mount(Select.from_values(types, id="custom-setting-select-add", allow_blank=False))
 
-    async def edit_endpoint_remove_custom(self) -> None:
-        names = []
+    def custom_options(self) -> list:
+        options = []
         for setting, *others in self.settings.endpoints[self.cur_endpoint]["custom"]:
             if (not setting == "name" and
                 not setting == "endpoint_url" and
                 not setting == "key" and
                 not setting == "reasoning_key"):
-                names.append(setting)
+                options.append((setting, setting))
+        return options
+
+    async def edit_endpoint_remove_custom(self) -> None:
         await self.mount(Label("Remove custom setting:"))
-        await self.mount(Select.from_values(names, id="custom-setting-select-remove", allow_blank=False))
+        await self.mount(Select(self.custom_options(), id="custom-setting-select-remove", allow_blank=False))
         await self.mount(Button("Remove", id="button-remove-setting"))
 
     async def edit_endpoint(self) -> None:
