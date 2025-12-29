@@ -18,20 +18,18 @@ class ActionsMixIn:
             await self.select_main_screen()
 
     async def action_add_setting(self) -> None:
-        if self.valid_values_add():
-            setting = self.query_one("#new-setting").value
-            stype = self.query_one("#custom-setting-select-add").value
-            desc = self.query_one("#new-description").value
-            sarray = []
-            if stype == "Select" or stype == "Select_no_default":
-                value = self.query_one("#new-select-values").value
-                array = value.split(",")
-                for el in array:
-                    sarray.append(el.strip())
-            self.settings.add_custom_setting(self.cur_endpoint, setting, stype, desc, sarray)
-            self.settings.save()
-            await self.remove_children()
-            await self.edit_endpoint_screen()
+        setting = self.query_one("#new-setting").value
+        stype = self.query_one("#custom-setting-select-add").value
+        desc = self.query_one("#new-description").value
+        sarray = []
+        if stype == "Select" or stype == "Select_no_default":
+            value = self.query_one("#new-select-values").value
+            array = value.split(",")
+            for el in array:
+                sarray.append(el.strip())
+        self.settings.add_custom_setting(self.cur_endpoint, setting, stype, desc, sarray)
+        self.query_one("#custom-setting-select-remove").set_options(self.custom_options())
+        await self.mount_setting(setting, stype, desc, sarray, True)
 
     async def action_remove_setting(self) -> None:
         remove = self.query_one("#custom-setting-select-remove").value
