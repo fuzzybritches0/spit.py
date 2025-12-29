@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.widgets import Select
 
 class ActionsMixIn:
     async def action_delete(self) -> None:
@@ -36,11 +35,11 @@ class ActionsMixIn:
 
     async def action_remove_setting(self) -> None:
         remove = self.query_one("#custom-setting-select-remove").value
-        if not remove == Select.BLANK:
-            self.settings.remove_custom_setting(self.cur_endpoint, remove)
-            self.settings.save()
-            await self.remove_children()
-            await self.edit_endpoint_screen()
+        self.settings.remove_custom_setting(self.cur_endpoint, remove)
+        self.query_one("#custom-setting-select-remove").set_options(self.custom_options())
+        remove = remove.replace(".", "-")
+        await self.query_one(f"#{remove}").remove()
+        await self.query_one(f"#label-{remove}").remove()
 
     async def action_cancel(self) -> None:
         self.settings.load()
