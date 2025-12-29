@@ -48,43 +48,67 @@ class ScreensMixIn:
         await self.mount(Select(self.custom_options(), id="custom-setting-select-remove", allow_blank=False))
         await self.mount(Button("Remove", id="button-remove-setting"))
 
-    async def edit_endpoint(self) -> None:
-        for setting, stype, desc, amore in self.settings.endpoints[self.cur_endpoint]["custom"]:
-            id = setting.replace(".", "-")
-            await self.mount(Label(f"{desc}: ({stype})"))
-            value = None
-            if setting in self.settings.endpoints[self.cur_endpoint]["values"]:
-                value = self.settings.endpoints[self.cur_endpoint]["values"][setting]
-            if value is None:
-                value = ""
-            Validators = []
-            vtype = "text"
-            if setting == "name":
-                Validators.append(Function(self.val.is_unique_name))
-            elif setting == "endpoint_url":
-                Validators.append(Function(self.val.is_url))
+    async def mount_setting(self, setting: str, stype: str, desc: str, amore: list, add: bool = False) -> None:
+        id = setting.replace(".", "-")
+        if add:
+            await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
+        else:
+            await self.mount(Label(f"{desc}: ({stype})", id="label-"+id))
+        value = None
+        if setting in self.settings.endpoints[self.cur_endpoint]["values"]:
+            value = self.settings.endpoints[self.cur_endpoint]["values"][setting]
+        if value is None:
+            value = ""
+        Validators = []
+        vtype = "text"
+        if setting == "name":
+            Validators.append(Function(self.val.is_unique_name))
+        elif setting == "endpoint_url":
+            Validators.append(Function(self.val.is_url))
+        else:
+            if stype == "Float":
+                vtype = "number"
+            elif stype == "Integer":
+                vtype = "integer"
+        if stype == "Float" or stype == "Integer":
+            value=str(value)
+        if stype == "Select":
+            if not value:
+                value = Select.BLANK
+            if add:
+                await self.mount(Select.from_values(amore, id=id, value=value,
+                                                prompt="Default"), before="#save-delete-cancel")
             else:
-                if stype == "Float":
-                    vtype = "number"
-                elif stype == "Integer":
-                    vtype = "integer"
-            if stype == "Float" or stype == "Integer":
-                value=str(value)
-            if stype == "Select":
-                if not value:
-                    value = Select.BLANK
                 await self.mount(Select.from_values(amore, id=id, value=value, prompt="Default"))
-            elif stype == "Select_no_default":
-                if not value:
-                    value = amore[0]
+        elif stype == "Select_no_default":
+            if not value:
+                value = amore[0]
+            if add:
+                await self.mount(Select.from_values(amore, id=id, value=value,
+                                allow_blank=False), before="#save-delete-cancel")
+            else:
                 await self.mount(Select.from_values(amore, id=id, value=value, allow_blank=False))
-            elif stype == "Boolean":
+        elif stype == "Boolean":
+            if add:
+                await self.mount(Switch(id=id, value=value), before="#save-delete-cancel")
+            else:
                 await self.mount(Switch(id=id, value=value))
-            elif stype == "Text":
+        elif stype == "Text":
+            if add:
+                await self.mount(TextArea(value, id=id, classes="text-area"), before="#save-delete-cancel")
+            else:
                 await self.mount(TextArea(value, id=id, classes="text-area"))
+        else:
+            if add:
+                await self.mount(Input(type=vtype, validators=Validators,
+                                      id=f"{setting}", value=value), before="#save-delete-cancel")
             else:
                 await self.mount(Input(type=vtype, validators=Validators,
-                                          id=f"{setting}", value=value))
+                                      id=f"{setting}", value=value))
+
+    async def edit_endpoint(self) -> None:
+        for setting, stype, desc, amore in self.settings.endpoints[self.cur_endpoint]["custom"]:
+            await self.mount_setting(setting, stype, desc, amore)
 
     async def edit_endpoint_screen(self) -> None:
         await self.edit_endpoint()
