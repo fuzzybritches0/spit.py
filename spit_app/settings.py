@@ -28,26 +28,23 @@ class Settings:
 
     def init(self) -> None:
         self.endpoints = {}
+        self.prompts = {}
         self.active_chat = None
-        self.new()
 
     def save(self) -> None:
         settings = {}
         settings["theme"] = self.app.theme
         settings["active_chat"] = self.active_chat
         self.settings_file.write_text(json.dumps(settings))
+        self.save_endpoints()
+        self.save_prompts()
+
+    def save_endpoints(self) -> None:
         self.endpoints_file.write_text(json.dumps(self.endpoints))
 
     def save_prompts(self) -> None:
         self.prompts_file.write_text(json.dumps(self.prompts))
 
-    def store(self, cur_endpoint: int, setting: str, stype: str, value: str | bool) -> None:
-        if stype == "Float" and value:
-            value = float(value)
-        elif stype == "Integer" and value:
-            value = int(value)
-        self.endpoints[cur_endpoint]["values"][setting] = value
-        
     def load(self) -> None:
         self.theme = None
         self.endpoints = {}
@@ -66,57 +63,3 @@ class Settings:
         if not self.endpoints:
             self.init()
         self.tools = self.read_tool_desc()
-
-    def new(self) -> str:
-        uuid = str(uuid4())
-        self.endpoints[uuid] = {
-            "values": {
-                "name": uuid,
-                "endpoint_url": "http://127.0.0.1:8080",
-                "key": None,
-                "reasoning_key": "reasoning_content"
-            },
-            "custom": [
-                ("name", "String", "Name", []),
-                ("endpoint_url", "String", "Endpoint URL", []),
-                ("key", "String", "API Access Key", []),
-                ("reasoning_key", "Select_no_default", "Reasoning Key", ["reasoning_content", "reasoning"]),
-                ("temperature", "Float", "Temperature", []),
-                ("top_p", "Float", "TOP-P", []),
-                ("min_p", "Float", "MIN-P", []),
-                ("top_k", "Float", "TOP-K", [])
-            ]
-        }
-        return uuid
-
-    def new_prompt(self) -> str:
-        uuid = str(uuid4())
-        self.prompts[uuid] = {
-                "name": uuid,
-                "text": "You are a friendly AI assistant."
-        }
-        return uuid
-
-    def delete_endpoint(self, conf: str) -> None:
-        del self.endpoints[conf]
-        if len(self.endpoints) < 1:
-            self.init()
-        self.save()
-
-    def delete_prompt(self, prompt: str) -> None:
-        del self.prompts[prompt]
-        self.save_prompts()
-
-    def remove_custom_setting(self, conf: int, rsetting: str) -> None:
-        custom = []
-        values = {}
-        for setting, stype, desc, sarray in self.endpoints[conf]["custom"]:
-            if not rsetting == setting:
-                custom.append((setting, stype, desc, sarray))
-                if setting in self.endpoints[conf]["values"]:
-                    values[setting] = self.endpoints[conf]["values"][setting]
-        self.endpoints[conf]["custom"] = custom
-        self.endpoints[conf]["values"] = values
-
-    def add_custom_setting(self, conf: int, setting: str, stype: str, desc: str, sarray: list) -> None:
-        self.endpoints[conf]["custom"].append((setting, stype, desc, sarray))
