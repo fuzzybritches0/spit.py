@@ -39,7 +39,7 @@ class ScreensMixIn:
             chat += ".json"
             with open(self.app.settings.data_path / chat, "r") as file:
                 content = json.load(file)
-        Validators = [Function(self.val.is_not_empty)]
+        Validators = [Function(self.is_not_empty)]
         await self.mount(Label("Description:"))
         if content:
             await self.mount(Input(id="desc", value=content["desc"], validators=Validators))
@@ -53,7 +53,7 @@ class ScreensMixIn:
             await self.mount(Select(((name, key) for name, key in self.prompt_list()),
                                 value=value, id="prompt", prompt="None"))
         else:
-            await self.mount(Input(id="desc", validators=Validators))
+            await self.mount(Input(id="desc", value="New Chat", validators=Validators))
             await self.mount(Label("Endpoint:"))
             await self.mount(Select(((name, key) for name, key in self.endpoint_list()),
                                 id="endpoint", allow_blank=False))
