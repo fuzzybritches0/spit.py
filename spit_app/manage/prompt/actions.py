@@ -1,13 +1,13 @@
 class ActionsMixIn:
     async def action_delete(self) -> None:
-        self.settings.delete_prompt(self.cur_prompt)
+        self.delete()
         await self.remove_children()
         await self.select_main_screen()
 
     async def action_save(self) -> None:
         if self.valid_values_edit():
             self.store_values()
-            self.settings.save_prompts()
+            self.save()
             try:
                 await self.app.query_one("#main").query_one("#manage-chats").remove()
             except:
@@ -16,7 +16,6 @@ class ActionsMixIn:
             await self.select_main_screen()
 
     async def action_cancel(self) -> None:
-        self.settings.load()
         await self.remove_children()
         await self.select_main_screen()
 
