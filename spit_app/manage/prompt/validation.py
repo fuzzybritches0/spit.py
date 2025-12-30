@@ -5,3 +5,8 @@ class ValidationMixIn:
         if not self.query_one("#text").text:
             return False
         return True
+
+    def is_not_empty(self, value) -> bool:
+        if value:
+            return True
+        return False
