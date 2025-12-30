@@ -13,11 +13,11 @@ class ScreensMixIn:
         self.children[0].focus()
 
     async def edit_prompt_screen(self) -> None:
-        value = self.settings.prompts[self.cur_prompt]["name"]
+        value = self.prompt["name"]
         await self.mount(Label("Name:"))
-        await self.mount(Input(type="text", validators=[Function(self.val.is_not_empty)],
+        await self.mount(Input(type="text", validators=[Function(self.is_not_empty)],
                                   id="name", value=value))
-        text = self.settings.prompts[self.cur_prompt]["text"]
+        text = self.prompt["text"]
         await self.mount(Label("Text:"))
         await self.mount(TextArea(text, id="text"))
         if self.new_prompt:
