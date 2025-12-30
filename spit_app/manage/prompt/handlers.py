@@ -14,12 +14,10 @@ class HandlersMixIn:
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "select-new-prompt":
-            self.new_prompt = True
-            self.cur_prompt = self.settings.new_prompt()
+            self.new()
             await self.remove_children()
             await self.edit_prompt_screen()
         else:
-            self.new_prompt = False
-            self.cur_prompt = str(event.option.id[14:])
+            self.load(str(event.option.id[14:]))
             await self.remove_children()
             await self.edit_prompt_screen()
