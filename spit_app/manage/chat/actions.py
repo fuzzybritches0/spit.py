@@ -21,8 +21,8 @@ class ActionsMixIn:
             else:
                 self.new(desc, endpoint, prompt)
                 await self.app.query_one("#main").mount(Chat(self.uuid))
-                await self.app.query_one("#side-panel").option_selected(self.uuid)
                 side_panel = self.app.query_one("#side-panel")
+                await side_panel.option_selected(self.uuid)
                 options = side_panel.options
                 ctime = datetime.fromtimestamp(int(self.ctime))
                 option = Option(f"{desc}\n{ctime}\n", id=self.uuid)
