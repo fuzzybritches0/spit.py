@@ -7,17 +7,17 @@ from textual.containers import Horizontal
 class ScreensMixIn:
     async def mount_custom_setting_form(self, stype) -> None:
         await self.mount(Label(f"Setting for {stype} value:"))
-        Validators = [ Function(self.val.is_unique_custom), Function(self.val.is_valid_setting) ]
+        Validators = [ Function(self.is_unique_custom), Function(self.is_valid_setting) ]
         await self.mount(Input(id="new-setting",
                                        validators=Validators,
                                        restrict=r"[0-9a-z_.]*",
                                        valid_empty=False,
                                        max_length=128))
         await self.mount(Label(f"Description for {stype} value:"))
-        await self.mount(Input(id="new-description", validators=[Function(self.val.is_not_empty)]))
+        await self.mount(Input(id="new-description", validators=[Function(self.is_not_empty)]))
         if stype == "Select" or stype == "Select_no_default":
             await self.mount(Label("Select values (separate with ','):"))
-            Validators = [ Function(self.val.is_valid_selection) ]
+            Validators = [ Function(self.is_valid_selection) ]
             await self.mount(Input(id="new-select-values", validators=Validators,
                                            restrict=r"[0-9a-z_, ]*"))
         await self.mount(Button("Add", id=f"button-add-setting"))
@@ -35,7 +35,7 @@ class ScreensMixIn:
 
     def custom_options(self) -> list:
         options = []
-        for setting, *others in self.settings.endpoints[self.cur_endpoint]["custom"]:
+        for setting, *others in self.endpoint["custom"]:
             if (not setting == "name" and
                 not setting == "endpoint_url" and
                 not setting == "key" and
@@ -45,7 +45,7 @@ class ScreensMixIn:
 
     async def edit_endpoint_remove_custom(self) -> None:
         await self.mount(Label("Remove custom setting:"))
-        await self.mount(Select(self.custom_options(), id="custom-setting-select-remove", allow_blank=False))
+        await self.mount(Select(self.custom_options(), id="custom-setting-select-remove", prompt="None"))
         await self.mount(Button("Remove", id="button-remove-setting"))
 
     async def mount_setting(self, setting: str, stype: str, desc: str, amore: list, add: bool = False) -> None:
@@ -55,16 +55,16 @@ class ScreensMixIn:
         else:
             await self.mount(Label(f"{desc}: ({stype})", id="label-"+id))
         value = None
-        if setting in self.settings.endpoints[self.cur_endpoint]["values"]:
-            value = self.settings.endpoints[self.cur_endpoint]["values"][setting]
+        if setting in self.endpoint["values"]:
+            value = self.endpoint["values"][setting]
         if value is None:
             value = ""
         Validators = []
         vtype = "text"
         if setting == "name":
-            Validators.append(Function(self.val.is_unique_name))
+            Validators.append(Function(self.is_unique_name))
         elif setting == "endpoint_url":
-            Validators.append(Function(self.val.is_url))
+            Validators.append(Function(self.is_url))
         else:
             if stype == "Float":
                 vtype = "number"
@@ -107,7 +107,7 @@ class ScreensMixIn:
                                       id=f"{setting}", value=value))
 
     async def edit_endpoint(self) -> None:
-        for setting, stype, desc, amore in self.settings.endpoints[self.cur_endpoint]["custom"]:
+        for setting, stype, desc, amore in self.endpoint["custom"]:
             await self.mount_setting(setting, stype, desc, amore)
 
     async def edit_endpoint_screen(self) -> None:
