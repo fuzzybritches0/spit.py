@@ -28,6 +28,7 @@ async def undo(self) -> None:
             self.edit = False
         self.write_chat_history()
         self.undo_index-=1
+        self.app.refresh_bindings()
 
 async def redo(self) -> None:
     if self.undo_index < len(self.undo)-1:
@@ -51,6 +52,7 @@ async def redo(self) -> None:
             focus_message(self, index)
             self.edit = False
         self.write_chat_history()
+        self.app.refresh_bindings()
 
 def append_undo(self, operation: str, umessage: dict, index: int = -1) -> None:
     while len(self.undo)-1 > self.undo_index:
