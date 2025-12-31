@@ -37,7 +37,7 @@ class ValidationMixIn:
         if not value:
             return False
         for endpoint in self.app.settings.endpoints.keys():
-            if (not endpoint == self.app.uuid and
+            if (not endpoint == self.uuid and
                     self.app.settings.endpoints[endpoint]["values"]["name"] == value):
                 return False
         return True
@@ -46,7 +46,7 @@ class ValidationMixIn:
         if not value:
             return False
         same = 0
-        for name, stype, desc, sarray in self.app.settings.endpoints[self.app.uuid]["custom"]:
+        for name, stype, desc, sarray in self.app.settings.endpoints[self.uuid]["custom"]:
             if name == value:
                 return False
         return True
