@@ -57,11 +57,12 @@ class Chat(HandlersMixIn, ActionsMixIn, Vertical):
         self.latex_listings = []
         self.undo = []
         self.undo_index = -1
+        self.chat_view = ChatView(self)
         self.text_area = TextArea(self)
         self.pattern_processing = PatternProcessing
 
     def compose(self) -> ComposeResult:
-        yield ChatView(self)
+        yield self.chat_view
         yield self.text_area
 
     def write_chat_history(self) -> None:
