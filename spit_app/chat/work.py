@@ -74,7 +74,7 @@ class Work():
     async def stream_response(self):
         self.app.refresh_bindings()
         await message.mount(self.chat, "response", False)
-        self.chat_view.focus_message(-1)
+        self.chat.chat_view.focus_message(-1)
 
         workstream = WorkStream(self.chat)
         async for ctype, buffer, part in workstream.stream(self.chat.messages):
