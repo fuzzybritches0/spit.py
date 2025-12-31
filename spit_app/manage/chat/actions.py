@@ -29,12 +29,22 @@ class ActionsMixIn:
                 new_options = options[0:1] + [option] + options[1:]
                 side_panel.set_options(new_options)
                 side_panel.highlighted = 1
-            await self.remove_children()
-            await self.select_main_screen()
+            if self.new_chat:
+                try:
+                    await self.app.query_one("#main").query_one("#manage-chats").remove()
+                except:
+                    pass
+                await self.remove()
+            else:
+                await self.remove_children()
+                await self.select_main_screen()
 
     async def action_cancel(self) -> None:
-        await self.remove_children()
-        await self.select_main_screen()
+        if self.new_chat:
+            await self.remove()
+        else:
+            await self.remove_children()
+            await self.select_main_screen()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":

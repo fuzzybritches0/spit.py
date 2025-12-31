@@ -16,10 +16,14 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
         ("escape", "cancel", "Cancel")
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, new_chat: bool = False) -> None:
         super().__init__()
+        self.new_chat = new_chat
         self.settings = self.app.settings
-        self.id = "manage-chats"
+        if self.new_chat:
+            self.id = "new-chat"
+        else:
+            self.id = "manage-chats"
         self.classes = "manage"
         self.cur_chat = None
 

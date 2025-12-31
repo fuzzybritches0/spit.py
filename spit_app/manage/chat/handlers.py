@@ -6,7 +6,10 @@ from textual.widgets.option_list import Option
 
 class HandlersMixIn:
     async def on_mount(self) -> None:
-        await self.select_main_screen()
+        if self.new_chat:
+            await self.edit_chat()
+        else:
+            await self.select_main_screen()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "cancel":

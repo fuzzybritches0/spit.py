@@ -17,7 +17,8 @@ class SidePanel(OptionList):
 
     def option_list(self) -> None:
         Options = []
-        Options.append(Option("\nManage Chats\n", id="manage-chats"))
+        Options.append(Option("\nCreate New Chat\n", id="new-chat"))
+        Options.append(None)
         for chat in os.listdir(self.app.settings.data_path):
             if chat.startswith("chat-") and chat.endswith(".json"):
                 with open(self.app.settings.data_path / chat, "r") as file:
@@ -27,6 +28,7 @@ class SidePanel(OptionList):
                 ctime = datetime.fromtimestamp(int(content["ctime"]))
                 Options.append(Option(f"\n{desc}\n{ctime}\n", id=id))
         Options.append(None)
+        Options.append(Option("\nManage Chats\n", id="manage-chats"))
         Options.append(Option("\nManage Endpoints\n", id="manage-endpoints"))
         Options.append(Option("\nManage System Prompts\n", id="manage-prompts"))
         Options.append(None)
@@ -63,6 +65,8 @@ class SidePanel(OptionList):
             await self.app.query_one("#main").mount(ManagePrompts())
         elif id == "manage-chats":
             await self.app.query_one("#main").mount(ManageChats())
+        elif id == "new-chat":
+            await self.app.query_one("#main").mount(ManageChats(True))
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "quit":
