@@ -8,10 +8,11 @@ class HandlersMixIn:
     async def on_mount(self) -> None:
         if not self.messages:
             self.query_one("#text-area").focus()
-        loading_screen = LoadingScreen()
-        await self.app.push_screen(loading_screen)
-        await render.messages(self)
-        await loading_screen.dismiss()
+        else:
+            loading_screen = LoadingScreen()
+            await self.app.push_screen(loading_screen)
+            await render.messages(self)
+            await loading_screen.dismiss()
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
