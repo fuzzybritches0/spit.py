@@ -7,7 +7,7 @@ from spit_app.overlays.loading_screen import LoadingScreen
 class HandlersMixIn:
     async def on_mount(self) -> None:
         if not self.messages:
-            self.query_one("#text-area").focus()
+            self.text_area.focus()
         else:
             loading_screen = LoadingScreen()
             await self.app.push_screen(loading_screen)
@@ -22,7 +22,7 @@ class HandlersMixIn:
             if self.focused_message:
                 self.focused_message.focus(scroll_visible=False)
             elif not self.messages:
-                self.query_one("#text-area").focus()
+                self.text_area.focus()
         elif event.control.id and ("-listing-" in event.control.id or
                                    "message-id-" in event.control.id):
             self.focused_message = event.control

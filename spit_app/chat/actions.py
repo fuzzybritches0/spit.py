@@ -37,7 +37,7 @@ bindings_chat_view = [
 
 class ActionsMixIn:
     def action_change_focus(self) -> None:
-        self.query_one("#text-area").focus()
+        self.text_area.focus()
 
     async def action_abort(self) -> None:
         self.work.cancel()
@@ -81,15 +81,15 @@ class ChatViewActionsMixIn:
     def edit_message(self, ctype: str) -> None:
         id=int(self.app.focused.id[11:])
         self.chat.edit_role = self.chat.messages[id]["role"]
-        self.chat.query_one("#text-area").text_area_temp = self.chat.query_one("#text-area").text
+        self.chat.text_area.text_area_temp = self.chat.text_area.text
         if ctype == "tool_calls" or self.chat.edit_role == "tool":
-            self.chat.query_one("#text-area").text = json.dumps(self.chat.messages[id][ctype])
+            self.chat.text_area.text = json.dumps(self.chat.messages[id][ctype])
         else:
-            self.chat.query_one("#text-area").text = self.chat.messages[id][ctype]
+            self.chat.text_area.text = self.chat.messages[id][ctype]
         self.chat.edit = True
         self.chat.edit_ctype = ctype
         self.chat.edit_container = self.app.focused
-        self.chat.query_one("#text-area").focus()
+        self.chat.text_area.focus()
 
     async def action_remove_last(self) -> None:
         undo.append_undo(self.chat, "remove", self.chat.messages[-1])
