@@ -26,7 +26,10 @@ class ActionsMixIn:
                 options = side_panel.options
                 ctime = datetime.fromtimestamp(int(self.ctime))
                 option = Option(f"{desc}\n{ctime}\n", id=self.uuid)
-                new_options = options[0:1] + [option] + options[1:]
+                new_options = options[0:1] + [option]
+                if len(options) < 8:
+                    new_options.append(None)
+                new_options += options[1:]
                 side_panel.set_options(new_options)
                 side_panel.highlighted = 1
             if self.new_chat:
