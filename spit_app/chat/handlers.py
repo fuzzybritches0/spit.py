@@ -18,14 +18,14 @@ class HandlersMixIn:
         self.refresh_bindings()
 
     def on_descendant_focus(self, event: events.DescendantFocus) -> None:
-        if event.control is self.query_one("#chat-view"):
-            if self.focused_message:
-                self.focused_message.focus(scroll_visible=False)
+        if event.control is self.chat_view:
+            if self.chat_view.focused_message:
+                self.chat_view.focused_message.focus(scroll_visible=False)
             elif not self.messages:
                 self.text_area.focus()
         elif event.control.id and ("-listing-" in event.control.id or
                                    "message-id-" in event.control.id):
-            self.focused_message = event.control
+            self.chat_view.focused_message = event.control
 
 class TextAreaHandlersMixIn:
     def on_text_area_changed(self) -> None:

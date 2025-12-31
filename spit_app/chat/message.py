@@ -56,10 +56,10 @@ async def mount_latex(self, latex_image: Image) -> None:
     await latex_listing_container.mount(latex_image)
 
 async def remove_last_turn(self) -> None:
-    if self.query_one("#chat-view").children:
-        if self.query_one("#chat-view").children[-1] is self.focused_message:
-            if len(self.query_one("#chat-view").children) > 1:
-                self.focused_message = self.query_one("#chat-view").children[-2]
-        await self.query_one("#chat-view").children[-1].remove()
+    if self.chat_view.children:
+        if self.chat_view.children[-1] is self.chat_view.focused_message:
+            if len(self.chat_view.children) > 1:
+                self.chat_view.focused_message = self.chat_view.children[-2]
+        await self.chat_view.children[-1].remove()
         del self.code_listings[-1]
         del self.latex_listings[-1]
