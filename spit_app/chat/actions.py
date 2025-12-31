@@ -162,7 +162,9 @@ class TextAreaActionsMixIn:
             self.chat.messages[id][self.chat.edit_ctype] = self.text
         self.chat.write_chat_history()
         self.text = self.text_area_temp
-        await render.message(self.chat, self.chat.messages[id], True)
+        await render.message(self.chat, self.chat.messages[id])
+        self.chat.query_one("#chat-view").children[id].focus()
+        self.chat.focused_message = self.chat.query_one("#chat-view").children[id]
         self.chat.edit = False
 
     async def action_continue(self) -> None:

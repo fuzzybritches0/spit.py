@@ -5,32 +5,32 @@ import spit_app.chat.message as mmessage
 async def messages(self) -> None:
     for umessage in self.messages:
         await message(self, umessage)
+    self.query_one("#chat-view").children[-1].focus()
+    self.focused_message = self.query_one("#chat-view").children[-1]
 
-async def message(self, umessage, scroll_visible: bool = False) -> None:
+async def message(self, umessage) -> None:
     if umessage["role"] == "user" and umessage["content"]:
-        await _message(self, "request", umessage["content"], scroll_visible)
+        await _message(self, "request", umessage["content"])
     elif umessage["role"] == "assistant" and "content" in umessage and umessage["content"]:
-        await _message(self, "response", umessage["content"], scroll_visible)
+        await _message(self, "response", umessage["content"])
     elif umessage["role"] == "assistant" and "tool_calls" in umessage and umessage["tool_calls"]:
-        await _tool_calls(self, umessage["tool_calls"], scroll_visible)
+        await _tool_calls(self, umessage["tool_calls"])
     elif umessage["role"] == "tool" and "content" in umessage and umessage["content"]:
-        await _tool_response(self, umessage["content"], scroll_visible)
+        await _tool_response(self, umessage["content"])
 
-async def _tool_calls(self, tool_calls, scroll_visible: bool) -> None:
+async def _tool_calls(self, tool_calls) -> None:
     for tool_call in tool_calls:
         await _message(self, "response",
-                              "- TOOL CALL: `" + json.dumps(tool_call) + "`",
-                              scroll_visible)
+                              "- TOOL CALL: `" + json.dumps(tool_call) + "`")
 
-async def _tool_response(self, tool_response, scroll_visible: bool) -> None:
+async def _tool_response(self, tool_response) -> None:
     await _message(self, "request",
-                          "- RESULT: `" + json.dumps(tool_response) + "`",
-                          scroll_visible)
+                          "- RESULT: `" + json.dumps(tool_response) + "`")
 
-async def _message(self, mtype: str, messagec: str, scroll_visible: bool) -> None:
+async def _message(self, mtype: str, messagec: str) -> None:
     buffer = ""
     pp = self.pattern_processing(self)
-    await mmessage.mount(self, mtype, scroll_visible)
+    await mmessage.mount(self, mtype)
     for char in messagec:
         buffer += char
         if len(buffer) < 8:

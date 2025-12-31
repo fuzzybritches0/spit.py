@@ -3,7 +3,7 @@ from textual_image.widget import Image
 from textual.widgets import Markdown
 from textual.containers import VerticalScroll
 
-async def mount(self, mtype: str, scroll_visible: bool, content: str = "") -> None:
+async def mount(self, mtype: str, content: str = "") -> None:
     if self.edit:
         self.message_container = self.edit_container
         id = int(self.message_container.id[11:])
@@ -21,8 +21,6 @@ async def mount(self, mtype: str, scroll_visible: bool, content: str = "") -> No
         self.code_listings.append([])
         self.latex_listings.append([])
     await self.message_container.mount(self.mwidget)
-    self.message_container.focus(scroll_visible=scroll_visible)
-    self.focused_message = self.message_container
     if content:
         await self.mwidget.update(content)
 
