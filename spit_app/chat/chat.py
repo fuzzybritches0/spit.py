@@ -21,6 +21,10 @@ class ChatView(ChatViewHandlersMixIn, ChatViewActionsMixIn, VerticalScroll):
         self.focused_message = None
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
 
+    def focus_message(self, index: int) -> None:
+        self.children[index].focus()
+        self.focused_message = self.children[index]
+
 class TextArea(TextAreaHandlersMixIn, TextAreaActionsMixIn, TextArea):
     BINDINGS = bindings_text_area
 
