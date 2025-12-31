@@ -53,7 +53,6 @@ class Chat(HandlersMixIn, ActionsMixIn, Vertical):
         self.latex_listings = []
         self.undo = []
         self.undo_index = -1
-        self.focused_message = None
         self.pattern_processing = PatternProcessing
 
     def compose(self) -> ComposeResult:
