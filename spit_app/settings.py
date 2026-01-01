@@ -5,8 +5,6 @@ from uuid import uuid4
 import json
 
 class Settings:
-    TOOL_DESC_PATH = "tools.json"
-
     def __init__(self, app) -> None:
         self.app = app
         self.data_path = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
@@ -16,15 +14,6 @@ class Settings:
         self.settings_path = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
         self.settings_path.mkdir(parents=True, exist_ok=True)
         self.settings_file = self.settings_path / "settings.json"
-
-    def read_tool_desc(self):
-        try:
-            with open(self.TOOL_DESC_PATH, "r") as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return None
-        except Exception as e:
-            raise e
 
     def init(self) -> None:
         self.endpoints = {}
@@ -60,6 +49,3 @@ class Settings:
             self.endpoints = json.loads(self.endpoints_file.read_text())
         if self.prompts_file.exists():
             self.prompts = json.loads(self.prompts_file.read_text())
-        if not self.endpoints:
-            self.init()
-        self.tools = self.read_tool_desc()
