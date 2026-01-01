@@ -6,6 +6,7 @@ from spit_app.settings import Settings
 from spit_app.actions import ActionsMixIn
 from spit_app.actions import bindings
 from spit_app.handlers import HandlersMixIn
+from spit_app.tool_call import ToolCall
 from spit_app.side_panel.side_panel import SidePanel
 
 class SpitApp(ActionsMixIn, HandlersMixIn, App):
@@ -22,6 +23,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         #self.applog("LOG START:")
         self.settings = Settings(self)
         self.settings.load()
+        self.tool_call = ToolCall(self)
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
 
     def applog(self, text: str) -> None:
