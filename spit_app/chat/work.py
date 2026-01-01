@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
 from spit_app.chat.workstream import WorkStream
-from spit_app.tools.tool_call import Tool
 import spit_app.chat.render as render
 import spit_app.chat.message as message
 import json
@@ -110,10 +109,9 @@ class Work():
 async def work_tools(self, tool_calls: list) -> None:
     while tool_calls:
         for tool_call in tool_calls:
-            tool = Tool()
-            tool_response = tool.call(tool_call)
-            self.chat.save_message(tool_response)
-            await render.message(self.chat, self.messages[-1])
+            tool_response = self.app.tool_call.call(tool_call, self.id)
+            self.save_message(tool_response)
+            await render.message(self, self.messages[-1])
         work = Work(self)
         await work.stream_response()
         tool_calls = work.tool_calls
