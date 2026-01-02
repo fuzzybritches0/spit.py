@@ -13,6 +13,9 @@ class LlamaCppEndpoint:
         self.tools = tools
         self.timeout = 15
         self.b_tool_calls = False
+        self.resetf()
+
+    def resetf(self) -> None:
         self.tid = None
         self.ttype = None
         self.fname = None
@@ -54,7 +57,6 @@ class LlamaCppEndpoint:
             if self.tid and not self.tid == content["id"]:
                 yield 'tool_calls', '}},'
                 self.resetf()
-                self.b_tool_calls = True
             if not self.tid:
                 self.tid = content["id"]
                 yield 'tool_calls', '{"id":"' + self.tid + '",'
