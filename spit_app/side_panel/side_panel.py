@@ -19,7 +19,9 @@ class SidePanel(OptionList):
         Options = []
         Options.append(Option("\nCreate New Chat\n", id="new-chat"))
         Options.append(None)
-        for chat in os.listdir(self.app.settings.data_path):
+        chats = os.listdir(self.app.settings.data_path)
+        chats = sorted(chats, reverse=True)
+        for chat in chats:
             if chat.startswith("chat-") and chat.endswith(".json"):
                 with open(self.app.settings.data_path / chat, "r") as file:
                     content = json.load(file)

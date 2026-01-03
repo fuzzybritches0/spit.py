@@ -10,7 +10,9 @@ from typing import Generator, List
 class ScreensMixIn:
     async def select_main_screen(self) -> None:
         Options = [Option("\nCreate new Chat\n", id="select-new-chat")]
-        for chat in os.listdir(self.app.settings.data_path):
+        chats = os.listdir(self.app.settings.data_path)
+        chats = sorted(chats, reverse=True)
+        for chat in chats:
             if chat.startswith("chat-") and chat.endswith(".json"):
                 with open(self.app.settings.data_path / chat, "r") as file:
                     content = json.load(file)
