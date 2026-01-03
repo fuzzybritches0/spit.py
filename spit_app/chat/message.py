@@ -60,6 +60,7 @@ async def remove_last_turn(self) -> None:
         if self.chat_view.children[-1] is self.chat_view.focused_message:
             if len(self.chat_view.children) > 1:
                 self.chat_view.focused_message = self.chat_view.children[-2]
+                self.chat_view.focused_message.focus(scroll_visible=False)
         await self.chat_view.children[-1].remove()
         del self.code_listings[-1]
         del self.latex_listings[-1]
