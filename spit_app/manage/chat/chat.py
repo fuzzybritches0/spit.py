@@ -2,7 +2,6 @@ import os
 import json
 from datetime import datetime
 from time import time
-from uuid import uuid4
 from textual.containers import Vertical
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
@@ -29,7 +28,7 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
 
     def new(self, desc: str, endpoint: str, prompt: str) -> None:
         self.ctime = time()
-        self.uuid = "chat-" + str(uuid4())
+        self.uuid = "chat-" + str(self.ctime).replace(".", "-")
         file_name = self.uuid + ".json"
         content = {"ctime": self.ctime, "desc": desc, "endpoint": endpoint,
                    "prompt": prompt, "messages": []}
