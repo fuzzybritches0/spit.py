@@ -14,6 +14,8 @@ class HandlersMixIn:
             await self.action_cancel()
         elif event.button.id == "delete":
             await self.action_delete()
+        elif event.button.id == "duplicate":
+            self.action_duplicate()
         elif event.button.id == "save":
             await self.action_save()
         elif event.button.id == "button-remove-setting":

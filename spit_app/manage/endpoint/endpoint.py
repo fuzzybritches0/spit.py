@@ -11,6 +11,7 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
+        ("ctrl+d", "duplicate", "Duplicate"),
         ("escape", "cancel", "Cancel")
     ]
 
@@ -20,6 +21,11 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         self.id = "manage-endpoints"
         self.classes = "manage"
         self.new_endpoint = False
+
+    def duplicate(self) -> None:
+        self.new_endpoint = True
+        self.uuid = str(uuid4())
+        self.query_one("#name").value = self.uuid
 
     def new(self) -> None:
         self.new_endpoint = True

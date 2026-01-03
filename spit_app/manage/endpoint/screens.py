@@ -122,6 +122,7 @@ class ScreensMixIn:
             await self.mount(Horizontal(
                     Button("Save", id="save"),
                     Button("Delete", id="delete"),
+                    Button("Duplicate", id="duplicate"),
                     Button("Cancel", id="cancel"),
                     id="save-delete-cancel"
             ))

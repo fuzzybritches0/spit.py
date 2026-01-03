@@ -2,6 +2,9 @@
 from textual.widgets import Select
 
 class ActionsMixIn:
+    def action_duplicate(self) -> None:
+        self.duplicate()
+
     async def action_delete(self) -> None:
         self.delete()
         await self.remove_children()
