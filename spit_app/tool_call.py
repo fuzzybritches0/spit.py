@@ -16,20 +16,32 @@ def load_module_from_path(name: str, path: Path):
 class ToolCall:
     def __init__(self, app) -> None:
         self.app = app
-        self.tools = {}
+        self.tools_sync = {}
+        self.tools_async = {}
         self.tool_descs = []
         file_path = __file__.split("/")
         file_path = "/".join(file_path[:-1]) + "/tools"
         for tool in os.listdir(file_path):
             if tool.endswith(".py"):
                 module = load_module_from_path(f"tools.{tool}", file_path + "/" + tool)
-                self.tools[tool[:-3]] = getattr(module, "call")
                 self.tool_descs.append(getattr(module, "desc"))
+                if hasattr(module, "call_sync"):
+                    self.tools_sync[tool[:-3]] = getattr(module, "call_sync")
+                if hasattr(module, "call_async"):
+                    self.tools_async[tool[:-3]] = getattr(module, "call_async")
 
-    def call(self, tool_call: dict, chat_id: str) -> dict:
-        return {"role": "tool",
-                "tool_call_id": tool_call["id"],
-                "name": tool_call["function"]["name"],
-                "content": self.tools[tool_call["function"]["name"]](self.app,
+    async def call(self, tool_call: dict, chat_id: str) -> dict:
+        if tool_call["function"]["name"] in self.tools_sync:
+            return {"role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "name": tool_call["function"]["name"],
+                    "content": self.tools_sync[tool_call["function"]["name"]](self.app,
                                     json.loads(tool_call["function"]["arguments"]), chat_id)
-                }
+                    }
+        else:
+            return {"role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "name": tool_call["function"]["name"],
+                    "content": await self.tools_async[tool_call["function"]["name"]](self.app,
+                                    json.loads(tool_call["function"]["arguments"]), chat_id)
+                    }

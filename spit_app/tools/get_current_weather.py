@@ -19,5 +19,5 @@ desc = {
     }
 } 
     
-def call(app, arguments: dict, chat_id) -> dict:
+def call_sync(app, arguments: dict, chat_id) -> dict:
     return '{"unit":"celsius","temperature":3}'

@@ -18,7 +18,7 @@ desc = {
     }
 } 
     
-def call(app, arguments: dict, chat_id) -> dict:
+async def call_async(app, arguments: dict, chat_id) -> str:
     chat = app.query_one(f"#{chat_id}")
     desc = arguments["description"]
     chat.chat_desc = desc

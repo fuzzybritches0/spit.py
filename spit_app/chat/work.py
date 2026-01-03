@@ -109,7 +109,7 @@ class Work():
 async def work_tools(self, tool_calls: list) -> None:
     while tool_calls:
         for tool_call in tool_calls:
-            tool_response = self.app.tool_call.call(tool_call, self.id)
+            tool_response = await self.app.tool_call.call(tool_call, self.id)
             self.save_message(tool_response)
             await render.message(self, self.messages[-1])
         work = Work(self)
