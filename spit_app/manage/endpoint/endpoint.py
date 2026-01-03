@@ -11,7 +11,7 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
-        ("ctrl+d", "duplicate", "Duplicate"),
+        ("ctrl+t", "duplicate", "Duplicate"),
         ("escape", "cancel", "Cancel")
     ]
 
