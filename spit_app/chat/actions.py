@@ -23,7 +23,7 @@ bindings = [
 bindings_text_area = [
         ("ctrl+enter", "submit", "Submit"),
         ("ctrl+enter", "save_edit", "Save"),
-        ("ctrl+escape", "cancel_edit", "Cancel"),
+        ("ctrl+escape", "cancel_edit", "Cancel")
 ]
 bindings_chat_view = [
         ("ctrl+enter", "continue", "Continue"),
@@ -33,7 +33,7 @@ bindings_chat_view = [
         ("c", "edit_cot", "Edit CoT"),
         ("t", "edit_tool", "Edit tool call"),
         ("y", "copy_listing", "Copy"),
-        ("x", "remove_last", "Remove turn"),
+        ("x", "remove_last", "Remove turn")
 ]
 
 class ActionsMixIn:
