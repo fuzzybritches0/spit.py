@@ -18,6 +18,7 @@ class HandlersMixIn:
         self.refresh_bindings()
 
     def on_descendant_focus(self, event: events.DescendantFocus) -> None:
+        self.app.query_one("#side-panel").can_focus = False
         if event.control is self.chat_view:
             if self.chat_view.focused_message:
                 self.chat_view.focused_message.focus(scroll_visible=False)

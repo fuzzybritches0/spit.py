@@ -11,8 +11,10 @@ class ActionsMixIn:
         if not side_panel is self.focused:
             side_panel.display = True
             side_panel.disable = False
+            side_panel.can_focus = True
             side_panel.focus()
         else:
+            side_panel.can_focus = False
             side_panel.display = False
             side_panel.disable = True
             index = 0
