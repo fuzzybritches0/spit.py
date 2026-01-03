@@ -108,7 +108,7 @@ class ChatViewActionsMixIn:
                      parameters: tuple[object, ...]) -> bool | None:
         match action:
             case "continue":
-                if is_working(self.chat) or self.chat.edit or not self.messages:
+                if is_working(self.chat) or self.chat.edit or not self.chat.messages:
                     return False
                 if self.chat.messages[-1]["role"] == "assistant":
                     if not "tool_calls" in self.chat.messages[-1]:
