@@ -5,7 +5,7 @@ import spit_app.chat.message as mmessage
 async def messages(self) -> None:
     for umessage in self.messages:
         await message(self, umessage)
-    self.chat_view.focus_message(-1)
+    self.chat_view.focus_message(-1, False)
 
 async def message(self, umessage) -> None:
     if umessage["role"] == "user" and umessage["content"]:
