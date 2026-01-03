@@ -10,6 +10,7 @@ class Prompts(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertic
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
+        ("ctrl+t", "duplicate", "Duplicate"),
         ("escape", "cancel", "Cancel")
     ]
 
@@ -19,6 +20,11 @@ class Prompts(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertic
         self.id = "manage-prompts"
         self.classes = "manage"
         self.new_prompt = False
+
+    def duplicate(self) -> None:
+        self.new_prompt = True
+        self.uuid = str(uuid4())
+        self.query_one("#name").value = self.uuid
 
     def new(self) -> None:
         self.new_prompt = True
