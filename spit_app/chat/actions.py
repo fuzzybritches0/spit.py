@@ -21,11 +21,12 @@ bindings = [
         ("escape", "change_focus", "Focus")
 ]
 bindings_text_area = [
-        ("ctrl+enter", "continue", "Continue"),
+        ("ctrl+enter", "submit", "Submit"),
         ("ctrl+enter", "save_edit", "Save"),
         ("ctrl+escape", "cancel_edit", "Cancel"),
 ]
 bindings_chat_view = [
+        ("ctrl+enter", "continue", "Continue"),
         ("u", "undo", "Undo"),
         ("r", "redo", "Redo"),
         ("e", "edit_content", "Edit content"),
@@ -52,6 +53,12 @@ class ActionsMixIn:
         return True
 
 class ChatViewActionsMixIn:
+    async def action_continue(self) -> None:
+        if (self.chat.messages[-1]["role"] == "user" or self.chat.messages[-1] == "tool" or
+            self.chat.messages[-1]["role"] == "assistant" and "tool_calls" in
+            self.chat.messages[-1]):
+            self.chat.work = self.run_worker(work_stream(self.chat))
+
     def action_copy_listing(self) -> None:
         id = self.app.focused.id
         if id.startswith("code-listing-"):
@@ -100,6 +107,12 @@ class ChatViewActionsMixIn:
     def check_action(self, action: str,
                      parameters: tuple[object, ...]) -> bool | None:
         match action:
+            case "continue":
+                if is_working(self.chat) or self.chat.edit:
+                    return False
+                if self.chat.messages[-1]["role"] == "assistant":
+                    if not "tool_calls" in self.chat.messages[-1]:
+                        return False
             case "undo":
                 if is_working(self.chat) or self.chat.edit:
                     return False
@@ -166,14 +179,14 @@ class TextAreaActionsMixIn:
         self.chat.chat_view.focus_message(id)
         self.chat.edit = False
 
-    async def action_continue(self) -> None:
+    async def action_submit(self) -> None:
         if (self.text and
             (not self.chat.messages or self.chat.messages[-1]["role"] == "assistant")):
             self.chat.save_message({"role": "user", "content": self.text})
             await render.message(self.chat, self.chat.messages[-1])
             self.chat.query_one("#chat-view").scroll_end(animate=False)
             self.text = ""
-        self.chat.work = self.run_worker(work_stream(self.chat))
+            self.chat.work = self.run_worker(work_stream(self.chat))
 
     def check_action(self, action: str,
                      parameters: tuple[object, ...]) -> bool | None:
@@ -182,16 +195,12 @@ class TextAreaActionsMixIn:
                 return self.chat.edit
             case "cancel_edit":
                 return self.chat.edit
-            case "continue":
+            case "submit":
                 if is_working(self.chat) or self.chat.edit:
                     return False
-                if not self.chat.messages and not self.text:
+                if not self.text:
                     return False
-                if self.chat.messages:
-                    if self.chat.messages[-1]["role"] == "user" and self.text:
-                        return False
-                    if (self.chat.messages[-1]["role"] == "assistant" and
-                        not self.text and
-                        not "tool_calls" in self.chat.messages[-1]):
-                        return False
+                if self.chat.messages and (self.chat.messages[-1]["role"] == "user" or
+                    self.chat.messages[-1]["role"] == "tool"):
+                    return False
         return True
