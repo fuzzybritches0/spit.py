@@ -4,17 +4,23 @@ from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 
 class WorkStream:
     def __init__(self, app) -> None:
-        self.app = app
         self.buffer = ""
         self.buffer_size_max = 8
         self.parts: List[str] = []
         self.ctypes: List[str] = []
         endpoint = app.settings.endpoints[app.chat_endpoint]
+        prompt = ""
+        tools_descs = []
+        for key in app.app.tool_call.tools.keys():
+            tools_descs.append(app.app.tool_call.tools[key]["desc"])
+            prompt += f"- {key}\n" + app.app.tool_call.tools[key]["settings"]["prompt"]["value"]
+        if prompt:
+            prompt = "\n# FUNCTION CALLING INSTRUCTIONS\n\n" + prompt
         if app.chat_prompt:
-            prompt = app.settings.prompts[app.chat_prompt]["text"]
-        else:
-            prompt = None
-        self.endpoint = LlamaCppEndpoint(app.messages, endpoint, prompt, self.app.app.tool_call.tool_descs)
+            prompt = app.settings.prompts[app.chat_prompt]["text"] + "\n\n# INSTRUCTIONS" + prompt
+
+
+        self.endpoint = LlamaCppEndpoint(app.messages, endpoint, prompt, tools_descs)
 
     async def stream(self, messages: List[Dict[str, str]]
                ) -> Generator[Tuple[str, Optional[str], Optional[str]], None, None]:
