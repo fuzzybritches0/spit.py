@@ -29,7 +29,6 @@ Examples: "Copy Python Objects", "Paris, Vienna Weather", "Creative Writing: Lov
 """
 
 settings = {
-    "display": { "value": False, "type": "Boolean" },
     "prompt": { "value": prompt, "type": "String" }
 }
     

@@ -26,7 +26,6 @@ Use this function if the user asks you for the weather in some location.
 """
 
 settings = {
-    "display": { "value": False, "type": "Boolean" },
     "prompt": { "value": prompt, "type": "String" }
 }
 
