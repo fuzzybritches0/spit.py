@@ -11,10 +11,7 @@ class ActionsMixIn:
         if self.valid_values_edit():
             self.store_values()
             self.save()
-            try:
-                await self.app.query_one("#main").query_one("#manage-chats").remove()
-            except:
-                pass
+            await self.app.maybe_remove("manage-chats")
             await self.remove_children()
             await self.select_main_screen()
 

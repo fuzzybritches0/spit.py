@@ -45,3 +45,9 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             child.children[0].focus()
         else:
             child.children[1].focus()
+
+    async def maybe_remove(self, id: str) -> None:
+        try:
+            await self.query_one("#main").query_one(f"#{id}").remove()
+        except:
+            pass
