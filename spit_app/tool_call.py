@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import inspect
 import importlib.util
 from pathlib import Path
 
@@ -16,32 +17,32 @@ def load_module_from_path(name: str, path: Path):
 class ToolCall:
     def __init__(self, app) -> None:
         self.app = app
-        self.tools_sync = {}
-        self.tools_async = {}
-        self.tool_descs = []
+        self.tools = {}
         file_path = __file__.split("/")
         file_path = "/".join(file_path[:-1]) + "/tools"
         for tool in os.listdir(file_path):
             if tool.endswith(".py"):
+                name = tool[:-3]
+                self.tools[name] = {}
                 module = load_module_from_path(f"tools.{tool}", file_path + "/" + tool)
-                self.tool_descs.append(getattr(module, "desc"))
-                if hasattr(module, "call_sync"):
-                    self.tools_sync[tool[:-3]] = getattr(module, "call_sync")
-                if hasattr(module, "call_async"):
-                    self.tools_async[tool[:-3]] = getattr(module, "call_async")
+                self.tools[name]["desc"] = getattr(module, "desc")
+                self.tools[name]["settings"] = getattr(module, "settings")
+                self.tools[name]["call"] = getattr(module, "call")
 
     async def call(self, tool_call: dict, chat_id: str) -> dict:
-        if tool_call["function"]["name"] in self.tools_sync:
+        name = tool_call["function"]["name"]
+        arguments = json.loads(tool_call["function"]["arguments"])
+        if inspect.iscoroutinefunction(self.tools[name]["call"]):
+            result = await self.tools[name]["call"](self.app, arguments, chat_id)
             return {"role": "tool",
                     "tool_call_id": tool_call["id"],
                     "name": tool_call["function"]["name"],
-                    "content": self.tools_sync[tool_call["function"]["name"]](self.app,
-                                    json.loads(tool_call["function"]["arguments"]), chat_id)
+                    "content": result
                     }
-        else:
+        elif inspect.isfunction(self.tools[name]["call"]):
+            result = self.tools[name]["call"](self.app, arguments, chat_id)
             return {"role": "tool",
                     "tool_call_id": tool_call["id"],
                     "name": tool_call["function"]["name"],
-                    "content": await self.tools_async[tool_call["function"]["name"]](self.app,
-                                    json.loads(tool_call["function"]["arguments"]), chat_id)
+                    "content": result
                     }
