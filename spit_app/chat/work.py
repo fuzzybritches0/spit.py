@@ -89,10 +89,6 @@ class Work():
             self.reasoning = None
         if self.tool_calls:
             self.tool_calls = json.loads(self.tool_calls)
-            new_tool_calls = []
-            for tool_call in self.tool_calls:
-                tool_call["function"]["arguments"] = json.dumps(tool_call["function"]["arguments"])
-                new_tool_calls.append(tool_call)
         if not self.content:
             self.content = None
 
@@ -100,7 +96,7 @@ class Work():
         msg["role"] = "assistant"
         msg["content"] = self.content
         if self.tool_calls:
-            msg["tool_calls"] = new_tool_calls
+            msg["tool_calls"] = self.tool_calls
         if self.reasoning:
             msg["reasoning"] = self.reasoning
         self.chat.save_message(msg)
