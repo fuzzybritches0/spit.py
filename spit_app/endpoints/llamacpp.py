@@ -12,15 +12,7 @@ class LlamaCppEndpoint:
         self.prompt = prompt
         self.tools = tools
         self.timeout = 15
-        self.b_tool_calls = False
-        self.resetf()
-
-    def resetf(self) -> None:
-        self.tid = None
-        self.ttype = None
-        self.fname = None
-        self.ffunction = False
-        self.farguments = False
+        self.tc_list = [{}]
 
     def prepare_payload(self) -> Dict[str, Any]:
         self.reasoning_key = self.endpoint["values"]["reasoning_key"]
@@ -49,32 +41,23 @@ class LlamaCppEndpoint:
         payload["stream"] = True
         return payload
 
-    def tool_calls(self, content: dict) -> Generator[Tuple[str, str], None, None]:
-        if not self.b_tool_calls:
-            yield 'tool_calls', '['
-            self.b_tool_calls = True
+    def tool_calls(self, content: dict) -> None:
         if "id" in content:
-            if self.tid and not self.tid == content["id"]:
-                yield 'tool_calls', '}},'
-                self.resetf()
-            if not self.tid:
-                self.tid = content["id"]
-                yield 'tool_calls', '{"id":"' + self.tid + '",'
+            if "id" in self.tc_list[-1] and not content["id"] == self.tc_list[-1]["id"]:
+                self.tc_list.append({})
+            if not "id" in self.tc_list[-1]:
+                self.tc_list[-1]["id"] = content["id"]
         if "type" in content:
-            self.ttype = content["type"]
-            yield 'tool_calls', f'"type":"{self.ttype}",'
-        if self.ttype == "function":
-            if not self.ffunction:
-                yield 'tool_calls', '"function":{'
-                self.ffunction = True
+            self.tc_list[-1]["type"] = content["type"]
+        if self.tc_list[-1]["type"] == "function":
+            if not "function" in self.tc_list[-1]:
+                self.tc_list[-1]["function"] = {}
             if "name" in content["function"]:
-                self.fname = content["function"]["name"]
-                yield 'tool_calls', f'"name":"{self.fname}",'
+                self.tc_list[-1]["function"]["name"] = content["function"]["name"]
             if "arguments" in content["function"]:
-                if not self.farguments:
-                    yield 'tool_calls', '"arguments":'
-                    self.farguments = True
-                yield 'tool_calls', content["function"]["arguments"]
+                if not "arguments" in self.tc_list[-1]["function"]:
+                    self.tc_list[-1]["function"]["arguments"] = ""
+                self.tc_list[-1]["function"]["arguments"] += content["function"]["arguments"]
 
     def extract_fields(self, delta: Dict[str, Any]) -> Generator[Tuple[str, str], None, None]:
         choice = delta["choices"][0]["delta"]
@@ -83,11 +66,10 @@ class LlamaCppEndpoint:
         elif content := choice.get(self.reasoning_key):
             yield "reasoning", content
         elif content := choice.get("tool_calls"):
-            for t, c in self.tool_calls(content[0]):
-                yield t, c
-        else:
-            if self.b_tool_calls:
-                yield "tool_calls", '}}]'
+            self.tool_calls(content[0])
+        elif self.tc_list[0]:
+            yield "tool_calls", json.dumps(self.tc_list)
+            self.tc_list = [{}]
 
     async def stream(self) -> Generator[Tuple[str, str], None, None]:
         headers = {}
