@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0
 
+name = __file__.split("/")[-1][:-3]
+
 desc = {
     "type": "function",
     "function": {
-        "name": "get_current_weather",
+        "name": name,
         "description": "Get the current weather in a given location",
         "parameters": {
             "type": "object",
@@ -18,6 +20,15 @@ desc = {
         }
     }
 } 
-    
-def call_sync(app, arguments: dict, chat_id) -> dict:
+
+prompt = """
+Use this function if the user asks you for the weather in some location.
+"""
+
+settings = {
+    "display": { "value": False, "type": "Boolean" },
+    "prompt": { "value": prompt, "type": "String" }
+}
+
+def call(app, arguments: dict, chat_id) -> dict:
     return '{"unit":"celsius","temperature":3}'
