@@ -21,7 +21,7 @@ async def _tool_calls(self, tool_calls) -> None:
     await _message(self, "response", "- TOOL CALL: `" + json.dumps(tool_calls) + "`")
 
 async def _tool_response(self, tool_response) -> None:
-    await _message(self, "request", "- RESULT: `" + json.dumps(tool_response) + "`")
+    await _message(self, "request", "- TOOL RESPONSE:\n\n" + tool_response)
 
 async def _message(self, mtype: str, messagec: str) -> None:
     buffer = ""
