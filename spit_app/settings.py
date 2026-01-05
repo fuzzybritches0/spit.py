@@ -14,6 +14,8 @@ class Settings:
         self.settings_path = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
         self.settings_path.mkdir(parents=True, exist_ok=True)
         self.settings_file = self.settings_path / "settings.json"
+        self.sandbox = self.data_path / "sandbox"
+        self.sandbox.mkdir(parents=True, exist_ok=True)
 
     def init(self) -> None:
         self.endpoints = {}
