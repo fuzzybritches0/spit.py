@@ -15,7 +15,7 @@ class ScreensMixIn:
                                        max_length=128))
         await self.mount(Label(f"Description for {stype} value:"))
         await self.mount(Input(id="new-description", validators=[Function(self.is_not_empty)]))
-        if stype == "Select" or stype == "Select_no_default":
+        if stype == "select" or stype == "select_no_default":
             await self.mount(Label("Select values (separate with ','):"))
             Validators = [ Function(self.is_valid_selection) ]
             await self.mount(Input(id="new-select-values", validators=Validators,
@@ -29,13 +29,13 @@ class ScreensMixIn:
             await self.mount_custom_setting_form(stype)
 
     async def edit_endpoint_add_custom(self) -> None:
-        types = [ "Integer", "Float", "Boolean", "String", "Text", "Select", "Select_no_default" ]
+        types = [ "integer", "float", "boolean", "string", "text", "select", "select_no_default" ]
         await self.mount(Label("Add custom setting:"))
         await self.mount(Select.from_values(types, id="custom-setting-select-add", allow_blank=False))
 
     def custom_options(self) -> list:
         options = []
-        for setting, *others in self.endpoint["custom"]:
+        for setting in self.endpoint.keys():
             if (not setting == "name" and
                 not setting == "endpoint_url" and
                 not setting == "key" and
@@ -55,8 +55,8 @@ class ScreensMixIn:
         else:
             await self.mount(Label(f"{desc}: ({stype})", id="label-"+id))
         value = None
-        if setting in self.endpoint["values"]:
-            value = self.endpoint["values"][setting]
+        if "value" in self.endpoint[setting]:
+            value = self.endpoint[setting]["value"]
         if value is None:
             value = ""
         Validators = []
@@ -66,13 +66,13 @@ class ScreensMixIn:
         elif setting == "endpoint_url":
             Validators.append(Function(self.is_url))
         else:
-            if stype == "Float":
+            if stype == "float":
                 vtype = "number"
-            elif stype == "Integer":
+            elif stype == "integer":
                 vtype = "integer"
-        if stype == "Float" or stype == "Integer":
+        if stype == "float" or stype == "integer":
             value=str(value)
-        if stype == "Select":
+        if stype == "select":
             if not value:
                 value = Select.BLANK
             if add:
@@ -80,7 +80,7 @@ class ScreensMixIn:
                                                 prompt="Default"), before="#save-delete-cancel")
             else:
                 await self.mount(Select.from_values(amore, id=id, value=value, prompt="Default"))
-        elif stype == "Select_no_default":
+        elif stype == "select_no_default":
             if not value:
                 value = amore[0]
             if add:
@@ -88,12 +88,12 @@ class ScreensMixIn:
                                 allow_blank=False), before="#save-delete-cancel")
             else:
                 await self.mount(Select.from_values(amore, id=id, value=value, allow_blank=False))
-        elif stype == "Boolean":
+        elif stype == "boolean":
             if add:
                 await self.mount(Switch(id=id, value=value), before="#save-delete-cancel")
             else:
                 await self.mount(Switch(id=id, value=value))
-        elif stype == "Text":
+        elif stype == "text":
             if add:
                 await self.mount(TextArea(value, id=id, classes="text-area"), before="#save-delete-cancel")
             else:
@@ -107,8 +107,12 @@ class ScreensMixIn:
                                       id=f"{setting}", value=value))
 
     async def edit_endpoint(self) -> None:
-        for setting, stype, desc, amore in self.endpoint["custom"]:
-            await self.mount_setting(setting, stype, desc, amore)
+        for setting in self.endpoint.keys():
+            options = []
+            if "options" in self.endpoint[setting]:
+                options = self.endpoint[setting]["options"]
+            await self.mount_setting(setting, self.endpoint[setting]["stype"],
+                                     self.endpoint[setting]["desc"], options)
 
     async def edit_endpoint_screen(self) -> None:
         await self.edit_endpoint()
@@ -135,7 +139,7 @@ class ScreensMixIn:
     async def select_main_screen(self) -> None:
         Options = [ Option("\nCreate new endpoint\n", id="select-new-endpoint") ]
         for endpoint in self.settings.endpoints.keys():
-            name=self.settings.endpoints[endpoint]["values"]["name"]
+            name=self.settings.endpoints[endpoint]["name"]["value"]
             Options.append(Option(f"\nEdit: {name}\n", id=f"select-endpoint-{endpoint}"))
         await self.mount(OptionList(*Options, id="option-list"))
         self.children[0].focus()
