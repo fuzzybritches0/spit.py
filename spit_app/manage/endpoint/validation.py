@@ -50,38 +50,46 @@ class ValidationMixIn:
         return False
 
     def is_unique_custom(self, value: str) -> bool:
-        if not value:
-            return False
-        same = 0
-        for name in self.endpoint.keys():
-            if name.strip() == value.strip():
+        if value:
+            for name in self.endpoint.keys():
+                if name.strip() == value.strip():
+                    return False
+            return True
+        else:
+            return True
+
+    def valid_chars(self, value: str) -> bool:
+        chars=string.ascii_lowercase + string.digits + "_.-"
+        for char in value:
+            if not char in chars:
                 return False
         return True
 
     def is_valid_setting(self, value: str) -> bool:
-        value = value.strip()
-        if not value:
-            return False
-        if " " in value:
-            return False
-        if any(ch.isupper() for ch in value):
-            return False
-        if value[0].isdecimal():
-            return False
-        if value.startswith("_") or value.endswith("_"):
-            return False
-        if value.startswith(".") or value.endswith("."):
-            return False
-        if value[0:1].isdecimal():
-            return False
-        return True
+        if value:
+            if not self.valid_chars(value):
+                return False
+            if value[0].isdecimal():
+                return False
+            if value.startswith("_") or value.endswith("_"):
+                return False
+            if value.startswith(".") or value.endswith("."):
+                return False
+            return True
+        else:
+            return True
 
     def is_valid_selection(self, value: str) -> bool:
-        values = value.split(",")
-        for value in values:
-            if not self.is_valid_setting(value):
-                return False
-        return True
+        if value:
+            values = value.split(",")
+            for value in values:
+                if not value:
+                    return False
+                if not self.is_valid_setting(value.strip()):
+                    return False
+            return True
+        else:
+            return False
 
     def validate_values_edit(self) -> bool:
         for setting in self.endpoint.keys():
