@@ -1,18 +1,20 @@
 # SPDX-License-Identifier: GPL-2.0
+import string
 
 class ValidationMixIn:
-    def is_valid(self, stype: str, usign: bool, value) -> bool:
+    def is_valid(self, stype: str, usign: bool, value: str) -> bool:
         stypes = { "integer": int, "float": float }
-        if not isinstance(value, str) or not value.strip():
-            return False
-        try:
-            stypes[stype](value)
-            if not usign:
-                if stypes[stype](value) < 0:
-                    return False
+        if value:
+            try:
+                stypes[stype](value)
+                if not usign:
+                    if stypes[stype](value) < 0:
+                        return False
+                return True
+            except ValueError:
+                return False
+        else:
             return True
-        except ValueError:
-            return False
 
     def valid_setting_name(self, value: str) -> bool:
         if not value:
