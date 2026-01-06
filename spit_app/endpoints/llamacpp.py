@@ -8,14 +8,14 @@ class LlamaCppEndpoint:
     def __init__(self, messages, endpoint, prompt, tools):
         self.messages = messages
         self.endpoint = endpoint
-        self.api_endpoint = self.endpoint["values"]["endpoint_url" ] + "/v1/chat/completions"
+        self.api_endpoint = self.endpoint["endpoint_url"]["value"] + "/v1/chat/completions"
         self.prompt = prompt
         self.tools = tools
         self.timeout = 15
         self.tc_list = [{}]
 
     def prepare_payload(self) -> Dict[str, Any]:
-        self.reasoning_key = self.endpoint["values"]["reasoning_key"]
+        self.reasoning_key = self.endpoint["reasoning_key"]["value"]
         payload = {}
         payload["messages"] = []
         if self.prompt:
@@ -25,7 +25,8 @@ class LlamaCppEndpoint:
                 message[self.reasoning_key] = message["reasoning"]
                 del message["reasoning"]
             payload["messages"].append(message)
-        for setting, value in self.endpoint["values"].items():
+        for setting in self.endpoint.keys():
+            value = self.endpoint[setting]["value"]
             if (not setting == "name" and not setting == "endpoint_url" and
                 not setting == "key" and not setting == "reasoning_key"):
                 if "." in setting and (value or value is False):
@@ -73,7 +74,7 @@ class LlamaCppEndpoint:
 
     async def stream(self) -> Generator[Tuple[str, str], None, None]:
         headers = {}
-        api_key = self.endpoint["values"]["key"]
+        api_key = self.endpoint["key"]["value"]
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         headers["Content-Type"] = "application/json"
