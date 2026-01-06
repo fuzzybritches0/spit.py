@@ -72,3 +72,26 @@ class ValidationMixIn:
             if not self.is_valid_setting(value):
                 return False
         return True
+
+    def is_valid_values_edit(self) -> bool:
+        for setting in self.endpoint.keys():
+            stype = self.endpoint[setting]["stype"]
+            id = setting.replace(".", "-")
+            if (not stype == "boolean" and not stype == "select" and
+                not stype == "select_no_default" and not stype == "text"):
+                inp = self.query_one(f"#{id}")
+                inp.validate(inp.value)
+                if not inp.is_valid:
+                    return False
+        return True
+
+    def is_valid_add_setting(self) -> bool:
+        setting = self.query_one("#new-setting")
+        desc = self.query_one("#new-description")
+        setting.validate(setting.value)
+        desc.validate(desc.value)
+        if not setting.is_valid:
+            return False
+        if not desc.is_valid:
+            return False
+        return True

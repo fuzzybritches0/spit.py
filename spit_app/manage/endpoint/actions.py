@@ -11,7 +11,7 @@ class ActionsMixIn:
         await self.select_main_screen()
 
     async def action_save(self) -> None:
-        if self.valid_values_edit():
+        if self.is_valid_values_edit():
             self.store_values()
             self.save()
             await self.app.maybe_remove("manage-chats")
@@ -19,18 +19,19 @@ class ActionsMixIn:
             await self.select_main_screen()
 
     async def action_add_setting(self) -> None:
-        setting = self.query_one("#new-setting").value
-        stype = self.query_one("#custom-setting-select-add").value
-        desc = self.query_one("#new-description").value
-        sarray = []
-        if stype == "select" or stype == "select_no_default":
-            value = self.query_one("#new-select-values").value
-            array = value.split(",")
-            for el in array:
-                sarray.append(el.strip())
-        self.add_custom_setting(setting, stype, desc, sarray)
-        self.query_one("#custom-setting-select-remove").set_options(self.custom_options())
-        await self.mount_setting(setting, stype, desc, sarray, True)
+        if self.is_valid_add_setting():
+            setting = self.query_one("#new-setting").value
+            stype = self.query_one("#custom-setting-select-add").value
+            desc = self.query_one("#new-description").value
+            sarray = []
+            if stype == "select" or stype == "select_no_default":
+                value = self.query_one("#new-select-values").value
+                array = value.split(",")
+                for el in array:
+                    sarray.append(el.strip())
+            self.add_custom_setting(setting, stype, desc, sarray)
+            self.query_one("#custom-setting-select-remove").set_options(self.custom_options())
+            await self.mount_setting(setting, stype, desc, sarray, True)
 
     async def action_remove_setting(self) -> None:
         remove = self.query_one("#custom-setting-select-remove").value
