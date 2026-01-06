@@ -59,13 +59,12 @@ class ScreensMixIn:
             await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
         else:
             await self.mount(Label(f"{desc}: ({stype})", id="label-"+id))
-        value = None
+        value = ""
         if "value" in self.endpoint[setting]:
             value = self.endpoint[setting]["value"]
-        if value is None:
-            value = ""
         Validators = []
-        vtype = "text"
+        if "empty" in self.endpoint[setting] and not self.endpoint[setting]["empty"]:
+            Validators.append(Function(self.is_not_empty))
         if hasattr(self, f"valid_setting_{setting}"):
             Validators.append(Function(getattr(self, f"valid_setting_{setting}")))
         if hasattr(self, f"valid_{stype}"):
