@@ -31,18 +31,15 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         self.new_endpoint = True
         self.uuid = str(uuid4())
         self.endpoint = {
-            "values": {"name": self.uuid,
-                       "endpoint_url": "http://127.0.0.1:8080"},
-            "custom": [
-                ("name", "String", "Name", []),
-                ("endpoint_url", "String", "Endpoint URL", []),
-                ("key", "String", "API Access Key", []),
-                ("reasoning_key", "Select_no_default", "Reasoning Key", ["reasoning_content", "reasoning"]),
-                ("temperature", "Float", "Temperature", []),
-                ("top_p", "Float", "TOP-P", []),
-                ("min_p", "Float", "MIN-P", []),
-                ("top_k", "Float", "TOP-K", [])
-            ]
+            "name": { "stype": "string", "desc": "Name", "value": self.uuid },
+            "endpoint_url": { "stype": "string", "desc": "Endpoint URL", "value": "http://127.0.0.1:8080" },
+            "key": { "stype": "string", "desc": "API Access Key" },
+            "reasoning_key": { "stype": "select_no_default", "desc": "Reasoning Key",
+                    "options":["reasoning_content", "reasoning"] },
+            "temperature": { "stype": "float", "desc": "Temperature" },
+            "top_p": { "stype": "float", "desc": "TOP-P" },
+            "min_p": { "stype": "float", "desc": "MIN-P" },
+            "top_k": { "stype": "float", "desc": "TOP-K" }
         }
 
     def load(self, uuid: str) -> None:
@@ -51,22 +48,23 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         self.endpoint = deepcopy(self.settings.endpoints[uuid])
 
     def store_values(self) -> None:
-        for setting, stype, desc, array in self.endpoint["custom"]:
+        for setting in self.endpoint.keys():
             id = setting.replace(".", "-")
-            if stype == "Text":
+            if self.endpoint[setting]["stype"] == "text":
                 newvalue = self.query_one(f"#{id}").text
             else:
                 newvalue = self.query_one(f"#{id}").value
             if newvalue == Select.BLANK:
                 newvalue = ""
-            self.store_value(setting, stype, newvalue)
+            self.store_value(setting, newvalue)
 
-    def store_value(self, setting: str, stype: str, value: str|bool) -> None:
-        if stype == "Float" and value:
+    def store_value(self, setting: str, value: str|bool) -> None:
+        stype = self.endpoint[setting]["stype"]
+        if stype == "float" and value:
             value = float(value)
-        elif stype == "Integer" and value:
+        elif stype == "integer" and value:
             value = int(value)
-        self.endpoint["values"][setting] = value
+        self.endpoint[setting]["value"] = value
 
     def save(self) -> None:
         self.settings.endpoints[self.uuid] = deepcopy(self.endpoint)
@@ -76,16 +74,11 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         del self.settings.endpoints[self.uuid]
         self.settings.save_endpoints()
 
-    def add_custom_setting(self, setting: str, stype: str, desc: str, sarray: list) -> None:
-        self.endpoint["custom"].append((setting, stype, desc, sarray))
+    def add_custom_setting(self, setting: str, stype: str, desc: str, sarray: list = []) -> None:
+        if not sarray:
+            self.endpoint[setting] = { "stype": stype, "desc": desc }
+        else:
+            self.endpoint[setting] = { "stype": stype, "desc": desc , "options": sarray}
 
     def remove_custom_setting(self, rsetting: str) -> None:
-        custom = []
-        values = {}
-        for setting, stype, desc, sarray in self.endpoint["custom"]:
-            if not rsetting == setting:
-                custom.append((setting, stype, desc, sarray))
-                if setting in self.endpoint["values"]:
-                    values[setting] = self.endpoint["values"][setting]
-        self.endpoint["custom"] = custom
-        self.endpoint["values"] = values
+        del self.endpoint[rsetting]
