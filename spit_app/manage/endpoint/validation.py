@@ -106,10 +106,14 @@ class ValidationMixIn:
     def validate_add_setting(self) -> bool:
         setting = self.query_one("#new-setting")
         desc = self.query_one("#new-description")
+        sel = self.query_one("#new-select-values")
         setting.validate(setting.value)
         desc.validate(desc.value)
+        sel.validate(desc.value)
         if not setting.is_valid:
             return False
         if not desc.is_valid:
+            return False
+        if not sel.is_valid:
             return False
         return True
