@@ -25,7 +25,7 @@ class ScreensMixIn:
 
     def endpoint_list(self) -> Generator[str, str]:
         for key in self.settings.endpoints.keys():
-            name = self.settings.endpoints[key]["values"]["name"]
+            name = self.settings.endpoints[key]["name"]["value"]
             yield name, key
 
     def prompt_list(self) -> Generator[str, str]:
