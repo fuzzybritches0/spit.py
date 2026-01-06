@@ -18,10 +18,11 @@ class ValidationMixIn:
         return False
 
     def valid_values_edit(self) -> bool:
-        for setting, stype, desc, array in self.endpoint["custom"]:
+        for setting in self.endpoint.keys():
+            stype = self.endpoint[setting]["stype"]
             id = setting.replace(".", "-")
-            if (not stype == "Boolean" and not stype == "Select" and
-                not stype == "Select_no_default" and not stype == "Text"):
+            if (not stype == "boolean" and not stype == "select" and
+                not stype == "select_no_default" and not stype == "text"):
                 if not self.query_one(f"#{id}").is_valid:
                     return False
         return True
@@ -38,7 +39,7 @@ class ValidationMixIn:
             return False
         for endpoint in self.app.settings.endpoints.keys():
             if (not endpoint == self.uuid and
-                    self.app.settings.endpoints[endpoint]["values"]["name"] == value):
+                    self.app.settings.endpoints[endpoint]["name"]["value"] == value):
                 return False
         return True
 
@@ -46,7 +47,7 @@ class ValidationMixIn:
         if not value:
             return False
         same = 0
-        for name, stype, desc, sarray in self.app.settings.endpoints[self.uuid]["custom"]:
+        for name in self.app.settings.endpoints[self.uuid].keys():
             if name == value:
                 return False
         return True
