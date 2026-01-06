@@ -29,7 +29,16 @@ class ScreensMixIn:
             await self.mount_custom_setting_form(stype)
 
     async def edit_endpoint_add_custom(self) -> None:
-        types = [ "integer", "float", "boolean", "string", "text", "select", "select_no_default" ]
+        types = [("Integer", "integer"),
+                 ("Unsigned Integer", "uinteger"),
+                 ("Float", "float"),
+                 ("Unsigned Float", "ufloat"),
+                 ("Boolean", "boolean"),
+                 ("String", "string"),
+                 ("Text", "text"),
+                 ("Select", "select"),
+                 ("Select (no default)", "select_no_default")
+        ]
         await self.mount(Label("Add custom setting:"))
         await self.mount(Select.from_values(types, id="custom-setting-select-add", allow_blank=False))
 

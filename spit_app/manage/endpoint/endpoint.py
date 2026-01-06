@@ -61,10 +61,12 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
 
     def store_value(self, setting: str, value: str|bool) -> None:
         stype = self.endpoint[setting]["stype"]
-        if stype == "float" and value:
+        if (stype == "float" or stype == "ufloat") and value:
             value = float(value)
-        elif stype == "integer" and value:
+        elif (stype == "integer" or stype == "uinteger") and value:
             value = int(value)
+        else:
+            value = value.strip()
         self.endpoint[setting]["value"] = value
 
     def save(self) -> None:
