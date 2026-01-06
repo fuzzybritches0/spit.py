@@ -76,14 +76,12 @@ class ValidationMixIn:
 
     def is_valid_selection(self, value: str) -> bool:
         values = value.split(",")
-        if len(values) < 1:
-            return False
         for value in values:
             if not self.is_valid_setting(value):
                 return False
         return True
 
-    def is_valid_values_edit(self) -> bool:
+    def validate_values_edit(self) -> bool:
         for setting in self.endpoint.keys():
             stype = self.endpoint[setting]["stype"]
             id = setting.replace(".", "-")
@@ -95,7 +93,7 @@ class ValidationMixIn:
                     return False
         return True
 
-    def is_valid_add_setting(self) -> bool:
+    def validate_add_setting(self) -> bool:
         setting = self.query_one("#new-setting")
         desc = self.query_one("#new-description")
         setting.validate(setting.value)

@@ -11,7 +11,7 @@ class ActionsMixIn:
         await self.select_main_screen()
 
     async def action_save(self) -> None:
-        if self.is_valid_values_edit():
+        if self.validate_values_edit():
             self.store_values()
             self.save()
             await self.app.maybe_remove("manage-chats")
@@ -19,7 +19,7 @@ class ActionsMixIn:
             await self.select_main_screen()
 
     async def action_add_setting(self) -> None:
-        if self.is_valid_add_setting():
+        if self.validate_add_setting():
             setting = self.query_one("#new-setting").value
             stype = self.query_one("#custom-setting-select-add").value
             desc = self.query_one("#new-description").value
