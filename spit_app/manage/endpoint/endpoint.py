@@ -31,15 +31,16 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         self.new_endpoint = True
         self.uuid = str(uuid4())
         self.endpoint = {
-            "name": { "stype": "string", "desc": "Name", "value": self.uuid },
-            "endpoint_url": { "stype": "string", "desc": "Endpoint URL", "value": "http://127.0.0.1:8080" },
-            "key": { "stype": "string", "desc": "API Access Key" },
+            "name": { "stype": "string", "empty": False, "desc": "Name", "value": self.uuid },
+            "endpoint_url": { "stype": "url", "empty": False, "desc": "Endpoint URL",
+                            "value": "http://127.0.0.1:8080" },
+            "key": { "stype": "string", "empty": True, "desc": "API Access Key" },
             "reasoning_key": { "stype": "select_no_default", "desc": "Reasoning Key",
-                    "options":["reasoning_content", "reasoning"] },
-            "temperature": { "stype": "float", "desc": "Temperature" },
-            "top_p": { "stype": "float", "desc": "TOP-P" },
-            "min_p": { "stype": "float", "desc": "MIN-P" },
-            "top_k": { "stype": "float", "desc": "TOP-K" }
+                            "options":["reasoning_content", "reasoning"] },
+            "temperature": { "stype": "float", "empty": True, "desc": "Temperature" },
+            "top_p": { "stype": "float", "empty": True, "desc": "TOP-P" },
+            "min_p": { "stype": "float", "empty": True, "desc": "MIN-P" },
+            "top_k": { "stype": "float", "empty": True, "desc": "TOP-K" }
         }
 
     def load(self, uuid: str) -> None:
@@ -76,7 +77,7 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
 
     def add_custom_setting(self, setting: str, stype: str, desc: str, sarray: list = []) -> None:
         if not sarray:
-            self.endpoint[setting] = { "stype": stype, "desc": desc }
+            self.endpoint[setting] = { "stype": stype, "empty": True, "desc": desc }
         else:
             self.endpoint[setting] = { "stype": stype, "desc": desc , "options": sarray}
 
