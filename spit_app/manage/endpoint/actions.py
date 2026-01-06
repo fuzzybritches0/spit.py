@@ -23,7 +23,7 @@ class ActionsMixIn:
         stype = self.query_one("#custom-setting-select-add").value
         desc = self.query_one("#new-description").value
         sarray = []
-        if stype == "Select" or stype == "Select_no_default":
+        if stype == "select" or stype == "select_no_default":
             value = self.query_one("#new-select-values").value
             array = value.split(",")
             for el in array:
