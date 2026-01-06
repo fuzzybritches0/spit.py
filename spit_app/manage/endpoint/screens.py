@@ -8,18 +8,13 @@ class ScreensMixIn:
     async def mount_custom_setting_form(self, stype) -> None:
         await self.mount(Label(f"Setting for {stype} value:"))
         Validators = [ Function(self.is_unique_custom), Function(self.is_valid_setting) ]
-        await self.mount(Input(id="new-setting",
-                                       validators=Validators,
-                                       restrict=r"[0-9a-z_.]*",
-                                       valid_empty=False,
-                                       max_length=128))
+        await self.mount(Input(id="new-setting", validators=Validators, max_length=128))
         await self.mount(Label(f"Description for {stype} value:"))
         await self.mount(Input(id="new-description", validators=[Function(self.is_not_empty)]))
         if stype == "select" or stype == "select_no_default":
             await self.mount(Label("Select values (separate with ','):"))
             Validators = [ Function(self.is_valid_selection) ]
-            await self.mount(Input(id="new-select-values", validators=Validators,
-                                           restrict=r"[0-9a-z_, ]*"))
+            await self.mount(Input(id="new-select-values", validators=Validators))
         await self.mount(Button("Add", id=f"button-add-setting"))
 
     async def mount_settings_add_custom(self, stype) -> None:
@@ -40,7 +35,7 @@ class ScreensMixIn:
                  ("Select (no default)", "select_no_default")
         ]
         await self.mount(Label("Add custom setting:"))
-        await self.mount(Select.from_values(types, id="custom-setting-select-add", allow_blank=False))
+        await self.mount(Select(types, id="custom-setting-select-add", allow_blank=False))
 
     def custom_options(self) -> list:
         options = []
@@ -70,16 +65,11 @@ class ScreensMixIn:
             value = ""
         Validators = []
         vtype = "text"
-        if setting == "name":
-            Validators.append(Function(self.is_unique_name))
-        elif setting == "endpoint_url":
-            Validators.append(Function(self.is_url))
-        else:
-            if stype == "float":
-                vtype = "number"
-            elif stype == "integer":
-                vtype = "integer"
-        if stype == "float" or stype == "integer":
+        if hasattr(self, f"valid_setting_{setting}"):
+            Validators.append(Function(getattr(self, f"valid_setting_{setting}")))
+        if hasattr(self, f"valid_{stype}"):
+            Validators.append(Function(getattr(self, f"valid_{stype}")))
+        if stype == "integer" or stype == "uinteger" or stype == "float" or stype == "ufloat":
             value=str(value)
         if stype == "select":
             if not value:
@@ -109,11 +99,10 @@ class ScreensMixIn:
                 await self.mount(TextArea(value, id=id, classes="text-area"))
         else:
             if add:
-                await self.mount(Input(type=vtype, validators=Validators,
-                                      id=f"{setting}", value=value), before="#save-delete-cancel")
+                await self.mount(Input(validators=Validators, id=f"{setting}",
+                                       value=value), before="#save-delete-cancel")
             else:
-                await self.mount(Input(type=vtype, validators=Validators,
-                                      id=f"{setting}", value=value))
+                await self.mount(Input(validators=Validators, id=f"{setting}", value=value))
 
     async def edit_endpoint(self) -> None:
         for setting in self.endpoint.keys():
