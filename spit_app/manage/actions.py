@@ -14,6 +14,7 @@ class ActionsMixIn:
             self.store_values()
             self.save()
             await self.app.maybe_remove("manage-chats")
+            await self.app.maybe_remove("new-chat")
             await self.remove_children()
             await self.select_main_screen()
 
