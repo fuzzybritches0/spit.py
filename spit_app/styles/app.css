@@ -111,3 +111,11 @@ Input {
 .text-area {
 	height: 10
 }
+.text-area-invalid:focus {
+	height: 10;
+	border: tall $error
+}
+.text-area-invalid {
+	height: 10;
+	border: tall $error-muted
+}
