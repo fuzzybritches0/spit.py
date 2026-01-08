@@ -3,7 +3,7 @@ from copy import deepcopy
 from textual.containers import Vertical
 from spit_app.manage.manage import Manage
 
-class Prompts(Manage, Vertical):
+class Prompts(Vertical, Manage):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
