@@ -24,7 +24,7 @@ class ScreensMixIn:
         if not stype == Select.BLANK:
             await self.mount_custom_setting_form(stype)
 
-    async def edit_endpoint_add_custom(self) -> None:
+    async def edit_manage_add_custom(self) -> None:
         types = [("Integer", "integer"),
                  ("Unsigned Integer", "uinteger"),
                  ("Float", "float"),
@@ -40,7 +40,7 @@ class ScreensMixIn:
 
     def custom_options(self) -> list:
         options = []
-        for setting in self.endpoint.keys():
+        for setting in self.manage.keys():
             if (not setting == "name" and
                 not setting == "endpoint_url" and
                 not setting == "key" and
@@ -48,7 +48,7 @@ class ScreensMixIn:
                 options.append((setting, setting))
         return options
 
-    async def edit_endpoint_remove_custom(self) -> None:
+    async def edit_manage_remove_custom(self) -> None:
         await self.mount(Label("Remove custom setting:"))
         await self.mount(Select(self.custom_options(), id="custom-setting-select-remove", prompt="None"))
         await self.mount(Button("Remove", id="button-remove-setting"))
@@ -60,10 +60,10 @@ class ScreensMixIn:
         else:
             await self.mount(Label(f"{desc}: ({stype})", id="label-"+id))
         value = ""
-        if "value" in self.endpoint[setting]:
-            value = self.endpoint[setting]["value"]
+        if "value" in self.manage[setting]:
+            value = self.manage[setting]["value"]
         Validators = []
-        if "empty" in self.endpoint[setting] and not self.endpoint[setting]["empty"]:
+        if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
             Validators.append(Function(self.is_not_empty))
         if hasattr(self, f"valid_setting_{setting}"):
             Validators.append(Function(getattr(self, f"valid_setting_{setting}")))
@@ -104,17 +104,17 @@ class ScreensMixIn:
             else:
                 await self.mount(Input(validators=Validators, id=f"{setting}", value=value))
 
-    async def edit_endpoint(self) -> None:
-        for setting in self.endpoint.keys():
+    async def edit_manage(self) -> None:
+        for setting in self.manage.keys():
             options = []
-            if "options" in self.endpoint[setting]:
-                options = self.endpoint[setting]["options"]
-            await self.mount_setting(setting, self.endpoint[setting]["stype"],
-                                     self.endpoint[setting]["desc"], options)
+            if "options" in self.manage[setting]:
+                options = self.manage[setting]["options"]
+            await self.mount_setting(setting, self.manage[setting]["stype"],
+                                     self.manage[setting]["desc"], options)
 
-    async def edit_endpoint_screen(self) -> None:
-        await self.edit_endpoint()
-        if self.new_endpoint:
+    async def edit_manage_screen(self) -> None:
+        await self.edit_manage()
+        if self.new_manage:
             await self.mount(Horizontal(
                     Button("Save", id="save"),
                     Button("Cancel", id="cancel"),
@@ -129,15 +129,15 @@ class ScreensMixIn:
                     id="save-delete-cancel"
             ))
         await self.mount(Rule())
-        await self.edit_endpoint_remove_custom()
+        await self.edit_manage_remove_custom()
         await self.mount(Rule())
-        await self.edit_endpoint_add_custom()
+        await self.edit_manage_add_custom()
         self.children[1].focus()
 
     async def select_main_screen(self) -> None:
-        Options = [ Option("\nCreate new endpoint\n", id="select-new-endpoint") ]
-        for endpoint in self.settings.endpoints.keys():
-            name=self.settings.endpoints[endpoint]["name"]["value"]
-            Options.append(Option(f"\nEdit: {name}\n", id=f"select-endpoint-{endpoint}"))
+        Options = [ Option("\nCreate new endpoint\n", id="select-new-manage") ]
+        for manage in self.managed.keys():
+            name=self.managed[manage]["name"]["value"]
+            Options.append(Option(f"\nEdit: {name}\n", id=f"select-manage-{manage}"))
         await self.mount(OptionList(*Options, id="option-list"))
         self.children[0].focus()
