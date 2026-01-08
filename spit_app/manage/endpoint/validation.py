@@ -109,7 +109,7 @@ class ValidationMixIn:
         sel = self.query_one("#new-select-values")
         setting.validate(setting.value)
         desc.validate(desc.value)
-        sel.validate(desc.value)
+        sel.validate(sel.value)
         if not setting.is_valid:
             return False
         if not desc.is_valid:
