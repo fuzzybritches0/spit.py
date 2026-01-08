@@ -53,7 +53,8 @@ class ScreensMixIn:
         await self.mount(Select(self.custom_options(), id="custom-setting-select-remove", prompt="None"))
         await self.mount(Button("Remove", id="button-remove-setting"))
 
-    async def edit_manage_screen_extra(self) -> None:
+    async def edit_manage_screen(self) -> None:
+        await super().edit_manage_screen()
         await self.mount(Rule())
         await self.edit_manage_remove_custom()
         await self.mount(Rule())
