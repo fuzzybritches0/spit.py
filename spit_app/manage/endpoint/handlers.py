@@ -24,11 +24,11 @@ class HandlersMixIn:
             await self.action_add_setting()
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        if event.option.id == "select-new-endpoint":
+        if event.option.id == "select-new-manage":
             self.new()
             await self.remove_children()
-            await self.edit_endpoint_screen()
-        else:
-            self.load(str(event.option.id[16:]))
+            await self.edit_manage_screen()
+        else: 
+            self.load(event.option.id.split("-",2)[2])
             await self.remove_children()
-            await self.edit_endpoint_screen()
+            await self.edit_manage_screen()
