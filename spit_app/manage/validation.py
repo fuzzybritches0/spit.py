@@ -2,20 +2,6 @@
 import string
 
 class ValidationMixIn:
-    def is_valid(self, stype: str, usign: bool, value: str) -> bool:
-        stypes = { "integer": int, "float": float }
-        if value:
-            try:
-                stypes[stype](value)
-                if not usign:
-                    if stypes[stype](value) < 0:
-                        return False
-                return True
-            except ValueError:
-                return False
-        else:
-            return True
-
     def valid_url(self, value) -> bool:
         if value.startswith("http://"):
             return True
@@ -40,7 +26,21 @@ class ValidationMixIn:
             return True
         return False
 
-    def valid_chars(self, value: str) -> bool:
+    def is_valid(self, stype: str, usign: bool, value: str) -> bool:
+        stypes = { "integer": int, "float": float }
+        if value:
+            try:
+                stypes[stype](value)
+                if not usign:
+                    if stypes[stype](value) < 0:
+                        return False
+                return True
+            except ValueError:
+                return False
+        else:
+            return True
+
+    def is_valid_chars(self, value: str) -> bool:
         chars=string.ascii_lowercase + string.digits + "_.-"
         for char in value:
             if not char in chars:
@@ -49,11 +49,13 @@ class ValidationMixIn:
 
     def is_valid_setting(self, value: str) -> bool:
         if value:
-            if not self.valid_chars(value):
+            if not self.is_valid_chars(value):
                 return False
             if value[0].isdecimal():
                 return False
             if value.startswith("_") or value.endswith("_"):
+                return False
+            if value.startswith("-") or value.endswith("-"):
                 return False
             if value.startswith(".") or value.endswith("."):
                 return False
