@@ -1,3 +1,4 @@
+import inspect
 from textual.widgets import OptionList, Button
 
 class HandlersMixIn:
@@ -14,14 +15,19 @@ class HandlersMixIn:
             await self.remove_children()
             await self.edit_manage_screen()
 
+    def avail_buttons(self) -> tuple:
+        return (
+            ("cancel", self.action_cancel),
+            ("delete", self.action_delete),
+            ("save", self.action_save),
+            ("duplicate", self.action_duplicate)
+        )
+
     async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "cancel":
-            await self.action_cancel()
-        elif event.button.id == "delete":
-            await self.action_delete()
-        elif event.button.id == "save":
-            await self.action_save()
-        elif event.button.id == "duplicate":
-            self.action_duplicate()
-        elif hasattr(self, "on_button_pressed_extra"):
-            await self.on_button_pressed_extra(event)
+        for button, action in self.avail_buttons():
+            if button == event.button.id:
+                if inspect.iscoroutinefunction(action):
+                    await action()
+                else:
+                    action()
+                break

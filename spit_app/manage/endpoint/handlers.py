@@ -6,8 +6,9 @@ class HandlersMixIn:
         if event.control.id == "custom-setting-select-add":
             await self.mount_settings_add_custom(event.value)
 
-    async def on_button_pressed_extra(self, event: Button.Pressed) -> None:
-        if event.button.id == "button-remove-setting":
-            await self.action_remove_setting()
-        elif event.button.id == "button-add-setting":
-            await self.action_add_setting()
+    def avail_buttons(self) -> tuple:
+        buttons = super().avail_buttons()
+        return buttons + (
+            ("button-remove-setting", self.action_remove_setting),
+            ("button-add-setting", self.action_add_setting)
+        )
