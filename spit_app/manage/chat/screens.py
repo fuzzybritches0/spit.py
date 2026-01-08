@@ -30,7 +30,7 @@ class ScreensMixIn:
 
     def prompt_list(self) -> Generator[str, str]:
         for key in self.settings.prompts.keys():
-            name = self.settings.prompts[key]["name"]
+            name = self.settings.prompts[key]["name"]["value"]
             yield name, key
 
     async def edit_chat(self, chat: str|None = None) -> None:

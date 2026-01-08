@@ -17,7 +17,7 @@ class WorkStream:
         if prompt:
             prompt = "\n# FUNCTION CALLING INSTRUCTIONS\n\n" + prompt
         if app.chat_prompt:
-            prompt = app.settings.prompts[app.chat_prompt]["text"] + "\n\n# INSTRUCTIONS" + prompt
+            prompt = app.settings.prompts[app.chat_prompt]["text"]["value"] + "\n\n# INSTRUCTIONS" + prompt
 
 
         self.endpoint = LlamaCppEndpoint(app.messages, endpoint, prompt, tools_descs)
