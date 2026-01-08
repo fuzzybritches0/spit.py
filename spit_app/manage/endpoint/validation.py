@@ -19,9 +19,9 @@ class ValidationMixIn:
     def valid_setting_name(self, value: str) -> bool:
         if not value:
             return False
-        for endpoint in self.app.settings.endpoints.keys():
-            if (not endpoint == self.uuid and
-                    self.app.settings.endpoints[endpoint]["name"]["value"].strip() == value.strip()):
+        for manage in self.managed.keys():
+            if (not manage == self.uuid and
+                    self.managed[manage]["name"]["value"].strip() == value.strip()):
                 return False
         return True
 
@@ -51,7 +51,7 @@ class ValidationMixIn:
 
     def is_unique_custom(self, value: str) -> bool:
         if value:
-            for name in self.endpoint.keys():
+            for name in self.manage.keys():
                 if name.strip() == value.strip():
                     return False
             return True
@@ -92,8 +92,8 @@ class ValidationMixIn:
             return False
 
     def validate_values_edit(self) -> bool:
-        for setting in self.endpoint.keys():
-            stype = self.endpoint[setting]["stype"]
+        for setting in self.manage.keys():
+            stype = self.manage[setting]["stype"]
             id = setting.replace(".", "-")
             if (not stype == "boolean" and not stype == "select" and
                 not stype == "select_no_default" and not stype == "text"):
