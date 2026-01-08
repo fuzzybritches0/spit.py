@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from time import time
 from textual.containers import Vertical
+from textual.widgets import Select
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
@@ -35,6 +36,18 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
         file = self.settings.data_path / file_name
         with open(file, "w") as f:
             json.dump(content, f)
+
+    def save(self) -> None:
+        if self.valid_values():
+            desc = self.query_one("#desc").value
+            endpoint = self.query_one("#endpoint").value
+            prompt = self.query_one("#prompt").value
+            if prompt == Select.BLANK:
+                prompt = None
+            if self.cur_chat:
+                self.update(desc, endpoint, prompt)
+            else:
+                self.new(desc, endpoint, prompt)
 
     def is_loaded(self) -> bool:
         try:

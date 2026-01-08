@@ -16,10 +16,24 @@ class SidePanel(OptionList):
         self.settings = self.app.settings
 
     def update_option_prompt(self, chat_id: str) -> None:
-        ctime = self.app.query_one("#main").query_one(f"#{chat_id}").chat_ctime
-        desc = self.app.query_one("#main").query_one(f"#{chat_id}").chat_desc
+        chat = self.app.query_one("#main").query_one(f"#{chat_id}")
+        ctime = chat.chat_ctime
+        desc = chat.chat_desc
         ctime = datetime.fromtimestamp(int(ctime))
         self.replace_option_prompt(chat_id, f"\n{desc}\n{ctime}\n")
+
+    async def add_option_chat(self, chat_id) -> None:
+        chat = self.app.query_one("#main").query_one(f"#{chat_id}")
+        await self.option_selected(chat_id)
+        options = self.options
+        ctime = datetime.fromtimestamp(int(chat.chat_ctime))
+        option = Option(f"{chat.chat_desc}\n{ctime}\n", id=chat_id)
+        new_options = options[0:1] + [option]
+        if len(options) < 8:
+            new_options.append(None)
+        new_options += options[1:]
+        self.set_options(new_options)
+        self.highlighted = 1
 
     def option_list(self) -> None:
         Options = []

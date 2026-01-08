@@ -1,6 +1,3 @@
-from datetime import datetime
-from textual.widgets import Select
-from textual.widgets.option_list import Option
 from spit_app.chat.chat import Chat
 
 class ActionsMixIn:
@@ -10,37 +7,11 @@ class ActionsMixIn:
         await self.select_main_screen()
 
     async def action_save(self) -> None:
-        if self.valid_values():
-            desc = self.query_one("#desc").value
-            endpoint = self.query_one("#endpoint").value
-            prompt = self.query_one("#prompt").value
-            if prompt == Select.BLANK:
-                prompt = None
-            if self.cur_chat:
-                self.update(desc, endpoint, prompt)
-            else:
-                self.new(desc, endpoint, prompt)
-                await self.app.query_one("#main").mount(Chat(self.uuid))
-                side_panel = self.app.query_one("#side-panel")
-                await side_panel.option_selected(self.uuid)
-                options = side_panel.options
-                ctime = datetime.fromtimestamp(int(self.ctime))
-                option = Option(f"{desc}\n{ctime}\n", id=self.uuid)
-                new_options = options[0:1] + [option]
-                if len(options) < 8:
-                    new_options.append(None)
-                new_options += options[1:]
-                side_panel.set_options(new_options)
-                side_panel.highlighted = 1
-            if self.new_chat:
-                try:
-                    await self.app.query_one("#main").query_one("#manage-chats").remove()
-                except:
-                    pass
-                await self.remove()
-            else:
-                await self.remove_children()
-                await self.select_main_screen()
+        self.save()
+        if not self.cur_chat:
+            await self.app.query_one("#main").mount(Chat(self.uuid))
+            await self.app.query_one("#side-panel").add_option_chat(self.uuid)
+        await self.action_cancel()
 
     async def action_cancel(self) -> None:
         if self.new_chat:
