@@ -3,9 +3,10 @@ import os
 import json
 from datetime import datetime
 from spit_app.chat.chat import Chat
+from spit_app.manage.chat.chat import Chat as ManageChats
 from spit_app.manage.endpoint.endpoint import Endpoints as ManageEndpoints 
 from spit_app.manage.prompt.prompt import Prompts as ManagePrompts
-from spit_app.manage.chat.chat import Chat as ManageChats
+from spit_app.manage.tool_settings.tool_settings import ToolSettings as ManageToolSettings
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 
@@ -29,7 +30,7 @@ class SidePanel(OptionList):
         ctime = datetime.fromtimestamp(int(chat.chat_ctime))
         option = Option(f"{chat.chat_desc}\n{ctime}\n", id=chat_id)
         new_options = options[0:1] + [option]
-        if len(options) < 8:
+        if len(options) < 9:
             new_options.append(None)
         new_options += options[1:]
         self.set_options(new_options)
@@ -53,6 +54,7 @@ class SidePanel(OptionList):
         Options.append(Option("\nManage Chats\n", id="manage-chats"))
         Options.append(Option("\nManage Endpoints\n", id="manage-endpoints"))
         Options.append(Option("\nManage System Prompts\n", id="manage-prompts"))
+        Options.append(Option("\nManage Tool Settings\n", id="manage-tool-settings"))
         Options.append(None)
         Options.append(Option("\nHelp\n", id="help"))
         Options.append(Option("\nAbout\n", id="about"))
@@ -81,14 +83,16 @@ class SidePanel(OptionList):
             self.settings.active_chat = id
             self.settings.save()
             await self.app.query_one("#main").mount(Chat(id))
+        elif id == "new-chat":
+            await self.app.query_one("#main").mount(ManageChats(True))
+        elif id == "manage-chats":
+            await self.app.query_one("#main").mount(ManageChats())
         elif id == "manage-endpoints":
             await self.app.query_one("#main").mount(ManageEndpoints())
         elif id == "manage-prompts":
             await self.app.query_one("#main").mount(ManagePrompts())
-        elif id == "manage-chats":
-            await self.app.query_one("#main").mount(ManageChats())
-        elif id == "new-chat":
-            await self.app.query_one("#main").mount(ManageChats(True))
+        elif id == "manage-tool-settings":
+            await self.app.query_one("#main").mount(ManageToolSettings())
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "quit":
