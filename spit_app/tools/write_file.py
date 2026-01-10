@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
 from pathlib import Path
 
-name = __file__.split("/")[-1][:-3]
+NAME = __file__.split("/")[-1][:-3]
 
-desc = {
+DESC = {
     "type": "function",
     "function": {
-        "name": name,
+        "name": NAME,
         "description": "Save text in a file.",
         "parameters": {
             "type": "object",
@@ -25,12 +25,10 @@ desc = {
     }
 }
 
-prompt = """
-Use this function to save any type of text content in a file. Any sub-directories that do not exist will be created for you.
-"""
+PROMPT = "Use this function to save any type of text content in a file. Any sub-directories that do not exist will be created for you."
 
-settings = {
-    "prompt": { "value": prompt, "type": "String" }
+SETTINGS = {
+    "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
     
 def call(app, arguments: dict, chat_id) -> str:
