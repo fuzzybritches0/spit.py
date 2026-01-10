@@ -11,7 +11,9 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
         ("escape", "cancel", "Cancel"),
-        ("ctrl+t", "duplicate", "Duplicate")
+        ("ctrl+t", "duplicate", "Duplicate"),
+        ("ctrl+i", "remove_setting", "Remove Setting"),
+        ("ctrl+o", "add_setting", "Add Setting")
     ]
     NEW = {
             "name": { "stype": "string", "empty": False, "desc": "Name"},

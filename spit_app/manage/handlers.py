@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 import inspect
 from textual.widgets import OptionList, Button
 
@@ -15,19 +16,12 @@ class HandlersMixIn:
             await self.remove_children()
             await self.edit_manage_screen()
 
-    def avail_buttons(self) -> tuple:
-        return (
-            ("cancel", self.action_cancel),
-            ("delete", self.action_delete),
-            ("save", self.action_save),
-            ("duplicate", self.action_duplicate)
-        )
-
     async def on_button_pressed(self, event: Button.Pressed) -> None:
-        for button, action in self.avail_buttons():
-            if button == event.button.id:
-                if inspect.iscoroutinefunction(action):
-                    await action()
+        for binding, action, desc in self.BINDINGS:
+            if action == event.button.id.replace("-", "_"):
+                method = getattr(self, f"action_{action}")
+                if inspect.iscoroutinefunction(method):
+                    await method()
                 else:
-                    action()
+                    method()
                 break
