@@ -17,24 +17,13 @@ class ScreensMixIn:
         await self.edit_manage()
         self.children[1].focus()
         if self.new_manage:
-            await self.mount(Horizontal(
-                    Button("Save", id="save"),
-                    Button("Cancel", id="cancel"),
-                    id="save-delete-cancel"
-            ))
+            buttons = [Button(desc, id=id) for id, desc in self.BUTTONS_NEW]
         else:
-            await self.mount(Horizontal(
-                    Button("Save", id="save"),
-                    Button("Delete", id="delete"),
-                    Button("Cancel", id="cancel"),
-                    id="save-delete-cancel"
-            ))
-        if "duplicate" in self.BINDINGS[3]:
-            self.query_one("#save-delete-cancel").mount(Button("Duplicate", id="duplicate"))
+            buttons = [Button(desc, id=id) for id, desc in self.BUTTONS]
+        await self.mount(Horizontal(*buttons, id="save-delete-cancel"))
 
     async def mount_setting(self, setting: str, stype: str, desc: str, amore: list, add: bool = False) -> None:
         id = setting.replace(".", "-")
-        self.app.applog(id)
         if add:
             await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
         else:

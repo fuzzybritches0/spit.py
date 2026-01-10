@@ -10,6 +10,14 @@ class Prompts(Vertical, Manage):
         ("escape", "cancel", "Cancel"),
         ("ctrl+t", "duplicate", "Duplicate")
     ]
+    BUTTONS_NEW = (
+        ("save", "Save"),
+        ("cancel", "Cancel")
+    )
+    BUTTONS = BUTTONS_NEW + (
+        ("delete", "Delete"),
+        ("duplicate", "Duplicate")
+    )
     NEW = {
             "name": { "stype": "string", "empty": False, "desc": "Name" },
             "text": { "stype": "text", "empty": False, "desc": "System Prompt Text"}

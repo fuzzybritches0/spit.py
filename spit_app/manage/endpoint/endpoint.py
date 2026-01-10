@@ -15,6 +15,14 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
         ("ctrl+i", "remove_setting", "Remove Setting"),
         ("ctrl+o", "add_setting", "Add Setting")
     ]
+    BUTTONS_NEW = (
+        ("save", "Save"),
+        ("cancel", "Cancel")
+    )
+    BUTTONS = BUTTONS_NEW + (
+        ("delete", "Delete"),
+        ("duplicate", "Duplicate")
+    )
     NEW = {
             "name": { "stype": "string", "empty": False, "desc": "Name"},
             "endpoint_url": { "stype": "url", "empty": False, "desc": "Endpoint URL",
