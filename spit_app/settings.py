@@ -20,12 +20,14 @@ class Settings:
     def init(self) -> None:
         self.endpoints = {}
         self.prompts = {}
+        self.tool_settings = {}
         self.active_chat = None
 
     def save(self) -> None:
         settings = {}
         settings["theme"] = self.app.theme
         settings["active_chat"] = self.active_chat
+        settings["tool_settings"] = self.tool_settings
         self.settings_file.write_text(json.dumps(settings))
         self.save_endpoints()
         self.save_prompts()
@@ -40,6 +42,7 @@ class Settings:
         self.theme = None
         self.endpoints = {}
         self.prompts = {}
+        self.tool_settings = {}
         self.active_chat = None
         if self.settings_file.exists():
             settings = json.loads(self.settings_file.read_text())
@@ -47,6 +50,8 @@ class Settings:
                 self.app.theme = settings["theme"]
             if "active_chat" in settings:
                 self.active_chat = settings["active_chat"]
+            if "tool_settings" in settings:
+                self.tool_settings = settings["tool_settings"]
         if self.endpoints_file.exists():
             self.endpoints = json.loads(self.endpoints_file.read_text())
         if self.prompts_file.exists():
