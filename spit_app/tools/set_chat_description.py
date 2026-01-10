@@ -1,12 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
-from datetime import datetime
+NAME = __file__.split("/")[-1][:-3]
 
-name = __file__.split("/")[-1][:-3]
-
-desc = {
+DESC = {
     "type": "function",
     "function": {
-        "name": name,
+        "name": NAME,
         "description": "Set the description of the current chat conversation.",
         "parameters": {
             "type": "object",
@@ -21,20 +19,14 @@ desc = {
     }
 }
 
-prompt = """
-To help the user manage their chat conversations more easily, use this function to set a short description of what this chat conversation is about.
-After every user turn, consider if you can determine the topic of the chat conversation, and set the description accordingly.
-Should the topic, in the course of the conversation, change or touch a more broader field, use the function again to update or broaden the description. The description should not be longer than 7 words.
-Examples: "Copy Python Objects", "Paris, Vienna Weather", "Creative Writing: Love Poem", "Solving Quadratics by Factoring"
-"""
+PROMPT = "To help the user manage their chat conversations, use this function to set a short description of what this chat conversation is about.\nAfter every user turn, determine what the topic of this conversation is. Should the topic of the conversation not be clear right away, postpone using this function until you know what this conversation is about.\nShould the topic, in the course of the conversation, change or touch a more broader field, use the function again to add to or broaden the description. The description should not be longer than 7 words. Avoid using general descriptions like 'Chat Conversation', 'Greetings', ...\nExamples to consider: 'Copy Python Objects', 'Paris, Vienna Weather', 'Creative Writing: Love Poem', 'Solving Quadratics: Factoring'"
 
-settings = {
-    "prompt": { "value": prompt, "type": "String" }
+SETTINGS = {
+    "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
     
 async def call(app, arguments: dict, chat_id) -> str:
     chat = app.query_one(f"#{chat_id}")
-    ctime = datetime.fromtimestamp(chat.chat_ctime)
     chat.chat_desc = arguments["description"]
     chat.write_chat_history()
     app.query_one("#side-panel").update_option_prompt(chat_id)
