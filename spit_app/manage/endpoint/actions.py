@@ -25,3 +25,10 @@ class ActionsMixIn:
             remove = remove.replace(".", "-")
             await self.query_one(f"#{remove}").remove()
             await self.query_one(f"#label-{remove}").remove()
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if self.children and self.children[0].id == "option-list":
+            return False
+        if not action == "cancel" and not action == "save" and self.new_manage:
+            return False
+        return True

@@ -23,3 +23,10 @@ class Prompts(Vertical, Manage):
         self.save_managed = self.app.settings.save_prompts
         self.settings = self.app.settings
         self.new_manage = False
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if self.children and self.children[0].id == "option-list":
+            return False
+        if not action == "cancel" and not action == "save" and self.new_manage:
+            return False
+        return True
