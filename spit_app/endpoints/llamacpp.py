@@ -21,10 +21,12 @@ class LlamaCppEndpoint:
         if self.prompt:
             payload["messages"].append({"role": "system", "content": self.prompt})
         for message in self.messages:
-            if "reasoning" in message:
-                message[self.reasoning_key] = message["reasoning"]
-                del message["reasoning"]
-            payload["messages"].append(message)
+            _message = message.copy()
+            if "reasoning" in _message:
+                reasoning = _message["reasoning"]
+                del _message["reasoning"]
+                _message[self.reasoning_key] = reasoning
+            payload["messages"].append(_message)
         for setting in self.endpoint.keys():
             value = self.endpoint[setting]["value"]
             if (not setting == "name" and not setting == "endpoint_url" and
