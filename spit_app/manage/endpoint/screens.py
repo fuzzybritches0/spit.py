@@ -16,7 +16,7 @@ class ScreensMixIn:
             await self.mount(Label("Select values (separate with ','):"))
             valselect = [Function(self.is_not_empty), Function(self.is_valid_selection)]
             await self.mount(Input(id="new-select-values", validators=valselect))
-        await self.mount(Button("Add", id=f"button-add-setting"))
+        await self.mount(Button("Add", id=f"add-setting"))
 
     async def mount_settings_add_custom(self, stype) -> None:
         while not self.children[-1].id == "custom-setting-select-add":
@@ -51,7 +51,7 @@ class ScreensMixIn:
     async def edit_manage_remove_custom(self) -> None:
         await self.mount(Label("Remove custom setting:"))
         await self.mount(Select(self.custom_options(), id="custom-setting-select-remove", prompt="None"))
-        await self.mount(Button("Remove", id="button-remove-setting"))
+        await self.mount(Button("Remove", id="remove-setting"))
 
     async def edit_manage_screen(self) -> None:
         await super().edit_manage_screen()
