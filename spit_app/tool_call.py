@@ -6,6 +6,11 @@ import inspect
 import importlib.util
 from pathlib import Path
 
+def load_user_settings(app, name: str, settings: dict) -> None:
+    if name in app.settings.tool_settings:
+        for setting in app.settings.tool_settings[name].keys():
+            settings[setting]["value"] = app.settings.tool_settings[name][setting]["value"]
+
 def load_module_from_path(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
@@ -25,9 +30,11 @@ class ToolCall:
                 name = tool[:-3]
                 self.tools[name] = {}
                 module = load_module_from_path(f"tools.{tool}", file_path + "/" + tool)
-                self.tools[name]["desc"] = getattr(module, "desc")
-                self.tools[name]["settings"] = getattr(module, "settings")
+                self.tools[name]["desc"] = getattr(module, "DESC")
+                self.tools[name]["settings"] = getattr(module, "SETTINGS")
                 self.tools[name]["call"] = getattr(module, "call")
+                if hasattr(module, "PROMPT_INST"):
+                    self.tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
 
     async def call(self, tool_call: dict, chat_id: str) -> dict:
         name = tool_call["function"]["name"]
