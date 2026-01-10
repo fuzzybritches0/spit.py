@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
 from pathlib import Path
 
-name = __file__.split("/")[-1][:-3]
+NAME = __file__.split("/")[-1][:-3]
 
-desc = {
+DESC = {
     "type": "function",
     "function": {
-        "name": name,
+        "name": NAME,
         "description": "Read a text file.",
         "parameters": {
             "type": "object",
@@ -21,14 +21,13 @@ desc = {
     }
 }
 
-prompt = """
-Use this function to read the content of any type of text file.
-"""
+PROMPT = "Use this function to read the content of any type of text file."
 
-settings = {
-    "prompt": { "value": prompt, "type": "String" }
+SETTINGS = {
+    "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
     
+
 def call(app, arguments: dict, chat_id) -> str:
     location = str(app.settings.sandbox) + "/" + arguments["location"]
     try:
