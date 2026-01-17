@@ -37,56 +37,56 @@
 	margin: 0 0 0 0;
 	width: auto
 }
-.message-container-request {
+.message-container-user {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border-blurred;
 	height: auto
 }
-.message-container-request:focus {
+.message-container-user:focus {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border;
 	height: auto
 }
-.message-container-response {
+.message-container-assistant {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border-blurred;
 	height: auto
 }
-.message-container-response:focus {
+.message-container-assistant:focus {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border;
 	height: auto
 }
-.code-listing-request {
+.code-listing-user {
 	margin: 1 0 1 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border-blurred;
 	height: auto
 }
-.code-listing-request:focus {
+.code-listing-user:focus {
 	margin: 1 0 1 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border;
 	height: auto
 }
-.code-listing-response {
+.code-listing-assistant {
 	margin: 1 0 1 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border-blurred;
 	height: auto
 }
-.code-listing-response:focus {
+.code-listing-assistant:focus {
 	margin: 1 0 1 0;
 	color: $foreground;
 	background: $background;
