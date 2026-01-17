@@ -36,20 +36,20 @@ class ToolCall:
                 if hasattr(module, "PROMPT_INST"):
                     self.tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
 
-    async def call(self, tool_call: dict, chat_id: str) -> dict:
+    async def call(self, messages: dict, tool_call: dict, chat_id: str) -> None:
         name = tool_call["function"]["name"]
         arguments = json.loads(tool_call["function"]["arguments"])
         if inspect.iscoroutinefunction(self.tools[name]["call"]):
             result = await self.tools[name]["call"](self.app, arguments, chat_id)
-            return {"role": "tool",
+            messages.append({"role": "tool",
                     "tool_call_id": tool_call["id"],
                     "name": tool_call["function"]["name"],
                     "content": result
-                    }
+                    })
         elif inspect.isfunction(self.tools[name]["call"]):
             result = self.tools[name]["call"](self.app, arguments, chat_id)
-            return {"role": "tool",
+            messages.append({"role": "tool",
                     "tool_call_id": tool_call["id"],
                     "name": tool_call["function"]["name"],
                     "content": result
-                    }
+                    })
