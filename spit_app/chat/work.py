@@ -1,121 +1,58 @@
 # SPDX-License-Identifier: GPL-2.0
-from spit_app.chat.workstream import WorkStream
-import spit_app.chat.render as render
-import spit_app.chat.message as message
-import json
+from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 
-class Work():
+class Work:
     def __init__(self, chat) -> None:
-        self.app = chat.app
         self.chat = chat
-        self.pp = self.chat.pattern_processing(self.chat)
-        self.content = ""
-        self.reasoning = ""
-        self.tool_calls = ""
-        self.was_reasoning = False
-        self.display_thinking = False
+        self.app = chat.app
+        self.settings = chat.app.settings
+        self.messages = self.chat.messages
+        tools_descs = self.tools_descs()
+        prompt = self.prompt()
+        endpoint = self.settings.endpoints[chat.chat_endpoint]
+        self.endpoint = LlamaCppEndpoint(self.messages, endpoint, prompt, tools_descs, self.chat.callback)
 
-    def tools(self, buffer: str) -> None:
-        self.pp.tool_call = True
-        self.tool_calls+=buffer[:1]
-        if not self.pp.paragraph.startswith("- TOOL CALL: `"):
-            self.pp.paragraph = "- TOOL CALL: `"
-        self.pp.paragraph+=buffer[:1]
+    def tools_descs(self) -> list:
+        tools_descs = []
+        for tool in self.app.tool_call.tools.keys():
+            tools_descs.append(self.app.tool_call.tools[tool]["desc"])
+        return tools_descs
 
-    def freasoning(self, buffer: str) -> None:
-        self.was_reasoning = True
-        self.pp.thinking = True
-        self.content = ""
-        self.pp.paragraph = ""
-        if self.pp.skip_buff_c > 0:
-            self.pp.skip_buff_c -= 1
-        else:
-            self.reasoning+=buffer[:1]
+    def prompt_inst(self, tool) -> str:
+        prompt = ""
+        if "prompt_inst" in self.app.tool_call.tools[tool]:
+            prompt = self.app.tool_call.tools[tool]["prompt_inst"]
+            for setting in self.app.tool_call.tools[tool]["settings"].keys():
+                value = self.app.tool_call.tools[tool]["settings"][setting]["value"]
+                if tool in self.settings.tool_settings:
+                    if setting in self.settings.tool_settings[tool]:
+                        value = self.settings.tool_settings[tool][setting]["value"]
+                prompt = prompt.replace(f"[{setting}]", str(value))
+        return prompt
 
-    def fcontent(self, buffer: str) -> None:
-        if not self.pp.thinking:
-            if self.pp.skip_buff_p > 0:
-                self.pp.skip_buff_p -= 1
-            else:
-                self.pp.paragraph += buffer[:1]
-            if self.pp.skip_buff_c > 0:
-                self.pp.skip_buff_c -= 1
-            else:
-                self.content += buffer[:1]
+    def prompt(self) -> str:
+        prompt = ""
+        for tool in self.app.tool_call.tools.keys():
+            tool_prompt = self.app.tool_call.tools[tool]["settings"]["prompt"]["value"]
+            if tool in self.settings.tool_settings:
+                if "prompt" in self.settings.tool_settings[tool]:
+                    tool_prompt = self.settings.tool_settings[tool]["prompt"]["value"]
+            prompt += f"- {tool}\n" + tool_prompt
+            prompt += self.prompt_inst(tool)
+        if prompt:
+            prompt = "\n# FUNCTION CALLING INSTRUCTIONS\n\n" + prompt
+        if self.chat.chat_prompt:
+            chat_prompt = self.settings.prompts[self.chat.chat_prompt]["text"]["value"]
+            prompt =  chat_prompt + "\n\n# INSTRUCTIONS\n" + prompt
+        return prompt
 
-    async def buffer(self, buffer: str, ctype: str) -> None:
-        if ctype == "content":
-            self.pp.thinking = False
-        await self.pp.process_patterns(True, buffer)
-        if ctype == "reasoning":
-            self.freasoning(buffer)
-        elif ctype == "content":
-            if self.was_reasoning:
-                self.pp.thinking = False
-            self.fcontent(buffer)
-        elif ctype == "tool_calls":
-            if self.was_reasoning:
-                self.pp.thinking = False
-            self.tools(buffer)
-        else:
-            if self.was_reasoning:
-                self.pp.thinking = False
-            self.fcontent(buffer)
-
-    async def part(self, part: str) -> None:
-        if self.pp.thinking:
-            if self.display_thinking is False:
-                self.display_thinking = True
-                await message.update(self.chat, "Thinking...")
-        else:
-            await message.update(self.chat, self.pp.paragraph)
-
-    async def stream_response(self):
-        self.app.refresh_bindings()
-        await message.mount(self.chat, "response")
-        self.chat.chat_view.focus_message(-1)
-
-        workstream = WorkStream(self.chat)
-        async for ctype, buffer, part in workstream.stream(self.chat.messages):
-            if buffer:
-                await self.buffer(buffer, ctype)
-            if part:
-                await self.part(part)
-
-        if self.pp.tool_call:
-            self.pp.paragraph+="`"
-        await message.update(self.chat, self.pp.paragraph)
-        if not self.reasoning:
-            self.reasoning = None
-        if self.tool_calls:
-            self.tool_calls = json.loads(self.tool_calls)
-        if not self.content:
-            self.content = None
-
-        msg = {}
-        msg["role"] = "assistant"
-        msg["content"] = self.content
-        if self.tool_calls:
-            msg["tool_calls"] = self.tool_calls
-        if self.reasoning:
-            msg["reasoning"] = self.reasoning
-        self.chat.save_message(msg)
-        self.app.refresh_bindings()
-
-async def work_tools(self, tool_calls: list) -> None:
-    while tool_calls:
-        for tool_call in tool_calls:
-            tool_response = await self.app.tool_call.call(tool_call, self.id)
-            self.save_message(tool_response)
-            await render.message(self, self.messages[-1])
-        work = Work(self)
-        await work.stream_response()
-        tool_calls = work.tool_calls
-
-async def work_stream(self) -> None:
-    if "tool_calls" in self.messages[-1]:
-        await work_tools(self, self.messages[-1]["tool_calls"])
-    else:
-        work = Work(self)
-        await work.stream_response()
-        await work_tools(self, work.tool_calls)
+    async def work_stream(self) -> None:
+        if "tool_calls" in self.messages[-1]:
+            for tool_call in self.messages[-1]["tool_calls"]:
+                await self.app.tool_call.call(self.messages, tool_call, self.chat.id)
+                await self.chat.chat_view.mount_message(self.messages[-1])
+                self.chat.write_chat_history()
+        await self.endpoint.stream()
+        if "tool_calls" in self.messages[-1]:
+            await self.work_stream()
+            self.chat.write_chat_history()
