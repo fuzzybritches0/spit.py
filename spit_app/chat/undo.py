@@ -17,13 +17,14 @@ class Undo:
                 self.chat_view.focus_message(-1)
             if operation == "append":
                 del self.messages[-1]
-                await self.chat.remove_last_message()
+                await self.chat_view.children[-1].remove()
                 self.chat_view.focus_message(-1)
             if operation == "change":
                 temp_message = self.messages[index].copy()
                 self.messages[index] = message.copy()
                 self.undo_list[self.undo_index] = [operation, temp_message.copy(), index]
-                await self.chat.update_message(index)
+                self.chat_view.children[index].message = message
+                await self.chat_view.children[index].reset()
                 self.chat_view.focus_message(index)
             self.chat.write_chat_history()
             self.undo_index-=1
@@ -35,7 +36,7 @@ class Undo:
             operation, message, index = self.undo_list[self.undo_index]
             if operation == "remove":
                 del self.messages[-1]
-                await self.chat.remove_last_message()
+                await self.chat_view.children[-1].remove()
                 self.chat_view.focus_message(-1)
             if operation == "append":
                 self.messages.append(message.copy())
@@ -45,7 +46,8 @@ class Undo:
                 temp_message = self.messages[index].copy()
                 self.messages[index] = message.copy()
                 self.undo_list[self.undo_index] = [operation, temp_message.copy(), index]
-                await self.chat.update_message(index)
+                self.chat_view.children[index].message = message
+                await self.chat_view.children[index].reset()
                 self.chat_view.focus_message(index)
             self.chat.write_chat_history()
             self.chat.refresh_bindings()
