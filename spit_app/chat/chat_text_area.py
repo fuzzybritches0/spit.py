@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+import json
 from textual.widgets import TextArea
 from .work import Work
 
@@ -17,11 +18,25 @@ class ChatTextArea(TextArea):
         self.id = "text-area"
         self.tab_behavior = "indent"
         self.temp = ""
+        self.is_edit = False
         self.was_empty = True
 
     def action_cancel_edit(self):
-        self.chat.edit = False
+        self.is_edit = False
         self.text = self.temp
+
+    async def action_save_edit(self):
+        id = int(self.edit_container.id.split("-")[2])
+        self.chat.undo.append_undo("change", self.edit_container.message, id)
+        if self.ctype == "tool_calls":
+            self.edit_container.message[self.ctype] = json.dumps(self.text)
+        else:
+            self.edit_container.message[self.ctype] = self.text
+        self.text = self.temp
+        await self.edit_container.reset()
+        self.chat.write_chat_history()
+        self.is_edit = False
+        self.edit_container.focus(scroll_visible=False)
 
     async def action_submit(self) -> None:
         if (self.text and
@@ -37,11 +52,11 @@ class ChatTextArea(TextArea):
                      parameters: tuple[object, ...]) -> bool | None:
         match action:
             case "save_edit":
-                return self.chat.edit
+                return self.is_edit
             case "cancel_edit":
-                return self.chat.edit
+                return self.is_edit
             case "submit":
-                if self.chat.is_working() or self.chat.edit:
+                if self.chat.is_working() or self.is_edit:
                     return False
                 if not self.text:
                     return False
