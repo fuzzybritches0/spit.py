@@ -57,8 +57,8 @@ class ChatView(VerticalScroll):
             case "redo":
                 if self.chat.is_working() or self.chat.edit:
                     return False
-                if self.chat.undo.undo_index == len(self.chat.undo.undo)-1:
+                if self.chat.undo.undo_index == len(self.chat.undo.undo_list)-1:
                     return False
-                if len(self.chat.undo.undo) == 0:
+                if len(self.chat.undo.undo_list) == 0:
                     return False
         return True

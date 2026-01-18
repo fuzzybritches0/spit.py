@@ -117,7 +117,7 @@ class Chat(Vertical):
         return True
 
     async def update_message(self, index: int) -> None:
-        await self.chat_view.children[index].process()
+        await self.chat_view.children[index].reset()
         await self.chat_view.children[index].finish()
 
     async def on_mount(self) -> None:
