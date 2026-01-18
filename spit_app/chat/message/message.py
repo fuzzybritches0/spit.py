@@ -29,10 +29,15 @@ class Message(VerticalScroll):
         self.content = ""
 
     async def reset(self) -> None:
+        self.display = False
         await self.remove_children()
         self.pp = PatternProcessing(self)
         self.pos = 0
         self.content = ""
+        self.target = None
+        await self.process()
+        await self.finish()
+        self.display = True
 
     async def clean_after_thinking(self) -> None:
         if self.thinking:
@@ -80,16 +85,15 @@ class Message(VerticalScroll):
         self.edit_message("tool_calls")
 
     def edit_message(self, ctype: str) -> None:
-        self.chat.edit_role = self.message["role"]
         self.chat.text_area.temp = self.chat.text_area.text
-        if ctype == "tool_calls" or self.chat.edit_role == "tool":
+        if ctype == "tool_calls":
             self.chat.text_area.text = json.dumps(self.message[ctype])
         else:
             self.chat.text_area.text = self.message[ctype]
-        self.chat.edit = True
-        self.chat.edit_ctype = ctype
-        self.chat.edit_container = self.app.focused
-        self.chat.text_area.focus(scroll_visible=False)
+        self.chat.text_area.is_edit = True
+        self.chat.text_area.ctype = ctype
+        self.chat.text_area.edit_container = self
+        self.chat.text_area.focus()
 
     async def action_remove_last(self) -> None:
         self.chat.undo.append_undo("remove", self.message)
@@ -101,7 +105,7 @@ class Message(VerticalScroll):
                      parameters: tuple[object, ...]) -> bool | None:
         if not self is self.app.focused:
             return False
-        if self.chat.is_working() or self.chat.edit:
+        if self.chat.is_working() or self.chat.text_area.is_edit:
             return False
         match action:
             case "edit_content":
