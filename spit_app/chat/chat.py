@@ -42,13 +42,6 @@ class Chat(Vertical):
             return True
         return False
 
-    def get_id_edit(self) -> int | None:
-        if (self.app.focused and self.app.focused.id and
-            "message-id-" in self.app.focused.id):
-            id = self.app.focused.id.split("-")[-1]
-            return int(id)
-        return None
-
     def compose(self) -> ComposeResult:
         yield self.chat_view
         yield self.text_area
