@@ -102,8 +102,6 @@ def code_listing(self, pattern: str) -> None:
         elif self.cur_code_fence == pattern:
             self.cur_code_fence = ""
             self.codelisting = False
-    else:
-        self.cur_code_fence = ""
 
 def is_roster(self, buffer: str, pattern: str) -> None:
     if self.seqstart == -1:
