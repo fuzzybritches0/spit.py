@@ -16,7 +16,7 @@ class Message(VerticalScroll):
         self.message = message
         self.messages = chat.messages
         self.chat = chat
-        self.id = "message-id-" + str(len(self.chat.chat_view.children)-1)
+        self.id = "message-id-" + str(len(self.chat.chat_view.children))
         role = message["role"]
         if role == "tool":
             role = "user"
