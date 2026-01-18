@@ -89,6 +89,7 @@ async def code_block_end(self, pattern: str) -> None:
     self.cur_code_fence = ""
     self.codeblock = False
     self.skip_add_part = 1
+    await self.message.target.append(self.part[:-len(pattern)+1])
     self.part = ""
     await self.message.target.update_code()
     await self.message.mount(Part())

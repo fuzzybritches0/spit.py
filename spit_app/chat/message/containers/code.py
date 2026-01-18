@@ -32,15 +32,15 @@ class Code(VerticalScroll):
     async def update_code(self) -> None:
         if not self.code:
             self.extract_code()
-            fence = self.first_line
-            while not fence[-1] == fence[1]:
-                fence = fence[:-1]
-            await self.children[0].update(self.first_line + "\n" + self.code + "\n" + fence)
+        fence = self.first_line
+        while not fence[-1] == fence[1]:
+            fence = fence[:-1]
+        await self.children[0].update(self.first_line + "\n" + self.code + "\n" + fence)
 
     def action_copy_to_clipboard(self) -> None:
         if not self.code:
             self.extract_code()
-        self.app.copy_to_clipboard(self.children[0].source)
+        self.app.copy_to_clipboard(self.code)
 
     async def on_mount(self) -> None:
         self.classes = "code-listing-" + self.parent.message['role']
