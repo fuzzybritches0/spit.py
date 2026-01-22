@@ -18,6 +18,15 @@ class ChatView(VerticalScroll):
         self.id = "chat-view"
         self.focused_message = None
 
+    async def callback(self, signal: int) -> None:
+        if signal == 0:
+            self.chat.write_chat_history()
+            await self.children[-1].finish()
+        elif signal == 1:
+            await self.mount_message(True)
+        elif signal == 2:
+            await self.children[-1].process()
+
     def focus_message(self, index: int, scroll_visible: bool = True) -> None:
         self.children[index].focus(scroll_visible=scroll_visible)
         self.focused_message = self.children[index]

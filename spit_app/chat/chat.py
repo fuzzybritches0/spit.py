@@ -3,7 +3,6 @@ import json
 from textual import events
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.reactive import reactive
 from .undo import Undo
 from .chat_text_area import ChatTextArea
 from .chat_view import ChatView
@@ -14,7 +13,6 @@ class Chat(Vertical):
         ("ctrl+escape", "abort", "Abort"),
         ("escape", "change_focus", "Focus")
     ]
-    signal = reactive(-1, always_update=True, init=False)
 
     def __init__(self, id) -> None:
         super().__init__()
@@ -44,26 +42,6 @@ class Chat(Vertical):
     def compose(self) -> ComposeResult:
         yield self.chat_view
         yield self.text_area
-
-    def callback(self, signal: int) -> None:
-        self.signal = signal
-
-    async def watch_signal(self, before: int, now: int) -> None:
-        if now == 0:
-            self.write_chat_history()
-            if not self.callback_busy:
-                await self.chat_view.children[-1].finish()
-            else:
-                self.callback_0_pending = True
-        elif now == 1:
-            self.callback_busy = True
-            await self.chat_view.mount_message(self.messages[-1])
-            self.callback_busy = False
-        elif now == 2:
-            if not self.callback_busy and not self.callback_0_pending:
-                self.callback_busy = True
-                await self.chat_view.children[-1].process()
-                self.callback_busy = False
 
     def write_chat_history(self) -> None:
         file_name = self.id + ".json"
