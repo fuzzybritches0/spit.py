@@ -6,4 +6,3 @@ class Part(Markdown):
 
     def on_mount(self) -> None:
         self.parent.target = self
-        self.parent.focus(scroll_visible=False)
