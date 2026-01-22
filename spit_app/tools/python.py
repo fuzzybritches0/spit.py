@@ -5,6 +5,9 @@ import traceback
 import os
 import builtins
 import importlib
+import threading
+import asyncio
+import queue
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -65,66 +68,99 @@ def _whitelisted_import(name, globals=None, locals=None, fromlist=(), level=0):
         raise ImportError(f"Import of '{name}' not permitted.")
     return builtins.__import__(name, globals, locals, fromlist, level)
 
-def _worker(code: str, conn):
-    from io import StringIO
-    old_out, old_err = sys.stdout, sys.stderr
-    sys.stdout = out_buf = StringIO()
-    sys.stderr = err_buf = StringIO()
+class _streaming_writer:
+    def __init__(self, conn, stream_type: str):
+        self.conn = conn
+        self.type = stream_type
+        self.buffer = ""
 
+    def write(self, data):
+        if not data:
+            return
+        self.buffer += data
+        self.flush()
+
+    def flush(self):
+        if self.buffer:
+            self.conn.send({"type": self.type, "data": self.buffer})
+            self.buffer = ""
+
+def _worker(code: str, conn):
+    sys.stdout = _streaming_writer(conn, "stdout")
+    sys.stderr = _streaming_writer(conn, "stderr")
     try:
         try:
             import resource
-            mem_bytes = SETTINGS["max_memory_mb"]["value"] * 1024 * 1024
+            mem_bytes = SETTINGS["max_mem_mb"]["value"] * 1024 * 1024
             resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
         except Exception:
             pass
 
         exec(code, {"__builtins__": _BUILTINS, "__name__": "__main__"}, {})
-        exc = None
-    except Exception as error:
-        exc = f"\n{type(error).__name__}: {error}\n"
+    except Exception as exc:
+        lineno = 0
+        tbframes = traceback.extract_tb(exc.__traceback__)
+        for tbframe in tbframes:
+            if tbframe.filename in ("<string>", "<stdin>"):
+                lineno = tbframe.lineno
+        formatted = f"\n{type(exc).__name__}: {exc}"
+        if lineno > 0:
+            formatted = f"\nLine {lineno}: {type(exc).__name__}: {exc}"
+        conn.send({"type": "exception", "data": f"ERROR: {formatted}"})
     finally:
-        conn.send({
-            "stdout": out_buf.getvalue(),
-            "stderr": err_buf.getvalue(),
-            "exception": exc,
-        })
+        sys.stdout.flush()
+        sys.stderr.flush()
         conn.close()
-        sys.stdout, sys.stderr = old_out, old_err
 
-def run_sandboxed(code: str) -> dict:
+async def call_async_generator(app, arguments: dict, chat_id):
+    load_user_settings(app, NAME, SETTINGS)
+    _refresh_whitelists_from_settings()
+
     parent_conn, child_conn = multiprocessing.Pipe(duplex=False)
-    proc = multiprocessing.Process(target=_worker, args=(code, child_conn))
+
+    proc = multiprocessing.Process(
+        target=_worker, args=(arguments["script"], child_conn), daemon=True
+    )
     proc.start()
-    proc.join(SETTINGS["timeout"]["value"])
+
+    q = asyncio.Queue()
+
+    def _pump():
+        try:
+            while True:
+                if not parent_conn.poll(0.1):
+                    if not proc.is_alive():
+                        break
+                    continue
+                msg = parent_conn.recv()
+                asyncio.run_coroutine_threadsafe(q.put(msg), loop)
+        finally:
+            asyncio.run_coroutine_threadsafe(q.put(None), loop)
+
+    loop = asyncio.get_event_loop()
+    pump_thread = threading.Thread(target=_pump, daemon=True)
+    pump_thread.start()
+
+    timeout = SETTINGS["timeout"]["value"]
+    start = loop.time()
+
+    while True:
+        remaining = timeout - (loop.time() - start)
+        try:
+            msg = await asyncio.wait_for(q.get(), timeout=remaining)
+        except asyncio.TimeoutError:
+            if proc.is_alive():
+                proc.terminate()
+                proc.join()
+            yield f"\nTimeoutError: execution exceeded {timeout}s\n"
+            break
+
+        if msg is None:
+            break
+
+        yield msg["data"]
 
     if proc.is_alive():
         proc.terminate()
         proc.join()
-        return {
-            "stdout": "",
-            "stderr": "",
-            "exception": f"\nTimeoutError: execution exceeded {SETTINGS['timeout']['value']}s\n",
-        }
-
-    if parent_conn.poll():
-        return parent_conn.recv()
-    else:
-        return {
-            "stdout": "",
-            "stderr": "",
-            "exception": "\nUnknown error: child did not send data\n",
-        }
-
-def call(app, arguments: dict, chat_id) -> str:
-    load_user_settings(app, NAME, SETTINGS)
-    _refresh_whitelists_from_settings()
-    res = run_sandboxed(arguments["script"])
-    parts = []
-    if res["stdout"]:
-        parts.append(res["stdout"])
-    if res["stderr"]:
-        parts.append(res["stderr"])
-    if res["exception"]:
-        parts.append(res["exception"])
-    return "```\n" + "\n".join(parts) + "\n```"
+    pump_thread.join(timeout=0.1)
