@@ -26,15 +26,13 @@ class Code(VerticalScroll):
         offset_code = []
         for code_line in code:
             offset_code.append(code_line[offset:])
-        self.code = "\n".join(offset_code)
+        self.code = "\n".join(offset_code[:-1])
+        self.last_line = offset_code[-1]
 
     async def update_code(self) -> None:
         if not self.code:
             self.extract_code()
-        fence = self.first_line
-        while not fence[-1] == fence[1]:
-            fence = fence[:-1]
-        await self.children[0].update(self.first_line + "\n" + self.code + "\n" + fence)
+        await self.children[0].update(self.first_line + "\n" + self.code + "\n" + self.last_line)
 
     def action_copy_to_clipboard(self) -> None:
         if not self.code:
