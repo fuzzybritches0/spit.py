@@ -4,18 +4,18 @@ import httpx
 from .helpers import dot2obj
 
 class LlamaCppEndpoint:
-    def __init__(self, messages, endpoint, prompt, tools, callback: callable = None):
-        self.callback = callback
+    def __init__(self, messages: list, endpoint: dict, prompt: str, tools: list, callback: callable = None):
         self.messages = messages
+        self.callback = callback
         self.endpoint = endpoint
         self.api_endpoint = self.endpoint["endpoint_url"]["value"] + "/v1/chat/completions"
         self.prompt = prompt
         self.tools = tools
         self.timeout = None
 
-    def maybe_callback(self, signal: int) -> None:
+    async def maybe_callback(self, signal: int) -> None:
         if self.callback:
-            self.callback(signal)
+            await self.callback(signal)
 
     def prepare_payload(self) -> dict:
         self.reasoning_key = self.endpoint["reasoning_key"]["value"]
@@ -68,17 +68,17 @@ class LlamaCppEndpoint:
                     tc_list[-1]["function"]["arguments"] = ""
                 tc_list[-1]["function"]["arguments"] += content["function"]["arguments"]
 
-    def extract_fields(self, delta: dict) -> None:
+    async def extract_fields(self, delta: dict) -> None:
         choice = delta["choices"][0]["delta"]
         if content := choice.get("content"):
             self.messages[-1]["content"] += content
-            self.maybe_callback(2)
+            await self.maybe_callback(2)
         elif content := choice.get(self.reasoning_key):
             self.messages[-1]["reasoning"] += content
-            self.maybe_callback(2)
+            await self.maybe_callback(2)
         elif content := choice.get("tool_calls"):
             self.tool_calls(content[0])
-            self.maybe_callback(2)
+            await self.maybe_callback(2)
 
     async def stream(self) -> None:
         headers = {}
@@ -87,8 +87,8 @@ class LlamaCppEndpoint:
             headers["Authorization"] = f"Bearer {api_key}"
         headers["Content-Type"] = "application/json"
         payload = self.prepare_payload()
-        self.maybe_callback(1)
         self.messages.append({"role": "assistant", "reasoning": "", "content": ""})
+        await self.maybe_callback(1)
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream("POST", self.api_endpoint, headers=headers, json=payload) as resp:
                 if resp.status_code != 200:
@@ -98,11 +98,11 @@ class LlamaCppEndpoint:
                         continue
                     line = raw_line[5:].strip()
                     if line == "[DONE]":
-                        self.maybe_callback(0)
+                        await self.maybe_callback(0)
                     elif not line:
                         continue
                     try:
                         delta = json.loads(line)
                     except json.JSONDecodeError:
                         continue
-                    self.extract_fields(delta)
+                    await self.extract_fields(delta)
