@@ -17,17 +17,16 @@ class Code(VerticalScroll):
         await self.children[0].append(part)
 
     def extract_code(self) -> None:
-        code = self.children[0].source
-        code = code.split("\n", 1)
-        self.first_line = code[0]
-        code = code[1]
+        code = self.children[0].source.strip()
         code = code.split("\n")
+        self.first_line = code[0].strip()
+        self.last_line = code[-1].strip()
+        code = code[1:-1]
         offset = len(code[0]) - len(code[0].lstrip(" "))
         offset_code = []
         for code_line in code:
             offset_code.append(code_line[offset:])
-        self.code = "\n".join(offset_code[:-1])
-        self.last_line = offset_code[-1]
+        self.code = "\n".join(offset_code)
 
     async def update_code(self) -> None:
         if not self.code:
