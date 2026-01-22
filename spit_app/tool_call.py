@@ -32,24 +32,33 @@ class ToolCall:
                 module = load_module_from_path(f"tools.{tool}", file_path + "/" + tool)
                 self.tools[name]["desc"] = getattr(module, "DESC")
                 self.tools[name]["settings"] = getattr(module, "SETTINGS")
-                self.tools[name]["call"] = getattr(module, "call")
+                if hasattr(module, "call"):
+                    self.tools[name]["call"] = getattr(module, "call")
+                else:
+                    self.tools[name]["call_async_generator"] = getattr(module, "call_async_generator")
                 if hasattr(module, "PROMPT_INST"):
                     self.tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
 
-    async def call(self, messages: dict, tool_call: dict, chat_id: str) -> None:
+    async def maybe_callback(self, signal: int) -> None:
+        if self.callback:
+            await self.callback(signal)
+
+    async def call(self, messages: list, tool_call: dict, chat_id: str, callback: callable = None) -> None:
+        self.callback = callback
+        chat_view = self.app.query_one("#main").query_one(f"#{chat_id}").chat_view
         name = tool_call["function"]["name"]
         arguments = json.loads(tool_call["function"]["arguments"])
-        if inspect.iscoroutinefunction(self.tools[name]["call"]):
-            result = await self.tools[name]["call"](self.app, arguments, chat_id)
-            messages.append({"role": "tool",
-                    "tool_call_id": tool_call["id"],
-                    "name": tool_call["function"]["name"],
-                    "content": result
-                    })
-        elif inspect.isfunction(self.tools[name]["call"]):
-            result = self.tools[name]["call"](self.app, arguments, chat_id)
-            messages.append({"role": "tool",
-                    "tool_call_id": tool_call["id"],
-                    "name": tool_call["function"]["name"],
-                    "content": result
-                    })
+        messages.append({"role": "tool", "tool_call_id": tool_call["id"],
+                "name": name, "content": ""})
+        await self.maybe_callback(1)
+        if "call" in self.tools[name]:
+            if inspect.iscoroutinefunction(self.tools[name]["call"]):
+                messages[-1]["content"] = await self.tools[name]["call"](self.app, arguments, chat_id)
+            elif inspect.isfunction(self.tools[name]["call"]):
+                messages[-1]["content"] = self.tools[name]["call"](self.app, arguments, chat_id)
+            await self.maybe_callback(2)
+        else:
+            async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
+                messages[-1]["content"] += chunk
+                await self.maybe_callback(2)
+        await self.maybe_callback(0)
