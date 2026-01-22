@@ -39,6 +39,10 @@ class Code(VerticalScroll):
         self.app.copy_to_clipboard(self.code)
 
     async def on_mount(self) -> None:
-        self.classes = "code-listing-" + self.parent.message['role']
+        if self.parent.message['role'] == "tool":
+            role = "user"
+        else:
+            role = self.parent.message['role']
+        self.classes = "code-listing-" + role
         await self.mount(Markdown())
         self.parent.target = self
