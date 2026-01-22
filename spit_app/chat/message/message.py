@@ -21,7 +21,12 @@ class Message(VerticalScroll):
         if role == "tool":
             role = "user"
         self.classes = "message-container-" + role
-        self.focus(scroll_visible=False)
+        if (self.app.focused is self.app.query_one("#side-panel") or
+            self.app.focused is self.chat.text_area or
+            not self.chat.display):
+            self.chat.chat_view.focused_message = self
+        else:
+            self.focus(scroll_visible=False)
         self.thinking = False
         self.target = None
         self.pp = PatternProcessing(self)
