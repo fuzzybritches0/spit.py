@@ -30,8 +30,6 @@ class Chat(Vertical):
         self.chat_view = ChatView(self)
         self.text_area = ChatTextArea(self)
         self.undo = Undo(self)
-        self.callback_busy = False
-        self.callback_0_pending = False
 
     def is_working(self) -> bool:
         if self.work and self.work.is_running:

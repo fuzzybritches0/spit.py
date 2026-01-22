@@ -27,6 +27,8 @@ class Message(VerticalScroll):
         self.pp = PatternProcessing(self)
         self.pos = 0
         self.content = ""
+        self.process_busy = False
+        self.finish_pending = False
 
     async def reset(self) -> None:
         self.display = False
@@ -53,12 +55,18 @@ class Message(VerticalScroll):
             self.pos=pos+1
 
     async def finish(self) -> None:
-        self.pp.part = ""
-        for pos in range(self.pos, len(self.content)):
-            await self.pp.process_patterns(self.content[pos:])
-        await self.target.append(self.pp.part)
+        if self.process_busy:
+            self.finish_pending = True
+        else:
+            self.pp.part = ""
+            for pos in range(self.pos, len(self.content)):
+                await self.pp.process_patterns(self.content[pos:])
+            await self.target.append(self.pp.part)
 
     async def process(self) -> None:
+        if self.process_busy:
+            return None
+        self.process_busy = True
         if not self.target:
             await self.mount(Part())
         if "tool_calls" in self.message and self.message["tool_calls"][0]:
@@ -71,9 +79,11 @@ class Message(VerticalScroll):
             if not self.thinking:
                 await self.target.update("Thinking...")
                 self.thinking = True
-            return None
         if self.content:
             await self.process_content()
+        self.process_busy = False
+        if self.finish_pending:
+            await self.finish()
 
     def action_edit_content(self) -> None:
         self.edit_message("content")
