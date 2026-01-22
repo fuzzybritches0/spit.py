@@ -114,6 +114,10 @@ class Message(VerticalScroll):
         self.chat.undo.append_undo("remove", self.message)
         del self.messages[-1]
         self.chat.write_chat_history()
+        if len(self.chat.chat_view.children) > 2:
+            self.chat.chat_view.children[-2].focus()
+        elif len(self.chat.chat_view.children) == 1:
+            self.chat.text_area.focus()
         await self.remove()
 
     def check_action(self, action: str,
