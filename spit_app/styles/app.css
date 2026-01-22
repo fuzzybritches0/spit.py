@@ -34,7 +34,7 @@
 	border: round $border
 }
 .latex-image {
-	margin: 0 0 0 0;
+	margin: 0;
 	width: auto
 }
 .message-container-user {
@@ -66,28 +66,28 @@
 	height: auto
 }
 .code-listing-user {
-	margin: 1 0 1 0;
+	margin: 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border-blurred;
 	height: auto
 }
 .code-listing-user:focus {
-	margin: 1 0 1 0;
+	margin: 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border;
 	height: auto
 }
 .code-listing-assistant {
-	margin: 1 0 1 0;
+	margin: 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border-blurred;
 	height: auto
 }
 .code-listing-assistant:focus {
-	margin: 1 0 1 0;
+	margin: 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border;
@@ -103,7 +103,7 @@
 	height: 4
 }
 Button {
-	margin: 1 1 1 1
+	margin: 1
 }
 Input {
 	margin: 0 1 1 1
