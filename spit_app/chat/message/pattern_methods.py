@@ -2,6 +2,9 @@ from .containers.part import Part
 from .containers.code import Code
 from .containers.latex import LaTeX
 
+def complete(self) -> str:
+    return self.message.target.source + self.part
+
 async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = False) -> None:
     if (not self.pp_last.isalnum() and
         not self.pp_next == "'" and
@@ -25,19 +28,17 @@ def latex_start(self, buffer: str, pattern: str) -> None:
     if not self.cur_latex_fence:
         self.latex = True
         self.cur_latex_fence = pattern
-        self.seqstart = len(self.message.target.source) + len(self.part) + len(pattern)
+        self.seqstart = len(complete(self)) + len(pattern)
 
 async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_display: bool = False) -> None:
     if self.seqstart > -1 and self.cur_latex_fence == exp_latex_fence:
-        sequence = self.message.target.source+self.part
-        sequence = sequence[self.seqstart:]
+        sequence = complete(self)[self.seqstart:]
         escaped = 0
         if self.escaped:
             sequence = sequence[:-1]
             escaped = 1
         if  not sequence.strip() == "..." and not sequence.strip() == "…" and not sequence.strip() == "and":
-            source = self.message.target.source+self.part
-            await self.message.target.update(source[:self.seqstart-len(pattern)-escaped])
+            await self.message.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
             self.part = ""
             await self.message.mount(LaTeX(sequence, exp_latex_fence, pattern))
             await self.message.mount(Part())
@@ -68,11 +69,10 @@ async def code_fence(self, buffer: str, pattern: str) -> None:
 
 async def code_block_start_end(self, pattern: str) -> None:
     if not self.cur_code_fence:
-        complete = self.message.target.source + self.part
-        complete = complete[:-len(pattern)+1]
-        if not complete or complete[-1] == "\n":
+        _complete = complete(self)[:-len(pattern)+1]
+        if not _complete or _complete[-1] == "\n":
             await code_block_start(self, pattern)
-        elif complete.rstrip(" ").endswith("\n") or complete.rstrip(" ") == "":
+        elif _complete.rstrip(" ").endswith("\n") or _complete.rstrip(" ") == "":
             await code_block_start(self, pattern)
     elif self.cur_code_fence == pattern:
         await code_block_end(self, pattern)
@@ -117,7 +117,7 @@ def escape(self, buffer: str, pattern: str) -> None:
 def escape_ltgt(self, buffer: str, pattern: str) -> None:
     if buffer.startswith("<br>"):
         return None
-    if self.message.target.source.endswith("<br"):
+    if complete(self).endswith("<br"):
         return None
     if pattern == "<" and self.pp_next.isalnum():
         self.message.target.append("\\")
