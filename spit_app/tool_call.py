@@ -49,16 +49,17 @@ class ToolCall:
         name = tool_call["function"]["name"]
         arguments = json.loads(tool_call["function"]["arguments"])
         messages.append({"role": "tool", "tool_call_id": tool_call["id"],
-                "name": name, "content": ""})
+                "name": name, "content": "```\n"})
         await self.maybe_callback(1)
         if "call" in self.tools[name]:
             if inspect.iscoroutinefunction(self.tools[name]["call"]):
-                messages[-1]["content"] = await self.tools[name]["call"](self.app, arguments, chat_id)
+                messages[-1]["content"] += await self.tools[name]["call"](self.app, arguments, chat_id)
             elif inspect.isfunction(self.tools[name]["call"]):
-                messages[-1]["content"] = self.tools[name]["call"](self.app, arguments, chat_id)
+                messages[-1]["content"] += self.tools[name]["call"](self.app, arguments, chat_id)
             await self.maybe_callback(2)
         else:
             async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
                 messages[-1]["content"] += chunk
                 await self.maybe_callback(2)
+        messages[-1]["content"] += "\n```"
         await self.maybe_callback(0)
