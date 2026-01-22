@@ -1,16 +1,18 @@
-# SPDX-License-Identifier: GPL-2.0
+# SPDX-Liicense-Identifier: GPL-2.0
+import asyncio
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 
 class Work:
     def __init__(self, chat) -> None:
         self.chat = chat
+        self.chat_view = chat.chat_view
         self.app = chat.app
         self.settings = chat.app.settings
-        self.messages = self.chat.messages
+        self.messages = chat.messages
         tools_descs = self.tools_descs()
         prompt = self.prompt()
         endpoint = self.settings.endpoints[chat.chat_endpoint]
-        self.endpoint = LlamaCppEndpoint(self.messages, endpoint, prompt, tools_descs, self.chat.callback)
+        self.endpoint = LlamaCppEndpoint(self.messages, endpoint, prompt, tools_descs, self.chat_view.callback)
 
     def tools_descs(self) -> list:
         tools_descs = []
@@ -49,10 +51,7 @@ class Work:
     async def work_stream(self) -> None:
         if "tool_calls" in self.messages[-1]:
             for tool_call in self.messages[-1]["tool_calls"]:
-                await self.app.tool_call.call(self.messages, tool_call, self.chat.id)
-                await self.chat.chat_view.mount_message(self.messages[-1])
-                self.chat.write_chat_history()
+                await self.app.tool_call.call(self.messages, tool_call, self.chat.id, self.chat_view.callback)
         await self.endpoint.stream()
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
-            self.chat.write_chat_history()
