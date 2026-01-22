@@ -13,7 +13,7 @@ class Undo:
             operation, message, index = self.undo_list[self.undo_index]
             if operation == "remove":
                 self.messages.append(message.copy())
-                await self.chat.chat_view.mount_message(self.messages[-1])
+                await self.chat.chat_view.mount_message()
                 self.chat_view.focus_message(-1)
             if operation == "append":
                 del self.messages[-1]
@@ -40,7 +40,7 @@ class Undo:
                 self.chat_view.focus_message(-1)
             if operation == "append":
                 self.messages.append(message.copy())
-                await self.chat.chat_view.mount_message(self.messages[-1])
+                await self.chat.chat_view.mount_message()
                 self.chat_view.focus_message(-1)
             if operation == "change":
                 temp_message = self.messages[index].copy()

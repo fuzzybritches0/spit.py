@@ -32,10 +32,11 @@ class ChatView(VerticalScroll):
         self.children[index].focus(scroll_visible=scroll_visible)
         self.focused_message = self.children[index]
 
-    async def mount_message(self, message) -> None:
-        await self.mount(Message(self.chat, message))
-        await self.children[-1].process()
-        await self.children[-1].finish()
+    async def mount_message(self, new: bool = False) -> None:
+        await self.mount(Message(self.chat, self.messages[-1]))
+        if not new:
+            await self.children[-1].process()
+            await self.children[-1].finish()
 
     async def action_continue(self) -> None:
         if (self.messages[-1]["role"] == "user" or self.messages[-1] == "tool" or

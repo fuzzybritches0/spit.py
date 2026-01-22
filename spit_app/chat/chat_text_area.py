@@ -42,7 +42,7 @@ class ChatTextArea(TextArea):
         if (self.text and
             (not self.messages or self.messages[-1]["role"] == "assistant")):
             self.chat.save_message({"role": "user", "content": self.text})
-            await self.chat_view.mount_message(self.messages[-1])
+            await self.chat_view.mount_message()
             self.chat_view.scroll_end(animate=False)
             self.text = ""
             work = Work(self.chat)
