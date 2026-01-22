@@ -106,6 +106,8 @@ def _worker(code: str, conn):
         formatted = f"\n{type(exc).__name__}: {exc}"
         if lineno > 0:
             formatted = f"\nLine {lineno}: {type(exc).__name__}: {exc}"
+        formatted = formatted.replace("<string>", "main")
+        formatted = formatted.replace("<stdin>", "main")
         conn.send({"type": "exception", "data": f"ERROR: {formatted}"})
     finally:
         sys.stdout.flush()
