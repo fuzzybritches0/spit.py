@@ -2,6 +2,7 @@
 from textual.containers import VerticalScroll
 from .message.message import Message
 from .work import Work
+from spit_app.overlays.loading_screen import LoadingScreen
 
 class ChatView(VerticalScroll):
     BINDINGS = [
@@ -74,3 +75,13 @@ class ChatView(VerticalScroll):
 
     async def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
+
+    async def on_mount(self) -> None:
+        if self.messages:
+            loading_screen = LoadingScreen()
+            await self.app.push_screen(loading_screen)
+            for message in self.messages:
+                await self.mount(Message(self.chat, message))
+                await self.children[-1].process()
+                await self.children[-1].finish()
+            await loading_screen.dismiss()

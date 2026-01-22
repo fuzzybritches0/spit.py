@@ -6,7 +6,6 @@ from textual.containers import Vertical
 from .undo import Undo
 from .chat_text_area import ChatTextArea
 from .chat_view import ChatView
-from spit_app.overlays.loading_screen import LoadingScreen
 
 class Chat(Vertical):
     BINDINGS = [
@@ -79,12 +78,6 @@ class Chat(Vertical):
     async def on_mount(self) -> None:
         if not self.messages:
             self.text_area.focus()
-        else:
-            loading_screen = LoadingScreen()
-            await self.app.push_screen(loading_screen)
-            for message in self.messages:
-                await self.chat_view.mount_message(message)
-            await loading_screen.dismiss()
 
     def on_descendant_focus(self, event: events.DescendantFocus) -> None:
         self.app.query_one("#side-panel").can_focus = False
