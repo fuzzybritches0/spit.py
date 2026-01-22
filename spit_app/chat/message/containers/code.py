@@ -9,7 +9,6 @@ class Code(VerticalScroll):
     def __init__(self) -> None:
         super().__init__()
         self.code = None
-        self.focus(scroll_visible=False)
 
     async def update(self, source: str) -> None:
         await self.children[0].update(source)
