@@ -62,3 +62,6 @@ class ChatView(VerticalScroll):
                 if len(self.chat.undo.undo_list) == 0:
                     return False
         return True
+
+    async def on_worker_state_changed(self) -> None:
+        self.refresh_bindings()

@@ -65,6 +65,9 @@ class ChatTextArea(TextArea):
                     return False
         return True
 
+    async def on_worker_state_changed(self) -> None:
+        self.refresh_bindings()
+
     def on_text_area_changed(self) -> None:
         if self.text:
             if self.was_empty:

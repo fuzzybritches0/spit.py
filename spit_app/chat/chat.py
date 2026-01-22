@@ -65,12 +65,6 @@ class Chat(Vertical):
                 await self.chat_view.children[-1].process()
                 self.callback_busy = False
 
-    async def on_worker_state_changed(self) -> None:
-        if not self.work.is_running and self.callback_0_pending:
-            await self.chat_view.children[-1].finish()
-            self.callback_0_pending = False
-        self.refresh_bindings()
-
     def write_chat_history(self) -> None:
         file_name = self.id + ".json"
         file = self.settings.data_path / file_name
