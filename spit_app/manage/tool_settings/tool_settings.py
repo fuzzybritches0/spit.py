@@ -1,10 +1,10 @@
 from uuid import uuid4
 from copy import deepcopy
-from textual.containers import Vertical
+from textual.containers import VerticalScroll
 from spit_app.manage.manage import Manage
 from .screens import ScreensMixIn
 
-class ToolSettings(Vertical, ScreensMixIn, Manage):
+class ToolSettings(VerticalScroll, ScreensMixIn, Manage):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "reset", "Reset"),
