@@ -60,6 +60,7 @@ class SidePanel(OptionList):
         Options.append(Option("\nAbout\n", id="about"))
         Options.append(None)
         Options.append(Option("\nQuit\n", id="quit"))
+        self.clear_options()
         self.add_options(Options)
 
     async def option_selected(self, id: str) -> None:
