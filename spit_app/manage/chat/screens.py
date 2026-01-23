@@ -9,17 +9,27 @@ from typing import Generator, List
 
 class ScreensMixIn:
     async def select_main_screen(self) -> None:
-        Options = [Option("\nCreate new Chat\n", id="select-new-chat")]
+        Options = []
+        if not self.archive_on:
+            Options.append(Option("\nCreate new Chat\n", id="select-new-chat"))
         chats = os.listdir(self.app.settings.data_path)
         chats = sorted(chats, reverse=True)
+        if self.archive_on:
+            key = "archive-chat-"
+        else:
+            key = "chat-"
         for chat in chats:
-            if chat.startswith("chat-") and chat.endswith(".json"):
+            if chat.startswith(key) and chat.endswith(".json"):
                 with open(self.app.settings.data_path / chat, "r") as file:
                     content = json.load(file)
                 id = chat[:-5]
                 desc = content["desc"]
                 local_ctime = datetime.fromtimestamp(int(content["ctime"]))
                 Options.append(Option(f"{desc}\n{local_ctime}\n", id=id))
+        if not self.archive_on:
+            Options.append(Option("\nArchive\n", id="select-archive"))
+        else:
+            Options.append(Option("\nLeave archive\n", id="select-leave-archive"))
         await self.mount(OptionList(*Options, id="option-list"))
         self.children[0].focus()
 
