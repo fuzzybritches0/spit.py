@@ -11,6 +11,14 @@ class HandlersMixIn:
         if event.option.id == "select-new-chat":
             await self.remove_children()
             await self.edit_chat()
+        elif event.option.id == "select-archive":
+            self.archive_on = True
+            await self.remove_children()
+            await self.select_main_screen()
+        elif event.option.id == "select-leave-archive":
+            self.archive_on = False
+            await self.remove_children()
+            await self.select_main_screen()
         else:
             self.cur_chat = str(event.option.id)
             await self.remove_children()
