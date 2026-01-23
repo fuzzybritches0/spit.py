@@ -44,7 +44,8 @@ class ScreensMixIn:
             if (not setting == "name" and
                 not setting == "endpoint_url" and
                 not setting == "key" and
-                not setting == "reasoning_key"):
+                not setting == "reasoning_key" and
+                not setting == "timeout"):
                 options.append((setting, setting))
         return options
 

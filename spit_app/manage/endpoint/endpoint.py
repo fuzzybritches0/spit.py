@@ -28,9 +28,10 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vert
             "endpoint_url": { "stype": "url", "empty": False, "desc": "Endpoint URL",
                             "value": "http://127.0.0.1:8080" },
             "key": { "stype": "string", "desc": "API Access Key" },
+            "timeout": {"stype": "uinteger", "empty": False,"desc": "Timeout (0 = no timeout)", "value": 0 },
             "reasoning_key": { "stype": "select_no_default", "desc": "Reasoning Key",
                             "options":["reasoning_content", "reasoning"] },
-            "temperature": { "stype": "float", "empty": True, "desc": "Temperature" },
+            "temperature": { "stype": "float", "desc": "Temperature" },
             "top_p": { "stype": "float", "desc": "TOP-P" },
             "min_p": { "stype": "float", "desc": "MIN-P" },
             "top_k": { "stype": "float", "desc": "TOP-K" }
