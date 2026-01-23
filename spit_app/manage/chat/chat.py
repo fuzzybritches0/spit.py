@@ -1,8 +1,10 @@
 import os
 import json
+import shutil
 from datetime import datetime
 from time import time
 from textual.containers import Vertical
+from textual.widgets.option_list import Option
 from textual.widgets import Select
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
@@ -26,6 +28,7 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
             self.id = "manage-chats"
         self.classes = "manage"
         self.cur_chat = None
+        self.archive_on = False
 
     def new(self, desc: str, endpoint: str, prompt: str) -> None:
         self.ctime = time()
@@ -56,13 +59,33 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
         except:
             return False
 
+    def unarchive(self) -> None:
+        file_archive = self.cur_chat + ".json"
+        file = file_archive.split("-")[1:]
+        file = "-".join(file)
+        file = self.settings.data_path / file
+        file_archive = self.settings.data_path / file_archive
+        shutil.copy(file_archive, file)
+        os.remove(file_archive)
+        self.app.query_one("#side-panel").option_list() 
+
+    def archive(self) -> None:
+        file = self.cur_chat + ".json"
+        file_archive = "archive-" + self.cur_chat + ".json"
+        file = self.settings.data_path / file
+        file_archive = self.settings.data_path / file_archive
+        shutil.copy(file, file_archive)
+        self.delete()
+
     def delete(self) -> None:
+        file_name = self.cur_chat + ".json"
         if self.is_loaded():
             self.app.query_one("#main").query_one(f"#{self.cur_chat}").remove()
-        file_name = self.cur_chat + ".json"
         os.remove(self.settings.data_path / file_name)
-        self.app.query_one("#side-panel").remove_option(self.cur_chat)
-        self.app.query_one("#side-panel").highlighted-=1
+        if not self.archive_on:
+            self.app.query_one("#side-panel").remove_option(self.cur_chat)
+            if self.app.query_one("#side-panel").highlighted:
+                self.app.query_one("#side-panel").highlighted-=1
 
     def update(self, desc: str, endpoint: str, prompt: str) -> None:
         if self.is_loaded():
