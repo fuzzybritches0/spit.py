@@ -15,6 +15,8 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
+        ("ctrl+i", "archive", "Archive"),
+        ("ctrl+i", "unarchive", "Un-archive"),
         ("escape", "cancel", "Cancel")
     ]
 
