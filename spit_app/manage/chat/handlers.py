@@ -29,5 +29,9 @@ class HandlersMixIn:
             await self.action_cancel()
         elif event.button.id == "delete":
             await self.action_delete()
+        elif event.button.id == "archive":
+            await self.action_archive()
+        elif event.button.id == "unarchive":
+            await self.action_unarchive()
         elif event.button.id == "save":
             await self.action_save()

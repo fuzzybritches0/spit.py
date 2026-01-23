@@ -63,12 +63,21 @@ class ScreensMixIn:
             await self.mount(Select(((name, key) for name, key in self.prompt_list()),
                                 id="prompt", prompt="None"))
         if chat:
-            await self.mount(Horizontal(
-                Button("Save", id="save"),
-                Button("Delete", id="delete"),
-                Button("Cancel", id="cancel"),
-                id="save-delete-cancel"
-            ))
+            if self.archive_on:
+                await self.mount(Horizontal(
+                    Button("Un-archive", id="unarchive"),
+                    Button("Delete", id="delete"),
+                    Button("Cancel", id="cancel"),
+                    id="save-delete-cancel"
+                ))
+            else:
+                await self.mount(Horizontal(
+                    Button("Save", id="save"),
+                    Button("Delete", id="delete"),
+                    Button("Archive", id="archive"),
+                    Button("Cancel", id="cancel"),
+                    id="save-delete-cancel"
+                ))
         else:
             await self.mount(Horizontal(
                 Button("Save", id="save"),
