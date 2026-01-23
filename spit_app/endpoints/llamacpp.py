@@ -9,9 +9,11 @@ class LlamaCppEndpoint:
         self.callback = callback
         self.endpoint = endpoint
         self.api_endpoint = self.endpoint["endpoint_url"]["value"] + "/v1/chat/completions"
+        self.timeout = self.endpoint["timeout"]["value"]
+        if self.timeout == 0:
+            self.timeout = None
         self.prompt = prompt
         self.tools = tools
-        self.timeout = None
 
     async def maybe_callback(self, signal: int) -> None:
         if self.callback:
