@@ -6,6 +6,16 @@ class ActionsMixIn:
         await self.remove_children()
         await self.select_main_screen()
 
+    async def action_archive(self) -> None:
+        self.archive()
+        await self.remove_children()
+        await self.select_main_screen()
+
+    async def action_unarchive(self) -> None:
+        self.unarchive()
+        await self.remove_children()
+        await self.select_main_screen()
+
     async def action_save(self) -> None:
         self.save()
         if not self.cur_chat:
