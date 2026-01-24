@@ -8,6 +8,7 @@ class Code(VerticalScroll):
 
     def __init__(self) -> None:
         super().__init__()
+        self.app.refresh_bindings()
         self.code = None
 
     async def update(self, source: str) -> None:

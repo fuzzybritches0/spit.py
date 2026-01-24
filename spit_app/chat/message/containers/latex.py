@@ -13,6 +13,7 @@ class LaTeX(VerticalScroll):
 
     def __init__(self, latex, latex_fence_start, latex_fence_end) -> None:
         super().__init__()
+        self.app.refresh_bindings()
         self.latex = latex
         escaped = ""
         if latex_fence_start == "[" or latex_fence_start == "(":
