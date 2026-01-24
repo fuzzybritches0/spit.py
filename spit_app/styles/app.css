@@ -66,28 +66,28 @@
 	height: auto
 }
 .code-listing-user {
-	margin: 0;
+	margin: 0 0 1 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border-blurred;
 	height: auto
 }
 .code-listing-user:focus {
-	margin: 0;
+	margin: 0 0 1 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	border: tall $border;
 	height: auto
 }
 .code-listing-assistant {
-	margin: 0;
+	margin: 0 0 1 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border-blurred;
 	height: auto
 }
 .code-listing-assistant:focus {
-	margin: 0;
+	margin: 0 0 1 0;
 	color: $foreground;
 	background: $background;
 	border: tall $border;
