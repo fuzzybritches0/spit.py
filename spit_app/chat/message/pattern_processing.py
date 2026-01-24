@@ -19,7 +19,6 @@ patterns = [
 class PatternProcessing():
     def __init__(self, message) -> None:
         self.message = message
-        self.chat = message.chat
         self.escaped = False
         self.codelisting = False
         self.codeblock = False

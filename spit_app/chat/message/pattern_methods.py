@@ -40,7 +40,7 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         if  not sequence.strip() == "..." and not sequence.strip() == "…" and not sequence.strip() == "and":
             await self.message.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
             self.part = ""
-            await self.message.mount(LaTeX(self.chat, sequence, exp_latex_fence, pattern))
+            await self.message.mount(LaTeX(sequence, exp_latex_fence, pattern))
             await self.message.mount(Part())
             self.skip_add_part = len(pattern)+escaped
         self.latex = False
@@ -81,7 +81,7 @@ async def code_block_start(self, pattern: str) -> None:
     await self.message.target.append(self.part)
     await self.message.target.update(self.message.target.source[:-len(pattern)+1])
     self.part = pattern[1:]
-    await self.message.mount(Code(self.chat))
+    await self.message.mount(Code())
     self.cur_code_fence = pattern
     self.codeblock = True
 
