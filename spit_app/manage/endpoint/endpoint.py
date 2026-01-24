@@ -1,12 +1,11 @@
 from uuid import uuid4
-from textual.containers import VerticalScroll
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 from spit_app.manage.manage import Manage
 
-class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, VerticalScroll, Manage):
+class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Manage):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),

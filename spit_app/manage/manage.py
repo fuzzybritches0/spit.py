@@ -1,12 +1,13 @@
 from copy import deepcopy
 from uuid import uuid4
 from textual.widgets import Select
+from textual.containers import VerticalScroll
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 
-class Manage(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn):
+class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn):
     def duplicate(self) -> None:
         self.new_manage = True
         self.uuid = str(uuid4())
