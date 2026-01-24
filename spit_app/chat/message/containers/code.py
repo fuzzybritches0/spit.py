@@ -6,9 +6,10 @@ class Code(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy Code")
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, chat) -> None:
         super().__init__()
         self.code = None
+        self.chat = chat
 
     async def update(self, source: str) -> None:
         await self.children[0].update(source)
@@ -37,6 +38,12 @@ class Code(VerticalScroll):
         if not self.code:
             self.extract_code()
         self.app.copy_to_clipboard(self.code)
+
+    def check_action(self, action: str,
+                     parameters: tuple[object, ...]) -> bool | None:
+        if self.chat.is_working():
+            return False
+        return True
 
     async def on_mount(self) -> None:
         if self.parent.message['role'] == "tool":
