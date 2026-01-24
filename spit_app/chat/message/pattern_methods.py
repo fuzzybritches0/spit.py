@@ -104,12 +104,10 @@ def code_listing(self, pattern: str) -> None:
             self.codelisting = False
 
 def is_roster(self, buffer: str, pattern: str) -> None:
-    if self.seqstart == -1:
-        self.roster = True
+    self.roster = True
 
 def end_roster(self, buffer: str, pattern: str) -> None:
-    if self.seqstart == -1:
-        self.roster = False
+    self.roster = False
 
 def escape(self, buffer: str, pattern: str) -> None:
     self.escaped = not self.escaped
