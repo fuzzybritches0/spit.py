@@ -6,10 +6,9 @@ class Code(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy Code")
     ]
 
-    def __init__(self, chat) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self.code = None
-        self.chat = chat
 
     async def update(self, source: str) -> None:
         await self.children[0].update(source)
@@ -41,7 +40,7 @@ class Code(VerticalScroll):
 
     def check_action(self, action: str,
                      parameters: tuple[object, ...]) -> bool | None:
-        if self.chat.is_working():
+        if self.parent.target is self:
             return False
         return True
 
