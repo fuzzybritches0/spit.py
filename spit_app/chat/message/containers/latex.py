@@ -11,8 +11,9 @@ class LaTeX(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy LaTeX")
     ]
 
-    def __init__(self, latex, latex_fence_start, latex_fence_end) -> None:
+    def __init__(self, chat, latex, latex_fence_start, latex_fence_end) -> None:
         super().__init__()
+        self.chat = chat
         self.latex = latex
         escaped = ""
         if latex_fence_start == "[" or latex_fence_start == "(":
@@ -23,6 +24,12 @@ class LaTeX(VerticalScroll):
 
     def action_copy_to_clipboard(self) -> None:
         self.app.copy_to_clipboard(self.latex_fence_start + self.latex + self.latex_fence_end)
+
+    def check_action(self, action: str,
+                     parameters: tuple[object, ...]) -> bool | None:
+        if self.chat.is_working():
+            return False
+        return True
 
     async def on_mount(self) -> None:
         self.parent.focus(scroll_visible=False)
