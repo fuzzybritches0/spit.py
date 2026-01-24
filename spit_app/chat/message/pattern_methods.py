@@ -111,13 +111,3 @@ def end_roster(self, buffer: str, pattern: str) -> None:
 
 def escape(self, buffer: str, pattern: str) -> None:
     self.escaped = not self.escaped
-
-def escape_ltgt(self, buffer: str, pattern: str) -> None:
-    if buffer.startswith("<br>"):
-        return None
-    if complete(self).endswith("<br"):
-        return None
-    if pattern == "<" and self.pp_next.isalnum():
-        self.message.target.append("\\")
-    elif pattern == ">" and self.pp_last.isalnum():
-        self.message.target.append("\\")

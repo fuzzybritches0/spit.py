@@ -7,8 +7,6 @@ patterns = [
         ("\n|",      False,  False, False, None,  False, is_roster),
         ("`",        False,  None,  None,  False, False, code_fence),
         ("~",        False,  None,  None,  False, False, code_fence),
-        ("<",        False,  False, False, None,  False, escape_ltgt),
-        (">",        False,  False, False, None,  False, escape_ltgt),
         ("(",        True,   False, False, False, False, latex_start),
         (")",        True,   False, False, False, True,  latex_end, "("),
         ("[",        True,   False, False, False, False, latex_start),
