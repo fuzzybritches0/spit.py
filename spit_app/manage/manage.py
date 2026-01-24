@@ -11,7 +11,7 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
     def duplicate(self) -> None:
         self.new_manage = True
         self.uuid = str(uuid4())
-        self.query_one("#name").value = self.uuid
+        self.query_one("#name").value = self.query_one("#name").value + " duplicate"
 
     def new(self) -> None:
         self.new_manage = True
