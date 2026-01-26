@@ -3,6 +3,13 @@ import inspect
 from textual.widgets import OptionList, Button
 
 class HandlersMixIn:
+    def on_focus(self) -> None:
+        if self.children:
+            if self.children[0].id == "option-list":
+                self.children[0].focus()
+            elif len(self.children) > 0:
+                self.children[1].focus()
+
     async def on_mount(self) -> None:
         await self.select_main_screen()
 
