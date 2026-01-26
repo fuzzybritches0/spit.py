@@ -10,26 +10,21 @@ from typing import Generator, List
 class ScreensMixIn:
     async def select_main_screen(self) -> None:
         Options = []
-        if not self.archive_on:
+        if not self.cur_dir is self.chats_archive:
             Options.append(Option("\nCreate new Chat\n", id="select-new-chat"))
-        chats = os.listdir(self.app.settings.data_path)
+        chats = os.listdir(self.cur_dir)
         chats = sorted(chats, reverse=True)
-        if self.archive_on:
-            key = "archive-chat-"
-        else:
-            key = "chat-"
         for chat in chats:
-            if chat.startswith(key) and chat.endswith(".json"):
-                with open(self.app.settings.data_path / chat, "r") as file:
-                    content = json.load(file)
-                id = chat[:-5]
-                desc = content["desc"]
-                local_ctime = datetime.fromtimestamp(int(content["ctime"]))
-                Options.append(Option(f"{desc}\n{local_ctime}\n", id=id))
-        if not self.archive_on:
-            Options.append(Option("\nArchive\n", id="select-archive"))
-        else:
+            with open(self.cur_dir / chat, "r") as file:
+                content = json.load(file)
+            id = chat[:-5]
+            desc = content["desc"]
+            local_ctime = datetime.fromtimestamp(int(content["ctime"]))
+            Options.append(Option(f"{desc}\n{local_ctime}\n", id=id))
+        if self.cur_dir is self.chats_archive:
             Options.append(Option("\nLeave archive\n", id="select-leave-archive"))
+        else:
+            Options.append(Option("\nArchive\n", id="select-archive"))
         await self.mount(OptionList(*Options, id="option-list"))
         self.children[0].focus()
 
@@ -49,7 +44,7 @@ class ScreensMixIn:
         if chat:
             self.cur_chat = chat
             chat += ".json"
-            with open(self.app.settings.data_path / chat, "r") as file:
+            with open(self.cur_dir / chat, "r") as file:
                 content = json.load(file)
         Validators = [Function(self.is_not_empty)]
         await self.mount(Label("Description:"))
@@ -73,7 +68,7 @@ class ScreensMixIn:
             await self.mount(Select(((name, key) for name, key in self.prompt_list()),
                                 id="prompt", prompt="None"))
         if chat:
-            if self.archive_on:
+            if self.cur_dir is self.chats_archive:
                 await self.mount(Horizontal(
                     Button("Un-archive", id="unarchive"),
                     Button("Delete", id="delete"),
