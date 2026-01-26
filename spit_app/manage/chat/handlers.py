@@ -1,6 +1,13 @@
 from textual.widgets import Button, OptionList
 
 class HandlersMixIn:
+    def on_focus(self) -> None:
+        if self.children:
+            if self.children[0].id == "option-list":
+                self.children[0].focus()
+            elif len(self.children) > 0:
+                self.children[1].focus()
+
     async def on_mount(self) -> None:
         if self.new_chat:
             await self.edit_chat()
