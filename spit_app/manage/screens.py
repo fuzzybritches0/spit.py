@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.validation import Function
 from textual.containers import Horizontal
 from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, Select
 from textual.widgets.option_list import Option
@@ -31,13 +30,7 @@ class ScreensMixIn:
         value = ""
         if "value" in self.manage[setting]:
             value = self.manage[setting]["value"]
-        Validators = []
-        if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
-            Validators.append(Function(self.is_not_empty))
-        if hasattr(self, f"valid_setting_{id}"):
-            Validators.append(Function(getattr(self, f"valid_setting_{id}")))
-        if hasattr(self, f"valid_{stype}"):
-            Validators.append(Function(getattr(self, f"valid_{stype}")))
+        Validators = self.validators(setting, id, stype)
         if stype == "integer" or stype == "uinteger" or stype == "float" or stype == "ufloat":
             value=str(value)
         if stype == "select":

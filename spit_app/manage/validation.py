@@ -1,7 +1,18 @@
 # SPDX-License-Identifier: GPL-2.0
 import string
+from textual.validation import Function
 
 class ValidationMixIn:
+    def validators(self, setting: str, id: str, stype: str) -> list:
+        Validators = []
+        if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
+            Validators.append(Function(self.is_not_empty))
+        if hasattr(self, f"valid_setting_{id}"):
+            Validators.append(Function(getattr(self, f"valid_setting_{id}")))
+        if hasattr(self, f"valid_{stype}"):
+            Validators.append(Function(getattr(self, f"valid_{stype}")))
+        return Validators
+
     def valid_url(self, value) -> bool:
         if value.startswith("http://"):
             return True
