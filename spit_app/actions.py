@@ -20,7 +20,7 @@ class ActionsMixIn:
             index = 0
             for child in self.query_one("#main").children:
                 if child.display:
-                    self.focus_first(index)
+                    child.focus()
                     break
                 index+=1
 
