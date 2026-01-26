@@ -2,8 +2,9 @@ from uuid import uuid4
 from copy import deepcopy
 from spit_app.manage.manage import Manage
 from .screens import ScreensMixIn
+from .validation import ValidationMixIn
 
-class ToolSettings(ScreensMixIn, Manage):
+class ToolSettings(ScreensMixIn, ValidationMixIn, Manage):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "reset", "Reset"),
