@@ -100,12 +100,11 @@ class LlamaCppEndpoint:
                     if not raw_line or not raw_line.startswith("data:"):
                         continue
                     line = raw_line[5:].strip()
-                    if line == "[DONE]":
-                        await self.maybe_callback(0)
-                    elif not line:
+                    if not line:
                         continue
                     try:
                         delta = json.loads(line)
                     except json.JSONDecodeError:
                         continue
                     await self.extract_fields(delta)
+        await self.maybe_callback(0)
