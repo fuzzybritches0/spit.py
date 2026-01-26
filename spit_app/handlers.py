@@ -10,13 +10,10 @@ class HandlersMixIn:
     async def on_ready(self) -> None:
         if self.settings.active_chat:
             active = self.settings.active_chat
-            file_name = active + ".json"
-            if os.path.exists(self.settings.data_path / file_name):
+            filename = active + ".json"
+            if os.path.exists(self.settings.chats / filename):
+                await self.app.query_one("#main").mount(Chat(active))
                 index = self.query_one("#side-panel").get_option_index(active)
                 self.query_one("#side-panel").highlighted = index
-                await self.query_one("#main").mount(Chat(active))
             else:
-                self.settings.active_chat = None
-                self.settings.save()
-        if not self.query_one("#side-panel").highlighted:
-            self.query_one("#side-panel").highlighted = 0
+                self.query_one("#side-panel").highlighted = 0
