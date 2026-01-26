@@ -47,6 +47,7 @@ class LlamaCppEndpoint:
         payload["n_predict"] = -1
         payload["cache_prompt"] = True
         payload["stream"] = True
+        payload["return_progress"] = True
         return payload
 
     def tool_calls(self, content: dict) -> None:
