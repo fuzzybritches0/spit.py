@@ -145,7 +145,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
 
     timeout = SETTINGS["timeout"]["value"]
     start = loop.time()
-
+    yield "```\n"
     while True:
         remaining = timeout - (loop.time() - start)
         try:
@@ -161,7 +161,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
             break
 
         yield msg["data"]
-
+    yield "\n```"
     if proc.is_alive():
         proc.terminate()
         proc.join()
