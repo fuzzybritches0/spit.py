@@ -1,0 +1,60 @@
+import json
+from duckduckgo_search import DDGS
+from spit_app.tool_call import load_user_settings
+
+NAME = __file__.split("/")[-1][:-3]
+
+DESC = {
+    "type": "function",
+    "function": {
+        "name": NAME,
+        "description": "Search the web.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The query for the search."
+                },
+                "news": {
+                    "type": "boolean",
+                    "description": "Choose if you want to search just for news. Default: False"
+                }
+            },
+            "required": ["query"]
+        }
+    }
+}
+
+PROMPT = "Use this function to search the internet."
+MAX_RESULTS = 10
+SAFESEARCH = "moderate"
+
+SETTINGS = {
+    "prompt": {"value": PROMPT, "stype": "text", "desc": "Prompt"},
+    "max_results": {"value": MAX_RESULTS, "stype": "uinteger", "empty": False, "desc": "Number of results"},
+    "safesearch": {"value": SAFESEARCH, "stype": "select_no_default", "empty": False,
+                   "desc": "Save search", "options": ["on", "moderate", "off"]}
+}
+
+class Validators:
+    def max_results(value) -> bool:
+        try:
+            int(value)
+        except:
+            return False
+        if int(value) < 1 or int(value) > 100:
+            return False
+        return True
+
+def call(app, arguments: dict, chat_id: str):
+    load_user_settings(app, NAME, SETTINGS)
+    query = arguments["query"]
+    safesearch = SETTINGS["safesearch"]["value"]
+    max_results = SETTINGS["max_results"]["value"]
+    if "news" in arguments and arguments["news"]:
+        result = DDGS().news(keywords=query, safesearch=safesearch, max_results=max_results)
+    else:
+        result = DDGS().text(keywords=query, safesearch=safesearch, max_results=max_results)
+    result = json.dumps(result)
+    return "```\n" + result + "\n```"
