@@ -84,9 +84,15 @@ class ScreensMixIn:
                     id="save-delete-cancel"
                 ))
         else:
-            await self.mount(Horizontal(
-                Button("Save", id="save"),
-                Button("Cancel", id="cancel"),
-                id="save-delete-cancel"
-            ))
+            if self.new_chat:
+                await self.mount(Horizontal(
+                    Button("Save", id="save"),
+                    id="save-delete-cancel"
+                ))
+            else:
+                await self.mount(Horizontal(
+                    Button("Save", id="save"),
+                    Button("Cancel", id="cancel"),
+                    id="save-delete-cancel"
+                ))
         self.children[1].focus()
