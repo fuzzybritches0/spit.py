@@ -74,7 +74,10 @@ class SidePanel(OptionList):
                     self.settings.save()
                 cont.display = True
                 cont.disable = False
-                self.app.focus_first(index)
+                if cont.id.startswith("chat"):
+                    cont.chat_view.focus()
+                else:
+                    cont.focus()
                 ret = True
             index+=1
         if ret:
