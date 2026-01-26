@@ -16,10 +16,11 @@ class Chat(Vertical):
     def __init__(self, id) -> None:
         super().__init__()
         self.settings = self.app.settings
+        self.chats = self.settings.chats
         self.classes = "chat"
         self.id = id
         chat = id + ".json"
-        with open(self.settings.data_path / chat, "r") as file:
+        with open(self.chats / chat, "r") as file:
             content = json.load(file)
         self.chat_ctime = content["ctime"]
         self.chat_desc = content["desc"]
@@ -42,7 +43,7 @@ class Chat(Vertical):
 
     def write_chat_history(self) -> None:
         file_name = self.id + ".json"
-        file = self.settings.data_path / file_name
+        file = self.chats / file_name
         content = {}
         content["ctime"] = self.chat_ctime
         content["desc"] = self.chat_desc
