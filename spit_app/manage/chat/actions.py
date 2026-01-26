@@ -34,6 +34,9 @@ class ActionsMixIn:
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":
             return False
+        elif action == "cancel":
+            if self.new_chat:
+                return False
         elif action == "save":
             if self.cur_dir is self.chats_archive:
                 return False
@@ -42,6 +45,7 @@ class ActionsMixIn:
                 return False
         elif action == "unarchive" and self.cur_dir is self.chats:
             return False
-        elif action == "archive" and self.cur_dir is self.chats_archive or self.new_chat:
+        elif action == "archive" and (self.cur_dir is self.chats_archive or
+                                      self.new_chat or not self.cur_chat):
             return False
         return True
