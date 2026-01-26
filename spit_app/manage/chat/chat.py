@@ -30,7 +30,9 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
             self.id = "manage-chats"
         self.classes = "manage"
         self.cur_chat = None
-        self.archive_on = False
+        self.chats = self.settings.chats
+        self.chats_archive = self.settings.chats_archive
+        self.cur_dir = self.chats
 
     def new(self, desc: str, endpoint: str, prompt: str) -> None:
         self.ctime = time()
@@ -38,7 +40,7 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
         file_name = self.uuid + ".json"
         content = {"ctime": self.ctime, "desc": desc, "endpoint": endpoint,
                    "prompt": prompt, "messages": []}
-        file = self.settings.data_path / file_name
+        file = self.cur_dir / file_name
         with open(file, "w") as f:
             json.dump(content, f)
 
@@ -62,29 +64,26 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
             return False
 
     def unarchive(self) -> None:
-        file_archive = self.cur_chat + ".json"
-        file = file_archive.split("-")[1:]
-        file = "-".join(file)
-        file = self.settings.data_path / file
-        file_archive = self.settings.data_path / file_archive
-        shutil.copy(file_archive, file)
+        file = self.cur_chat + ".json"
+        file_chat = self.chats / file
+        file_archive = self.chats_archive / file
+        shutil.copy(file_archive, file_chat)
         os.remove(file_archive)
         self.app.query_one("#side-panel").option_list() 
 
     def archive(self) -> None:
         file = self.cur_chat + ".json"
-        file_archive = "archive-" + self.cur_chat + ".json"
-        file = self.settings.data_path / file
-        file_archive = self.settings.data_path / file_archive
-        shutil.copy(file, file_archive)
+        file_chat = self.chats / file
+        file_archive = self.chats_archive / file
+        shutil.copy(file_chat, file_archive)
         self.delete()
 
     def delete(self) -> None:
         file_name = self.cur_chat + ".json"
         if self.is_loaded():
             self.app.query_one("#main").query_one(f"#{self.cur_chat}").remove()
-        os.remove(self.settings.data_path / file_name)
-        if not self.archive_on:
+        os.remove(self.cur_dir / file_name)
+        if not self.cur_dir is self.chats_archive:
             self.app.query_one("#side-panel").remove_option(self.cur_chat)
             if self.app.query_one("#side-panel").highlighted:
                 self.app.query_one("#side-panel").highlighted-=1
@@ -99,13 +98,13 @@ class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical)
             chat.write_chat_history()
         else:
             file_name = self.cur_chat + ".json"
-            with open(self.settings.data_path / file_name, "r") as file:
+            with open(self.cur_dir / file_name, "r") as file:
                 content = json.load(file)
             content["desc"] = desc
             content["endpoint"] = endpoint
             content["prompt"] = prompt
             ctime = content["ctime"]
-            with open(self.settings.data_path / file_name, "w") as file:
+            with open(self.cur_dir / file_name, "w") as file:
                 json.dump(content, file)
         ctime = datetime.fromtimestamp(int(ctime))
         self.app.query_one("#side-panel").replace_option_prompt(self.cur_chat, f"\n{desc}\n{ctime}\n")
