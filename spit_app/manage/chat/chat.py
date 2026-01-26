@@ -3,7 +3,7 @@ import json
 import shutil
 from datetime import datetime
 from time import time
-from textual.containers import Vertical
+from textual.containers import VerticalScroll
 from textual.widgets.option_list import Option
 from textual.widgets import Select
 from .actions import ActionsMixIn
@@ -11,7 +11,7 @@ from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 
-class Chat(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertical):
+class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "delete", "Delete"),
