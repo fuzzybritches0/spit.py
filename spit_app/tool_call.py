@@ -38,6 +38,8 @@ class ToolCall:
                     self.tools[name]["call_async_generator"] = getattr(module, "call_async_generator")
                 if hasattr(module, "PROMPT_INST"):
                     self.tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
+                if hasattr(module, "Validators"):
+                    self.tools[name]["validators"] = getattr(module, "Validators")
 
     async def maybe_callback(self, signal: int) -> None:
         if self.callback:
@@ -49,7 +51,7 @@ class ToolCall:
         name = tool_call["function"]["name"]
         arguments = json.loads(tool_call["function"]["arguments"])
         messages.append({"role": "tool", "tool_call_id": tool_call["id"],
-                "name": name, "content": "```\n"})
+                "name": name, "content": ""})
         await self.maybe_callback(1)
         if "call" in self.tools[name]:
             if inspect.iscoroutinefunction(self.tools[name]["call"]):
@@ -61,5 +63,4 @@ class ToolCall:
             async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
                 messages[-1]["content"] += chunk
                 await self.maybe_callback(2)
-        messages[-1]["content"] += "\n```"
         await self.maybe_callback(0)
