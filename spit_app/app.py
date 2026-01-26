@@ -37,15 +37,6 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             yield Vertical(id="main")
         yield Footer()
 
-    def focus_first(self, index: int) -> None:
-        child = self.query_one("#main").children[index]
-        if child.id.startswith("chat-"):
-            child.children[0].focus()
-        elif child.children[0].id == "option-list":
-            child.children[0].focus()
-        else:
-            child.children[1].focus()
-
     async def maybe_remove(self, id: str) -> None:
         try:
             await self.query_one("#main").query_one(f"#{id}").remove()
