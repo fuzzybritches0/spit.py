@@ -44,6 +44,10 @@ SETTINGS = {
 
 class Validators:
     def page_size(value) -> bool:
+        try:
+            int(value)
+        except:
+            return False
         if int(value) < 500 or int(value) > 20000:
             return False
         return True
