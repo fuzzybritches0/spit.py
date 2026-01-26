@@ -40,16 +40,15 @@ class SidePanel(OptionList):
         Options = []
         Options.append(Option("\nCreate New Chat\n", id="new-chat"))
         Options.append(None)
-        chats = os.listdir(self.app.settings.data_path)
+        chats = os.listdir(self.app.settings.chats)
         chats = sorted(chats, reverse=True)
         for chat in chats:
-            if chat.startswith("chat-") and chat.endswith(".json"):
-                with open(self.app.settings.data_path / chat, "r") as file:
-                    content = json.load(file)
-                id = chat[:-5]
-                desc = content["desc"]
-                ctime = datetime.fromtimestamp(int(content["ctime"]))
-                Options.append(Option(f"\n{desc}\n{ctime}\n", id=id))
+            with open(self.app.settings.chats / chat, "r") as file:
+                content = json.load(file)
+            id = chat[:-5]
+            desc = content["desc"]
+            ctime = datetime.fromtimestamp(int(content["ctime"]))
+            Options.append(Option(f"\n{desc}\n{ctime}\n", id=id))
         Options.append(None)
         Options.append(Option("\nManage Chats\n", id="manage-chats"))
         Options.append(Option("\nManage Endpoints\n", id="manage-endpoints"))
