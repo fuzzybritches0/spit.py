@@ -16,6 +16,12 @@ class Settings:
         self.settings_file = self.settings_path / "settings.json"
         self.sandbox = self.data_path / "sandbox"
         self.sandbox.mkdir(parents=True, exist_ok=True)
+        self.cache = self.data_path / "cache"
+        self.cache.mkdir(parents=True, exist_ok=True)
+        self.chats = self.data_path / "chat"
+        self.chats.mkdir(parents=True, exist_ok=True)
+        self.chats_archive = self.data_path / "archive"
+        self.chats_archive.mkdir(parents=True, exist_ok=True)
 
     def init(self) -> None:
         self.endpoints = {}
