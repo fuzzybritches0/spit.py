@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
 import os
-import json
 from datetime import datetime
 from spit_app.chat.chat import Chat
 from spit_app.manage.chat.chat import Chat as ManageChats
@@ -44,8 +43,7 @@ class SidePanel(OptionList):
         chats = os.listdir(self.path["chats"])
         chats = sorted(chats, reverse=True)
         for chat in chats:
-            with open(self.app.settings.chats / chat, "r") as file:
-                content = json.load(file)
+            content = self.app.read_json(f"chats/{chat}")
             id = chat[:-5]
             desc = content["desc"]
             ctime = datetime.fromtimestamp(int(content["ctime"]))
