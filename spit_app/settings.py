@@ -34,15 +34,15 @@ class Settings:
         settings["theme"] = self.app.theme
         settings["active_chat"] = self.active_chat
         settings["tool_settings"] = self.tool_settings
-        self.settings_file.write_text(json.dumps(settings))
+        self.app.write_json("settingsf", settings)
         self.save_endpoints()
         self.save_prompts()
 
     def save_endpoints(self) -> None:
-        self.endpoints_file.write_text(json.dumps(self.endpoints))
+        self.app.write_json("endpointsf", self.endpoints)
 
     def save_prompts(self) -> None:
-        self.prompts_file.write_text(json.dumps(self.prompts))
+        self.app.write_json("promptsf", self.prompts)
 
     def load(self) -> None:
         self.theme = None
@@ -50,15 +50,15 @@ class Settings:
         self.prompts = {}
         self.tool_settings = {}
         self.active_chat = None
-        if self.settings_file.exists():
-            settings = json.loads(self.settings_file.read_text())
+        if self.path["settingsf"].exists():
+            settings = self.app.read_json("settingsf")
             if "theme" in settings:
                 self.app.theme = settings["theme"]
             if "active_chat" in settings:
                 self.active_chat = settings["active_chat"]
             if "tool_settings" in settings:
                 self.tool_settings = settings["tool_settings"]
-        if self.endpoints_file.exists():
-            self.endpoints = json.loads(self.endpoints_file.read_text())
-        if self.prompts_file.exists():
-            self.prompts = json.loads(self.prompts_file.read_text())
+        if self.path["endpointsf"].exists():
+            self.endpoints = self.app.read_json("endpointsf")
+        if self.path["promptsf"].exists():
+            self.prompts = self.app.read_json("promptsf")
