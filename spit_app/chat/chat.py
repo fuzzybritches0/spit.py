@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-import json
 from textual import events
 from textual.app import ComposeResult
 from textual.containers import Vertical
@@ -16,12 +15,9 @@ class Chat(Vertical):
     def __init__(self, id) -> None:
         super().__init__()
         self.settings = self.app.settings
-        self.chats = self.settings.chats
         self.classes = "chat"
         self.id = id
-        chat = id + ".json"
-        with open(self.chats / chat, "r") as file:
-            content = json.load(file)
+        content = self.app.read_json(f"chats/{self.id}.json")
         self.chat_ctime = content["ctime"]
         self.chat_desc = content["desc"]
         self.chat_endpoint = content["endpoint"]
@@ -42,16 +38,13 @@ class Chat(Vertical):
         yield self.text_area
 
     def write_chat_history(self) -> None:
-        file_name = self.id + ".json"
-        file = self.chats / file_name
         content = {}
         content["ctime"] = self.chat_ctime
         content["desc"] = self.chat_desc
         content["endpoint"] = self.chat_endpoint
         content["prompt"] = self.chat_prompt
         content["messages"] = self.messages
-        with open(file, "w") as f:
-            json.dump(content, f)
+        self.app.write_json(f"chats/{self.id}.json", content)
     
     def save_message(self, umessage: dict) -> None:
         self.messages.append(umessage)
