@@ -24,15 +24,14 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
         super().__init__()
         self.new_chat = new_chat
         self.settings = self.app.settings
+        self.path = self.settings.path
         if self.new_chat:
             self.id = "new-chat"
         else:
             self.id = "manage-chats"
         self.classes = "manage"
+        self.cur_dir = "chats"
         self.cur_chat = None
-        self.chats = self.settings.chats
-        self.chats_archive = self.settings.chats_archive
-        self.cur_dir = self.chats
 
     def new(self, desc: str, endpoint: str, prompt: str) -> None:
         self.ctime = time()
@@ -82,8 +81,8 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
         file_name = self.cur_chat + ".json"
         if self.is_loaded():
             self.app.query_one("#main").query_one(f"#{self.cur_chat}").remove()
-        os.remove(self.cur_dir / file_name)
-        if not self.cur_dir is self.chats_archive:
+        os.remove(self.path[self.cur_dir] / file_name)
+        if not self.cur_dir == "chats_archive":
             self.app.query_one("#side-panel").remove_option(self.cur_chat)
             if self.app.query_one("#side-panel").highlighted:
                 self.app.query_one("#side-panel").highlighted-=1

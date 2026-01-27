@@ -38,14 +38,14 @@ class ActionsMixIn:
             if self.new_chat:
                 return False
         elif action == "save":
-            if self.cur_dir is self.chats_archive:
+            if self.cur_dir == "chats_archive":
                 return False
         elif action == "delete":
             if self.new_chat or not self.cur_chat:
                 return False
-        elif action == "unarchive" and self.cur_dir is self.chats:
+        elif action == "unarchive" and self.cur_dir == "chats":
             return False
-        elif action == "archive" and (self.cur_dir is self.chats_archive or
+        elif action == "archive" and (self.cur_dir == "chats_archive" or
                                       self.new_chat or not self.cur_chat):
             return False
         return True
