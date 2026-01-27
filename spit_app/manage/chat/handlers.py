@@ -19,11 +19,11 @@ class HandlersMixIn:
             await self.remove_children()
             await self.edit_chat()
         elif event.option.id == "select-archive":
-            self.cur_dir = self.chats_archive
+            self.cur_dir = "chats_archive"
             await self.remove_children()
             await self.select_main_screen()
         elif event.option.id == "select-leave-archive":
-            self.cur_dir = self.chats
+            self.cur_dir = "chats"
             await self.remove_children()
             await self.select_main_screen()
         else:
