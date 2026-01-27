@@ -15,6 +15,7 @@ class SidePanel(OptionList):
         super().__init__()
         self.id = "side-panel"
         self.settings = self.app.settings
+        self.path = self.settings.path
 
     def update_option_prompt(self, chat_id: str) -> None:
         chat = self.app.query_one("#main").query_one(f"#{chat_id}")
@@ -40,7 +41,7 @@ class SidePanel(OptionList):
         Options = []
         Options.append(Option("\nCreate New Chat\n", id="new-chat"))
         Options.append(None)
-        chats = os.listdir(self.app.settings.chats)
+        chats = os.listdir(self.path["chats"])
         chats = sorted(chats, reverse=True)
         for chat in chats:
             with open(self.app.settings.chats / chat, "r") as file:
