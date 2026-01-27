@@ -2,26 +2,26 @@
 from platformdirs import user_config_dir, user_data_dir
 from pathlib import Path
 from uuid import uuid4
-import json
 
 class Settings:
     def __init__(self, app) -> None:
         self.app = app
-        self.data_path = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
-        self.data_path.mkdir(parents=True, exist_ok=True)
-        self.prompts_file = self.data_path / "prompts.json"
-        self.endpoints_file = self.data_path / "endpoints.json"
-        self.settings_path = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
-        self.settings_path.mkdir(parents=True, exist_ok=True)
-        self.settings_file = self.settings_path / "settings.json"
-        self.sandbox = self.data_path / "sandbox"
-        self.sandbox.mkdir(parents=True, exist_ok=True)
-        self.cache = self.data_path / "cache"
-        self.cache.mkdir(parents=True, exist_ok=True)
-        self.chats = self.data_path / "chat"
-        self.chats.mkdir(parents=True, exist_ok=True)
-        self.chats_archive = self.data_path / "archive"
-        self.chats_archive.mkdir(parents=True, exist_ok=True)
+        self.path = {}
+        self.path["data"] = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
+        self.path["data"].mkdir(parents=True, exist_ok=True)
+        self.path["promptsf"] = self.path["data"] / "prompts.json"
+        self.path["endpointsf"] = self.path["data"] / "endpoints.json"
+        self.path["settings"] = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
+        self.path["settings"].mkdir(parents=True, exist_ok=True)
+        self.path["settingsf"] = self.path["settings"] / "settings.json"
+        self.path["sandbox"] = self.path["data"] / "sandbox"
+        self.path["sandbox"].mkdir(parents=True, exist_ok=True)
+        self.path["cache"] = self.path["data"] / "cache"
+        self.path["cache"].mkdir(parents=True, exist_ok=True)
+        self.path["chats"] = self.path["data"] / "chat"
+        self.path["chats"].mkdir(parents=True, exist_ok=True)
+        self.path["chats_archive"] = self.path["data"] / "archive"
+        self.path["chats_archive"].mkdir(parents=True, exist_ok=True)
 
     def init(self) -> None:
         self.endpoints = {}
