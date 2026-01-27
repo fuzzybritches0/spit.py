@@ -1,5 +1,4 @@
 import os
-import json
 from datetime import datetime
 from textual.containers import Horizontal
 from textual.widgets import Label, Select, Input, Button, OptionList
@@ -15,8 +14,7 @@ class ScreensMixIn:
         chats = os.listdir(self.path[self.cur_dir])
         chats = sorted(chats, reverse=True)
         for chat in chats:
-            with open(self.cur_dir / chat, "r") as file:
-                content = json.load(file)
+            content = self.app.read_json(f"{self.cur_dir}/{chat}")
             id = chat[:-5]
             desc = content["desc"]
             local_ctime = datetime.fromtimestamp(int(content["ctime"]))
@@ -44,8 +42,7 @@ class ScreensMixIn:
         if chat:
             self.cur_chat = chat
             chat += ".json"
-            with open(self.cur_dir / chat, "r") as file:
-                content = json.load(file)
+            content = self.app.read_json(f"{self.cur_dir}/{chat}")
         Validators = [Function(self.is_not_empty)]
         await self.mount(Label("Description:"))
         if content:
