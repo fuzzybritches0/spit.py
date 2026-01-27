@@ -10,9 +10,9 @@ from typing import Generator, List
 class ScreensMixIn:
     async def select_main_screen(self) -> None:
         Options = []
-        if not self.cur_dir is self.chats_archive:
+        if not self.cur_dir == "chats_archive":
             Options.append(Option("\nCreate new Chat\n", id="select-new-chat"))
-        chats = os.listdir(self.cur_dir)
+        chats = os.listdir(self.path[self.cur_dir])
         chats = sorted(chats, reverse=True)
         for chat in chats:
             with open(self.cur_dir / chat, "r") as file:
@@ -21,7 +21,7 @@ class ScreensMixIn:
             desc = content["desc"]
             local_ctime = datetime.fromtimestamp(int(content["ctime"]))
             Options.append(Option(f"{desc}\n{local_ctime}\n", id=id))
-        if self.cur_dir is self.chats_archive:
+        if self.cur_dir == "chats_archive":
             Options.append(Option("\nLeave archive\n", id="select-leave-archive"))
         else:
             Options.append(Option("\nArchive\n", id="select-archive"))
@@ -68,7 +68,7 @@ class ScreensMixIn:
             await self.mount(Select(((name, key) for name, key in self.prompt_list()),
                                 id="prompt", prompt="None"))
         if chat:
-            if self.cur_dir is self.chats_archive:
+            if self.cur_dir == "chats_archive":
                 await self.mount(Horizontal(
                     Button("Un-archive", id="unarchive"),
                     Button("Delete", id="delete"),
