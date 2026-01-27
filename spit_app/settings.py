@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 from platformdirs import user_config_dir, user_data_dir
 from pathlib import Path
-from uuid import uuid4
 
 class Settings:
     def __init__(self, app) -> None:
@@ -22,12 +21,6 @@ class Settings:
         self.path["chats"].mkdir(parents=True, exist_ok=True)
         self.path["chats_archive"] = self.path["data"] / "archive"
         self.path["chats_archive"].mkdir(parents=True, exist_ok=True)
-
-    def init(self) -> None:
-        self.endpoints = {}
-        self.prompts = {}
-        self.tool_settings = {}
-        self.active_chat = None
 
     def save(self) -> None:
         settings = {}
