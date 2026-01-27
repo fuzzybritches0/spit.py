@@ -1,5 +1,4 @@
 import os
-import json
 import shutil
 from datetime import datetime
 from time import time
@@ -39,9 +38,8 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
         file_name = self.uuid + ".json"
         content = {"ctime": self.ctime, "desc": desc, "endpoint": endpoint,
                    "prompt": prompt, "messages": []}
-        file = self.cur_dir / file_name
-        with open(file, "w") as f:
-            json.dump(content, f)
+        file = f"{self.cur_dir}/{file_name}"
+        self.app.write_json(file, content)
 
     def save(self) -> None:
         if self.valid_values():
@@ -64,16 +62,16 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
 
     def unarchive(self) -> None:
         file = self.cur_chat + ".json"
-        file_chat = self.chats / file
-        file_archive = self.chats_archive / file
+        file_chat = self.path["chats"] / file
+        file_archive = self.path["chats_archive"] / file
         shutil.copy(file_archive, file_chat)
         os.remove(file_archive)
         self.app.query_one("#side-panel").option_list() 
 
     def archive(self) -> None:
         file = self.cur_chat + ".json"
-        file_chat = self.chats / file
-        file_archive = self.chats_archive / file
+        file_chat = self.path["chats"] / file
+        file_archive = self.path["chats_archive"] / file
         shutil.copy(file_chat, file_archive)
         self.delete()
 
@@ -97,13 +95,11 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
             chat.write_chat_history()
         else:
             file_name = self.cur_chat + ".json"
-            with open(self.cur_dir / file_name, "r") as file:
-                content = json.load(file)
+            content = self.app.read_json(f"{self.cur_dir}/{file_name}")
             content["desc"] = desc
             content["endpoint"] = endpoint
             content["prompt"] = prompt
             ctime = content["ctime"]
-            with open(self.cur_dir / file_name, "w") as file:
-                json.dump(content, file)
+            self.app.write_json(f"{self.cur_dir}/{file_name}", content)
         ctime = datetime.fromtimestamp(int(ctime))
         self.app.query_one("#side-panel").replace_option_prompt(self.cur_chat, f"\n{desc}\n{ctime}\n")
