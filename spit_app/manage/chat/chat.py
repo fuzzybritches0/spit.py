@@ -32,15 +32,15 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
         self.cur_dir = "chats"
         self.cur_chat = None
 
-    def new(self, desc: str, endpoint: str, prompt: str) -> None:
+    def new(self, desc: str, endpoint: str, prompt: str) -> bool:
         self.ctime = time()
         self.uuid = "chat-" + str(self.ctime).replace(".", "-")
         content = {"ctime": self.ctime, "desc": desc, "endpoint": endpoint,
                    "prompt": prompt, "messages": []}
         file = f"{self.cur_dir}/{self.uuid}.json"
-        self.app.write_json(file, content)
+        return self.app.write_json(file, content)
 
-    def save(self) -> None:
+    def save(self) -> bool:
         if self.valid_values():
             desc = self.query_one("#desc").value
             endpoint = self.query_one("#endpoint").value
@@ -48,9 +48,9 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
             if prompt == Select.BLANK:
                 prompt = None
             if self.cur_chat:
-                self.update(desc, endpoint, prompt)
+                return self.update(desc, endpoint, prompt)
             else:
-                self.new(desc, endpoint, prompt)
+                return self.new(desc, endpoint, prompt)
 
     def is_loaded(self) -> bool:
         try:
@@ -59,39 +59,54 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
         except:
             return False
 
-    def unarchive(self) -> None:
+    def unarchive(self) -> bool:
         file = self.cur_chat + ".json"
         file_chat = self.path["chats"] / file
         file_archive = self.path["chats_archive"] / file
-        shutil.copy(file_archive, file_chat)
-        os.remove(file_archive)
-        self.app.query_one("#side-panel").option_list() 
+        try:
+            shutil.copy(file_archive, file_chat)
+            os.remove(file_archive)
+        except Exception as exception:
+            self.app.exception = exception
+            return False
+        self.app.query_one("#side-panel").option_list()
+        return True
 
-    def archive(self) -> None:
+    def archive(self) -> bool:
         file = self.cur_chat + ".json"
         file_chat = self.path["chats"] / file
         file_archive = self.path["chats_archive"] / file
-        shutil.copy(file_chat, file_archive)
-        self.delete()
+        try:
+            shutil.copy(file_chat, file_archive)
+        except Exception as exception:
+            self.app.exception = exception
+            return False
+        return self.delete()
 
-    def delete(self) -> None:
+    def delete(self) -> bool:
         file_name = self.cur_chat + ".json"
         if self.is_loaded():
             self.app.query_one("#main").query_one(f"#{self.cur_chat}").remove()
-        os.remove(self.path[self.cur_dir] / file_name)
+        try:
+            os.remove(self.path[self.cur_dir] / file_name)
+        except Exception as exception:
+            self.app.exception = exception
+            return False
         if not self.cur_dir == "chats_archive":
             self.app.query_one("#side-panel").remove_option(self.cur_chat)
             if self.app.query_one("#side-panel").highlighted:
                 self.app.query_one("#side-panel").highlighted-=1
+        return True
 
-    def update(self, desc: str, endpoint: str, prompt: str) -> None:
+    def update(self, desc: str, endpoint: str, prompt: str) -> bool:
         if self.is_loaded():
             chat = self.app.query_one("#main").query_one(f"#{self.cur_chat}")
             chat.chat_desc = desc
             chat.chat_endpoint = endpoint
             chat.chat_prompt = prompt
             ctime = chat.chat_ctime
-            chat.write_chat_history()
+            if not chat.write_chat_history():
+                return False
         else:
             file_name = self.cur_chat + ".json"
             content = self.app.read_json(f"{self.cur_dir}/{file_name}")
@@ -99,6 +114,8 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
             content["endpoint"] = endpoint
             content["prompt"] = prompt
             ctime = content["ctime"]
-            self.app.write_json(f"{self.cur_dir}/{file_name}", content)
+            if not self.app.write_json(f"{self.cur_dir}/{file_name}", content):
+                return False
         ctime = datetime.fromtimestamp(int(ctime))
         self.app.query_one("#side-panel").replace_option_prompt(self.cur_chat, f"\n{desc}\n{ctime}\n")
+        return True
