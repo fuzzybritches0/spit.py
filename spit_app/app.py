@@ -59,8 +59,8 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             file = self.path[path[0]]
         try:
             file.write_text(json.dumps(content))
-        except Exception as exc:
-            error = f"{type(exc).__name__}: {exc}"
+        except Exception as exception:
+            self.exception = exception
             return False
         return True
 
@@ -72,7 +72,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             file = self.path[path[0]]
         try:
             ret = json.loads(file.read_text())
-        except Exception as exc:
-            error = f"{type(exc).__name__}: {exc}"
+        except Exception as exception:
+            self.exception = exception
             return None
         return ret
