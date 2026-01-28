@@ -18,7 +18,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
     TITLE = f"{NAME} v{VERSION}"
     COPYRIGHT = "github.com/fuzzybritches0"
     LICENSE = "GPL-2.0"
-    CSS_PATH = './styles/app.css'
+    CSS_PATH = './styles.css'
     BINDINGS = bindings
     exception = var(None, always_update=True, init=False)
 
