@@ -55,8 +55,9 @@ class Work:
         try:
             await self.endpoint.stream()
         except Exception as exception:
-            self.app.exception = exception
-            del self.messages[-1]
-            self.chat_view.children[-1].remove()
+            if exception:
+                self.app.exception = exception
+                del self.messages[-1]
+                self.chat_view.children[-1].remove()
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
