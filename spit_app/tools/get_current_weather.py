@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
+import httpx
+
 NAME = __file__.split("/")[-1][:-3]
 
 DESC = {
@@ -12,8 +14,7 @@ DESC = {
                 "location": {
                     "type": "string",
                     "description": "The city and state, e.g. San Francisco, CA"
-                },
-                "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}
+                }
             },
             "required": ["location"]
         }
@@ -26,5 +27,8 @@ SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
 
-def call(app, arguments: dict, chat_id) -> dict:
-    return '{"unit":"celsius","temperature":3}'
+async def call(app, arguments: dict, chat_id) -> dict:
+    url = f"https://wttr.in/{arguments['location']}?format=j2"
+    async with httpx.AsyncClient() as client:
+        result = await client.get(url)
+    return "```json\n" + result.text + "\n```"
