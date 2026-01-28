@@ -2,26 +2,26 @@ from spit_app.chat.chat import Chat
 
 class ActionsMixIn:
     async def action_delete(self) -> None:
-        self.delete()
-        await self.remove_children()
-        await self.select_main_screen()
+        if self.delete():
+            await self.remove_children()
+            await self.select_main_screen()
 
     async def action_archive(self) -> None:
-        self.archive()
-        await self.remove_children()
-        await self.select_main_screen()
+        if self.archive():
+            await self.remove_children()
+            await self.select_main_screen()
 
     async def action_unarchive(self) -> None:
-        self.unarchive()
-        await self.remove_children()
-        await self.select_main_screen()
+        if self.unarchive():
+            await self.remove_children()
+            await self.select_main_screen()
 
     async def action_save(self) -> None:
-        self.save()
-        if not self.cur_chat:
-            await self.app.query_one("#main").mount(Chat(self.uuid))
-            await self.app.query_one("#side-panel").add_option_chat(self.uuid)
-        await self.action_cancel()
+        if self.save():
+            if not self.cur_chat:
+                await self.app.query_one("#main").mount(Chat(self.uuid))
+                await self.app.query_one("#side-panel").add_option_chat(self.uuid)
+            await self.action_cancel()
 
     async def action_cancel(self) -> None:
         if self.new_chat:
