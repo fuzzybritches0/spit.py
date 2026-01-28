@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
+from textual.reactive import var
 from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal
 from textual.widgets import Header, Footer
@@ -9,6 +10,7 @@ from spit_app.actions import bindings
 from spit_app.handlers import HandlersMixIn
 from spit_app.tool_call import ToolCall
 from spit_app.side_panel import SidePanel
+from spit_app.modal_screens import ErrorScreen
 
 class SpitApp(ActionsMixIn, HandlersMixIn, App):
     NAME = "spit.py"
@@ -18,6 +20,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
     LICENSE = "GPL-2.0"
     CSS_PATH = './styles/app.css'
     BINDINGS = bindings
+    exception = var(None, always_update=True, init=False)
 
     def __init__(self):
         super().__init__()
@@ -27,6 +30,9 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.settings.load()
         self.tool_call = ToolCall(self)
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
+
+    async def watch_exception(self, exception: Exception) -> None:
+        await self.push_screen(ErrorScreen(exception))
 
     def applog(self, text: str) -> None:
         with open("./log.txt", "a") as file:
