@@ -8,7 +8,7 @@ from spit_app.actions import ActionsMixIn
 from spit_app.actions import bindings
 from spit_app.handlers import HandlersMixIn
 from spit_app.tool_call import ToolCall
-from spit_app.side_panel.side_panel import SidePanel
+from spit_app.side_panel import SidePanel
 
 class SpitApp(ActionsMixIn, HandlersMixIn, App):
     NAME = "spit.py"
