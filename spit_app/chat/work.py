@@ -52,6 +52,11 @@ class Work:
         if "tool_calls" in self.messages[-1]:
             for tool_call in self.messages[-1]["tool_calls"]:
                 await self.app.tool_call.call(self.messages, tool_call, self.chat.id, self.chat_view.callback)
-        await self.endpoint.stream()
+        try:
+            await self.endpoint.stream()
+        except Exception as exception:
+            self.app.exception = exception
+            del self.messages[-1]
+            self.chat_view.children[-1].remove()
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
