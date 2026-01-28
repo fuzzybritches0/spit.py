@@ -119,3 +119,23 @@ Input {
 	height: 10;
 	border: tall $error-muted
 }
+.overlay {
+	align: center middle;
+	background: $background 65%
+}
+#loading-modal {
+    width: 16;
+    height: 5;
+    padding: 0 0 0 2;
+    background: $background-lighten-1;
+    border: round $border;
+    align: center middle;
+}
+#error-modal {
+    width: 50;
+    height: auto;
+    padding: 1;
+    background: $background-lighten-1;
+    border: round $error;
+    align: center middle;
+}
