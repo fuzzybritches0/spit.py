@@ -35,10 +35,9 @@ class Chat(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validation
     def new(self, desc: str, endpoint: str, prompt: str) -> None:
         self.ctime = time()
         self.uuid = "chat-" + str(self.ctime).replace(".", "-")
-        file_name = self.uuid + ".json"
         content = {"ctime": self.ctime, "desc": desc, "endpoint": endpoint,
                    "prompt": prompt, "messages": []}
-        file = f"{self.cur_dir}/{file_name}"
+        file = f"{self.cur_dir}/{self.uuid}.json"
         self.app.write_json(file, content)
 
     def save(self) -> None:
