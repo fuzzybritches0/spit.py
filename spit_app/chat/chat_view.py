@@ -2,7 +2,7 @@
 from textual.containers import VerticalScroll
 from .message.message import Message
 from .work import Work
-from spit_app.overlays.loading_screen import LoadingScreen
+from spit_app.modal_screens import LoadingScreen
 
 class ChatView(VerticalScroll):
     BINDINGS = [
