@@ -37,14 +37,14 @@ class Chat(Vertical):
         yield self.chat_view
         yield self.text_area
 
-    def write_chat_history(self) -> None:
+    def write_chat_history(self) -> bool:
         content = {}
         content["ctime"] = self.chat_ctime
         content["desc"] = self.chat_desc
         content["endpoint"] = self.chat_endpoint
         content["prompt"] = self.chat_prompt
         content["messages"] = self.messages
-        self.app.write_json(f"chats/{self.id}.json", content)
+        return self.app.write_json(f"chats/{self.id}.json", content)
     
     def save_message(self, umessage: dict) -> None:
         self.messages.append(umessage)
