@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual import events
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from .undo import Undo
@@ -71,12 +70,6 @@ class Chat(Vertical):
         if not self.messages:
             self.text_area.focus()
 
-    def on_descendant_focus(self, event: events.DescendantFocus) -> None:
+    def on_focus(self) -> None:
         self.app.query_one("#side-panel").can_focus = False
-        if event.control is self.chat_view:
-            if self.chat_view.focused_message:
-                self.chat_view.focused_message.focus(scroll_visible=False)
-            elif not self.messages:
-                self.text_area.focus()
-        elif not event.control is self.text_area:
-            self.chat_view.focused_message = event.control
+        self.chat_view.focus()

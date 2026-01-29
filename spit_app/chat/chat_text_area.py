@@ -77,3 +77,6 @@ class ChatTextArea(TextArea):
             if not self.was_empty:
                 self.refresh_bindings()
                 self.was_empty = True
+
+    def on_focus(self) -> None:
+        self.app.query_one("#side-panel").can_focus = False
