@@ -30,8 +30,7 @@ class Message(VerticalScroll):
         else:
             if self.chat.display:
                 self.focus(scroll_visible=False)
-            else:
-                self.chat.chat_view.focused_message = self
+        self.chat.chat_view.focused_message = self
         self.thinking = False
         self.target = None
         self.pp = PatternProcessing(self)
@@ -147,3 +146,6 @@ class Message(VerticalScroll):
                 if not self is self.parent.children[-1]:
                     return False
         return True
+
+    def on_focus(self) -> None:
+        self.chat.chat_view.focused_message = self

@@ -11,8 +11,9 @@ class LaTeX(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy LaTeX")
     ]
 
-    def __init__(self, latex, latex_fence_start, latex_fence_end) -> None:
+    def __init__(self, chat, latex, latex_fence_start, latex_fence_end) -> None:
         super().__init__()
+        self.chat = chat
         self.app.refresh_bindings()
         self.latex = latex
         escaped = ""
@@ -61,3 +62,5 @@ class LaTeX(VerticalScroll):
             await self.remove_children()
             await self.on_mount()
 
+    def on_focus(self) -> None:
+        self.chat.chat_view.focused_message = self
