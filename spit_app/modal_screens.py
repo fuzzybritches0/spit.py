@@ -23,7 +23,7 @@ class ErrorScreen(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="error-modal"):
-            exception = f"ERROR:\n\n{self.exception}"
+            exception = f"ERROR:\n\n{type(self.exception).__name__}: {self.exception}"
             yield Static(exception)
             with Center():
                 yield Button("OK")
