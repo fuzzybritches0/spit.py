@@ -55,7 +55,7 @@ class Validators:
 def file_name(app, url: str) -> str:
     file = url.replace("/", "_")
     file = file.replace(":", "-")
-    directory = app.settings.cache / NAME
+    directory = app.settings.path["cache"] / NAME
     directory.mkdir(parents=True, exist_ok=True)
     return directory / file
 
