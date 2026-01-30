@@ -30,6 +30,8 @@ class ChatView(VerticalScroll):
             await self.children[-1].process()
 
     def focus_message(self, index: int, scroll_visible: bool = True) -> None:
+        if index == -1 and not self.children:
+            return None
         self.children[index].focus(scroll_visible=scroll_visible)
         self.focused_message = self.children[index]
 
