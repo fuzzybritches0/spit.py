@@ -114,7 +114,7 @@ class Message(VerticalScroll):
             await self.mount(Part(), before="#tool-calls")
         if "reasoning" in self.message and self.message["reasoning"]:
             lenreason = len(self.message["reasoning"])
-            if lenreason > self.lenreason and not self.reasoning_target.source:
+            if lenreason > self.lenreason and not self.reasoning_target.source == "Thinking...":
                 await self.reasoning_target.update("Thinking...")
                 self.lenreason = lenreason
         if "content" in self.message and self.message["content"]:
