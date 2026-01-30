@@ -91,7 +91,7 @@ class ChatView(VerticalScroll):
 
     def on_focus(self) -> None:
         self.app.query_one("#side-panel").can_focus = False
-        if not self.children:
+        if not self.children and not self.chat.undo.undo_list:
             self.chat.text_area.focus()
         if self.focused_message:
             self.focused_message.focus()
