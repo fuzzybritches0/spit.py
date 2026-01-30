@@ -1,5 +1,6 @@
 import json
 from textual.containers import VerticalScroll
+from textual.widgets import Markdown
 from .containers.part import Part
 from .pattern_processing import PatternProcessing
 
@@ -31,64 +32,88 @@ class Message(VerticalScroll):
             if self.chat.display:
                 self.focus(scroll_visible=False)
         self.chat.chat_view.focused_message = self
-        self.thinking = False
-        self.target = None
+        self.reset_state()
+
+    def reset_state(self) -> None:
         self.pp = PatternProcessing(self)
         self.pos = 0
-        self.content = ""
+        self.target = None
+        self.lenreason = 0
         self.process_busy = False
         self.finish_pending = False
 
     async def reset(self) -> None:
         self.display = False
         await self.remove_children()
-        self.pp = PatternProcessing(self)
-        self.pos = 0
-        self.content = ""
-        self.target = None
+        self.reset_state()
         await self.process()
         await self.finish()
         self.display = True
 
-    async def clean_after_thinking(self) -> None:
-        if self.thinking:
-            self.thinking = False
-            await self.target.update("")
+    def format_tool_calls(self) -> str:
+        content = ""
+        for tool_call in self.message["tool_calls"]:
+            content += "\n\n---\n\n"
+            content += f"- function call: `{tool_call['function']['name']}`"
+            content += f" id: `{tool_call['id']}`"
+            args = tool_call["function"]["arguments"]
+            if not args.endswith("\"}"):
+                args += "\"}"
+            try:
+                arguments = json.loads(args)
+            except:
+                continue
+            for argument in arguments.keys():
+                content += f"\n- {argument}:\n```\n{arguments[argument]}\n```"
+        return content
+
+    async def process_tool_calls(self, padding) -> None:
+        content = self.format_tool_calls()
+        if len(content)-padding > 0:
+            lensource = len(self.tool_target.source)
+            if padding == 0:
+                await self.tool_target.append(content[lensource:])
+            else:
+                await self.tool_target.append(content[lensource:-padding])
 
     async def process_content(self) -> None:
+        content = self.message["content"]
         self.pp.part = ""
-        if len(self.content)-self.pos-self.pp.bsize > 0:
-            for pos in range(self.pos, len(self.content) - self.pp.bsize):
-                await self.pp.process_patterns(self.content[pos:])
+        if len(content)-self.pos-self.pp.bsize > 0:
+            for pos in range(self.pos, len(content) - self.pp.bsize):
+                await self.pp.process_patterns(content[pos:])
             await self.target.append(self.pp.part)
             self.pos=pos+1
 
     async def finish(self) -> None:
+        content = self.message["content"]
         if self.process_busy:
             self.finish_pending = True
         else:
+            self.finish_pending = False
             self.pp.part = ""
-            for pos in range(self.pos, len(self.content)):
-                await self.pp.process_patterns(self.content[pos:])
+            for pos in range(self.pos, len(content)):
+                await self.pp.process_patterns(content[pos:])
             await self.target.append(self.pp.part)
+            if "tool_calls" in self.message and self.message["tool_calls"]:
+                await self.tool_target.update(self.format_tool_calls())
 
     async def process(self) -> None:
         if self.process_busy:
             return None
         self.process_busy = True
         if not self.target:
-            await self.mount(Part())
-        if "tool_calls" in self.message and self.message["tool_calls"][0]:
-            await self.clean_after_thinking()
-            self.content = json.dumps(self.message["tool_calls"])
-        elif "content" in self.message and self.message["content"]:
-            await self.clean_after_thinking()
-            self.content = self.message["content"]
-        elif "reasoning" in self.message and self.message["reasoning"]:
-            if not self.thinking:
-                await self.target.update("Thinking...")
-                self.thinking = True
-        if self.content:
+            await self.mount(Part(), before="#tool-calls")
+        if "reasoning" in self.message and self.message["reasoning"]:
+            lenreason = len(self.message["reasoning"])
+            if lenreason > self.lenreason and not self.reasoning_target.source:
+                await self.reasoning_target.update("Thinking...")
+                self.lenreason = lenreason
+        if "tool_calls" in self.message and self.message["tool_calls"]:
+            await self.reasoning_target.update("")
+            await self.process_tool_calls(6)
+        if "content" in self.message and self.message["content"]:
+            await self.reasoning_target.update("")
             await self.process_content()
         self.process_busy = False
         if self.finish_pending:
@@ -117,12 +142,8 @@ class Message(VerticalScroll):
     async def action_remove_last(self) -> None:
         self.chat.undo.append_undo("remove", self.message)
         del self.messages[-1]
-        if self.chat.write_chat_history():
-            if len(self.chat.chat_view.children) > 2:
-                self.chat.chat_view.children[-2].focus(scroll_visible=False)
-            elif len(self.chat.chat_view.children) == 1:
-                self.chat.text_area.focus()
-            await self.remove()
+        self.chat.write_chat_history()
+        await self.remove()
 
     def check_action(self, action: str,
                      parameters: tuple[object, ...]) -> bool | None:
@@ -149,3 +170,10 @@ class Message(VerticalScroll):
 
     def on_focus(self) -> None:
         self.chat.chat_view.focused_message = self
+
+    async def on_mount(self) -> None:
+        self.reasoning_target = Markdown()
+        await self.mount(self.reasoning_target)
+        await self.reasoning_target.update("Processing...")
+        self.tool_target = Markdown(id="tool-calls")
+        await self.mount(self.tool_target)
