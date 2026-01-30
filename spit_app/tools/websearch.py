@@ -1,5 +1,5 @@
 import json
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -8,7 +8,7 @@ DESC = {
     "type": "function",
     "function": {
         "name": NAME,
-        "description": "Search the web.",
+        "description": "Search the web with duckduckgo.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -29,6 +29,7 @@ DESC = {
 PROMPT = "Use this function to search the internet."
 MAX_RESULTS = 10
 SAFESEARCH = "moderate"
+PROMPT_INST = "You will get [max_results] results with links to follow the source. Safesearch is set to [save_search]."
 
 SETTINGS = {
     "prompt": {"value": PROMPT, "stype": "text", "desc": "Prompt"},
@@ -53,8 +54,14 @@ def call(app, arguments: dict, chat_id: str):
     safesearch = SETTINGS["safesearch"]["value"]
     max_results = SETTINGS["max_results"]["value"]
     if "news" in arguments and arguments["news"]:
-        result = DDGS().news(keywords=query, safesearch=safesearch, max_results=max_results)
+        try:
+            result = DDGS().news(query, safesearch=safesearch, max_results=max_results)
+        except:
+            return "No results found!"
     else:
-        result = DDGS().text(keywords=query, safesearch=safesearch, max_results=max_results)
+        try:
+            result = DDGS().text(query, safesearch=safesearch, max_results=max_results)
+        except:
+            return "No results found!"
     result = json.dumps(result)
     return "```\n" + result + "\n```"
