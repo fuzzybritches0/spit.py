@@ -40,8 +40,9 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         if  not sequence.strip() == "..." and not sequence.strip() == "…" and not sequence.strip() == "and":
             await self.message.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
             self.part = ""
-            await self.message.mount(LaTeX(self.message.chat, sequence, exp_latex_fence, pattern))
-            await self.message.mount(Part())
+            await self.message.mount(LaTeX(self.message.chat, sequence, exp_latex_fence, pattern),
+                                     before="#tool-calls")
+            await self.message.mount(Part(), before="#tool-calls")
             self.skip_add_part = len(pattern)+escaped
         self.latex = False
         self.seqstart = -1
@@ -81,7 +82,7 @@ async def code_block_start(self, pattern: str) -> None:
     await self.message.target.append(self.part)
     await self.message.target.update(self.message.target.source[:-len(pattern)+1])
     self.part = pattern[1:]
-    await self.message.mount(Code(self.message.chat))
+    await self.message.mount(Code(self.message.chat), before="#tool-calls")
     self.cur_code_fence = pattern
     self.codeblock = True
 
@@ -92,7 +93,7 @@ async def code_block_end(self, pattern: str) -> None:
     await self.message.target.append(self.part+pattern[:1])
     self.part = ""
     await self.message.target.update_code()
-    await self.message.mount(Part())
+    await self.message.mount(Part(), before="#tool-calls")
 
 def code_listing(self, pattern: str) -> None:
     if not self.codeblock:
