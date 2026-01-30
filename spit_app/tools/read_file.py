@@ -29,7 +29,7 @@ SETTINGS = {
     
 
 def call(app, arguments: dict, chat_id) -> str:
-    location = str(app.settings.sandbox) + "/" + arguments["location"]
+    location = str(app.settings.path["sandbox"]) + "/" + arguments["location"]
     try:
         with open(location, "r") as f:
             content = f.read()
