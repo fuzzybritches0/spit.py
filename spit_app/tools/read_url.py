@@ -5,6 +5,7 @@ import math
 import asyncio
 from markdownify import markdownify as md
 from playwright.async_api import async_playwright, TimeoutError
+from bs4 import BeautifulSoup
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -80,38 +81,40 @@ async def load_page(url: str) -> None|dict:
             "Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' });"
         )
         page = await context.new_page()
-        await page.goto(url)
         try:
+            await page.goto(url)
             await page.wait_for_load_state("networkidle", timeout=15_000)
         except:
             return None
         html = await page.content()
         await browser.close()
-    return html
+        soup = BeautifulSoup(html, 'html.parser')
+        html = soup.select("h1, h2, h3, p, table")
+        rethtml = '\n'.join([str(el) for el in html])
+    return rethtml
 
 def make_cache(html: str, file: str) -> dict:
-    strip = ["noscript"]
-    text = md(html, strip=strip)
-    cache = {"time": time.time(), "text": text.strip()}
+    markdown = md(html)
+    cache = {"time": time.time(), "markdown": markdown.strip()}
     with open(file, "w") as f:
         f.write(json.dumps(cache))
     return cache
 
 def get_page(cache: dict, page: int) -> str:
     page_size = SETTINGS["page_size"]["value"]
-    if len(cache["text"]) <= page_size:
+    if len(cache["markdown"]) <= page_size:
         pages = 1
         page = 1
     else:
-        pages = math.ceil(len(cache["text"]) / page_size)
+        pages = math.ceil(len(cache["markdown"]) / page_size)
     if page > pages:
         page = pages
     countl = page_size*(page-1)
     countr = page_size*page
     cont = ""
     if not page == pages:
-        cont = f"\n[{NAME}]... continues on next page[/{NAME}]"
-    return f"[{NAME}]Showing page {page} of {pages}[/{NAME}]\n" + cache["text"][countl:countr].strip() + cont
+        cont = f"\n\n[{NAME}]... continues on next page[/{NAME}]"
+    return f"[{NAME}]Showing page {page} of {pages}[/{NAME}]\n\n"+cache["markdown"][countl:countr].strip()+cont
 
 async def call(app, arguments: dict, chat_id: str):
     load_user_settings(app, NAME, SETTINGS)
@@ -128,4 +131,6 @@ async def call(app, arguments: dict, chat_id: str):
         if not html:
             return f"[{NAME}]Something went wrong! Please try again![/{NAME}]"
         cache = make_cache(html, file)
+    if not cache["markdown"]:
+        return f"[{NAME}]Something went wrong! Please try again![/{NAME}]"
     return get_page(cache, page)
