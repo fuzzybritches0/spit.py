@@ -2,6 +2,7 @@ import json
 from textual.containers import VerticalScroll
 from textual.widgets import Markdown
 from .containers.part import Part
+from .containers.code import Code
 from .pattern_processing import PatternProcessing
 
 class Message(VerticalScroll):
@@ -41,6 +42,7 @@ class Message(VerticalScroll):
         self.lenreason = 0
         self.process_busy = False
         self.finish_pending = False
+        self.finished_content = False
 
     async def reset(self) -> None:
         self.display = False
@@ -50,31 +52,27 @@ class Message(VerticalScroll):
         await self.finish()
         self.display = True
 
-    def format_tool_calls(self) -> str:
-        content = ""
+    async def format_tool_calls(self) -> str:
+        await self.tool_target.remove()
         for tool_call in self.message["tool_calls"]:
-            content += "\n\n---\n\n"
+            content = "\n\n---\n\n"
             content += f"- function call: `{tool_call['function']['name']}`"
             content += f" id: `{tool_call['id']}`"
+            await self.mount(Markdown(content))
             args = tool_call["function"]["arguments"]
-            if not args.endswith("\"}"):
-                args += "\"}"
-            try:
-                arguments = json.loads(args)
-            except:
-                continue
+            arguments = json.loads(args)
             for argument in arguments.keys():
-                content += f"\n- {argument}:\n```\n{arguments[argument]}\n```"
+                await self.mount(Markdown(f"\n- {argument}:"))
+                await self.mount(Code(self.chat))
+                await self.children[-1].update(f"```\n{arguments[argument]}\n```")
+                await self.children[-1].update_code()
         return content
 
-    async def process_tool_calls(self, padding) -> None:
-        content = self.format_tool_calls()
-        if len(content)-padding > 0:
+    async def process_tool_calls(self) -> None:
+        content = json.dumps(self.message["tool_calls"])
+        if len(content)-6 > 0:
             lensource = len(self.tool_target.source)
-            if padding == 0:
-                await self.tool_target.append(content[lensource:])
-            else:
-                await self.tool_target.append(content[lensource:-padding])
+            await self.tool_target.append(content[lensource:-6])
 
     async def process_content(self) -> None:
         content = self.message["content"]
@@ -85,18 +83,28 @@ class Message(VerticalScroll):
             await self.target.append(self.pp.part)
             self.pos=pos+1
 
-    async def finish(self) -> None:
+    async def finish_content(self) -> None:
+        if self.finished_content:
+            return None
         content = self.message["content"]
+        self.pp.part = ""
+        for pos in range(self.pos, len(content)):
+            await self.pp.process_patterns(content[pos:])
+        await self.target.append(self.pp.part)
+        self.finished_content = True
+
+    async def finish_tool_calls(self) -> None:
+        if "tool_calls" in self.message and self.message["tool_calls"]:
+            await self.format_tool_calls()
+
+    async def finish(self) -> None:
         if self.process_busy:
             self.finish_pending = True
         else:
             self.finish_pending = False
-            self.pp.part = ""
-            for pos in range(self.pos, len(content)):
-                await self.pp.process_patterns(content[pos:])
-            await self.target.append(self.pp.part)
-            if "tool_calls" in self.message and self.message["tool_calls"]:
-                await self.tool_target.update(self.format_tool_calls())
+            await self.finish_content()
+            await self.finish_tool_calls()
+            self.target = None
 
     async def process(self) -> None:
         if self.process_busy:
@@ -109,12 +117,13 @@ class Message(VerticalScroll):
             if lenreason > self.lenreason and not self.reasoning_target.source:
                 await self.reasoning_target.update("Thinking...")
                 self.lenreason = lenreason
-        if "tool_calls" in self.message and self.message["tool_calls"]:
-            await self.reasoning_target.update("")
-            await self.process_tool_calls(6)
         if "content" in self.message and self.message["content"]:
             await self.reasoning_target.update("")
             await self.process_content()
+        if "tool_calls" in self.message and self.message["tool_calls"]:
+            await self.reasoning_target.update("")
+            await self.finish_content()
+            await self.process_tool_calls()
         self.process_busy = False
         if self.finish_pending:
             await self.finish()
