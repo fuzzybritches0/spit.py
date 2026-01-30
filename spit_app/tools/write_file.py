@@ -42,7 +42,7 @@ def call(app, arguments: dict, chat_id) -> str:
     location = "/".join(location[:-1])
     if not location:
         return "ERROR: location not valid!"
-    location = str(app.settings.sandbox) + "/" + location
+    location = str(app.settings.path["sandbox"]) + "/" + location
     Path(location).mkdir(parents=True, exist_ok=True)
     with open(location + "/" + file, "w") as f:
         f.write(arguments["content"])
