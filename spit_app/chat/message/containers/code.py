@@ -6,9 +6,8 @@ class Code(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy Code")
     ]
 
-    def __init__(self, chat) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.chat = chat
         self.app.refresh_bindings()
         self.code = None
 
@@ -47,13 +46,6 @@ class Code(VerticalScroll):
         return True
 
     async def on_mount(self) -> None:
-        if self.parent.message['role'] == "tool":
-            role = "user"
-        else:
-            role = self.parent.message['role']
-        self.classes = "code-listing-" + role
+        self.classes = "code-listing-" + self.parent.parent.message["role"]
         await self.mount(Markdown())
         self.parent.target = self
-
-    def on_focus(self) -> None:
-        self.chat.chat_view.focused_message = self
