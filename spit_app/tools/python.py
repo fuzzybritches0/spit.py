@@ -96,7 +96,8 @@ def _worker(code: str, conn):
         except Exception:
             pass
 
-        exec(code, {"__builtins__": _BUILTINS, "__name__": "__main__"}, {})
+        sandbox = {"__builtins__": _BUILTINS, "__name__": "__main__"}
+        exec(code, sandbox, sandbox)
     except Exception as exc:
         lineno = 0
         tbframes = traceback.extract_tb(exc.__traceback__)
