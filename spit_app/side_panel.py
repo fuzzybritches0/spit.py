@@ -63,22 +63,15 @@ class SidePanel(OptionList):
 
     async def option_selected(self, id: str) -> None:
         ret = False
-        index = 0
         for cont in self.app.query_one("#main").children:
             cont.display = False
-            cont.disable = True
             if cont.id == id:
                 if cont.id.startswith("chat"):
                     self.settings.active_chat = cont.id
                     self.settings.save()
                 cont.display = True
-                cont.disable = False
-                if cont.id.startswith("chat"):
-                    cont.chat_view.focus()
-                else:
-                    cont.focus()
+                cont.focus()
                 ret = True
-            index+=1
         if ret:
             return None
         if id.startswith("chat"):
