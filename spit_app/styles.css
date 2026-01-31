@@ -37,6 +37,24 @@
 	margin: 0;
 	width: auto
 }
+.message-section{
+	border: none;
+	height: auto
+}
+.message-container-tool {
+	margin: 1 0 0 0;
+	color: $foreground;
+	background: $background-lighten-1;
+	border: tall $border-blurred;
+	height: auto
+}
+.message-container-tool:focus {
+	margin: 1 0 0 0;
+	color: $foreground;
+	background: $background-lighten-1;
+	border: tall $border;
+	height: auto
+}
 .message-container-user {
 	margin: 1 0 0 0;
 	color: $foreground;
@@ -62,6 +80,20 @@
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background;
+	border: tall $border;
+	height: auto
+}
+.code-listing-tool {
+	margin: 0 0 1 0;
+	color: $foreground;
+	background: $background-lighten-1;
+	border: tall $border-blurred;
+	height: auto
+}
+.code-listing-tool:focus {
+	margin: 0 0 1 0;
+	color: $foreground;
+	background: $background-lighten-1;
 	border: tall $border;
 	height: auto
 }
