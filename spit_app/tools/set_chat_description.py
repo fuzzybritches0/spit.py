@@ -19,7 +19,7 @@ DESC = {
     }
 }
 
-PROMPT = "To help the user manage their chat conversations, use this function to set a short description of what this chat conversation is about.\nAfter every user turn, determine what the topic of this conversation is. Should the topic of the conversation not be clear right away, postpone using this function until you know what this conversation is about.\nShould the topic, in the course of the conversation, change or touch a more broader field, use the function again to add to or broaden the description. The description should not be longer than 7 words. Avoid using general descriptions like 'Chat Conversation', 'Greetings', ...\nExamples to consider: 'Copy Python Objects', 'Paris, Vienna Weather', 'Creative Writing: Love Poem', 'Solving Quadratics: Factoring'"
+PROMPT = "To help the user manage their chat conversations, use this function to set a short description of what this chat conversation is about. Use this function as soon as the topic becomes specific. Should the topic, in the course of the conversation, change or touch a more broader field, use the function again to add to or broaden the description. The description should not be longer than 7 words. Examples to consider: 'Copy Python Objects', 'Paris, Vienna Weather', 'Creative Writing: Love Poem', 'Solving Quadratics: Factoring'"
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
