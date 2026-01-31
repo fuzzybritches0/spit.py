@@ -29,10 +29,10 @@ class ChatView(VerticalScroll):
         elif signal == 2:
             await self.children[-1].process()
 
-    def focus_message(self, index: int, scroll_visible: bool = True) -> None:
+    def focus_message(self, index: int) -> None:
         if index == -1 and not self.children:
             return None
-        self.children[index].focus(scroll_visible=scroll_visible)
+        self.children[index].focus()
         self.focused_message = self.children[index]
 
     async def mount_message(self, new: bool = False) -> None:
@@ -94,4 +94,8 @@ class ChatView(VerticalScroll):
         if not self.children and not self.chat.undo.undo_list:
             self.chat.text_area.focus()
         if self.focused_message:
-            self.focused_message.focus()
+            self.focused_message.focus(scroll_visible=False)
+
+    def on_descendant_focus(self, event: events.DescendantFocus) -> None:
+        self.app.refresh_bindings()
+        self.focused_message = event.control
