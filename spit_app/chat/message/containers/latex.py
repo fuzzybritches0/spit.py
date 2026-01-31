@@ -11,9 +11,8 @@ class LaTeX(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy LaTeX")
     ]
 
-    def __init__(self, chat, latex, latex_fence_start, latex_fence_end) -> None:
+    def __init__(self, latex, latex_fence_start, latex_fence_end) -> None:
         super().__init__()
-        self.chat = chat
         self.app.refresh_bindings()
         self.latex = latex
         escaped = ""
@@ -27,8 +26,7 @@ class LaTeX(VerticalScroll):
         self.app.copy_to_clipboard(self.latex_fence_start + self.latex + self.latex_fence_end)
 
     async def on_mount(self) -> None:
-        self.parent.focus(scroll_visible=False)
-        self.classes = "code-listing-" + self.parent.message["role"]
+        self.classes = "code-listing-" + self.parent.parent.message["role"]
         color = self.styles.color.css
         background = self.styles.background.css
         latex_png = self.latex_png(self.latex, color, background)
@@ -61,6 +59,3 @@ class LaTeX(VerticalScroll):
         if "latex-image" in self.children[0].classes:
             await self.remove_children()
             await self.on_mount()
-
-    def on_focus(self) -> None:
-        self.chat.chat_view.focused_message = self
