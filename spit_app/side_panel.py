@@ -66,17 +66,15 @@ class SidePanel(OptionList):
         for cont in self.app.query_one("#main").children:
             cont.display = False
             if cont.id == id:
-                if cont.id.startswith("chat"):
-                    self.settings.active_chat = cont.id
-                    self.settings.save()
                 cont.display = True
                 cont.focus()
                 ret = True
-        if ret:
-            return None
         if id.startswith("chat"):
             self.settings.active_chat = id
             self.settings.save()
+        if ret:
+            return None
+        if id.startswith("chat"):
             await self.app.query_one("#main").mount(Chat(id))
         elif id == "new-chat":
             await self.app.query_one("#main").mount(ManageChats(True))
