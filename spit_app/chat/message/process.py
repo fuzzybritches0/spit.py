@@ -56,8 +56,9 @@ class Process(Vertical):
         if self.process_busy:
             return None
         self.process_busy = True
-        if not self.old_content == content[:len(self.old_content)]:
+        if not self.old_content[:-self.pp.bsize] == content[:len(self.old_content)-self.pp.bsize]:
             await self.reset()
+            self.process_busy = True
         if not self.target:
             await self.mount(Part())
         await self.process_content(content)
