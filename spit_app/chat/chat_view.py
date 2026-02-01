@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual import events
 from textual.containers import VerticalScroll
 from .message.message import Message
 from .work import Work
@@ -93,9 +92,10 @@ class ChatView(VerticalScroll):
         self.app.query_one("#side-panel").can_focus = False
         if not self.children and not self.chat.undo.undo_list:
             self.chat.text_area.focus()
+        if not self.focused_message and self.children:
+            self.focused_message = self.children[-1]
         if self.focused_message:
             self.focused_message.focus(scroll_visible=False)
 
-    def on_descendant_focus(self, event: events.DescendantFocus) -> None:
-        self.app.refresh_bindings()
-        self.focused_message = event.control
+    def on_descendant_focus(self) -> None:
+        self.focused_message = self.app.focused
