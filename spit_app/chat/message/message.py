@@ -179,6 +179,5 @@ class Message(VerticalScroll):
 
     async def on_mount(self) -> None:
         await self.prepare()
-        if self.chat.has_focus_within:
+        if self.chat.chat_view.has_focus_within:
             self.focus(scroll_visible=False)
-        self.chat.chat_view.focused_message = self
