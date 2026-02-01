@@ -22,10 +22,22 @@ class Message(VerticalScroll):
         self.classes = "message-container-" + self.role
         self.id = "message-id-" + str(len(self.chat.chat_view.children))
         self.done_reasoning = False
+        self.arguments = ""
 
     def tool_call_arguments(self, arguments: str) -> str:
         ret = ""
-        arguments = json.loads(arguments)
+        if arguments.endswith("}"):
+            arguments += ""
+        elif (len(arguments) - len(arguments.replace('"', ""))) % 2 == 1:
+            arguments += '"}'
+        elif arguments.endswith(":"):
+            arguments += '""}'
+        elif arguments.endswith('"'):
+            arguments += "}"
+        try:
+            arguments = json.loads(arguments)
+        except:
+            return self.arguments
         for argument in arguments.keys():
             ret +=f"\n    - {argument}:"
             if arguments[argument]:
@@ -33,6 +45,7 @@ class Message(VerticalScroll):
                     ret += f"\n```\n{arguments[argument]}\n```"
                 else:
                     ret += f" `{arguments[argument]}`"
+        self.arguments = ret
         return ret
 
     def format_tool_calls(self) -> str:
@@ -77,7 +90,7 @@ class Message(VerticalScroll):
         if "tool_calls" in self.message:
             if self.message["tool_calls"]:
                 await self.update_status("")
-            await self.tool_calls.process(json.dumps(self.message["tool_calls"]))
+            await self.tool_calls.process(self.format_tool_calls())
 
     def action_show_cot(self) -> None:
         self.reasoning.display = True
