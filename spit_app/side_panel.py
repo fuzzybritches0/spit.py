@@ -49,9 +49,9 @@ class SidePanel(OptionList):
             ctime = datetime.fromtimestamp(int(content["ctime"]))
             Options.append(Option(f"\n{desc}\n{ctime}\n", id=id))
         Options.append(None)
-        Options.append(Option("\nManage Chats\n", id="manage-chats"))
-        Options.append(Option("\nManage Endpoints\n", id="manage-endpoints"))
-        Options.append(Option("\nManage System Prompts\n", id="manage-prompts"))
+        Options.append(Option("\nManage Chats\n", id="manage-chat"))
+        Options.append(Option("\nManage Endpoints\n", id="manage-endpoint"))
+        Options.append(Option("\nManage System Prompts\n", id="manage-prompt"))
         Options.append(Option("\nManage Tool Settings\n", id="manage-tool-settings"))
         Options.append(None)
         Options.append(Option("\nHelp\n", id="help"))
@@ -78,11 +78,11 @@ class SidePanel(OptionList):
             await self.app.query_one("#main").mount(Chat(id))
         elif id == "new-chat":
             await self.app.query_one("#main").mount(ManageChats(True))
-        elif id == "manage-chats":
+        elif id == "manage-chat":
             await self.app.query_one("#main").mount(ManageChats())
-        elif id == "manage-endpoints":
+        elif id == "manage-endpoint":
             await self.app.query_one("#main").mount(ManageEndpoints())
-        elif id == "manage-prompts":
+        elif id == "manage-prompt":
             await self.app.query_one("#main").mount(ManagePrompts())
         elif id == "manage-tool-settings":
             await self.app.query_one("#main").mount(ManageToolSettings())
