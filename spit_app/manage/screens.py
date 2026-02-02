@@ -7,12 +7,15 @@ class ScreensMixIn:
     def extra_options(self) -> list:
         return [Option(f"\nCreate new {self.id.split("-")[1]}\n", id="select-new-manage")]
 
+    def get_name(self, manage: str) -> str:
+        return self.managed[manage]["name"]["value"]
+
     async def select_main_screen(self) -> None:
         Options = self.extra_options()
         if hasattr(self, "get_managed"):
             self.managed = self.get_managed()
         for manage in self.managed.keys():
-            name=self.managed[manage]["name"]["value"]
+            name = self.get_name(manage)
             Options.append(Option(f"\nEdit: {name}\n", id=f"select-manage-{manage}"))
         await self.mount(OptionList(*Options, id="option-list"))
         self.children[0].focus()
