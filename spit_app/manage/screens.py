@@ -20,14 +20,17 @@ class ScreensMixIn:
         await self.mount(OptionList(*Options, id="option-list"))
         self.children[0].focus()
 
+    def check_buttons(self) -> list:
+        buttons = []
+        for action, button in self.BUTTONS:
+            if self.check_action(action, ()):
+                buttons.append(Button(button, id=action))
+        return buttons
+
     async def edit_manage_screen(self) -> None:
         await self.edit_manage()
         self.children[1].focus()
-        if self.new_manage:
-            buttons = [Button(desc, id=id) for id, desc in self.BUTTONS_NEW]
-        else:
-            buttons = [Button(desc, id=id) for id, desc in self.BUTTONS]
-        await self.mount(Horizontal(*buttons, id="save-delete-cancel"))
+        await self.mount(Horizontal(*self.check_buttons(), id="save-delete-cancel"))
 
     async def mount_setting(self, setting: str, stype: str, desc: str, amore: list, add: bool = False) -> None:
         id = setting.replace(".", "-")
