@@ -22,7 +22,7 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
     def new(self) -> None:
         self.new_manage = True
         self.uuid = str(uuid4())
-        self.manage = self.NEW
+        self.manage = deepcopy(self.NEW)
 
     def load(self, uuid: str) -> None:
         self.new_manage = False
