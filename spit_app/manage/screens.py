@@ -41,6 +41,13 @@ class ScreensMixIn:
         value = ""
         if "value" in self.manage[setting]:
             value = self.manage[setting]["value"]
+        if "ameth" in self.manage[setting]:
+            ameth = getattr(self, self.manage[setting]["ameth"])
+            tup = ameth()
+        elif amore:
+            tup = ()
+            for el in amore:
+                tup += ((el, el),)
         Validators = self.validators(setting, id, stype)
         if stype == "integer" or stype == "uinteger" or stype == "float" or stype == "ufloat":
             value=str(value)
@@ -48,18 +55,18 @@ class ScreensMixIn:
             if not value:
                 value = Select.BLANK
             if add:
-                await self.mount(Select.from_values(amore, id=id, value=value,
+                await self.mount(Select(tup, id=id, value=value,
                                                 prompt="Default"), before="#save-delete-cancel")
             else:
-                await self.mount(Select.from_values(amore, id=id, value=value, prompt="Default"))
+                await self.mount(Select(tup, id=id, value=value, prompt="Default"))
         elif stype == "select_no_default":
             if not value:
-                value = amore[0]
+                value = tup[0][1]
             if add:
-                await self.mount(Select.from_values(amore, id=id, value=value,
+                await self.mount(Select(tup, id=id, value=value,
                                 allow_blank=False), before="#save-delete-cancel")
             else:
-                await self.mount(Select.from_values(amore, id=id, value=value, allow_blank=False))
+                await self.mount(Select(tup, id=id, value=value, allow_blank=False))
         elif stype == "boolean":
             if add:
                 await self.mount(Switch(id=id, value=value), before="#save-delete-cancel")
