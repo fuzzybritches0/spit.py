@@ -1,16 +1,15 @@
 from uuid import uuid4
 from copy import deepcopy
 from spit_app.manage.manage import Manage
-from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 
-class ToolSettings(ScreensMixIn, ValidationMixIn, Manage):
+class ToolSettings(ValidationMixIn, Manage):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "reset", "Reset"),
         ("escape", "cancel", "Cancel")
     ]
-    BUTTONS_NEW = (
+    BUTTONS = (
         ("save", "Save"),
         ("reset", "Reset"),
         ("cancel", "Cancel")
@@ -23,6 +22,12 @@ class ToolSettings(ScreensMixIn, ValidationMixIn, Manage):
         self.managed = self.app.tool_call.tools
         self.save_managed = self.app.settings.save
         self.new_manage = True
+
+    def extra_options(self) -> list:
+        return []
+
+    def get_name(self, manage: str) -> str:
+        return manage
 
     def load(self, uuid: str) -> None:
         self.uuid = uuid
