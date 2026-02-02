@@ -4,8 +4,13 @@ from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, 
 from textual.widgets.option_list import Option
 
 class ScreensMixIn:
+    def extra_options(self) -> list:
+        return [Option(f"\nCreate new {self.id.split("-")[1]}\n", id="select-new-manage")]
+
     async def select_main_screen(self) -> None:
-        Options = [ Option(f"\nCreate new {self.id.split("-")[1]}\n", id="select-new-manage") ]
+        Options = self.extra_options()
+        if hasattr(self, "get_managed"):
+            self.managed = self.get_managed()
         for manage in self.managed.keys():
             name=self.managed[manage]["name"]["value"]
             Options.append(Option(f"\nEdit: {name}\n", id=f"select-manage-{manage}"))
