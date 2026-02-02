@@ -1,4 +1,3 @@
-from uuid import uuid4
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
@@ -14,11 +13,9 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Mana
         ("ctrl+i", "remove_setting", "Remove Setting"),
         ("ctrl+o", "add_setting", "Add Setting")
     ]
-    BUTTONS_NEW = (
+    BUTTONS = (
         ("save", "Save"),
-        ("cancel", "Cancel")
-    )
-    BUTTONS = BUTTONS_NEW + (
+        ("cancel", "Cancel"),
         ("delete", "Delete"),
         ("duplicate", "Duplicate")
     )
@@ -38,11 +35,9 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Mana
 
     def __init__(self) -> None:
         super().__init__()
-        self.id = "manage-endpoints"
-        self.classes = "manage"
+        self.id = "manage-endpoint"
         self.managed = self.app.settings.endpoints
         self.save_managed = self.app.settings.save_endpoints
-        self.new_manage = False
 
     def add_custom_setting(self, setting: str, stype: str, desc: str, sarray: list = []) -> None:
         if not sarray:
