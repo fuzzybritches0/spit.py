@@ -11,7 +11,7 @@ class HandlersMixIn:
                 self.children[1].focus()
 
     async def on_mount(self) -> None:
-        await self.select_main_screen()
+        await self.mount_screen()
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "select-new-manage":
