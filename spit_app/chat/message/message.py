@@ -181,3 +181,4 @@ class Message(VerticalScroll):
         await self.prepare()
         if self.chat.chat_view.has_focus_within:
             self.focus(scroll_visible=False)
+        self.chat.chat_view.focused_message = self
