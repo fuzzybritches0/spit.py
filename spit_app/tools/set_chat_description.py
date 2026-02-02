@@ -30,5 +30,5 @@ async def call(app, arguments: dict, chat_id) -> str:
     chat.chat_desc = arguments["description"]
     chat.write_chat_history()
     app.query_one("#side-panel").update_option_prompt(chat_id)
-    await app.maybe_remove("manage-chats")
+    await app.maybe_remove("manage-chat")
     return "chat description set."
