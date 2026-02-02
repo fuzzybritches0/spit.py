@@ -151,7 +151,7 @@ Input {
 	height: 10;
 	border: tall $error-muted
 }
-.overlay {
+.modal {
 	align: center middle;
 	background: $background 65%
 }
@@ -164,10 +164,18 @@ Input {
     align: center middle;
 }
 #error-modal {
-    width: 50;
+    width: 60;
     height: auto;
     padding: 1;
     background: $background-lighten-1;
     border: round $error;
+    align: center middle;
+}
+#info-modal {
+    width: 60;
+    height: auto;
+    padding: 1;
+    background: $background-lighten-1;
+    border: round $border;
     align: center middle;
 }
