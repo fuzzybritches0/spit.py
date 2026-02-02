@@ -11,7 +11,7 @@ class Chat(Vertical):
         ("escape", "change_focus", "Focus")
     ]
 
-    def __init__(self, id) -> None:
+    def __init__(self, id: str) -> None:
         super().__init__()
         self.settings = self.app.settings
         self.classes = "chat"
