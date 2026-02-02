@@ -13,7 +13,12 @@ class HandlersMixIn:
     async def on_mount(self) -> None:
         await self.mount_screen()
 
+    async def on_extra_options(self, id) -> bool:
+        return False
+
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        if await self.on_extra_options(event.option.id):
+            return None
         if event.option.id == "select-new-manage":
             self.new()
             await self.remove_children()
