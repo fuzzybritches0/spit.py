@@ -51,7 +51,8 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.manage[setting]["value"] = value
 
     def save(self) -> None:
-        self.managed[self.uuid] = deepcopy(self.manage)
+        if self.managed:
+            self.managed[self.uuid] = deepcopy(self.manage)
         self.save_managed()
 
     def delete(self) -> None:
