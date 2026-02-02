@@ -8,6 +8,12 @@ from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 
 class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn):
+    def __init__(self) -> None:
+        super().__init__()
+        self.classes = "manage"
+        self.new_manage = False
+        self.mount_screen = self.select_main_screen
+
     def duplicate(self) -> None:
         self.new_manage = True
         self.uuid = str(uuid4())
