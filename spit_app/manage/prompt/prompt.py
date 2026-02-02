@@ -9,11 +9,9 @@ class Prompts(Manage):
         ("escape", "cancel", "Cancel"),
         ("ctrl+t", "duplicate", "Duplicate")
     ]
-    BUTTONS_NEW = (
+    BUTTONS = (
         ("save", "Save"),
-        ("cancel", "Cancel")
-    )
-    BUTTONS = BUTTONS_NEW + (
+        ("cancel", "Cancel"),
         ("delete", "Delete"),
         ("duplicate", "Duplicate")
     )
@@ -24,12 +22,9 @@ class Prompts(Manage):
 
     def __init__(self) -> None:
         super().__init__()
-        self.id = "manage-prompts"
-        self.classes = "manage"
+        self.id = "manage-prompt"
         self.managed = self.app.settings.prompts
         self.save_managed = self.app.settings.save_prompts
-        self.settings = self.app.settings
-        self.new_manage = False
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":
