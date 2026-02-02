@@ -1,11 +1,7 @@
 from spit_app.chat.chat import Chat
+from textual.widgets.option_list import Option
 
 class ActionsMixIn:
-    async def action_delete(self) -> None:
-        if self.delete():
-            await self.remove_children()
-            await self.select_main_screen()
-
     async def action_archive(self) -> None:
         if self.archive():
             await self.remove_children()
@@ -16,36 +12,49 @@ class ActionsMixIn:
             await self.remove_children()
             await self.select_main_screen()
 
-    async def action_save(self) -> None:
-        if self.save():
-            if not self.cur_chat:
-                await self.app.query_one("#main").mount(Chat(self.uuid))
-                await self.app.query_one("#side-panel").add_option_chat(self.uuid)
-            await self.action_cancel()
-
-    async def action_cancel(self) -> None:
-        if self.new_chat:
-            await self.app.maybe_remove("manage-chats")
+    async def after_action(self, action: str) -> None:
+        if action == "save" and self.new_manage:
             await self.remove()
+            await self.app.query_one("#main").mount(Chat(f"chat-{self.uuid}"))
+            await self.app.query_one("#side-panel").add_option_chat(f"chat-{self.uuid}")
         else:
-            await self.remove_children()
-            await self.select_main_screen()
+            await super().after_action(action)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":
             return False
         elif action == "cancel":
-            if self.new_chat:
+            if self.id == "new-chat":
                 return False
         elif action == "save":
             if self.cur_dir == "chats_archive":
                 return False
         elif action == "delete":
-            if self.new_chat or not self.cur_chat:
+            if self.new_manage:
                 return False
         elif action == "unarchive" and self.cur_dir == "chats":
             return False
         elif action == "archive" and (self.cur_dir == "chats_archive" or
-                                      self.new_chat or not self.cur_chat):
+                                      self.new_manage):
             return False
         return True
+
+    async def on_extra_options(self, id) -> bool:
+        if id == "select-archive":
+            self.cur_dir = "chats_archive"
+            await super().after_action("")
+            return True
+        elif id == "select-leave-archive":
+            self.cur_dir = "chats"
+            await super().after_action("")
+            return True
+        return False
+
+    def extra_options(self) -> list:
+        Options = []
+        if self.cur_dir == "chats":
+            Options.append(Option(f"\nCreate new {self.id.split("-")[1]}\n", id="select-new-manage"))
+            Options.append(Option("\nArchive\n", id="select-archive"))
+        else:
+            Options.append(Option("\nLeave archive\n", id="select-leave-archive"))
+        return Options
