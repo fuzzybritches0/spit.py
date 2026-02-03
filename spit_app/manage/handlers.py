@@ -11,7 +11,10 @@ class HandlersMixIn:
                 self.children[1].focus()
 
     async def on_mount(self) -> None:
-        await self.mount_screen()
+        if self.new_manage and hasattr(self, "manage"):
+            await self.edit_manage_screen()
+        else:
+            await self.select_main_screen()
 
     async def on_extra_options(self, id) -> bool:
         return False
