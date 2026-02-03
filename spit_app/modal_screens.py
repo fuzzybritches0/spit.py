@@ -39,4 +39,4 @@ class InfoScreen(Common):
         super().__init__()
         self.classes = "modal"
         self.mtype = "info"
-        self.text = f"INFO:\n\n{self.info}"
+        self.text = f"INFO:\n\n{info}"
