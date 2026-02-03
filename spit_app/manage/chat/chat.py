@@ -17,10 +17,10 @@ class Chat(ActionsMixIn, Manage):
     ]
     BUTTONS = (
         ("save", "Save"),
-        ("cancel", "Cancel"),
         ("delete", "Delete"),
         ("archive", "Archive"),
-        ("unarchive", "Un-archive")
+        ("unarchive", "Un-archive"),
+        ("cancel", "Cancel")
     )
     NEW = {
         "desc": { "stype": "string", "empty": False, "desc": "Description", "value": "New Chat" },
