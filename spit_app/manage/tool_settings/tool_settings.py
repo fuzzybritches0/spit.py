@@ -1,4 +1,3 @@
-from uuid import uuid4
 from copy import deepcopy
 from spit_app.manage.manage import Manage
 from .validation import ValidationMixIn

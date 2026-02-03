@@ -1,5 +1,5 @@
 from copy import deepcopy
-from uuid import uuid4
+from time import time
 from textual.widgets import Select
 from textual.containers import VerticalScroll
 from .actions import ActionsMixIn
@@ -16,12 +16,12 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
 
     def duplicate(self) -> None:
         self.new_manage = True
-        self.uuid = str(uuid4())
+        self.uuid = str(time()).replace(".", "-")
         self.query_one("#name").value = self.query_one("#name").value + " duplicate"
 
     def new(self) -> None:
         self.new_manage = True
-        self.uuid = str(uuid4())
+        self.uuid = str(time()).replace(".", "-")
         self.manage = deepcopy(self.NEW)
 
     def load(self, uuid: str) -> None:

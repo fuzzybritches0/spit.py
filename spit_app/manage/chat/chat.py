@@ -2,7 +2,6 @@ import os
 import shutil
 from time import time
 from datetime import datetime
-from uuid import uuid4
 from copy import deepcopy
 from .actions import ActionsMixIn
 from spit_app.manage.manage import Manage
