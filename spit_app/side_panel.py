@@ -45,7 +45,7 @@ class SidePanel(OptionList):
         for chat in chats:
             content = self.app.read_json(f"chats/{chat}")
             id = chat[:-5]
-            desc = content["desc"]
+            desc = content["settings"]["desc"]["value"]
             ctime = datetime.fromtimestamp(int(content["ctime"]))
             Options.append(Option(f"\n{desc}\n{ctime}\n", id=id))
         Options.append(None)
