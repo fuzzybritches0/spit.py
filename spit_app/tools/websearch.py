@@ -1,4 +1,5 @@
 import json
+import asyncio
 from ddgs import DDGS
 from spit_app.tool_call import load_user_settings
 
@@ -15,10 +16,6 @@ DESC = {
                 "query": {
                     "type": "string",
                     "description": "The query for the search."
-                },
-                "news": {
-                    "type": "boolean",
-                    "description": "Choose if you want to search just for news. Default: False"
                 }
             },
             "required": ["query"]
@@ -26,7 +23,7 @@ DESC = {
     }
 }
 
-PROMPT = "Use this function to search the internet."
+PROMPT = "Use this function to search the web."
 MAX_RESULTS = 10
 SAFESEARCH = "moderate"
 PROMPT_INST = "You will get [max_results] results with links to follow the source. Safesearch is set to [save_search]."
@@ -48,20 +45,16 @@ class Validators:
             return False
         return True
 
-def call(app, arguments: dict, chat_id: str):
+async def call(app, arguments: dict, chat_id: str):
     load_user_settings(app, NAME, SETTINGS)
     query = arguments["query"]
     safesearch = SETTINGS["safesearch"]["value"]
     max_results = SETTINGS["max_results"]["value"]
-    if "news" in arguments and arguments["news"]:
-        try:
-            result = DDGS().news(query, safesearch=safesearch, max_results=max_results)
-        except:
-            return "No results found!"
-    else:
-        try:
-            result = DDGS().text(query, safesearch=safesearch, max_results=max_results)
-        except:
-            return "No results found!"
-    result = json.dumps(result)
-    return "```\n" + result + "\n```"
+    try:
+        results = await asyncio.to_thread(DDGS().text, query, safesearch=safesearch, max_results=max_results)
+    except:
+        return "No results found!"
+    ret = "# Results"
+    for result in results:
+        ret += f"\n\n## {result['title']}\n\n- link: `{result['href']}`\n\n{result['body']}"
+    return ret
