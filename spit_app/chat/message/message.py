@@ -41,7 +41,7 @@ class Message(VerticalScroll):
         for argument in arguments.keys():
             ret +=f"\n    - {argument}:"
             if arguments[argument]:
-                if "\n" in arguments[argument]:
+                if type(arguments[argument]) is str and "\n" in arguments[argument]:
                     ret += f"\n```\n{arguments[argument]}\n```"
                 else:
                     ret += f" `{arguments[argument]}`"
