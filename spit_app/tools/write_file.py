@@ -11,7 +11,7 @@ DESC = {
         "parameters": {
             "type": "object",
             "properties": {
-                "location": {
+                "path": {
                     "type": "string",
                     "description": "An arbitrary directory path with a filename."
                 },
@@ -20,7 +20,7 @@ DESC = {
                     "description": "The content of the file."
                 }
             },
-            "required": ["location", "content"]
+            "required": ["path", "content"]
         }
     }
 }
@@ -32,18 +32,19 @@ SETTINGS = {
 }
     
 def call(app, arguments: dict, chat_id) -> str:
-    location = arguments["location"].replace("..", "")
-    if not location == arguments["location"]:
+    location = arguments["path"].replace("..", "")
+    if not location == arguments["path"]:
         return "ERROR: location not allowed!"
     location = location.split("/")
     file = location[-1]
-    if not file:
-        return "ERROR: no file name in location!"
     location = "/".join(location[:-1])
     if not location:
         return "ERROR: location not valid!"
-    location = str(app.settings.path["sandbox"]) + "/" + location
+    location = app.settings.path["sandbox"] / location
     Path(location).mkdir(parents=True, exist_ok=True)
-    with open(location + "/" + file, "w") as f:
-        f.write(arguments["content"])
-    return "file saved."
+    try:
+        with open(location / file, "w") as f:
+            f.write(arguments["content"])
+    except Exception as exception:
+        return f"ERROR:\n\n{type(exception).__name__}: {exception}"
+    return f"file {arguments['path']} saved."
