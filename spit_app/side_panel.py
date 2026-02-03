@@ -6,6 +6,7 @@ from spit_app.manage.chat.chat import Chat as ManageChats
 from spit_app.manage.endpoint.endpoint import Endpoints as ManageEndpoints 
 from spit_app.manage.prompt.prompt import Prompts as ManagePrompts
 from spit_app.manage.tool_settings.tool_settings import ToolSettings as ManageToolSettings
+from spit_app.modal_screens import InfoScreen 
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 
@@ -77,7 +78,10 @@ class SidePanel(OptionList):
         if id.startswith("chat"):
             await self.app.query_one("#main").mount(Chat(id))
         elif id == "new-chat":
-            await self.app.query_one("#main").mount(ManageChats(True))
+            if self.settings.endpoints:
+                await self.app.query_one("#main").mount(ManageChats(True))
+            else:
+                await self.app.push_screen(InfoScreen("No endpoints set! Please set up an endpoint first"))
         elif id == "manage-chat":
             await self.app.query_one("#main").mount(ManageChats())
         elif id == "manage-endpoint":
