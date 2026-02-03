@@ -11,12 +11,12 @@ DESC = {
         "parameters": {
             "type": "object",
             "properties": {
-                "location": {
+                "path": {
                     "type": "string",
                     "description": "An arbitrary directory path with a filename."
                 }
             },
-            "required": ["location"]
+            "required": ["path"]
         }
     }
 }
@@ -29,10 +29,10 @@ SETTINGS = {
     
 
 def call(app, arguments: dict, chat_id) -> str:
-    location = str(app.settings.path["sandbox"]) + "/" + arguments["location"]
+    location = str(app.settings.path["sandbox"]) + "/" + arguments["path"]
     try:
         with open(location, "r") as f:
             content = f.read()
-        return arguments["location"] + ":\n\n```" + content + "```"
-    except:
-        return "ERROR: could not read file!"
+        return arguments["path"] + ":\n\n```\n" + content + "\n```"
+    except Exception as exception:
+        return f"ERROR:\n\n{type(exception).__name__}: {exception}"
