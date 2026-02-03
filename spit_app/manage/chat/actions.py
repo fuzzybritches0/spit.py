@@ -16,6 +16,7 @@ class ActionsMixIn:
     async def after_action(self, action: str) -> None:
         if action == "save" and self.new_manage:
             await self.remove()
+            await self.app.maybe_remove("manage-chat")
             await self.app.query_one("#main").mount(Chat(f"chat-{self.uuid}"))
             await self.app.query_one("#side-panel").add_option_chat(f"chat-{self.uuid}")
         else:
