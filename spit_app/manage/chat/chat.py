@@ -94,17 +94,13 @@ class Chat(ActionsMixIn, Manage):
         self.uuid = uuid
         self.manage = deepcopy(self.NEW)
         content = self.app.read_json(f"{self.cur_dir}/chat-{self.uuid}.json")
-        self.manage["desc"]["value"] = content["desc"]
-        self.manage["endpoint"]["value"] = content["endpoint"]
-        self.manage["prompt"]["value"] = content["prompt"]
+        self.manage = content["settings"]
 
     def save_managed(self) -> None:
         if self.new_manage:
             content = {}
             content["ctime"] = time()
-            content["desc"] = self.manage["desc"]["value"]
-            content["endpoint"] = self.manage["endpoint"]["value"]
-            content["prompt"] = self.manage["prompt"]["value"]
+            content["settings"] = self.manage
             content["messages"] = []
             self.app.write_json(f"{self.cur_dir}/chat-{self.uuid}.json", content)
         else:
@@ -118,11 +114,9 @@ class Chat(ActionsMixIn, Manage):
                 chat.write_chat_history()
             else:
                 content = self.app.read_json(f"{self.cur_dir}/chat-{self.uuid}.json")
-                content["desc"] = self.manage["desc"]["value"]
-                content["endpoint"] = self.manage["endpoint"]["value"]
-                content["prompt"] = self.manage["prompt"]["value"]
+                content["settings"] = self.manage
                 ctime = content["ctime"]
-                desc = content["desc"]
+                desc = content["settings"]["desc"]["value"]
                 self.app.write_json(f"{self.cur_dir}/chat-{self.uuid}.json", content)
             ctime = datetime.fromtimestamp(int(ctime))
             self.app.query_one("#side-panel").replace_option_prompt(f"chat-{self.uuid}", f"\n{desc}\n{ctime}\n")
@@ -134,7 +128,7 @@ class Chat(ActionsMixIn, Manage):
         for chat in chats:
             content = self.app.read_json(f"{self.cur_dir}/{chat}")
             id = chat[5:-5]
-            desc = content["desc"]
+            desc = content["settings"]["desc"]["value"]
             local_ctime = datetime.fromtimestamp(int(content["ctime"]))
             chat_dict[id] = {"name": {"value": f"{desc}\n{local_ctime}"}}
         return chat_dict
