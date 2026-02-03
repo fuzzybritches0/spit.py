@@ -42,7 +42,7 @@ class Chat(Vertical):
         if not self.chat_endpoint in self.settings.endpoints:
                 await self.app.push_screen(InfoScreen("Endpoint settings not found! Did you remove them?"))
                 return False
-        if not self.chat_prompt in self.settings.prompts:
+        if self.chat_prompt and not self.chat_prompt in self.settings.prompts:
                 await self.app.push_screen(InfoScreen("System prompt not found! Did you remove it?"))
                 return False
         return True
