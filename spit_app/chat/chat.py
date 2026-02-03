@@ -17,10 +17,11 @@ class Chat(Vertical):
         self.classes = "chat"
         self.id = id
         content = self.app.read_json(f"chats/{self.id}.json")
+        self.csettings = content["settings"]
         self.chat_ctime = content["ctime"]
-        self.chat_desc = content["desc"]
-        self.chat_endpoint = content["endpoint"]
-        self.chat_prompt = content["prompt"]
+        self.chat_desc = content["settings"]["desc"]["value"]
+        self.chat_endpoint = content["settings"]["endpoint"]["value"]
+        self.chat_prompt = content["settings"]["prompt"]["value"]
         self.messages = content["messages"]
         self.work = None
         self.chat_view = ChatView(self)
@@ -39,9 +40,10 @@ class Chat(Vertical):
     def write_chat_history(self) -> bool:
         content = {}
         content["ctime"] = self.chat_ctime
-        content["desc"] = self.chat_desc
-        content["endpoint"] = self.chat_endpoint
-        content["prompt"] = self.chat_prompt
+        self.csettings["desc"]["value"] = self.chat_desc
+        self.csettings["endpoint"]["value"] = self.chat_endpoint
+        self.csettings["prompt"]["value"] = self.chat_prompt
+        content["settings"] = self.csettings
         content["messages"] = self.messages
         return self.app.write_json(f"chats/{self.id}.json", content)
     
