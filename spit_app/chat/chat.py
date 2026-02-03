@@ -4,6 +4,7 @@ from textual.containers import Vertical
 from .undo import Undo
 from .chat_text_area import ChatTextArea
 from .chat_view import ChatView
+from spit_app.modal_screens import InfoScreen
 
 class Chat(Vertical):
     BINDINGS = [
@@ -36,6 +37,15 @@ class Chat(Vertical):
     def compose(self) -> ComposeResult:
         yield self.chat_view
         yield self.text_area
+
+    async def settings_exist(self) -> bool:
+        if not self.chat_endpoint in self.settings.endpoints:
+                await self.app.push_screen(InfoScreen("Endpoint settings not found! Did you remove them?"))
+                return False
+        if not self.chat_prompt in self.settings.prompts:
+                await self.app.push_screen(InfoScreen("System prompt not found! Did you remove it?"))
+                return False
+        return True
 
     def write_chat_history(self) -> bool:
         content = {}

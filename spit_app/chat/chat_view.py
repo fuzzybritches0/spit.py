@@ -41,6 +41,8 @@ class ChatView(VerticalScroll):
             await self.children[-1].finish()
 
     async def action_continue(self) -> None:
+        if not await self.chat.settings_exist():
+            return None
         if (self.messages[-1]["role"] == "user" or self.messages[-1]["role"] == "tool" or
             (self.messages[-1]["role"] == "assistant" and "tool_calls" in self.messages[-1])):
             work = Work(self.chat)
