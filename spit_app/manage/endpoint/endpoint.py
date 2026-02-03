@@ -34,8 +34,7 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Mana
     }
 
     def __init__(self) -> None:
-        super().__init__()
-        self.id = "manage-endpoint"
+        super().__init__("endpoint")
         self.managed = self.app.settings.endpoints
         self.save_managed = self.app.settings.save_endpoints
 

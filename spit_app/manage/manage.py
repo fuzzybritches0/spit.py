@@ -8,11 +8,17 @@ from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 
 class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn):
-    def __init__(self) -> None:
+    def __init__(self, id: str, new_manage: bool = False) -> None:
         super().__init__()
+        if new_manage:
+            self.id = f"new-{id}"
+            self.new()
+        else:
+            self.id = f"manage-{id}"
         self.classes = "manage"
-        self.new_manage = False
-        self.mount_screen = self.select_main_screen
+        self.settings = self.app.settings
+        self.path = self.app.settings.path
+        self.new_manage = new_manage
 
     def duplicate(self) -> None:
         self.new_manage = True

@@ -15,12 +15,9 @@ class ToolSettings(ValidationMixIn, Manage):
     )
 
     def __init__(self) -> None:
-        super().__init__()
-        self.id = "manage-tool-settings"
-        self.classes = "manage"
+        super().__init__("tool-settings")
         self.managed = self.app.tool_call.tools
         self.save_managed = self.app.settings.save
-        self.new_manage = True
 
     def extra_options(self) -> list:
         return []

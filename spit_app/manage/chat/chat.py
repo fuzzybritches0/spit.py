@@ -28,18 +28,8 @@ class Chat(ActionsMixIn, Manage):
     }
 
     def __init__(self, new_chat: bool = False) -> None:
-        super().__init__()
-        if new_chat:
-            self.id = "new-chat"
-            self.new()
-            self.mount_screen = self.edit_manage_screen
-        else:
-            self.id = "manage-chat"
-        self.classes = "manage"
+        super().__init__("chat", new_chat)
         self.managed = None
-        self.settings = self.app.settings
-        self.path = self.app.settings.path
-        self.new_manage = new_chat
         self.cur_dir = "chats"
 
     def is_loaded(self) -> bool:

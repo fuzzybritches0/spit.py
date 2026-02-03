@@ -20,8 +20,7 @@ class Prompts(Manage):
     }
 
     def __init__(self) -> None:
-        super().__init__()
-        self.id = "manage-prompt"
+        super().__init__("prompt")
         self.managed = self.app.settings.prompts
         self.save_managed = self.app.settings.save_prompts
 
