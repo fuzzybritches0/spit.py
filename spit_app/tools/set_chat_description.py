@@ -25,7 +25,7 @@ SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
     
-async def call(app, arguments: dict, chat_id) -> str:
+async def call(app, arguments: dict, chat_id: str) -> str:
     chat = app.query_one(f"#{chat_id}")
     chat.chat_desc = arguments["description"]
     chat.write_chat_history()
