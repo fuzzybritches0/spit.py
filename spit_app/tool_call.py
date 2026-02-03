@@ -41,6 +41,12 @@ class ToolCall:
                 if hasattr(module, "Validators"):
                     self.tools[name]["validators"] = getattr(module, "Validators")
 
+    def required_arguments(self, name: str, arguments: dict) -> None|str:
+        for argument in self.tools[name]["desc"]["function"]["parameters"]["required"]:
+            if not argument in arguments:
+                return f"ERROR: missing argument: {argument}! Function call failed!"
+        return None
+
     async def maybe_callback(self, signal: int) -> None:
         if self.callback:
             await self.callback(signal)
@@ -53,6 +59,12 @@ class ToolCall:
         messages.append({"role": "tool", "tool_call_id": tool_call["id"],
                 "name": name, "content": ""})
         await self.maybe_callback(1)
+        missing = self.required_arguments(name, arguments)
+        if missing:
+            messages[-1]["content"] += missing
+            await self.maybe_callback(2)
+            await self.maybe_callback(0)
+            return None
         if "call" in self.tools[name]:
             if inspect.iscoroutinefunction(self.tools[name]["call"]):
                 messages[-1]["content"] += await self.tools[name]["call"](self.app, arguments, chat_id)
