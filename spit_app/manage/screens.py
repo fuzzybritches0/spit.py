@@ -52,7 +52,7 @@ class ScreensMixIn:
         if stype == "integer" or stype == "uinteger" or stype == "float" or stype == "ufloat":
             value=str(value)
         if stype == "select":
-            if not value:
+            if not value or not value in tup:
                 value = Select.BLANK
             if add:
                 await self.mount(Select(tup, id=id, value=value,
@@ -60,7 +60,7 @@ class ScreensMixIn:
             else:
                 await self.mount(Select(tup, id=id, value=value, prompt="Default"))
         elif stype == "select_no_default":
-            if not value:
+            if not value or not value in tup:
                 value = tup[0][1]
             if add:
                 await self.mount(Select(tup, id=id, value=value,
