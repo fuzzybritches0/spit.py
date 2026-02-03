@@ -26,6 +26,12 @@ class ActionsMixIn:
             await self.query_one(f"#{remove}").remove()
             await self.query_one(f"#label-{remove}").remove()
 
+    async def after_action(self, action: str) -> None:
+        if action == "save" or action == "delete":
+            await self.app.maybe_remove("manage-chat")
+            await self.app.maybe_remove("new-chat")
+            await super().after_action(action)
+
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":
             return False

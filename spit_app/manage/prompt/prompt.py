@@ -25,6 +25,12 @@ class Prompts(Manage):
         self.managed = self.app.settings.prompts
         self.save_managed = self.app.settings.save_prompts
 
+    async def after_action(self, action: str) -> None:
+        if action == "save" or action == "delete":
+            await self.app.maybe_remove("manage-chat")
+            await self.app.maybe_remove("new-chat")
+            await super().after_action(action)
+
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":
             return False
