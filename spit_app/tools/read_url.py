@@ -24,7 +24,7 @@ DESC = {
                 },
                 "page": {
                     "type": "integer",
-                    "description": "An integer from 1 to maximal page count or URL source."
+                    "description": "An integer from 1 to maximal page count for URL source."
                 }
             },
             "required": ["url"]
