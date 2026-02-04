@@ -71,6 +71,7 @@ class Message(VerticalScroll):
        await self.finish()
 
     async def finish(self) -> None:
+        await self.update_status("")
         if "reasoning" in self.message:
             await self.reasoning.finish(self.message["reasoning"])
         if "content" in self.message:
