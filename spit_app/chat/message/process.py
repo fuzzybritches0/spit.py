@@ -39,6 +39,8 @@ class Process(Vertical):
         await self.target.append(self.pp.part)
 
     async def finish(self, content) -> None:
+        if not self.target:
+            await self.mount(Part())
         if len(content) == 0:
             return None
         if self.old_content == content and self.pos == len(content)-1:
