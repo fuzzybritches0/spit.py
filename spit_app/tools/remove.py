@@ -30,8 +30,8 @@ SETTINGS = {
 }
     
 def call(app, arguments: dict, chat_id) -> str:
-    location = arguments["path"].replace("..", "")
-    if not location == arguments["path"]:
+    location = arguments["path"]
+    if ".." in location:
         return "ERROR: location not allowed!"
     location = app.settings.path["sandbox"] / location
     if not os.path.exists(location):
