@@ -73,7 +73,7 @@ class Message(VerticalScroll):
     async def finish(self) -> None:
         await self.update_status("")
         if "reasoning" in self.message:
-            await self.reasoning.finish(self.message["reasoning"])
+            await self.reasoning.finish(self.message["reasoning"] + "\n\n---")
         if "content" in self.message:
             await self.content.finish(self.message["content"])
         if "tool_calls" in self.message:
