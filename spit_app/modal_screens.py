@@ -1,5 +1,5 @@
 from textual.app import ComposeResult
-from textual.widgets import Static, Button, Footer
+from textual.widgets import Markdown, Button, Footer
 from textual.screen import ModalScreen
 from textual.containers import Vertical, Center
 
@@ -14,7 +14,7 @@ class Common(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id=f"{self.mtype}-modal"):
-            yield Static(self.text)
+            yield Markdown(self.text)
             if not self.mtype == "loading":
                 with Center():
                     yield Button("OK")
@@ -25,14 +25,14 @@ class LoadingScreen(Common):
         super().__init__()
         self.classes = "modal"
         self.mtype = "loading"
-        self.text = "Loading..."
+        self.text = "Loading ..."
 
 class ErrorScreen(Common):
     def __init__(self, exception: Exception) -> None:
         super().__init__()
         self.classes = "modal"
         self.mtype = "error"
-        self.text = f"ERROR:\n\n{type(exception).__name__}: {exception}"
+        self.text = f"# ERROR:\n\n- `{type(exception).__name__}` {exception}"
 
 class InfoScreen(Common):
     def __init__(self, info: str) -> None:
