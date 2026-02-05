@@ -8,6 +8,7 @@ import importlib
 import threading
 import asyncio
 import queue
+import importlib.util
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -45,6 +46,45 @@ SETTINGS = {
     "modules": { "value": MODULES, "stype": "text", "desc": "Allowed Importable Modules" },
     "builtins": { "value": BUILTINS, "stype": "text", "desc": "Allowed Builtins" }
 }
+
+class Validators:
+    failed_max_mem_mb = ["must be greater than 0!"]
+    def max_mem_mb(value) -> bool:
+        try:
+            float(value)
+        except:
+            return False
+        if not float(value) > 0:
+            return False
+        return True
+
+    global _failed_builtins
+    _failed_builtins = [""]
+    failed_builtins = _failed_builtins
+    def builtins(value) -> bool:
+        valid = True
+        failed = []
+        _builtins = value.split(",")
+        for builtin in _builtins:
+            if not hasattr(builtins, builtin.strip()):
+                failed.append(f"`{builtin}`")
+                valid = False
+        _failed_builtins[0] = ", ".join(failed) + " not valid builtin(s)!"
+        return valid
+
+    global _failed_modules
+    _failed_modules = [""]
+    failed_modules = _failed_modules
+    def modules(value) -> bool:
+        valid = True
+        failed = []
+        _modules = value.split(",")
+        for module in _modules:
+            if not importlib.util.find_spec(module.strip(), None):
+                failed.append(f"`{module}`")
+                valid = False
+        _failed_modules[0] = ", ".join(failed) + " not found! Did you forget to `pip install ...`?"
+        return valid
 
 _MODULES = []
 _BUILTINS = {}
