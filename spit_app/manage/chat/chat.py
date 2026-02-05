@@ -124,13 +124,13 @@ class Chat(ActionsMixIn, Manage):
             chat_dict[id] = {"name": {"value": f"{desc}\n{local_ctime}"}}
         return chat_dict
 
-    def endpoint_list(self, default: bool = False) -> list:
+    def endpoint_list(self, default: bool = False) -> tuple:
         tup = ()
         for key in self.settings.endpoints.keys():
             tup += ((self.settings.endpoints[key]["name"]["value"], key),)
         return tup
 
-    def prompt_list(self, default: bool = False) -> list:
+    def prompt_list(self, default: bool = False) -> tuple:
         tup = ()
         for key in self.settings.prompts.keys():
             tup += ((self.settings.prompts[key]["name"]["value"], key),)
