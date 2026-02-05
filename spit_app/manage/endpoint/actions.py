@@ -30,6 +30,7 @@ class ActionsMixIn:
         if action == "save" or action == "delete":
             await self.app.maybe_remove("manage-chat")
             await self.app.maybe_remove("new-chat")
+        if not action == "duplicate":
             await super().after_action(action)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:

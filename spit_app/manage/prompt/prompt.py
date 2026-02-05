@@ -29,6 +29,8 @@ class Prompts(Manage):
             await self.app.maybe_remove("manage-chat")
             await self.app.maybe_remove("new-chat")
             await super().after_action(action)
+        if not action == "duplicate":
+            await super().after_action(action)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.children and self.children[0].id == "option-list":
