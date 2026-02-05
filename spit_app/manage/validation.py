@@ -77,11 +77,15 @@ class ValidationMixIn:
     def is_valid_selection(self, value: str) -> bool:
         if value:
             values = value.split(",")
+            cvalues = []
             for value in values:
-                if not value:
+                if not value or "." in value:
                     return False
                 if not self.is_valid_setting(value.strip()):
                     return False
+                if value in cvalues:
+                    return False
+                cvalues += [value]
             return True
         else:
             return False
