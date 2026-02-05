@@ -90,20 +90,40 @@ class ValidationMixIn:
         else:
             return False
 
-    def validate_values_edit(self) -> bool:
+    def get_failed_val_info(self, stype: str, setting: str) -> str:
+        ret = []
+        if hasattr(self, f"failed_valid_{stype}"):
+            ret.append(f"- `{setting}`: " + getattr(self, f"failed_valid_{stype}")[0])
+        if hasattr(self, f"failed_valid_setting_{setting}"):
+            ret.append(f"- `{setting}`: " + getattr(self, f"failed_valid_setting_{setting}")[0])
+        if not ret:
+            return [f"- `{setting}`: not valid!"]
+        return ret
+
+    def validate_values_edit(self) -> tuple[bool, list]:
         valid = True
+        failed = []
         for setting in self.manage.keys():
             stype = self.manage[setting]["stype"]
             id = setting.replace(".", "-")
             if not stype == "boolean" and not stype.startswith("select") and not stype == "text":
                 inp = self.query_one(f"#{id}")
                 inp.validate(inp.value)
-                if inp.is_valid and valid:
-                    valid = True
-                else:
+                if not inp.is_valid:
+                    if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
+                        if not self.query_one(f"#{id}").value:
+                            failed += [f"- `{setting}` must not be empty!"]
+                    failed += self.get_failed_val_info(stype, setting)
                     valid = False
-            if stype == "text" and "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
-                if not self.query_one(f"#{id}").text:
-                    self.query_one(f"#{id}").classes = "text-area-invalid"
-                    return False
-        return valid
+            if stype == "text":
+                if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
+                    if not self.query_one(f"#{id}").text:
+                        self.query_one(f"#{id}").classes = "text-area-invalid"
+                        failed += [f"- `{setting}` must not be empty!"]
+                        valid = False
+                if hasattr(self, f"valid_setting_{setting}"):
+                    if not getattr(self, f"valid_setting_{setting}")(self.query_one(f"#{id}").text):
+                        self.query_one(f"#{id}").classes = "text-area-invalid"
+                        failed += self.get_failed_val_info(stype, setting)
+                        valid = False
+        return (valid, failed)
