@@ -91,8 +91,7 @@ class ValidationMixIn:
         for setting in self.manage.keys():
             stype = self.manage[setting]["stype"]
             id = setting.replace(".", "-")
-            if (not stype == "boolean" and not stype == "select" and
-                not stype == "select_no_default" and not stype == "text"):
+            if not stype == "boolean" and not stype.startswith("select") and not stype == "text":
                 inp = self.query_one(f"#{id}")
                 inp.validate(inp.value)
                 if inp.is_valid and valid:

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual.containers import Horizontal
-from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, Select
+from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, Select, SelectionList
 from textual.widgets.option_list import Option
 
 class ScreensMixIn:
@@ -57,6 +57,16 @@ class ScreensMixIn:
             if not value or not value in tup:
                 value = tup[0][1]
             await self.mount(Select(tup, id=id, value=value, allow_blank=False), before="#save-delete-cancel")
+        elif stype == "select_list":
+            if not value:
+                value = []
+            ltup = ()
+            for n, i in tup:
+                if n in value:
+                    ltup += ((n, i, True),)
+                else:
+                    ltup += ((n, i, False),)
+            await self.mount(SelectionList(*ltup, id=id), before="#save-delete-cancel")
         elif stype == "boolean":
             await self.mount(Switch(id=id, value=value), before="#save-delete-cancel")
         elif stype == "text":

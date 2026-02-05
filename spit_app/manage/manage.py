@@ -40,19 +40,21 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
             id = setting.replace(".", "-")
             if self.manage[setting]["stype"] == "text":
                 newvalue = self.query_one(f"#{id}").text
+            elif self.manage[setting]["stype"] == "select_list":
+                newvalue = self.query_one(f"#{id}").selected
             else:
                 newvalue = self.query_one(f"#{id}").value
             if newvalue == Select.BLANK:
                 newvalue = ""
             self.store_value(setting, newvalue)
 
-    def store_value(self, setting: str, value: str|bool) -> None:
+    def store_value(self, setting: str, value: str|bool|list) -> None:
         stype = self.manage[setting]["stype"]
         if (stype == "float" or stype == "ufloat") and value:
             value = float(value)
         elif (stype == "integer" or stype == "uinteger") and value:
             value = int(value)
-        elif not stype == "boolean":
+        elif not stype == "boolean" and not stype.startswith("select"):
             value = value.strip()
         self.manage[setting]["value"] = value
 
