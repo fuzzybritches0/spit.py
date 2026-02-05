@@ -53,12 +53,18 @@ class ToolCall:
 
     async def call(self, messages: list, tool_call: dict, chat_id: str, callback: callable = None) -> None:
         self.callback = callback
-        chat_view = self.app.query_one("#main").query_one(f"#{chat_id}").chat_view
+        chat = self.app.query_one("#main").query_one(f"#{chat_id}")
+        chat_view = chat.chat_view
         name = tool_call["function"]["name"]
         arguments = json.loads(tool_call["function"]["arguments"])
         messages.append({"role": "tool", "tool_call_id": tool_call["id"],
                 "name": name, "content": ""})
         await self.maybe_callback(1)
+        if not name in chat.chat_tools or not name in self.tools.keys():
+            messages[-1]["content"] = f"ERROR: tool {name} not available!"
+            await self.maybe_callback(2)
+            await self.maybe_callback(0)
+            return None
         missing = self.required_arguments(name, arguments)
         if missing:
             messages[-1]["content"] += missing
