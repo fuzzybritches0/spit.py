@@ -12,7 +12,7 @@ class ScreensMixIn:
         await self.mount(Input(id="new-setting", validators=valsetting, max_length=128))
         await self.mount(Label(f"Description for {stype} value:"))
         await self.mount(Input(id="new-description", validators=[Function(self.is_not_empty)]))
-        if stype == "select" or stype == "select_no_default":
+        if stype.startswith("select"):
             await self.mount(Label("Select values (separate with ','):"))
             valselect = [Function(self.is_not_empty), Function(self.is_valid_selection)]
             await self.mount(Input(id="new-select-values", validators=valselect))
