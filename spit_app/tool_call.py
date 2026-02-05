@@ -67,7 +67,7 @@ class ToolCall:
             return None
         missing = self.required_arguments(name, arguments)
         if missing:
-            messages[-1]["content"] += missing
+            messages[-1]["content"] = missing
             await self.maybe_callback(2)
             await self.maybe_callback(0)
             return None
