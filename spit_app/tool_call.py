@@ -71,14 +71,17 @@ class ToolCall:
             await self.maybe_callback(2)
             await self.maybe_callback(0)
             return None
-        if "call" in self.tools[name]:
-            if inspect.iscoroutinefunction(self.tools[name]["call"]):
-                messages[-1]["content"] += await self.tools[name]["call"](self.app, arguments, chat_id)
-            elif inspect.isfunction(self.tools[name]["call"]):
-                messages[-1]["content"] += self.tools[name]["call"](self.app, arguments, chat_id)
-            await self.maybe_callback(2)
-        else:
-            async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
-                messages[-1]["content"] += chunk
+        try:
+            if "call" in self.tools[name]:
+                if inspect.iscoroutinefunction(self.tools[name]["call"]):
+                    messages[-1]["content"] += await self.tools[name]["call"](self.app, arguments, chat_id)
+                elif inspect.isfunction(self.tools[name]["call"]):
+                    messages[-1]["content"] += self.tools[name]["call"](self.app, arguments, chat_id)
                 await self.maybe_callback(2)
+            else:
+                async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
+                    messages[-1]["content"] += chunk
+                    await self.maybe_callback(2)
+        except Exception as exception:
+            messages[-1]["content"] += f"{type(exception).__name__}: {exception}"
         await self.maybe_callback(0)
