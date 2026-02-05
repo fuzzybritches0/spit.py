@@ -23,6 +23,7 @@ class Chat(Vertical):
         self.chat_desc = content["settings"]["desc"]["value"]
         self.chat_endpoint = content["settings"]["endpoint"]["value"]
         self.chat_prompt = content["settings"]["prompt"]["value"]
+        self.chat_tools = content["settings"]["tools"]["value"]
         self.messages = content["messages"]
         self.work = None
         self.chat_view = ChatView(self)
@@ -53,6 +54,7 @@ class Chat(Vertical):
         self.csettings["desc"]["value"] = self.chat_desc
         self.csettings["endpoint"]["value"] = self.chat_endpoint
         self.csettings["prompt"]["value"] = self.chat_prompt
+        self.csettings["tools"]["value"] = self.chat_tools
         content["settings"] = self.csettings
         content["messages"] = self.messages
         return self.app.write_json(f"chats/{self.id}.json", content)
