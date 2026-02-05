@@ -39,8 +39,8 @@ PROMPT_INST= "You can import the following modules: [modules].\nYou are restrict
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" },
-    "timeout": { "value": MAX_SECONDS, "stype": "uinteger", "empty": False, "desc": "Timeout" },
-    "max_mem_mb": { "value": MAX_MEMORY_MB, "stype": "uinteger", "empty": False,
+    "timeout": { "value": MAX_SECONDS, "stype": "uinteger", "empty": False, "desc": "Timeout (0 = no timeout)" },
+    "max_mem_mb": { "value": MAX_MEMORY_MB, "stype": "ufloat", "empty": False,
                    "desc": "Maximum Memory Usage (MB)" },
     "modules": { "value": MODULES, "stype": "text", "desc": "Allowed Importable Modules" },
     "builtins": { "value": BUILTINS, "stype": "text", "desc": "Allowed Builtins" }
@@ -148,7 +148,10 @@ async def call_async_generator(app, arguments: dict, chat_id):
     start = loop.time()
     yield "```\n"
     while True:
-        remaining = timeout - (loop.time() - start)
+        if timeout == 0:
+            remaining = 1000
+        else:
+            remaining = timeout - (loop.time() - start)
         try:
             msg = await asyncio.wait_for(q.get(), timeout=remaining)
         except asyncio.TimeoutError:
