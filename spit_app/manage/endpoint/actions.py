@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual.widgets import Select
+from spit_app.modal_screens import InfoScreen
 
 class ActionsMixIn:
     async def action_add_setting(self) -> None:
-        if self.validate_add_setting():
+        valid, failed = self.validate_add_setting()
+        if not valid:
+            await self.app.push_screen(InfoScreen("\n".join(failed)))
+        else:
             setting = self.query_one("#new-setting").value
             stype = self.query_one("#custom-setting-select-add").value
             desc = self.query_one("#new-description").value
