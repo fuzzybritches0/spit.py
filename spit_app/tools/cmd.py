@@ -60,17 +60,20 @@ async def call_async_generator(app, arguments: dict, chat_id):
     else:
         yield "```\n"
         command = arguments["command"].split(" ")
-        proc = await asyncio.create_subprocess_exec(*command, stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.STDOUT,
-                                                    cwd=app.settings.path["sandbox"])
+        proc = None
         try:
+            proc = await asyncio.create_subprocess_exec(*command, stdout=asyncio.subprocess.PIPE,
+                                                        stderr=asyncio.subprocess.STDOUT,
+                                                        cwd=app.settings.path["sandbox"])
             while True:
                 line_bytes = await proc.stdout.readline()
                 if not line_bytes:
                     break
                 yield line_bytes.decode("UTF-8", errors="replace")
+        except Exception as exception:
+            yield f"{type(exception).__name__}: {exception}"
         finally:
-            if proc.returncode is None:
+            if proc and proc.returncode is None:
                 proc.terminate()
                 await proc.wait()
-                yield "\n```"
+        yield "\n```"
