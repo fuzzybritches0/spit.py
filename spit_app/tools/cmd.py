@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import asyncio
+import shutil
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -30,6 +31,21 @@ SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" },
     "commands": { "value": COMMANDS, "stype": "text", "desc": "Allowed commands" }
 }
+
+class Validators:
+    global _failed_commands
+    _failed_commands = [""]
+    failed_commands = _failed_commands
+    def commands(value) -> bool:
+        valid = True
+        failed = []
+        _commands = value.split(",")
+        for command in _commands:
+            if not shutil.which(command.strip()):
+                failed.append(f"`{command}`")
+                valid = False
+        _failed_commands[0] = ", ".join(failed) + " not found in `$PATH`!"
+        return valid
 
 def sanitize_arguments(command) -> str|None:
     FORBIDDEN_CHARS = set(";|&`$()<>")
