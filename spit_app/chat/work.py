@@ -42,17 +42,18 @@ class Work:
     def prompt(self) -> str:
         prompt = ""
         for tool in self.app.tool_call.tools.keys():
-            tool_prompt = self.app.tool_call.tools[tool]["settings"]["prompt"]["value"]
-            if tool in self.settings.tool_settings:
-                if "prompt" in self.settings.tool_settings[tool]:
-                    tool_prompt = self.settings.tool_settings[tool]["prompt"]["value"]
-            prompt += f"- {tool}\n" + tool_prompt
-            prompt += self.prompt_inst(tool)
+            if tool in self.chat.chat_tools:
+                tool_prompt = self.app.tool_call.tools[tool]["settings"]["prompt"]["value"]
+                if tool in self.settings.tool_settings:
+                    if "prompt" in self.settings.tool_settings[tool]:
+                        tool_prompt = self.settings.tool_settings[tool]["prompt"]["value"]
+                prompt += f"## {tool}\n\n" + tool_prompt
+                prompt += self.prompt_inst(tool)
         if prompt:
             prompt = TOOL_PROMPT + prompt
         if self.chat.chat_prompt:
             chat_prompt = self.settings.prompts[self.chat.chat_prompt]["text"]["value"]
-            prompt =  chat_prompt + "\n\n# INSTRUCTIONS\n" + prompt
+            prompt =  "# INSTRUCTIONS\n\n" + chat_prompt + "\n\n" + prompt
         return prompt
 
     async def work_stream(self) -> None:
