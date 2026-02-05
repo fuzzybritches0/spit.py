@@ -7,7 +7,7 @@ class ValidationMixIn:
         Validators = []
         if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
             Validators.append(Function(self.is_not_empty))
-        if hasattr(self, f"valid_setting_{id}"):
+        if not stype == "text" and hasattr(self, f"valid_setting_{id}"):
             Validators.append(Function(getattr(self, f"valid_setting_{id}")))
         if hasattr(self, f"valid_{stype}"):
             Validators.append(Function(getattr(self, f"valid_{stype}")))
