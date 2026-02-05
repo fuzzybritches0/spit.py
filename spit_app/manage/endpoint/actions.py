@@ -15,7 +15,7 @@ class ActionsMixIn:
                     sarray.append(el.strip())
             self.add_custom_setting(setting, stype, desc, sarray)
             self.query_one("#custom-setting-select-remove").set_options(self.custom_options())
-            await self.mount_setting(setting, stype, desc, sarray, True)
+            await self.mount_setting(setting, stype, desc, sarray)
 
     async def action_remove_setting(self) -> None:
         remove = self.query_one("#custom-setting-select-remove").value

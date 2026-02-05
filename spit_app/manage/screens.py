@@ -28,16 +28,13 @@ class ScreensMixIn:
         return buttons
 
     async def edit_manage_screen(self) -> None:
+        await self.mount(Horizontal(*self.check_buttons(), id="save-delete-cancel"))
         await self.edit_manage()
         self.children[1].focus()
-        await self.mount(Horizontal(*self.check_buttons(), id="save-delete-cancel"))
 
-    async def mount_setting(self, setting: str, stype: str, desc: str, amore: list, add: bool = False) -> None:
+    async def mount_setting(self, setting: str, stype: str, desc: str, amore: list) -> None:
         id = setting.replace(".", "-")
-        if add:
-            await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
-        else:
-            await self.mount(Label(f"{desc}: ({stype})", id="label-"+id))
+        await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
         value = ""
         if "value" in self.manage[setting]:
             value = self.manage[setting]["value"]
@@ -54,35 +51,18 @@ class ScreensMixIn:
         if stype == "select":
             if not value or not value in tup:
                 value = Select.BLANK
-            if add:
-                await self.mount(Select(tup, id=id, value=value,
+            await self.mount(Select(tup, id=id, value=value,
                                                 prompt="Default"), before="#save-delete-cancel")
-            else:
-                await self.mount(Select(tup, id=id, value=value, prompt="Default"))
         elif stype == "select_no_default":
             if not value or not value in tup:
                 value = tup[0][1]
-            if add:
-                await self.mount(Select(tup, id=id, value=value,
-                                allow_blank=False), before="#save-delete-cancel")
-            else:
-                await self.mount(Select(tup, id=id, value=value, allow_blank=False))
+            await self.mount(Select(tup, id=id, value=value, allow_blank=False), before="#save-delete-cancel")
         elif stype == "boolean":
-            if add:
-                await self.mount(Switch(id=id, value=value), before="#save-delete-cancel")
-            else:
-                await self.mount(Switch(id=id, value=value))
+            await self.mount(Switch(id=id, value=value), before="#save-delete-cancel")
         elif stype == "text":
-            if add:
-                await self.mount(TextArea(value, id=id, classes="text-area"), before="#save-delete-cancel")
-            else:
-                await self.mount(TextArea(value, id=id, classes="text-area"))
+            await self.mount(TextArea(value, id=id, classes="text-area"), before="#save-delete-cancel")
         else:
-            if add:
-                await self.mount(Input(validators=Validators, id=id,
-                                       value=value), before="#save-delete-cancel")
-            else:
-                await self.mount(Input(validators=Validators, id=id, value=value))
+            await self.mount(Input(validators=Validators, id=id, value=value), before="#save-delete-cancel")
 
     async def edit_manage(self) -> None:
         for setting in self.manage.keys():
