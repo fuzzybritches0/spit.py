@@ -24,7 +24,8 @@ class Chat(ActionsMixIn, Manage):
     NEW = {
         "desc": { "stype": "string", "empty": False, "desc": "Description", "value": "New Chat" },
         "endpoint": { "stype": "select_no_default", "desc": "Endpoint", "ameth": "endpoint_list" },
-        "prompt": { "stype": "select", "desc": "System Prompt", "ameth": "prompt_list" }
+        "prompt": { "stype": "select", "desc": "System Prompt", "ameth": "prompt_list" },
+        "tools": { "stype": "select_list", "desc": "Allowed tools", "ameth": "tools_list" }
     }
 
     def __init__(self, new_chat: bool = False) -> None:
@@ -98,6 +99,7 @@ class Chat(ActionsMixIn, Manage):
                 chat.chat_desc = self.manage["desc"]["value"]
                 chat.chat_endpoint = self.manage["endpoint"]["value"]
                 chat.chat_prompt = self.manage["prompt"]["value"]
+                chat.chat_tools = self.manage["tools"]["value"]
                 ctime = chat.chat_ctime
                 desc = chat.chat_desc
                 chat.write_chat_history()
@@ -132,4 +134,10 @@ class Chat(ActionsMixIn, Manage):
         tup = ()
         for key in self.settings.prompts.keys():
             tup += ((self.settings.prompts[key]["name"]["value"], key),)
+        return tup
+
+    def tools_list(self) -> tuple:
+        tup = ()
+        for key in self.app.tool_call.tools.keys():
+            tup += ((key, key),)
         return tup
