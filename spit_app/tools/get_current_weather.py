@@ -29,6 +29,6 @@ SETTINGS = {
 
 async def call(app, arguments: dict, chat_id) -> dict:
     url = f"https://wttr.in/{arguments['location']}?format=j2"
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15) as client:
         result = await client.get(url)
     return "```json\n" + result.text + "\n```"
