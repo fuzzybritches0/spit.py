@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual.containers import Horizontal
-from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, Select, SelectionList
+from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, Select, SelectionList, Markdown
 from textual.widgets.option_list import Option
 
 class ScreensMixIn:
@@ -73,6 +73,8 @@ class ScreensMixIn:
             await self.mount(TextArea(value, id=id, classes="text-area"), before="#save-delete-cancel")
         else:
             await self.mount(Input(validators=Validators, id=id, value=value), before="#save-delete-cancel")
+        if not "select" in stype or not stype == "boolean":
+            await self.mount(Markdown(id=f"val-{id}"), before="#save-delete-cancel")
 
     async def edit_manage(self) -> None:
         for setting in self.manage.keys():
