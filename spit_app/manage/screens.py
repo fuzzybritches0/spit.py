@@ -33,7 +33,7 @@ class ScreensMixIn:
         self.children[1].focus()
 
     async def mount_setting(self, setting: str, stype: str, desc: str, amore: list) -> None:
-        id = setting.replace(".", "-")
+        id = self.rid(setting)
         await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
         value = ""
         if "value" in self.manage[setting]:

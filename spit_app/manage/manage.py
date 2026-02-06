@@ -20,6 +20,12 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.path = self.app.settings.path
         self.new_manage = new_manage
 
+    def fid(self, id) -> str:
+        return id.replace("-", ".")
+
+    def rid(self, id) -> str:
+        return id.replace(".", "-")
+
     def duplicate(self) -> None:
         self.new_manage = True
         self.uuid = str(time()).replace(".", "-")
