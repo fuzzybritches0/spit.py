@@ -26,7 +26,6 @@ class ValidationMixIn:
             Validators.append(Function(getattr(self, f"valid_{stype}")))
         return Validators
 
-    failed_valid_url = ["Not a valid URL"]
     def valid_url(self, value) -> bool:
         if value.startswith("http://"):
             return True
@@ -34,19 +33,15 @@ class ValidationMixIn:
             return True
         return False
 
-    failed_valid_float = ["Not a valid float"]
     def valid_float(self, value: str) -> bool:
         return self.is_valid("float", True, value)
 
-    failed_valid_ufloat = ["Not a valid ufloat"]
     def valid_ufloat(self, value: str) -> bool:
         return self.is_valid("float", False, value)
 
-    failed_valid_integer = ["Not a valid integer"]
     def valid_integer(self, value: str) -> bool:
         return self.is_valid("integer", True, value)
 
-    failed_valid_uinteger = ["Not a valid uinteger"]
     def valid_uinteger(self, value: str) -> bool:
         return self.is_valid("integer", False, value)
 
