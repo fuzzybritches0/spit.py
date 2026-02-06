@@ -33,10 +33,7 @@ SETTINGS = {
 }
 
 class Validators:
-    global _failed_commands
-    _failed_commands = [""]
-    failed_commands = _failed_commands
-    def commands(value) -> bool:
+    def commands(value) -> tuple:
         valid = True
         failed = []
         _commands = value.split(",")
@@ -44,8 +41,9 @@ class Validators:
             if not shutil.which(command.strip()):
                 failed.append(f"`{command}`")
                 valid = False
-        _failed_commands[0] = ", ".join(failed) + " not found in `$PATH`!"
-        return valid
+        if not valid:
+            return (False, ", ".join(failed) + " not found in `$PATH`!")
+        return (True, None)
 
 def sanitize_arguments(command) -> str|None:
     FORBIDDEN_CHARS = set(";|&`$()<>")
