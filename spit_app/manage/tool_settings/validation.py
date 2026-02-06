@@ -6,6 +6,4 @@ class ValidationMixIn:
             validators = self.app.tool_call.tools[self.uuid]["validators"]
             if hasattr(validators, setting):
                 setattr(self, f"valid_setting_{setting}", getattr(validators, setting))
-            if hasattr(validators, f"failed_{setting}"):
-                setattr(self, f"failed_valid_setting_{setting}", getattr(validators, f"failed_{setting}"))
         return super().validators(setting, id, stype)
