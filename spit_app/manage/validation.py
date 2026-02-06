@@ -26,12 +26,14 @@ class ValidationMixIn:
             Validators.append(Function(getattr(self, f"valid_{stype}")))
         return Validators
 
-    def valid_url(self, value) -> bool:
-        if value.startswith("http://"):
-            return True
-        if value.startswith("https://"):
-            return True
-        return False
+    def valid_url(self, value) -> tuple:
+        if value:
+            if value.startswith("http://"):
+                return (True, None)
+            if value.startswith("https://"):
+                return (True, None)
+            return (False, "Not a valid URL!")
+        return (True, None)
 
     def valid_float(self, value: str) -> bool:
         return self.is_valid("float", True, value)
@@ -45,77 +47,73 @@ class ValidationMixIn:
     def valid_uinteger(self, value: str) -> bool:
         return self.is_valid("integer", False, value)
 
-    def is_not_empty(self, value) -> bool:
+    def is_not_empty(self, value) -> tuple:
         if value:
-            return True
-        return False
+            return (True, None)
+        return (False, "Must not be empty!")
 
-    def is_valid(self, stype: str, usign: bool, value: str) -> bool:
+    def is_valid(self, stype: str, usign: bool, value: str) -> tuple:
         stypes = { "integer": int, "float": float }
+        u = ""
+        if usign:
+            u = "u"
         if value:
             try:
                 stypes[stype](value)
                 if not usign:
                     if stypes[stype](value) < 0:
-                        return False
-                return True
+                        return (False, f"Not a valid {u}{stype}!")
+                return (True, None)
             except ValueError:
-                return False
+                return (False, f"Not a valid {u}{stype}!")
         else:
-            return True
+            return (True, None)
 
-    def is_valid_chars(self, value: str) -> bool:
+    def is_valid_chars(self, value: str) -> tuple:
         chars=string.ascii_lowercase + string.digits + "_.-"
         for char in value:
             if not char in chars:
-                return False
-        return True
+                return (False, f"{char} not allowed!")
+        return (True, None)
 
-    def is_valid_setting(self, value: str) -> bool:
+    def is_valid_setting(self, value: str) -> tuple:
         if value:
-            if not self.is_valid_chars(value):
-                return False
+            valid, failure = self.is_valid_chars(value)
+            if not valid:
+                return (False, failure)
             if value[0].isdecimal():
-                return False
+                return (False, "Must not start with decimal!")
             if value.startswith("_") or value.endswith("_"):
-                return False
+                return (False, "Must not start or end with `_`!")
             if value.startswith("-") or value.endswith("-"):
-                return False
+                return (False, "Must not start or end with `-`!")
             if value.startswith(".") or value.endswith("."):
-                return False
+                return (False, "Must not start or end with `.`!")
             return True
         else:
             return True
 
-    def is_valid_selection(self, value: str) -> bool:
+    def is_valid_selection(self, value: str) -> tuple:
         if value:
             values = value.split(",")
             cvalues = []
             for value in values:
-                if not value or "." in value:
-                    return False
-                if not self.is_valid_setting(value.strip()):
-                    return False
+                if not value:
+                    return (False, "No empty selection!")
+                if "." in value:
+                    return (False, "Must not contain `.`!")
+                valid, failure = self.is_valid_setting(value.strip())
+                if not valid:
+                    return (False, failure)
                 if value in cvalues:
-                    return False
+                    return (False, "All selections must be unique!")
                 cvalues += [value]
-            return True
+            return (True, None)
         else:
-            return False
+            return (False, "No selections!")
 
-    def get_failed_val_info(self, stype: str, setting: str) -> str:
-        ret = []
-        if hasattr(self, f"failed_valid_{stype}"):
-            ret.append(f"- `{setting}`: " + getattr(self, f"failed_valid_{stype}")[0])
-        if hasattr(self, f"failed_valid_setting_{setting}"):
-            ret.append(f"- `{setting}`: " + getattr(self, f"failed_valid_setting_{setting}")[0])
-        if not ret:
-            return [f"- `{setting}`: not valid!"]
-        return ret
-
-    def validate_values_edit(self) -> tuple[bool, list]:
+    def validate_values_edit(self) -> bool:
         valid = True
-        failed = []
         for setting in self.manage.keys():
             stype = self.manage[setting]["stype"]
             id = setting.replace(".", "-")
@@ -123,20 +121,15 @@ class ValidationMixIn:
                 inp = self.query_one(f"#{id}")
                 inp.validate(inp.value)
                 if not inp.is_valid:
-                    if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
-                        if not self.query_one(f"#{id}").value:
-                            failed += [f"- `{setting}` must not be empty!"]
-                    failed += self.get_failed_val_info(stype, setting)
                     valid = False
-            if stype == "text":
+            elif stype == "text":
                 if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
                     if not self.query_one(f"#{id}").text:
                         self.query_one(f"#{id}").classes = "text-area-invalid"
-                        failed += [f"- `{setting}` must not be empty!"]
                         valid = False
                 if hasattr(self, f"valid_setting_{setting}"):
-                    if not getattr(self, f"valid_setting_{setting}")(self.query_one(f"#{id}").text):
+                    valid, failure = getattr(self, f"valid_setting_{setting}")(self.query_one(f"#{id}").text)
+                    if not valid:
                         self.query_one(f"#{id}").classes = "text-area-invalid"
-                        failed += self.get_failed_val_info(stype, setting)
                         valid = False
-        return (valid, failed)
+        return valid
