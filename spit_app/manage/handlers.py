@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import inspect
-from textual.widgets import OptionList, Button
+from textual.widgets import OptionList, Button, Input, TextArea
 
 class HandlersMixIn:
     def on_focus(self) -> None:
@@ -40,3 +40,25 @@ class HandlersMixIn:
                 else:
                     method()
                 break
+
+    async def on_input_changed(self, event: Input.Changed) -> None:
+        content = ""
+        if not event.validation_result.is_valid:
+            vals = event.validation_result.failure_descriptions
+            for val in vals:
+                content += f"- {val}\n"
+        await self.query_one(f"#val-{event.control.id}").update(content)
+
+    async def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        content = ""
+        id = event.control.id
+        if "empty" in self.manage[self.fid(id)] and not self.manage[self.fid(id)]["empty"]:
+            if not event.control.text:
+                content += "- Must not be empty!\n"
+        if hasattr(self, f"valid_setting_{id}"):
+            valid, failed = getattr(self, f"valid_setting_{id}")(event.control.text)
+            if failed:
+                content += f"- {failed}"
+        if content:
+            self.query_one(f"#{id}").classes = "text-area-invalid"
+        self.query_one(f"#val-{id}").update(content)
