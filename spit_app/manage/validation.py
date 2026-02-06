@@ -1,6 +1,19 @@
 # SPDX-License-Identifier: GPL-2.0
 import string
-from textual.validation import Function
+from textual.validation import Validator, ValidationResult
+
+
+class Function(Validator):
+    def __init__(self, function: callable) -> None:
+        self.function = function
+        self.failure_description = None
+
+    def validate(self, value: str) -> ValidationResult:
+        valid, failure = self.function(value)
+        if valid:
+            return self.success()
+        else:
+            return self.failure(failure)
 
 class ValidationMixIn:
     def validators(self, setting: str, id: str, stype: str) -> list:
