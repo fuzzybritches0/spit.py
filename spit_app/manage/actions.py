@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-from spit_app.modal_screens import InfoScreen
 
 class ActionsMixIn:
     async def after_action(self, action: str) -> None:
@@ -14,10 +13,7 @@ class ActionsMixIn:
         await self.after_action("delete")
 
     async def action_save(self) -> None:
-        valid, failed = self.validate_values_edit()
-        if not valid:
-            await self.app.push_screen(InfoScreen("\n".join(failed)))
-        else:
+        if self.validate_values_edit():
             self.store_values()
             self.save()
             await self.after_action("save")
