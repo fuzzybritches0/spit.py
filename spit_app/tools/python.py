@@ -48,20 +48,19 @@ SETTINGS = {
 }
 
 class Validators:
-    failed_max_mem_mb = ["must be greater than 0!"]
-    def max_mem_mb(value) -> bool:
+    def max_mem_mb(value) -> tuple:
+        valid = True
         try:
             float(value)
         except:
-            return False
+            return (False, None)
         if not float(value) > 0:
-            return False
-        return True
+            valid = False
+        if not valid:
+            return (False, "Must be greater than 0!")
+        return (True, None)
 
-    global _failed_builtins
-    _failed_builtins = [""]
-    failed_builtins = _failed_builtins
-    def builtins(value) -> bool:
+    def builtins(value) -> tuple:
         valid = True
         failed = []
         _builtins = value.split(",")
@@ -69,13 +68,11 @@ class Validators:
             if not hasattr(builtins, builtin.strip()):
                 failed.append(f"`{builtin}`")
                 valid = False
-        _failed_builtins[0] = ", ".join(failed) + " not valid builtin(s)!"
-        return valid
+        if not valid:
+            return (False, ", ".join(failed) + " not valid builtin(s)!")
+        return (True, None)
 
-    global _failed_modules
-    _failed_modules = [""]
-    failed_modules = _failed_modules
-    def modules(value) -> bool:
+    def modules(value) -> tuple:
         valid = True
         failed = []
         _modules = value.split(",")
@@ -83,8 +80,9 @@ class Validators:
             if not importlib.util.find_spec(module.strip(), None):
                 failed.append(f"`{module}`")
                 valid = False
-        _failed_modules[0] = ", ".join(failed) + " not found! Did you forget to `pip install ...`?"
-        return valid
+        if not valid:
+            return (False, ", ".join(failed) + " not found! Did you forget to `pip install ...`?")
+        return (True, None)
 
 _MODULES = []
 _BUILTINS = {}
