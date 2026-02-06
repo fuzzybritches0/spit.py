@@ -24,6 +24,13 @@ class Prompts(Manage):
         self.managed = self.app.settings.prompts
         self.save_managed = self.app.settings.save_prompts
 
+    def valid_setting_name(self, value) -> tuple:
+        if value:
+            for uuid in self.managed.keys():
+                if not self.uuid == uuid and value.strip() == self.managed[uuid]["name"]["value"]:
+                    return (False, "Name must be unique!")
+        return (True, None)
+
     async def after_action(self, action: str) -> None:
         if action == "save" or action == "delete":
             await self.app.maybe_remove("manage-chat")
