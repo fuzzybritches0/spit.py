@@ -32,7 +32,7 @@ class ScreensMixIn:
         await self.edit_manage()
         self.children[1].focus()
 
-    async def mount_setting(self, setting: str, stype: str, desc: str, amore: list) -> None:
+    async def mount_setting(self, setting: str, stype: str, desc: str, options: list) -> None:
         id = self.rid(setting)
         await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
         value = ""
@@ -41,9 +41,9 @@ class ScreensMixIn:
         if "ameth" in self.manage[setting]:
             ameth = getattr(self, self.manage[setting]["ameth"])
             tup = ameth()
-        elif amore:
+        elif options:
             tup = ()
-            for el in amore:
+            for el in options:
                 tup += ((el, el),)
         Validators = self.validators(setting, id, stype)
         if stype == "integer" or stype == "uinteger" or stype == "float" or stype == "ufloat":
