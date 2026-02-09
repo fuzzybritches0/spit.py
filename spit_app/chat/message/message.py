@@ -85,10 +85,16 @@ class Message(VerticalScroll):
             await self.update_status("Thinking...")
             await self.reasoning.process(self.message["reasoning"])
         if "content" in self.message:
+            if "reasoning" in self.message and self.message["reasoning"]:
+                await self.reasoning.finish(self.message["reasoning"])
             if self.message["content"]:
                 await self.update_status("")
             await self.content.process(self.message["content"])
         if "tool_calls" in self.message:
+            if "reasoning" in self.message and self.message["reasoning"]:
+                await self.reasoning.finish(self.message["reasoning"])
+            if self.message["content"]:
+                await self.content.finish(self.message["content"])
             if self.message["tool_calls"]:
                 await self.update_status("")
             await self.tool_calls.process(self.format_tool_calls())
