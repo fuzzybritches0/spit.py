@@ -86,7 +86,6 @@ class ChatView(VerticalScroll):
             await self.app.push_screen(loading_screen)
             for message in self.messages:
                 await self.mount(Message(self.chat, message))
-                await self.children[-1].process()
                 await self.children[-1].finish()
             await loading_screen.dismiss()
 
