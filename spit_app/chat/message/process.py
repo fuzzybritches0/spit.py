@@ -37,14 +37,15 @@ class Process(Vertical):
         for pos in range(self.pos, len(content)):
             await self.pp.process_patterns(content[pos:])
         await self.target.append(self.pp.part)
+        self.pos = pos
 
     async def finish(self, content) -> None:
-        if not self.target:
-            await self.mount(Part())
         if len(content) == 0:
             return None
         if self.old_content == content and self.pos == len(content)-1:
             return None
+        if not self.target:
+            await self.mount(Part())
         if self.process_busy:
             self.finish_pending = True
         else:
