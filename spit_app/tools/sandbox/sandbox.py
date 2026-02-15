@@ -3,6 +3,7 @@ import os
 import shutil
 import getpass
 import asyncio
+import signal
 from pathlib import Path
 
 class Sandbox:
@@ -24,32 +25,34 @@ class Sandbox:
                  "--dev", "/dev", "--tmpfs", "/tmp", "--new-session"]
         return args
 
-    def preflight_test(self) -> str:
-        ret = ""
-        if not shutil.which("bwrap"):
-            ret += "ERROR: `bwrap` not found! Give user instructions to install `bubblewrap`!\n"
-        if self.timeout and not shutil.which("timeout"):
-            ret += "ERROR: `timeout` not found! Give user instructions to install `timeout`!"
-        if ret:
-            return ret
-        return None
-
     async def run_sandbox(self):
-        ret = self.preflight_test()
-        if ret:
-            yield ret
+        if not shutil.which("bwrap"):
+            yield "ERROR: `bwrap` not found! Give user instructions to install `bubblewrap`!"
+            return
+        cmd_args = self.bwrap_args() + self.cmd_args
+        proc = await asyncio.create_subprocess_exec(*cmd_args, stdout=asyncio.subprocess.PIPE,
+                                                stderr=asyncio.subprocess.STDOUT,
+                                                cwd=self.sandbox_path, start_new_session=True)
+        yield "```\n"
+        if self.timeout > 0:
+            try:
+                stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=self.timeout)
+                for line in stdout.decode("UTF-8", errors="replace").splitlines(keepends=True):
+                    yield line
+            except:
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                yield "\n```"
+                yield "\nTIMEOUT: execution exceeded timeout limit!"
+                return
         else:
-            cmd_args = self.bwrap_args() + self.cmd_args
-            proc = await asyncio.create_subprocess_exec(*cmd_args, stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.STDOUT,
-                                                    cwd=self.sandbox_path)
-            yield "```\n"
             while True:
                 line_bytes = await proc.stdout.readline()
                 if not line_bytes:
                     break
                 yield line_bytes.decode("UTF-8", errors="replace")
-            if proc and proc.returncode is None:
-                proc.terminate()
-                await proc.wait()
-            yield "\n```"
+        return_code = await proc.wait()
+        yield "\n```"
+        yield f"\nProcess exited with code {return_code}."
