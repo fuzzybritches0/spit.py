@@ -11,12 +11,6 @@ class Code(VerticalScroll):
         self.app.refresh_bindings()
         self.code = None
 
-    async def update(self, source: str) -> None:
-        await self.children[0].update(source)
-
-    async def append(self, part: str) -> None:
-        await self.children[0].append(part)
-
     def extract_code(self) -> None:
         code = self.children[0].source.strip()
         code = code.split("\n")
@@ -48,4 +42,6 @@ class Code(VerticalScroll):
     async def on_mount(self) -> None:
         self.classes = "code-listing-" + self.parent.parent.message["role"]
         await self.mount(Markdown())
+        self.update = self.children[0].update
+        self.append = self.children[0].append
         self.parent.target = self
