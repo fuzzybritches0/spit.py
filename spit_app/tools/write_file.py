@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-from pathlib import Path
 
 NAME = __file__.split("/")[-1][:-3]
 
@@ -35,16 +34,15 @@ def call(app, arguments: dict, chat_id) -> str:
     location = arguments["path"].replace("..", "")
     if not location == arguments["path"]:
         return "ERROR: location not allowed!"
-    location = location.split("/")
-    file = location[-1]
-    location = "/".join(location[:-1])
-    if not location:
-        return "ERROR: location not valid!"
-    location = app.settings.path["sandbox"] / location
-    Path(location).mkdir(parents=True, exist_ok=True)
-    try:
-        with open(location / file, "w") as f:
-            f.write(arguments["content"])
-    except Exception as exception:
-        return f"ERROR:\n\n{type(exception).__name__}: {exception}"
+    file = location.split("/")[-1]
+    location = location.split("/")[:-1]
+    if location:
+        location = "/".join(location)
+        location = app.settings.path["sandbox"] / location.lstrip("/")
+        location.mkdir(parents=True, exist_ok=True)
+        file = location / file
+    else:
+        file = app.settings.path["sandbox"] / file
+    with open(file, "w") as f:
+        f.write(arguments["content"])
     return f"file {arguments['path']} saved."
