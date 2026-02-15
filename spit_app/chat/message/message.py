@@ -2,6 +2,7 @@ import json
 from textual.widgets import Markdown
 from textual.containers import VerticalScroll
 from .process import Process
+from .tool_calls import ToolCalls
 
 class Message(VerticalScroll):
     BINDINGS = [
@@ -21,83 +22,65 @@ class Message(VerticalScroll):
         self.role = self.message["role"]
         self.classes = "message-container-" + self.role
         self.id = "message-id-" + str(len(self.chat.chat_view.children))
-        self.done_reasoning = False
-        self.arguments = ""
+        self.tc = ToolCalls(self)
+        self.pr = {}
+        self.processes = ["reasoning", "content", "tool_calls"]
+        self.current_process = None
+        self.finish_process = None
 
-    def tool_call_arguments(self, arguments: str) -> str:
-        ret = ""
-        if arguments.endswith("}"):
-            arguments += ""
-        elif (len(arguments) - len(arguments.replace('"', ""))) % 2 == 1:
-            arguments += '"}'
-        elif arguments.endswith(":"):
-            arguments += '""}'
-        elif arguments.endswith('"'):
-            arguments += "}"
-        try:
-            arguments = json.loads(arguments)
-        except:
-            return self.arguments
-        for argument in arguments.keys():
-            ret +=f"\n    - {argument}:"
-            if arguments[argument]:
-                if type(arguments[argument]) is str and "\n" in arguments[argument]:
-                    ret += f"\n```\n{arguments[argument]}\n```"
-                else:
-                    ret += f" `{arguments[argument]}`"
-        self.arguments = ret
-        return ret
-
-    def format_tool_calls(self) -> str:
-        tool_calls = "## TOOL CALLS\n"
-        for tool_call in self.message["tool_calls"]:
-            tool_calls += f"\n- function: `{tool_call['function']['name']}`\n  - arguments:\n"
-            tool_calls += self.tool_call_arguments(tool_call["function"]["arguments"]) + "\n\n---"
-        return tool_calls[:-5]
-
-    async def update_status(self, status: str) -> None:
-        if self.done_reasoning:
+    async def update_status(self) -> None:
+        if not self.current_process:
             return None
+        if self.current_process == "reasoning":
+            status = "Thinking"
+        else:
+            status = ""
         if not self.status.source == status:
             await self.status.update(status)
-        if not status:
-            self.done_reasoning = True
+
+    def get_current_process(self) -> None:
+        old_process = self.current_process
+        for process in self.processes:
+            if process in self.message and self.message[process]:
+                self.current_process = process
+        if not old_process == self.current_process:
+            self.finish_process = old_process
+
+    def get_update(self, process: str) -> tuple:
+        if process in self.message and self.message[process]:
+            if process == "tool_calls":
+                self.tc.format_tool_calls()
+                return self.pr["tool_calls"], self.tc.parsed_tool_calls
+            else:
+                return self.pr[process], self.message[process]
+        else:
+            return None, None
 
     async def reset(self) -> None:
-       await self.reasoning.reset()
-       await self.content.reset()
-       await self.tool_calls.reset()
-       await self.process()
-       await self.finish()
+        await self.pr["reasoning"].reset()
+        await self.pr["content"].reset()
+        await self.pr["tool_calls"].reset()
+        self.current_process = None
+        self.finish_process = None
+        self.tc = ToolCalls(self)
+        await self.finish()
 
     async def finish(self) -> None:
-        await self.update_status("")
-        if "reasoning" in self.message:
-            await self.reasoning.finish(self.message["reasoning"] + "\n\n---")
-        if "content" in self.message:
-            await self.content.finish(self.message["content"])
-        if "tool_calls" in self.message:
-            await self.tool_calls.process(self.format_tool_calls())
-            await self.tool_calls.finish(self.format_tool_calls())
+        await self.status.update("")
+        for process in self.processes:
+            proc, update = self.get_update(process)
+            if proc:
+                await proc.finish(update)
 
     async def process(self) -> None:
-        if "reasoning" in self.message:
-            await self.update_status("Thinking...")
-            await self.reasoning.process(self.message["reasoning"])
-        if "content" in self.message:
-            if "reasoning" in self.message and self.message["reasoning"]:
-                await self.reasoning.finish(self.message["reasoning"])
-            if self.message["content"]:
-                await self.update_status("")
-            await self.content.process(self.message["content"])
-        if "tool_calls" in self.message:
-            if "reasoning" in self.message and self.message["reasoning"]:
-                await self.reasoning.finish(self.message["reasoning"])
-            if self.message["content"]:
-                await self.content.finish(self.message["content"])
-            if self.message["tool_calls"]:
-                await self.update_status("")
-            await self.tool_calls.process(self.format_tool_calls())
+        await self.update_status()
+        self.get_current_process()
+        if self.finish_process:
+            proc, update = self.get_update(self.finish_process)
+            await proc.finish(update)
+            self.finish_process = None
+        proc, update = self.get_update(self.current_process)
+        await proc.process(update)
 
     def action_show_cot(self) -> None:
         self.reasoning.display = True
@@ -177,12 +160,12 @@ class Message(VerticalScroll):
         self.status = Markdown()
         await self.mount(self.status)
         await self.status.update("Processing...")
-        self.reasoning = Process(False)
-        await self.mount(self.reasoning)
-        self.content = Process()
-        await self.mount(self.content)
-        self.tool_calls = Process()
-        await self.mount(self.tool_calls)
+        self.pr["reasoning"] = Process(False)
+        await self.mount(self.pr["reasoning"])
+        self.pr["content"] = Process()
+        await self.mount(self.pr["content"])
+        self.pr["tool_calls"] = Process()
+        await self.mount(self.pr["tool_calls"])
 
     async def on_mount(self) -> None:
         await self.prepare()
