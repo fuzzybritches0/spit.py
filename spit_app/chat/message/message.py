@@ -32,7 +32,7 @@ class Message(VerticalScroll):
         if not self.current_process:
             return None
         if self.current_process == "reasoning":
-            status = "Thinking"
+            status = "Thinking..."
         else:
             status = ""
         if not self.status.source == status:
@@ -69,6 +69,8 @@ class Message(VerticalScroll):
         await self.status.update("")
         for process in self.processes:
             proc, update = self.get_update(process)
+            if proc is self.pr["reasoning"] and update:
+                update += "\n\n---"
             if proc:
                 await proc.finish(update)
 
@@ -77,19 +79,19 @@ class Message(VerticalScroll):
         self.get_current_process()
         if self.finish_process:
             proc, update = self.get_update(self.finish_process)
+            if proc is self.pr["reasoning"] and update:
+                update += "\n\n---"
             await proc.finish(update)
             self.finish_process = None
         proc, update = self.get_update(self.current_process)
         await proc.process(update)
 
     def action_show_cot(self) -> None:
-        self.reasoning.display = True
-        self.reasoning.disabled = False
+        self.pr["reasoning"].display = True
         self.app.refresh_bindings()
 
     def action_hide_cot(self) -> None:
-        self.reasoning.display = False
-        self.reasoning.disabled = True
+        self.pr["reasoning"].display = False
         self.app.refresh_bindings()
 
     def action_edit_content(self) -> None:
@@ -127,18 +129,19 @@ class Message(VerticalScroll):
                      parameters: tuple[object, ...]) -> bool | None:
         if not self is self.app.focused:
             return False
-        if self.chat.is_working() or self.chat.text_area.is_edit:
+        if ((self.chat.is_working() or self.chat.text_area.is_edit) and
+            not (action == "show_cot" or action == "hide_cot")):
             return False
         match action:
             case "show_cot":
                 if not self.has_reasoning():
                     return False
-                if self.reasoning.display:
+                if self.pr["reasoning"].display:
                     return False
             case "hide_cot":
                 if not self.has_reasoning():
                     return False
-                if not self.reasoning.display:
+                if not self.pr["reasoning"].display:
                     return False
             case "edit_content":
                 if not self.message["content"]:
