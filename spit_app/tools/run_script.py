@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import os
 import shutil
-import asyncio
 from time import time
 from spit_app.tools.run.run import Run
 from spit_app.tool_call import load_user_settings
@@ -38,7 +37,7 @@ PROMPT_INST = "The following interpreters are allowed: [allowed]. Timeout is set
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" },
-    "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox"},
+    "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)"},
     "timeout": { "value": MAX_SECONDS, "stype": "uinteger", "empty": False, "desc": "Timeout (0 = no timeout)"},
     "interpreters": {"value": ALLOWED, "stype": "text", "empty": False, "desc": "Allowed interpreters"}
 }
@@ -48,18 +47,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
     if not shutil.which(arguments["interpreter"]):
         yield f"ERROR: {arguments['interpreter']} not found! Give user instructions to install!\n"
         return
-    id = "." + str(time()) + chat_id
-    with open(app.settings.path["sandbox"] / id, "w") as f:
-        f.write(arguments["script"])
-    run = Run(app.settings.path["sandbox"], [arguments["interpreter"], f"./{id}"],
+    run = Run(app.settings.path["sandbox"], chat_id, arguments["interpreter"], arguments["script"],
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
-    replace = f"./{id}"
-    try:
-        async for line in run.run():
-            if replace in line:
-                line = line.replace(replace, "script")
-            yield line
-    except:
-        raise
-    finally:
-        os.remove(app.settings.path["sandbox"] / id)
+    async for line in run.run():
+        yield line
