@@ -27,7 +27,7 @@ class Run:
         return args
 
     async def run(self):
-        if not shutil.which("bwrap"):
+        if self.sandbox and not shutil.which("bwrap"):
             yield "ERROR: `bwrap` not found! Give user instructions to install `bubblewrap`!"
             return
         cmd_args = self.cmd_args
