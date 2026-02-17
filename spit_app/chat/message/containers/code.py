@@ -17,11 +17,18 @@ class Code(VerticalScroll):
         self.first_line = code[0].strip()
         self.last_line = code[-1].strip()
         code = code[1:-1]
-        offset = len(code[0]) - len(code[0].lstrip(" "))
-        offset_code = []
-        for code_line in code:
-            offset_code.append(code_line[offset:])
-        self.code = "\n".join(offset_code)
+        eff_offset = len(code[0]) - len(code[0].lstrip(" "))
+        if eff_offset > 0:
+            for line in code:
+                offset = len(line) - len(line.lstrip(" "))
+                if line and offset < eff_offset:
+                    eff_offset = offset
+            offset_code = []
+            for code_line in code:
+                offset_code.append(code_line[eff_offset:])
+            self.code = "\n".join(offset_code)
+        else:
+            self.code = "\n".join(code)
 
     async def update_code(self) -> None:
         if not self.code:
