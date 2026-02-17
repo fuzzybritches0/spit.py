@@ -6,10 +6,11 @@ import asyncio
 import signal
 from pathlib import Path
 
-class Sandbox:
-    def __init__(self, sandbox_path: Path, cmd_args: list, timeout: int = 0):
+class Run:
+    def __init__(self, sandbox_path: Path, cmd_args: list, sandbox: bool = True, timeout: int = 0):
         self.sandbox_path = sandbox_path
         self.cmd_args = cmd_args
+        self.sandbox = sandbox
         self.timeout = timeout
 
     def bwrap_args(self) -> list:
@@ -25,11 +26,13 @@ class Sandbox:
                  "--dev", "/dev", "--tmpfs", "/tmp", "--new-session"]
         return args
 
-    async def run_sandbox(self):
+    async def run(self):
         if not shutil.which("bwrap"):
             yield "ERROR: `bwrap` not found! Give user instructions to install `bubblewrap`!"
             return
-        cmd_args = self.bwrap_args() + self.cmd_args
+        cmd_args = self.cmd_args
+        if self.sandbox:
+            cmd_args = self.bwrap_args() + self.cmd_args
         proc = await asyncio.create_subprocess_exec(*cmd_args, stdout=asyncio.subprocess.PIPE,
                                                 stderr=asyncio.subprocess.STDOUT,
                                                 cwd=self.sandbox_path, start_new_session=True)
