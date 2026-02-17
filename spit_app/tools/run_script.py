@@ -57,7 +57,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
     try:
         async for line in run.run():
             if replace in line:
-                line = line.replace(replace, "./script")
+                line = line.replace(replace, "script")
             yield line
     except:
         raise
