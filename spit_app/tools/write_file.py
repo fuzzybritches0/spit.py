@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
+from spit_app.tools.run.run import Run
+from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
 
@@ -25,24 +27,42 @@ DESC = {
 }
 
 PROMPT = "Use this function to save any type of text content in a file. Any sub-directories that do not exist will be created for you."
+SANDBOX = True
 
 SETTINGS = {
-    "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
+    "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" },
+    "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)"}
+}
+
+SCRIPT = """
+import sys
+from pathlib import Path
+
+file = path.split("/")[-1]
+location = path.split("/")[:-1]
+if location:
+    location = Path("/".join(location))
+    location.mkdir(parents=True, exist_ok=True)
+    file = location / file
+try:
+    with open(file, "w") as f:
+        f.write(content)
+        print(f"{file} saved.")
+except Exception as exception:
+    print(f"ERROR: {type(exception).__name__}: {exception}")
+    sys.exit(1)
+"""
+
+EXEC = {
+    "script": SCRIPT,
+    "interpreter": "python3"
 }
     
-def call(app, arguments: dict, chat_id) -> str:
-    location = arguments["path"].replace("..", "")
-    if not location == arguments["path"]:
-        return "ERROR: location not allowed!"
-    file = location.split("/")[-1]
-    location = location.split("/")[:-1]
-    if location:
-        location = "/".join(location)
-        location = app.settings.path["sandbox"] / location.lstrip("/")
-        location.mkdir(parents=True, exist_ok=True)
-        file = location / file
-    else:
-        file = app.settings.path["sandbox"] / file
-    with open(file, "w") as f:
-        f.write(arguments["content"])
-    return f"file {arguments['path']} saved."
+async def call_async_generator(app, arguments: dict, chat_id) -> str:
+    load_user_settings(app, NAME, SETTINGS)
+    args = f"path = \"{arguments['path']}\"\ncontent = \"{arguments['content']}\""
+    script = args + EXEC["script"]
+    run = Run(app.settings.path["sandbox"], chat_id, EXEC["interpreter"], script,
+              SETTINGS["sandbox"]["value"], 0)
+    async for line in run.run():
+        yield line
