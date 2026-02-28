@@ -89,9 +89,9 @@ class ValidationMixIn:
                 return (False, "Must not start or end with `-`!")
             if value.startswith(".") or value.endswith("."):
                 return (False, "Must not start or end with `.`!")
-            return True
+            return (True, None)
         else:
-            return True
+            return (True, None)
 
     def is_valid_selection(self, value: str) -> tuple:
         if value:
