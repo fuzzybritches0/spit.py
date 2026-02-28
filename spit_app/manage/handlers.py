@@ -42,23 +42,9 @@ class HandlersMixIn:
                 break
 
     async def on_input_changed(self, event: Input.Changed) -> None:
-        content = ""
         if not event.validation_result.is_valid:
-            vals = event.validation_result.failure_descriptions
-            for val in vals:
-                content += f"- {val}\n"
-        await self.query_one(f"#val-{event.control.id}").update(content)
+            await self.update_val_results_input(event.control.id, event.validation_result.failure_descriptions)
 
     async def on_text_area_changed(self, event: TextArea.Changed) -> None:
-        content = ""
         id = event.control.id
-        if "empty" in self.manage[self.fid(id)] and not self.manage[self.fid(id)]["empty"]:
-            if not event.control.text:
-                content += "- Must not be empty!\n"
-        if hasattr(self, f"valid_setting_{id}"):
-            valid, failed = getattr(self, f"valid_setting_{id}")(event.control.text)
-            if failed:
-                content += f"- {failed}"
-        if content:
-            self.query_one(f"#{id}").classes = "text-area-invalid"
-        await self.query_one(f"#val-{id}").update(content)
+        await self.update_val_results_text(id, self.fid(id), event.control.text)
