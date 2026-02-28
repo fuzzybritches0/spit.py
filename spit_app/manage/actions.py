@@ -13,7 +13,7 @@ class ActionsMixIn:
         await self.after_action("delete")
 
     async def action_save(self) -> None:
-        if self.validate_values_edit():
+        if await self.validate_values_edit():
             self.store_values()
             self.save()
             await self.after_action("save")
