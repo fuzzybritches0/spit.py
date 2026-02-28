@@ -61,4 +61,4 @@ class HandlersMixIn:
                 content += f"- {failed}"
         if content:
             self.query_one(f"#{id}").classes = "text-area-invalid"
-        self.query_one(f"#val-{id}").update(content)
+        await self.query_one(f"#val-{id}").update(content)
