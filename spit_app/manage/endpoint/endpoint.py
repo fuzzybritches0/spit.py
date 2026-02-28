@@ -44,5 +44,6 @@ class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Mana
         else:
             self.manage[setting] = { "stype": stype, "desc": desc , "options": sarray}
 
-    def remove_custom_setting(self, setting: str) -> None:
+    async def remove_custom_setting(self, setting: str) -> None:
         del self.manage[setting]
+        await self.query_one(f"#val-{setting}").remove()
