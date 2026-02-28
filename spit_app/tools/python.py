@@ -65,7 +65,7 @@ class Validators:
         failed = []
         _builtins = value.split(",")
         for builtin in _builtins:
-            if not hasattr(builtins, builtin.strip()):
+            if builtin.strip() and not hasattr(builtins, builtin.strip()):
                 failed.append(f"`{builtin}`")
                 valid = False
         if not valid:
@@ -77,7 +77,7 @@ class Validators:
         failed = []
         _modules = value.split(",")
         for module in _modules:
-            if not importlib.util.find_spec(module.strip(), None):
+            if module.strip() and not importlib.util.find_spec(module.strip(), None):
                 failed.append(f"`{module}`")
                 valid = False
         if not valid:
@@ -91,7 +91,9 @@ def _refresh_whitelists_from_settings() -> None:
     _modules = SETTINGS["modules"]["value"]
     _modules = _modules.split(",")
     for module in _modules:
-        _MODULES.append(module.strip())
+        module = module.strip()
+        if module:
+            _MODULES.append(module)
 
     _builtins = SETTINGS["builtins"]["value"]
     _builtins = _builtins.split(",")
