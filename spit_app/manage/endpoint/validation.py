@@ -24,8 +24,6 @@ class ValidationMixIn:
         return (True, None)
 
     def validate_add_setting(self) -> tuple:
-        valid = True
-        failed = []
         setting = self.query_one("#new-setting")
         desc = self.query_one("#new-description")
         sel = None
@@ -35,13 +33,10 @@ class ValidationMixIn:
         setting.validate(setting.value)
         desc.validate(desc.value)
         if not setting.is_valid:
-            valid = False
-            failed += ["- `Setting`: valid: (a-z0-9_-), start with (a-z), end with (a-z0-9), be unique!"]
+            return False
         if not desc.is_valid:
-            valid = False
-            failed += ["- `Description`: must not be empty!"]
+            return False
         if sel:
             if not sel.is_valid:
-                valid = False
-                failed +=["- `Select values`: valid: (a-z0-9_-), start with (a-z), end with (a-z0-9), be unique!"]
-        return (valid, failed)
+                return False
+        return True
