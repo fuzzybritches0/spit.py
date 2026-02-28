@@ -112,24 +112,43 @@ class ValidationMixIn:
         else:
             return (False, "No selections!")
 
-    def validate_values_edit(self) -> bool:
+    async def validate_values_edit(self) -> bool:
         valid = True
         for setting in self.manage.keys():
             stype = self.manage[setting]["stype"]
-            id = setting.replace(".", "-")
+            id = self.rid(setting)
             if not stype == "boolean" and not stype.startswith("select") and not stype == "text":
                 inp = self.query_one(f"#{id}")
-                inp.validate(inp.value)
+                validation_result = inp.validate(inp.value)
                 if not inp.is_valid:
                     valid = False
+                    await self.update_val_results_input(id, validation_result.failure_descriptions)
             elif stype == "text":
-                if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
-                    if not self.query_one(f"#{id}").text:
-                        self.query_one(f"#{id}").classes = "text-area-invalid"
-                        valid = False
-                if hasattr(self, f"valid_setting_{setting}"):
-                    valid, failure = getattr(self, f"valid_setting_{setting}")(self.query_one(f"#{id}").text)
-                    if not valid:
-                        self.query_one(f"#{id}").classes = "text-area-invalid"
-                        valid = False
+                val = await self.update_val_results_text(id, setting, self.query_one(f"#{id}").text)
+                if not val:
+                    valid = False
         return valid
+
+    async def update_val_results_input(self, id: str, failure_descriptions: list) -> None:
+        content = ""
+        for failure in failure_descriptions:
+            content += f"- {failure}\n"
+        await self.query_one(f"#val-{id}").update(content)
+
+    async def update_val_results_text(self, id: str, setting: str, text: str) -> bool:
+        val = True
+        content = ""
+        if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
+            if not text:
+                val = False
+                content += "- Must not be empty!\n"
+        if hasattr(self, f"valid_setting_{setting}"):
+            valid, failed = getattr(self, f"valid_setting_{setting}")(text)
+            if failed:
+                val = False
+                content += f"- {failed}"
+        self.query_one(f"#{id}").classes = "text-area"
+        if content:
+            self.query_one(f"#{id}").classes = "text-area-invalid"
+        await self.query_one(f"#val-{id}").update(content)
+        return val
