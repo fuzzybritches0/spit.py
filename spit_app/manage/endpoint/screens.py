@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.validation import Function
-from textual.widgets import Input, TextArea, Switch, Label, Button, OptionList, Select, Rule
+from spit_app.manage.validation import Function
+from textual.widgets import Input, TextArea, Switch, Label, Button, OptionList, Select, Rule, Markdown
 from textual.widgets.option_list import Option
 from textual.containers import Horizontal
 
@@ -10,12 +10,15 @@ class ScreensMixIn:
         valsetting = [Function(self.is_not_empty), Function(self.is_unique_custom),
                       Function(self.is_valid_setting)]
         await self.mount(Input(id="new-setting", validators=valsetting, max_length=128))
+        await self.mount(Markdown(id=f"val-new-setting"))
         await self.mount(Label(f"Description for {stype} value:"))
         await self.mount(Input(id="new-description", validators=[Function(self.is_not_empty)]))
+        await self.mount(Markdown(id=f"val-new-description"))
         if stype.startswith("select"):
             await self.mount(Label("Select values (separate with ','):"))
             valselect = [Function(self.is_not_empty), Function(self.is_valid_selection)]
             await self.mount(Input(id="new-select-values", validators=valselect))
+            await self.mount(Markdown(id=f"val-new-select-values"))
         await self.mount(Button("Add", id=f"add-setting"))
 
     async def mount_settings_add_custom(self, stype) -> None:
