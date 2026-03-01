@@ -3,7 +3,7 @@ from textual.widgets import Select
 
 class ActionsMixIn:
     async def action_add_setting(self) -> None:
-        if self.validate_add_setting():
+        if await self.validate_add_setting():
             setting = self.query_one("#new-setting").value
             stype = self.query_one("#custom-setting-select-add").value
             desc = self.query_one("#new-description").value
