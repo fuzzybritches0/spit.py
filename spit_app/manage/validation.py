@@ -120,9 +120,9 @@ class ValidationMixIn:
             if not stype == "boolean" and not stype.startswith("select") and not stype == "text":
                 inp = self.query_one(f"#{id}")
                 validation_result = inp.validate(inp.value)
+                await self.update_val_results_input(id, validation_result.failure_descriptions)
                 if not inp.is_valid:
                     valid = False
-                    await self.update_val_results_input(id, validation_result.failure_descriptions)
             elif stype == "text":
                 val = await self.update_val_results_text(id, setting, self.query_one(f"#{id}").text)
                 if not val:
