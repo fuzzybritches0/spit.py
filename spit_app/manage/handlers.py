@@ -48,8 +48,7 @@ class HandlersMixIn:
                 break
 
     async def on_input_changed(self, event: Input.Changed) -> None:
-        if not event.validation_result.is_valid:
-            await self.update_val_results_input(event.control.id, event.validation_result.failure_descriptions)
+        await self.update_val_results_input(event.control.id, event.validation_result.failure_descriptions)
 
     async def on_text_area_changed(self, event: TextArea.Changed) -> None:
         id = event.control.id
