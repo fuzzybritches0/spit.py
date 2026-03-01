@@ -7,6 +7,10 @@ class HandlersMixIn:
         self.settings.theme = self.theme
         self.settings.save()
 
+    def on_app_focus(self):
+        if self.focused_container:
+            self.focused_container.focus()
+
     async def on_ready(self) -> None:
         if self.settings.active_chat:
             active = self.settings.active_chat
