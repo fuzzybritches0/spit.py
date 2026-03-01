@@ -23,15 +23,18 @@ class ValidationMixIn:
             return (False, "Must be unique!")
         return (True, None)
 
-    def validate_add_setting(self) -> tuple:
+    async def validate_add_setting(self) -> tuple:
         setting = self.query_one("#new-setting")
         desc = self.query_one("#new-description")
         sel = None
         if self.query_one("#custom-setting-select-add").value.startswith("select"):
             sel = self.query_one("#new-select-values")
-            sel.validate(sel.value)
-        setting.validate(setting.value)
-        desc.validate(desc.value)
+            val_result = sel.validate(sel.value)
+            await self.update_val_results_input("new-select-values", val_result.failure_descriptions)
+        val_result = setting.validate(setting.value)
+        await self.update_val_results_input("new-setting", val_result.failure_descriptions)
+        val_result = desc.validate(desc.value)
+        await self.update_val_results_input("new-description", val_result.failure_descriptions)
         if not setting.is_valid:
             return False
         if not desc.is_valid:
