@@ -34,7 +34,7 @@ DESC = {
 MAX_SECONDS = 10
 MAX_MEMORY_MB = 100
 MODULES = "math, random, json, re, datetime, time, itertools, functools, operator, collections, heapq, bisect, enum, typing, string, numbers, pprint, copy, uuid, base64, binascii, csv, struct, textwrap, urllib.parse"
-BUILTINS = "abs, all, any, bool, bytes, chr, complex, dict, divmod, enumerate, filter, float, frozenset, hash, int, isinstance, issubclass, iter, len, list, map, max, min, next, object, ord, pow, print, range, repr, reversed, round, set, slice, sorted, str, sum, tuple, type, zip, __build_class__, property, staticmethod, classmethod, BaseException, Exception, RuntimeError, ValueError"
+BUILTINS = "abs, all, any, bool, bytes, chr, complex, dict, divmod, enumerate, filter, float, frozenset, hash, int, isinstance, issubclass, iter, len, list, map, max, min, next, object, ord, pow, print, range, repr, reversed, round, set, slice, sorted, str, sum, tuple, type, zip, __build_class__, property, staticmethod, classmethod, BaseException, Exception, RuntimeError, ValueError, ZeroDivisionError"
 PROMPT = "Among other things, you can use this function to aid your reasoning, write proofs, or avoid arithmetic mistakes."
 PROMPT_INST= "You can import the following modules: [modules].\nYou are restricted to the following builtins: [builtins].\nYour script may run for [timeout] seconds.\nYour script may not exceed [max_mem_mb] MB of memory usage."
 
