@@ -81,6 +81,7 @@ class Chat(Vertical):
         return True
 
     async def on_mount(self) -> None:
+        self.app.focused_container = self
         if not self.messages:
             self.text_area.focus()
         else:
