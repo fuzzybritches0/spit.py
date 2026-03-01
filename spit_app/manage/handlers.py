@@ -11,6 +11,7 @@ class HandlersMixIn:
                 self.children[1].focus()
 
     async def on_mount(self) -> None:
+        self.app.focused_container = self
         if self.new_manage and hasattr(self, "manage"):
             await self.edit_manage_screen()
         else:
