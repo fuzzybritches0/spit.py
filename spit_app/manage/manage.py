@@ -19,6 +19,7 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.settings = self.app.settings
         self.path = self.app.settings.path
         self.new_manage = new_manage
+        self.focused_el = None
 
     def fid(self, id) -> str:
         return id.replace("-", ".")
