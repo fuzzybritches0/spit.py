@@ -22,6 +22,7 @@ class ChatView(VerticalScroll):
     async def callback(self, signal: int) -> None:
         if signal == 0:
             self.chat.write_chat_history()
+            self.chat.undo.append_undo("append", self.chat.messages[-1])
             await self.children[-1].finish()
         elif signal == 1:
             await self.mount(Message(self.chat, self.messages[-1]))

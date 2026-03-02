@@ -60,10 +60,8 @@ class Work:
         if "tool_calls" in self.messages[-1]:
             for tool_call in self.messages[-1]["tool_calls"]:
                 await self.app.tool_call.call(self.messages, tool_call, self.chat.id, self.chat_view.callback)
-                self.chat.undo.append_undo("append", self.chat.messages[-1])
         try:
             await self.endpoint.stream()
-            self.chat.undo.append_undo("append", self.chat.messages[-1])
         except Exception as exception:
             self.app.exception = exception
             del self.messages[-1]
