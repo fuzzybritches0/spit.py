@@ -28,12 +28,6 @@ class ChatView(VerticalScroll):
         elif signal == 2:
             await self.children[-1].process()
 
-    def focus_message(self, index: int) -> None:
-        if index == -1 and not self.children:
-            return None
-        self.children[index].focus()
-        self.focused_message = self.children[index]
-
     async def action_continue(self) -> None:
         if not await self.chat.settings_exist():
             return None
