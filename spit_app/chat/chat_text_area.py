@@ -44,7 +44,9 @@ class ChatTextArea(TextArea):
             return None
         if (self.text and
             (not self.messages or self.messages[-1]["role"] == "assistant")):
-            self.chat.save_message({"role": "user", "content": self.text})
+            self.messages.append({"role": "user", "content": self.text})
+            self.chat.undo.append_undo("append", self.messages[-1])
+            self.chat.write_chat_history()
             await self.chat_view.mount(Message(self.chat, self.messages[-1]))
             await self.chat_view.children[-1].finish()
             self.chat_view.focus()

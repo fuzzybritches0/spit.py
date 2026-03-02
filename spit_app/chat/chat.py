@@ -59,11 +59,6 @@ class Chat(Vertical):
         content["messages"] = self.messages
         return self.app.write_json(f"chats/{self.id}.json", content)
     
-    def save_message(self, umessage: dict) -> None:
-        self.messages.append(umessage)
-        self.undo.append_undo("append", umessage)
-        self.write_chat_history()
-
     def action_change_focus(self) -> None:
         self.text_area.focus()
 
