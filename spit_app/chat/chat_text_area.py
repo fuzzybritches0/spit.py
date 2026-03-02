@@ -2,6 +2,7 @@
 import json
 from textual.widgets import TextArea
 from .work import Work
+from .message.message import Message
 
 class ChatTextArea(TextArea):
     BINDINGS = [
@@ -44,7 +45,8 @@ class ChatTextArea(TextArea):
         if (self.text and
             (not self.messages or self.messages[-1]["role"] == "assistant")):
             self.chat.save_message({"role": "user", "content": self.text})
-            await self.chat_view.mount_message()
+            await self.chat_view.mount(Message(self.chat, self.messages[-1]))
+            await self.chat_view.children[-1].finish()
             self.chat_view.focus()
             self.chat_view.scroll_end(animate=False)
             self.text = ""

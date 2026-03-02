@@ -24,7 +24,7 @@ class ChatView(VerticalScroll):
             self.chat.write_chat_history()
             await self.children[-1].finish()
         elif signal == 1:
-            await self.mount_message(True)
+            await self.mount(Message(self.chat, self.messages[-1]))
         elif signal == 2:
             await self.children[-1].process()
 
@@ -33,12 +33,6 @@ class ChatView(VerticalScroll):
             return None
         self.children[index].focus()
         self.focused_message = self.children[index]
-
-    async def mount_message(self, new: bool = False) -> None:
-        await self.mount(Message(self.chat, self.messages[-1]))
-        if not new:
-            await self.children[-1].process()
-            await self.children[-1].finish()
 
     async def action_continue(self) -> None:
         if not await self.chat.settings_exist():
