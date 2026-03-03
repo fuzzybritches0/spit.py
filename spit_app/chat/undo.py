@@ -37,9 +37,9 @@ class Undo:
             operation, message, index = self.undo_list[self.undo_index]
             if operation == "remove":
                 await self._append(message)
-            if operation == "append":
+            elif operation == "append":
                 await self._remove()
-            if operation == "change":
+            elif operation == "change":
                 await self._change(operation, message, index)
             self.chat.write_chat_history()
             self.undo_index-=1
@@ -51,9 +51,9 @@ class Undo:
             operation, message, index = self.undo_list[self.undo_index]
             if operation == "remove":
                 await self._remove()
-            if operation == "append":
+            elif operation == "append":
                 await self._append(message)
-            if operation == "change":
+            elif operation == "change":
                 await self._change(operation, message, index)
             self.chat.write_chat_history()
             self.chat.refresh_bindings()
