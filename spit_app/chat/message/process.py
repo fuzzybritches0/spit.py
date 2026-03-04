@@ -37,12 +37,13 @@ class Process(Vertical):
         self.pos = pos
 
     async def finish(self, content) -> None:
-        if not self.finished:
-            if not self.target:
-                await self.mount(Part())
-            await self.finish_content(content)
-            self.target = None
-            self.finished = True
+        if self.finished:
+            return None
+        if not self.target:
+            await self.mount(Part())
+        await self.finish_content(content)
+        self.target = None
+        self.finished = True
 
     async def process(self, content) -> None:
         if not self.target:
