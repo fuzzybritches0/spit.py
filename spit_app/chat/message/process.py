@@ -22,6 +22,8 @@ class Process(Vertical):
         self.reset_state()
 
     async def process_content(self, content) -> None:
+        if not self.display:
+            return None
         self.pp.part = ""
         if len(content)-self.pos-self.pp.bsize > 0:
             for pos in range(self.pos, len(content) - self.pp.bsize):
