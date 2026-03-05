@@ -79,14 +79,18 @@ async def code_fence(self, buffer: str, pattern: str) -> None:
         self.done_code_fence = False
 
 async def code_block_start_end(self, pattern: str) -> None:
+    _complete = complete(self)[:-len(pattern)+1]
     if not self.cur_code_fence:
-        _complete = complete(self)[:-len(pattern)+1]
         if not _complete or _complete[-1] == "\n":
             await code_block_start(self, pattern)
         elif _complete.rstrip(" ").endswith("\n") or _complete.rstrip(" ") == "":
             await code_block_start(self, pattern)
+        else:
+            self.proc_code_fence = ""
+            self.done_code_fence = False
     elif self.cur_code_fence == pattern:
-        await code_block_end(self, pattern)
+        if _complete.rstrip(f" {pattern[1]}").endswith("\n") and self.pp_next == "\n":
+            await code_block_end(self, pattern)
 
 async def code_block_start(self, pattern: str) -> None:
     await self.message.target.stream.write(self.part)
