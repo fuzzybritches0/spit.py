@@ -2,18 +2,19 @@ import inspect
 from .pattern_methods import *
 
 patterns = [
-        #PATTERN     ESCAPE  CODELI CODEBL ROSTER LATEX  METHOD ARGS...
-        ("\\",       None,   False, False, None,  None,  escape),
-        ("\n|",      False,  False, False, None,  False, is_roster),
-        ("`",        False,  None,  None,  False, False, code_fence),
-        ("~",        False,  None,  None,  False, False, code_fence),
-        ("(",        True,   False, False, False, False, latex_start),
-        (")",        True,   False, False, False, True,  latex_end, "("),
-        ("[",        True,   False, False, False, False, latex_start),
-        ("]",        True,   False, False, False, True,  latex_end, "[", True),
-        ("$$",       False,  False, False, False, None,  latex_start_end, True),
-        ("$",        False,  False, False, False, None,  latex_start_end),
-        ("\n\n",     False,  False, False, None,  False, end_roster)
+        #PATTERN ESCAPE CODELI CODEBL ROSTER LATEX  METHOD ARGS...
+        ("\\",   None,  False, False, None,  None,  escape),
+        ("\n|",  False, False, False, None,  False, is_roster),
+        ("`",    False, None,  None,  False, False, code_fence),
+        ("~",    False, None,  None,  False, False, code_fence),
+        ('"""',  False, False, True,  False, False, python_code_ignore_fence),
+        ("(",    True,  False, False, False, False, latex_start),
+        (")",    True,  False, False, False, True,  latex_end, "("),
+        ("[",    True,  False, False, False, False, latex_start),
+        ("]",    True,  False, False, False, True,  latex_end, "[", True),
+        ("$$",   False, False, False, False, None,  latex_start_end, True),
+        ("$",    False, False, False, False, None,  latex_start_end),
+        ("\n\n", False, False, False, None,  False, end_roster),
 ]
 
 class PatternProcessing():
@@ -22,6 +23,7 @@ class PatternProcessing():
         self.escaped = False
         self.codelisting = False
         self.codeblock = False
+        self.python_code_ignore_fence = False
         self.cur_code_fence = ""
         self.done_code_fence = False
         self.proc_code_fence = ""
