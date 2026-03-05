@@ -15,6 +15,7 @@ patterns = [
         ("$$",   False, False, False, False, None,  latex_start_end, True),
         ("$",    False, False, False, False, None,  latex_start_end),
         ("\n\n", False, False, False, None,  False, end_roster),
+        ("\n",   False, None,  False, False, False, reset_code_listing)
 ]
 
 class PatternProcessing():

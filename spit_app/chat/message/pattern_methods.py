@@ -120,6 +120,10 @@ def code_listing(self, pattern: str) -> None:
             self.cur_code_fence = ""
             self.codelisting = False
 
+def reset_code_listing(self, buffer: str, pattern: str) -> None:
+    self.cur_code_fence = ""
+    self.codelisting = False
+
 def is_roster(self, buffer: str, pattern: str) -> None:
     self.roster = True
 
