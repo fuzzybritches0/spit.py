@@ -1,6 +1,9 @@
 from textual.widgets import Markdown
 from markdown_it import MarkdownIt
 
+def parser_factory() -> MarkdownIt:
+    return MarkdownIt("gfm-like").disable("code")
+
 class Stream:
     def __init__(self, widget) -> None:
         self.widget = widget
@@ -23,7 +26,7 @@ class Stream:
 
 class Part(Markdown):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(parser_factory=parser_factory)
         self.app.refresh_bindings()
 
     def on_mount(self) -> None:
