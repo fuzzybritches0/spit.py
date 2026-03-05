@@ -51,5 +51,5 @@ class Code(VerticalScroll):
         await self.mount(Markdown())
         self.stream = Markdown.get_stream(self.children[0])
         self.update = self.children[0].update
-        self.append = self.children[0].append
+        self.source = self.children[0].source
         self.parent.target = self
