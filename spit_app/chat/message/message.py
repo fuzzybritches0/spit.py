@@ -119,7 +119,7 @@ class Message(VerticalScroll):
         del self.messages[-1]
         self.chat.write_chat_history()
         if len(self.chat.chat_view.children) > 1:
-            self.chat.chat_view.children[-2].focus()
+            self.chat.chat_view.children[-2].focus(scroll_visible=False)
         await self.remove()
 
     def has_reasoning(self) -> bool:
