@@ -26,14 +26,15 @@ class Process(Vertical):
         if len(content)-self.pos-self.pp.bsize > 0:
             for pos in range(self.pos, len(content) - self.pp.bsize):
                 await self.pp.process_patterns(content[pos:])
-            await self.target.append(self.pp.part)
+            await self.target.stream.write(self.pp.part)
             self.pos=pos+1
 
     async def finish_content(self, content) -> None:
         self.pp.part = ""
         for pos in range(self.pos, len(content)):
             await self.pp.process_patterns(content[pos:])
-        await self.target.append(self.pp.part)
+        await self.target.stream.write(self.pp.part)
+        await self.target.stream.stop()
         self.pos = pos
 
     async def finish(self, content) -> None:
