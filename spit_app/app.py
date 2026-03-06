@@ -58,10 +58,14 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             file = self.path[path[0]] / path[1]
         else:
             file = self.path[path[0]]
+        jcont = json.dumps(content)
         try:
-            file.write_text(json.dumps(content))
+            file.write_text(jcont)
         except Exception as exception:
-            self.exception = exception
+            if type(exception).__name__ in ("OSError", "PermissionError"):
+                self.exception = exception
+            else:
+                raise exception
             return False
         return True
 
@@ -72,8 +76,11 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         else:
             file = self.path[path[0]]
         try:
-            ret = json.loads(file.read_text())
+            text = file.read_text()
         except Exception as exception:
-            self.exception = exception
-            return None
-        return ret
+            if type(exception).__name__ in ("OSError", "PermissionError"):
+                self.exception = exception
+                return None
+            else:
+                raise exception
+        return json.loads(text)
