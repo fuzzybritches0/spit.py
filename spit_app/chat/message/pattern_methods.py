@@ -53,11 +53,6 @@ def python_code_ignore_fence(self, buffer: str, pattern: str) -> None:
 
 async def code_fence(self, buffer: str, pattern: str) -> None:
     if self.python_code_ignore_fence:
-        self.skip_add_part = 1
-        if self.cur_code_fence[0] == "`":
-            self.part += "~"
-        else:
-            self.part += "`"
         return None
     if not self.pp_last == pattern and not self.pp_next == pattern:
         self.proc_code_fence = pattern
