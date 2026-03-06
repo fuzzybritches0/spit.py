@@ -74,6 +74,15 @@ async def code_fence(self, buffer: str, pattern: str) -> None:
             self.proc_code_fence = ""
         self.done_code_fence = False
 
+def escape_fence(self, pattern) -> str:
+    if self.codeblock:
+        return pattern
+    else:
+        ret = ""
+        for char in pattern:
+            ret += f"\\{char}"
+        return ret
+
 async def code_block_start_end(self, pattern: str) -> None:
     _complete = complete(self)
     if (not _complete or _complete[-1] == "\n" or _complete.rstrip(" ") == ""
@@ -92,6 +101,8 @@ async def code_block_start_end(self, pattern: str) -> None:
         else:
             self.code_fences.append(pattern)
             self.part += pattern
+    else:
+        self.part += escape_fence(self, pattern)
 
 def compose_fence(pattern: str) -> str:
     fence = "`" if pattern[0] == "~" else "~"
