@@ -98,13 +98,15 @@ async def code_block_start(self, pattern: str) -> None:
     await self.message.target.stream.write(self.part)
     await self.message.target.stream.stop()
     await self.message.target.update(self.message.target.source[:-len(pattern)])
-    self.part = pattern[1:]
+    self.skip_add_part = 1
+    self.part = "~~~~~"
     await self.message.mount(Code())
 
 async def code_block_end(self, pattern: str) -> None:
+    _complete = complete(self)[:-len(pattern)+1]
     self.skip_add_part = 1
-    await self.message.target.stream.write(self.part+pattern[1])
     await self.message.target.stream.stop()
+    await self.message.target.update(_complete+"\n~~~~~")
     self.part = ""
     await self.message.target.update_code()
     await self.message.mount(Part())
