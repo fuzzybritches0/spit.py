@@ -19,6 +19,7 @@ class ActionsMixIn:
             await self.app.maybe_remove("manage-chat")
             await self.app.query_one("#main").mount(Chat(f"chat-{self.uuid}"))
             self.app.query_one("#side-panel").option_list()
+            self.app.query_one("#side-panel").highlighted=1
         else:
             await super().after_action(action)
 
