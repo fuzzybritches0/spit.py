@@ -113,15 +113,15 @@ async def code_block_end(self, pattern: str) -> None:
 
 def code_listing(self, pattern: str) -> None:
     if not self.codeblock:
-        if not self.cur_code_fence:
-            self.cur_code_fence = pattern
+        if not self.codelisting_fence:
+            self.codelisting_fence = pattern
             self.codelisting = True
-        elif self.cur_code_fence == pattern:
-            self.cur_code_fence = ""
+        elif self.codelisting_fence == pattern:
+            self.codelisting_fence = ""
             self.codelisting = False
 
 def reset_code_listing(self, buffer: str, pattern: str) -> None:
-    self.cur_code_fence = ""
+    self.codelisting_fence = ""
     self.codelisting = False
 
 def is_roster(self, buffer: str, pattern: str) -> None:

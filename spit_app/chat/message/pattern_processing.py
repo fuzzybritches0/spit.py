@@ -23,6 +23,7 @@ class PatternProcessing():
         self.message = message
         self.escaped = False
         self.codelisting = False
+        self.codelisting_fence = ""
         self.codeblock = False
         self.python_code_ignore_fence = False
         self.cur_code_fence = ""
