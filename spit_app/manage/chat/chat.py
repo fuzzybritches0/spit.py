@@ -74,7 +74,7 @@ class Chat(ActionsMixIn, Manage):
             self.app.exception = exception
             return False
         if not self.cur_dir == "chats_archive":
-            self.app.query_one("#side-panel").remove_option(f"chat-{self.uuid}")
+            self.app.query_one("#side-panel").option_list()
             if self.app.query_one("#side-panel").highlighted:
                 self.app.query_one("#side-panel").highlighted-=1
         return True
