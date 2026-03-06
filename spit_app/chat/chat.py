@@ -76,6 +76,8 @@ class Chat(Vertical):
         return True
 
     async def on_mount(self) -> None:
+        self.settings.active_chat = self.id
+        self.settings.save()
         self.app.focused_container = self
         if not self.messages:
             self.text_area.focus()
@@ -83,5 +85,7 @@ class Chat(Vertical):
             self.chat_view.focus()
 
     def focus(self) -> None:
+        self.settings.active_chat = self.id
+        self.settings.save()
         self.app.query_one("#side-panel").can_focus = False
         self.chat_view.focus()

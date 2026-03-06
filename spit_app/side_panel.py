@@ -58,9 +58,6 @@ class SidePanel(OptionList):
                 cont.focus()
                 self.app.focused_container = cont
                 ret = True
-        if id.startswith("chat"):
-            self.settings.active_chat = id
-            self.settings.save()
         if ret:
             return None
         if id.startswith("chat"):
