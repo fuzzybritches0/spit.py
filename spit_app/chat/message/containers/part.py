@@ -22,7 +22,10 @@ class Stream:
                 ind = len(line) - len(lline)
                 if indent > ind:
                     indent = ind
-        self.widget.styles.margin = (0, 0, 0, indent)
+                    if indent == 0:
+                        break
+        if indent > 0:
+            self.widget.styles.margin = (0, 0, 0, indent)
 
 class Part(Markdown):
     def __init__(self) -> None:
