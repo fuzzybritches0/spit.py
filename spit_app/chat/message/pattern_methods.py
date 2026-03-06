@@ -54,6 +54,7 @@ def python_code_ignore_fence(self, buffer: str, pattern: str) -> None:
 async def code_fence(self, buffer: str, pattern: str) -> None:
     if self.python_code_ignore_fence:
         return None
+    self.skip_add_part = 1
     if not self.pp_last == pattern and not self.pp_next == pattern:
         self.proc_code_fence = pattern
         self.done_code_fence = True
@@ -74,7 +75,7 @@ async def code_fence(self, buffer: str, pattern: str) -> None:
         self.done_code_fence = False
 
 async def code_block_start_end(self, pattern: str) -> None:
-    _complete = complete(self)[:-len(pattern)+1]
+    _complete = complete(self)
     if (not _complete or _complete[-1] == "\n" or _complete.rstrip(" ") == ""
         or _complete.rstrip(" ").endswith("\n")):
         if not self.codeblock:
@@ -86,8 +87,11 @@ async def code_block_start_end(self, pattern: str) -> None:
             if not self.code_fences:
                 self.codeblock = False
                 await code_block_end(self, pattern)
+            else:
+                self.part += pattern
         else:
             self.code_fences.append(pattern)
+            self.part += pattern
 
 def compose_fence(pattern: str) -> str:
     fence = "`" if pattern[0] == "~" else "~"
@@ -98,16 +102,12 @@ def compose_fence(pattern: str) -> str:
 async def code_block_start(self, pattern: str) -> None:
     await self.message.target.stream.write(self.part)
     await self.message.target.stream.stop()
-    await self.message.target.update(self.message.target.source[:-len(pattern)])
-    self.skip_add_part = 1
     self.part = compose_fence(pattern)
     await self.message.mount(Code())
 
 async def code_block_end(self, pattern: str) -> None:
-    _complete = complete(self)[:-len(pattern)+1]
-    self.skip_add_part = 1
+    await self.message.target.stream.write(self.part+compose_fence(pattern))
     await self.message.target.stream.stop()
-    await self.message.target.update(_complete+"\n"+compose_fence(pattern))
     self.part = ""
     await self.message.target.update_code()
     await self.message.mount(Part())
@@ -120,6 +120,7 @@ def code_listing(self, pattern: str) -> None:
         elif self.codelisting_fence == pattern:
             self.codelisting_fence = ""
             self.codelisting = False
+    self.part += pattern
 
 def reset_code_listing(self, buffer: str, pattern: str) -> None:
     self.codelisting_fence = ""
