@@ -26,7 +26,7 @@ class PatternProcessing():
         self.codelisting_fence = ""
         self.codeblock = False
         self.python_code_ignore_fence = False
-        self.cur_code_fence = ""
+        self.code_fences = []
         self.done_code_fence = False
         self.proc_code_fence = ""
         self.latex = False

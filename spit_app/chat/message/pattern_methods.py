@@ -80,17 +80,19 @@ async def code_fence(self, buffer: str, pattern: str) -> None:
 
 async def code_block_start_end(self, pattern: str) -> None:
     _complete = complete(self)[:-len(pattern)+1]
-    if not self.cur_code_fence:
-        if not _complete or _complete[-1] == "\n":
+    if (not _complete or _complete[-1] == "\n" or _complete.rstrip(" ") == ""
+        or _complete.rstrip(" ").endswith("\n")):
+        if not self.codeblock:
+            self.codeblock = True
+            self.code_fences.append(pattern)
             await code_block_start(self, pattern)
-        elif _complete.rstrip(" ").endswith("\n") or _complete.rstrip(" ") == "":
-            await code_block_start(self, pattern)
+        elif self.code_fences[-1] == pattern:
+            del self.code_fences[-1]
+            if not self.code_fences:
+                self.codeblock = False
+                await code_block_end(self, pattern)
         else:
-            self.proc_code_fence = ""
-            self.done_code_fence = False
-    elif self.cur_code_fence == pattern:
-        if _complete.rstrip(f" {pattern[1]}").endswith("\n") and self.pp_next == "\n":
-            await code_block_end(self, pattern)
+            self.code_fences.append(pattern)
 
 async def code_block_start(self, pattern: str) -> None:
     await self.message.target.stream.write(self.part)
@@ -98,12 +100,8 @@ async def code_block_start(self, pattern: str) -> None:
     await self.message.target.update(self.message.target.source[:-len(pattern)])
     self.part = pattern[1:]
     await self.message.mount(Code())
-    self.cur_code_fence = pattern
-    self.codeblock = True
 
 async def code_block_end(self, pattern: str) -> None:
-    self.cur_code_fence = ""
-    self.codeblock = False
     self.skip_add_part = 1
     await self.message.target.stream.write(self.part+pattern[1])
     await self.message.target.stream.stop()
