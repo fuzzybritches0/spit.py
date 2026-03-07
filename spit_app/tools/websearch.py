@@ -40,10 +40,10 @@ class Validators:
         try:
             int(value)
         except:
-            return False
+            return (False, None)
         if int(value) < 1 or int(value) > 100:
-            return False
-        return True
+            return (False, "Value out of range")
+        return (True, None)
 
 async def call(app, arguments: dict, chat_id: str):
     load_user_settings(app, NAME, SETTINGS)
