@@ -179,3 +179,11 @@ Input {
     border: round $border;
     align: center middle;
 }
+#confirm-modal {
+    width: 40;
+    height: 13;
+    padding: 1;
+    background: $background-lighten-1;
+    border: round $border;
+    align: center middle;
+}
