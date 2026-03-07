@@ -1,7 +1,7 @@
 from textual.app import ComposeResult
 from textual.widgets import Markdown, Button, Footer
 from textual.screen import ModalScreen
-from textual.containers import Vertical, Center
+from textual.containers import Vertical, Horizontal, Center
 
 class Common(ModalScreen):
     BINDINGS = [("ctrl+q", "exit_app", "Quit")]
@@ -40,3 +40,22 @@ class InfoScreen(Common):
         self.classes = "modal"
         self.mtype = "info"
         self.text = f"INFO:\n\n{info}"
+
+class ConfirmScreen(Common):
+    def __init__(self) -> None:
+        super().__init__()
+        self.classes = "modal"
+        self.mtype = "confirm"
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id=f"{self.mtype}-modal"):
+            yield Markdown("# Are you sure?")
+            with Horizontal():
+                yield Button("CANCEL", id="cancel")
+                yield Button("OK", id="ok")
+        yield Footer()
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.control.id == "ok":
+            self.dismiss(True)
+        self.dismiss(False)
