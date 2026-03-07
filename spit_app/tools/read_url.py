@@ -48,10 +48,10 @@ class Validators:
         try:
             int(value)
         except:
-            return False
+            return (False, None)
         if int(value) < 500 or int(value) > 20000:
-            return False
-        return True
+            return (False, "Value out of range")
+        return (True, None)
 
 def file_name(app, url: str) -> str:
     file = url.replace("/", "_")
