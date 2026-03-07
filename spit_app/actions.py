@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
+from textual import work
+from .modal_screens import ConfirmScreen
 
 bindings = [
         ("ctrl+q", "exit_app", "Quit"),
@@ -22,5 +24,7 @@ class ActionsMixIn:
                     break
                 index+=1
 
-    def action_exit_app(self) -> None:
-        self.exit()
+    @work
+    async def action_exit_app(self) -> None:
+        if await self.push_screen_wait(ConfirmScreen()):
+            self.exit()
