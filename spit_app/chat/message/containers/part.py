@@ -2,7 +2,7 @@ from textual.widgets import Markdown
 from markdown_it import MarkdownIt
 
 def parser_factory() -> MarkdownIt:
-    return MarkdownIt("gfm-like").disable("code")
+    return MarkdownIt("gfm-like").disable(["code", "html_inline"])
 
 class Stream:
     def __init__(self, widget) -> None:
