@@ -66,7 +66,7 @@ class Work:
         try:
             await self.endpoint.stream()
         except Exception as exception:
-            if type(exception).__name__ in ("TimeoutError", "ConnectError", "RuntimeError"):
+            if type(exception).__name__ in ("TimeoutError", "ConnectError", "RuntimeError", "ConnectTimeout"):
                 self.app.exception = exception
                 del self.messages[-1]
                 self.chat_view.children[-1].remove()
