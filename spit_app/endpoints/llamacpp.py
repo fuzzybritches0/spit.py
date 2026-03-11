@@ -67,8 +67,12 @@ class LlamaCppEndpoint:
                         payload[setting] = value
 
     def prepare_payload(self) -> dict:
-        self.reasoning_key = self.endpoint["reasoning_key"]["value"]
         payload = {}
+        if self.model == "none":
+            raise RuntimeError(f"No model selected! Click on highlighted chat in side-panel to refresh list!")
+        else:
+            payload["model"] = self.model
+        self.reasoning_key = self.endpoint["reasoning_key"]["value"]
         payload["messages"] = []
         if self.prompt:
             payload["messages"].append({"role": "system", "content": self.prompt})
@@ -79,8 +83,6 @@ class LlamaCppEndpoint:
                 del _message["reasoning"]
                 _message[self.reasoning_key] = reasoning
             payload["messages"].append(_message)
-        if self.model:
-            payload["model"] = self.model
         self.construct_payload(payload, self.endpoint)
         self.construct_payload(payload, self.model_settings)
         if self.tools:
