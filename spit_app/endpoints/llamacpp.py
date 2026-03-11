@@ -12,10 +12,13 @@ def dot2obj(data: dict, dotpath: str, value: str|int|float|bool) -> None:
     cur[path[-1]] = value
 
 class LlamaCppEndpoint:
-    def __init__(self, messages: list, endpoint: dict, prompt: str, tools: list, callback: callable = None):
+    def __init__(self, messages: list, endpoint: dict, model: str, model_settings: dict,
+                 prompt: str, tools: list, callback: callable = None):
         self.messages = messages
         self.callback = callback
         self.endpoint = endpoint
+        self.model = model
+        self.model_settings = model_settings
         self.api_endpoint = self.endpoint["endpoint_url"]["value"] + "/v1/chat/completions"
         self.timeout = self.endpoint["timeout"]["value"]
         if self.timeout == 0:
