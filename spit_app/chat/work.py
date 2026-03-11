@@ -64,12 +64,15 @@ class Work:
             for tool_call in self.messages[-1]["tool_calls"]:
                 await self.app.tool_call.call(self.messages, tool_call, self.chat.id, self.chat_view.callback)
         try:
+            count = len(self.messages)
             await self.endpoint.stream()
         except Exception as exception:
             if type(exception).__name__ in ("TimeoutError", "ConnectError", "RuntimeError", "ConnectTimeout"):
                 self.app.exception = exception
-                del self.messages[-1]
-                self.chat_view.children[-1].remove()
+                if len(self.messages) > count:
+                    del self.messages[-1]
+                    self.chat_view.children[-1].remove()
+                return None
             else:
                 raise exception
         if "tool_calls" in self.messages[-1]:
