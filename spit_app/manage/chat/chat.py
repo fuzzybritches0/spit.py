@@ -3,8 +3,11 @@ import shutil
 from time import time
 from datetime import datetime
 from copy import deepcopy
+from textual import events
+from textual.widgets import Select
 from .actions import ActionsMixIn
 from spit_app.manage.manage import Manage
+from spit_app.endpoints.llamacpp import get_models_tuple
 
 class Chat(ActionsMixIn, Manage):
     BINDINGS = [
@@ -24,6 +27,9 @@ class Chat(ActionsMixIn, Manage):
     NEW = {
         "desc": { "stype": "string", "empty": False, "desc": "Description", "value": "New Chat" },
         "endpoint": { "stype": "select_no_default", "desc": "Endpoint", "ameth": "endpoint_list" },
+        "model": { "stype": "select_no_default", "desc": "Model (list loads when endpoint is reachable)",
+                  "ameth": "model_list" },
+        "model_settings": { "stype": "select", "desc": "Model Settings", "ameth": "model_settings_list" },
         "prompt": { "stype": "select", "desc": "System Prompt", "ameth": "prompt_list" },
         "tools": { "stype": "select_list", "desc": "Allowed tools", "ameth": "tools_list" }
     }
@@ -92,12 +98,15 @@ class Chat(ActionsMixIn, Manage):
             content["ctime"] = time()
             content["settings"] = self.manage
             content["messages"] = []
+            content["model"] = None
             self.app.write_json(f"{self.cur_dir}/chat-{self.uuid}.json", content)
         else:
             if self.is_loaded():
                 chat = self.app.query_one("#main").query_one(f"#chat-{self.uuid}")
                 chat.chat_desc = self.manage["desc"]["value"]
                 chat.chat_endpoint = self.manage["endpoint"]["value"]
+                chat.chat_model = self.manage["model"]["value"]
+                chat.chat_model_settings = self.manage["model_settings"]["value"]
                 chat.chat_prompt = self.manage["prompt"]["value"]
                 chat.chat_tools = self.manage["tools"]["value"]
                 ctime = chat.chat_ctime
@@ -124,10 +133,25 @@ class Chat(ActionsMixIn, Manage):
             chat_dict[id] = {"name": {"value": f"{desc}\n{local_ctime}"}}
         return chat_dict
 
+    async def on_select_changed(self, event: Select.Changed) -> None:
+        if event.control.id == "endpoint":
+            options = await get_models_tuple(self.settings.endpoints[event.value])
+            self.query_one("#model").set_options(options)
+
     def endpoint_list(self, default: bool = False) -> tuple:
         tup = ()
         for key in self.settings.endpoints.keys():
             tup += ((self.settings.endpoints[key]["name"]["value"], key),)
+        return tup
+
+    async def model_list(self, default: bool = False) -> tuple:
+        endpoint = self.query_one("#endpoint").value
+        return await get_models_tuple(self.settings.endpoints[endpoint])
+
+    def model_settings_list(self, default: bool = False) -> tuple:
+        tup = ()
+        for key in self.settings.models.keys():
+            tup += ((self.settings.models[key]["name"]["value"], key),)
         return tup
 
     def prompt_list(self, default: bool = False) -> tuple:
