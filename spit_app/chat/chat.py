@@ -3,6 +3,7 @@ from textual.app import ComposeResult
 from textual.containers import Vertical
 from .undo import Undo
 from .chat_text_area import ChatTextArea
+from .chat_settings import ChatSettings
 from .chat_view import ChatView
 from spit_app.modal_screens import InfoScreen
 
@@ -36,6 +37,7 @@ class Chat(Vertical):
         return False
 
     def compose(self) -> ComposeResult:
+        yield ChatSettings(self)
         yield self.chat_view
         yield self.text_area
 
@@ -71,11 +73,15 @@ class Chat(Vertical):
         await self.chat_view.children[-1].remove()
         self.refresh_bindings()
 
+    def action_settings(self) -> None:
+        self.query_one("#select-endpoint").action_show_overlay()
+
     def check_action(self, action: str,
                      parameters: tuple[object, ...]) -> bool | None:
-        match action:
-            case "abort":
-                return self.is_working()
+        if action == "abort":
+            return self.is_working()
+        elif action == "settings":
+            return not self.is_working()
         return True
 
     async def on_mount(self) -> None:
