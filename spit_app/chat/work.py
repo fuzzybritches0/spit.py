@@ -54,7 +54,7 @@ class Work:
                 prompt += self.prompt_inst(tool)
         if prompt:
             prompt = TOOL_PROMPT + prompt
-        if self.chat.chat_prompt:
+        if self.chat.chat_prompt and self.chat.chat_prompt in self.settings.prompts:
             chat_prompt = self.settings.prompts[self.chat.chat_prompt]["text"]["value"]
             prompt =  "# INSTRUCTIONS\n\n" + chat_prompt + "\n\n" + prompt
         return prompt
