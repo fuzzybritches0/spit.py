@@ -1,49 +1,22 @@
+from .common import Common
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 from spit_app.manage.manage import Manage
 
-class Endpoints(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Manage):
-    BINDINGS = [
-        ("ctrl+enter", "save", "Save"),
-        ("ctrl+r", "delete", "Delete"),
-        ("escape", "cancel", "Cancel"),
-        ("ctrl+t", "duplicate", "Duplicate"),
-        ("ctrl+i", "remove_setting", "Remove Setting"),
-        ("ctrl+o", "add_setting", "Add Setting")
-    ]
-    BUTTONS = (
-        ("save", "Save"),
-        ("cancel", "Cancel"),
-        ("delete", "Delete"),
-        ("duplicate", "Duplicate")
-    )
+class Endpoints(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Manage):
     NEW = {
-            "name": { "stype": "string", "empty": False, "desc": "Name"},
+            "name": {"stype": "string", "empty": False, "desc": "Name"},
             "endpoint_url": { "stype": "url", "empty": False, "desc": "Endpoint URL",
-                            "value": "http://127.0.0.1:8080" },
-            "key": { "stype": "string", "desc": "API Access Key" },
-            "timeout": {"stype": "uinteger", "empty": False,"desc": "Timeout (0 = no timeout)", "value": 0 },
+                            "value": "http://127.0.0.1:8080"},
+            "key": {"stype": "string", "desc": "API Access Key"},
+            "timeout": {"stype": "uinteger", "empty": False,"desc": "Timeout (0 = no timeout)", "value": 0},
             "reasoning_key": { "stype": "select_no_default", "desc": "Reasoning Key",
-                            "options":["reasoning_content", "reasoning"] },
-            "temperature": { "stype": "float", "desc": "Temperature" },
-            "top_p": { "stype": "float", "desc": "TOP-P" },
-            "min_p": { "stype": "float", "desc": "MIN-P" },
-            "top_k": { "stype": "float", "desc": "TOP-K" }
+                            "options":["reasoning_content", "reasoning"]}
     }
 
     def __init__(self) -> None:
         super().__init__("endpoint")
         self.managed = self.app.settings.endpoints
         self.save_managed = self.app.settings.save_endpoints
-
-    def add_custom_setting(self, setting: str, stype: str, desc: str, sarray: list = []) -> None:
-        if not sarray:
-            self.manage[setting] = { "stype": stype, "desc": desc }
-        else:
-            self.manage[setting] = { "stype": stype, "desc": desc , "options": sarray}
-
-    async def remove_custom_setting(self, setting: str) -> None:
-        del self.manage[setting]
-        await self.query_one(f"#val-{setting}").remove()
