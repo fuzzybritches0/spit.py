@@ -1,7 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0
+from spit_app.modal_screens import InfoScreen
 from textual.widgets import Select
 
 class ActionsMixIn:
+    async def action_delete(self) -> None:
+        if self.managed is self.settings.endpoints and len(self.managed) == 1:
+            await self.app.push_screen(InfoScreen("At least one endpoint must remain!"))
+        else:
+            super().action_delete()
+
     async def action_add_setting(self) -> None:
         if await self.validate_add_setting():
             setting = self.query_one("#new-setting").value
