@@ -43,7 +43,10 @@ class ScreensMixIn:
             value = self.manage[setting]["value"]
         if "ameth" in self.manage[setting]:
             ameth = getattr(self, self.manage[setting]["ameth"])
-            tup = ameth()
+            if inspect.iscoroutinefunction(ameth):
+                tup = await ameth()
+            else:
+                tup = ameth()
         elif options:
             tup = ()
             for el in options:
