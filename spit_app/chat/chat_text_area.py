@@ -20,6 +20,7 @@ class ChatTextArea(TextArea):
         self.tab_behavior = "indent"
         self.temp = ""
         self.is_edit = False
+        self.was_focused = False
         self.was_empty = True
 
     def action_cancel_edit(self):
@@ -87,3 +88,4 @@ class ChatTextArea(TextArea):
 
     def on_focus(self) -> None:
         self.app.query_one("#side-panel").can_focus = False
+        self.was_focused = True
