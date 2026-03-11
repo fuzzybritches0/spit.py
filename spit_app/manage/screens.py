@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0
+import inspect
 from textual.containers import Horizontal
 from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, Select, SelectionList, Markdown
 from textual.widgets.option_list import Option
 
 class ScreensMixIn:
     def extra_options(self) -> list:
-        return [Option(f"\nCreate new {self.id.split("-")[1]}\n", id="select-new-manage")]
+        name = self.id.split("-", 1)
+        name = name[1].replace("-", " ")
+        return [Option(f"\nCreate new {name}\n", id="select-new-manage")]
 
     def get_name(self, manage: str) -> str:
         return self.managed[manage]["name"]["value"]
