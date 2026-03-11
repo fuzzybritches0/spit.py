@@ -59,10 +59,13 @@ class Chat(Vertical):
         content["ctime"] = self.chat_ctime
         self.csettings["desc"]["value"] = self.chat_desc
         self.csettings["endpoint"]["value"] = self.chat_endpoint
+        self.csettings["model"]["value"] = self.chat_model
+        self.csettings["model_settings"]["value"] = self.chat_model_settings
         self.csettings["prompt"]["value"] = self.chat_prompt
         self.csettings["tools"]["value"] = self.chat_tools
         content["settings"] = self.csettings
         content["messages"] = self.messages
+        content["model"] = self.model
         return self.app.write_json(f"chats/{self.id}.json", content)
     
     def action_change_focus(self) -> None:
