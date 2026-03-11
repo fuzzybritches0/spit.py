@@ -30,6 +30,17 @@ class LlamaCppEndpoint:
         if self.callback:
             await self.callback(signal)
 
+    def construct_payload(self, payload: dict, settings: dict) -> None:
+        for setting in settings.keys():
+            value = settings[setting]["value"]
+            if (not setting == "name" and not setting == "endpoint_url" and
+                not setting == "key" and not setting == "reasoning_key"):
+                if "." in setting and (value or value is False):
+                    dot2obj(payload, setting, value)
+                else:
+                    if value or value is False:
+                        payload[setting] = value
+
     def prepare_payload(self) -> dict:
         self.reasoning_key = self.endpoint["reasoning_key"]["value"]
         payload = {}
@@ -43,20 +54,13 @@ class LlamaCppEndpoint:
                 del _message["reasoning"]
                 _message[self.reasoning_key] = reasoning
             payload["messages"].append(_message)
-        for setting in self.endpoint.keys():
-            value = self.endpoint[setting]["value"]
-            if (not setting == "name" and not setting == "endpoint_url" and
-                not setting == "key" and not setting == "reasoning_key"):
-                if "." in setting and (value or value is False):
-                    dot2obj(payload, setting, value)
-                else:
-                    if value or value is False:
-                        payload[setting] = value
+        if self.model:
+            payload["model"] = self.model
+        self.construct_payload(payload, self.endpoint)
+        self.construct_payload(payload, self.model_settings)
         if self.tools:
             payload["tools"] = self.tools
             payload["tool_choice"] = "auto"
-        payload["n_predict"] = -1
-        payload["cache_prompt"] = True
         payload["stream"] = True
         return payload
 
