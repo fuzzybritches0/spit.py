@@ -41,8 +41,6 @@ class ChatTextArea(TextArea):
         self.edit_container.focus(scroll_visible=False)
 
     async def action_submit(self) -> None:
-        if not await self.chat.settings_exist():
-            return None
         if (self.text and
             (not self.messages or self.messages[-1]["role"] == "assistant")):
             self.messages.append({"role": "user", "content": self.text})
