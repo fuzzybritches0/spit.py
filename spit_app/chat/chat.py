@@ -10,7 +10,8 @@ from spit_app.modal_screens import InfoScreen
 class Chat(Vertical):
     BINDINGS = [
         ("ctrl+escape", "abort", "Abort"),
-        ("escape", "change_focus", "Focus")
+        ("escape", "change_focus", "Focus"),
+        ("ctrl+s", "settings", "Settings")
     ]
 
     def __init__(self, id: str) -> None:
