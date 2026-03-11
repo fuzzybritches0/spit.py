@@ -60,7 +60,10 @@ class Chat(Vertical):
         return self.app.write_json(f"chats/{self.id}.json", content)
     
     def action_change_focus(self) -> None:
-        self.text_area.focus()
+        if self.app.focused.id.startswith("select-") and not self.text_area.was_focused:
+            self.chat_view.focus()
+        else:
+            self.text_area.focus()
 
     async def action_abort(self) -> None:
         self.work.cancel()
@@ -88,4 +91,7 @@ class Chat(Vertical):
         self.settings.active_chat = self.id
         self.settings.save()
         self.app.query_one("#side-panel").can_focus = False
-        self.chat_view.focus()
+        if self.text_area.was_focused:
+            self.text_area.focus()
+        else:
+            self.chat_view.focus()
