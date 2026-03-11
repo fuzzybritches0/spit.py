@@ -24,9 +24,12 @@ class Chat(Vertical):
         self.chat_ctime = content["ctime"]
         self.chat_desc = content["settings"]["desc"]["value"]
         self.chat_endpoint = content["settings"]["endpoint"]["value"]
+        self.chat_model = content["settings"]["model"]["value"]
+        self.chat_model_settings = content["settings"]["model_settings"]["value"]
         self.chat_prompt = content["settings"]["prompt"]["value"]
         self.chat_tools = content["settings"]["tools"]["value"]
         self.messages = content["messages"]
+        self.model = content["model"]
         self.work = None
         self.chat_view = ChatView(self)
         self.text_area = ChatTextArea(self)
