@@ -3,7 +3,8 @@ import os
 from datetime import datetime
 from spit_app.chat.chat import Chat
 from spit_app.manage.chat.chat import Chat as ManageChats
-from spit_app.manage.endpoint.endpoint import Endpoints as ManageEndpoints 
+from spit_app.manage.endpoint.endpoint import Endpoints as ManageEndpoints
+from spit_app.manage.model_settings.model_settings import ModelSettings as ManageModelSettings
 from spit_app.manage.prompt.prompt import Prompts as ManagePrompts
 from spit_app.manage.tool_settings.tool_settings import ToolSettings as ManageToolSettings
 from spit_app.modal_screens import InfoScreen 
@@ -39,6 +40,7 @@ class SidePanel(OptionList):
         Options.append(None)
         Options.append(Option("\nManage Chats\n", id="manage-chat"))
         Options.append(Option("\nManage Endpoints\n", id="manage-endpoint"))
+        Options.append(Option("\nManage Model Settings\n", id="manage-model-settings"))
         Options.append(Option("\nManage System Prompts\n", id="manage-prompt"))
         Options.append(Option("\nManage Tool Settings\n", id="manage-tool-settings"))
         Options.append(None)
@@ -71,6 +73,8 @@ class SidePanel(OptionList):
             await self.app.query_one("#main").mount(ManageChats())
         elif id == "manage-endpoint":
             await self.app.query_one("#main").mount(ManageEndpoints())
+        elif id == "manage-model-settings":
+            await self.app.query_one("#main").mount(ManageModelSettings())
         elif id == "manage-prompt":
             await self.app.query_one("#main").mount(ManagePrompts())
         elif id == "manage-tool-settings":
