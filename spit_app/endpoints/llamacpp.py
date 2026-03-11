@@ -2,6 +2,31 @@
 import json
 import httpx
 
+async def get_models(endpoint: dict) -> list:
+    api_endpoint = endpoint["endpoint_url"]["value"] + "/v1/models"
+    async with httpx.AsyncClient(timeout=3) as client:
+        response = await client.get(api_endpoint)
+    if not response.status_code == 200:
+        raise RuntimeError(f"Endpoint returned {resp.status_code}: {resp.text}")
+    return json.loads(response.text)["models"]
+
+async def get_models_tuple(endpoint: dict) -> tuple:
+    models = []
+    try:
+        models = await get_models(endpoint)
+    except Exception as exception:
+        if type(exception).__name__ in ("TimeoutError", "ConnectError", "RuntimeError", "ConnectTimeout"):
+            pass
+        else:
+            raise exception
+    options = ()
+    for model in models:
+        options += ((model["name"], model["name"]),)
+    if not options:
+        return (("None", "none"),)
+    else:
+        return options
+
 def dot2obj(data: dict, dotpath: str, value: str|int|float|bool) -> None:
     path = dotpath.split(".")
     cur = data
