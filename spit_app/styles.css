@@ -21,6 +21,9 @@
 	height: 7fr;
 	border: round $border
 }
+#chat-settings {
+	height: auto
+}
 #text-area {
 	height: 2fr;
 	color: $foreground;
