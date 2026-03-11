@@ -9,6 +9,7 @@ class Settings:
         self.path["data"] = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
         self.path["data"].mkdir(parents=True, exist_ok=True)
         self.path["promptsf"] = self.path["data"] / "prompts.json"
+        self.path["modelsf"] = self.path["data"] / "models.json"
         self.path["endpointsf"] = self.path["data"] / "endpoints.json"
         self.path["settings"] = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
         self.path["settings"].mkdir(parents=True, exist_ok=True)
@@ -29,10 +30,14 @@ class Settings:
         settings["tool_settings"] = self.tool_settings
         self.app.write_json("settingsf", settings)
         self.save_endpoints()
+        self.save_models()
         self.save_prompts()
 
     def save_endpoints(self) -> None:
         self.app.write_json("endpointsf", self.endpoints)
+
+    def save_models(self) -> None:
+        self.app.write_json("modelsf", self.models)
 
     def save_prompts(self) -> None:
         self.app.write_json("promptsf", self.prompts)
@@ -41,6 +46,7 @@ class Settings:
         self.theme = None
         self.endpoints = {}
         self.prompts = {}
+        self.models = {}
         self.tool_settings = {}
         self.active_chat = None
         if self.path["settingsf"].exists():
@@ -53,5 +59,7 @@ class Settings:
                 self.tool_settings = settings["tool_settings"]
         if self.path["endpointsf"].exists():
             self.endpoints = self.app.read_json("endpointsf")
+        if self.path["modelsf"].exists():
+            self.models = self.app.read_json("modelsf")
         if self.path["promptsf"].exists():
             self.prompts = self.app.read_json("promptsf")
