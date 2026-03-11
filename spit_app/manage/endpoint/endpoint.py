@@ -9,7 +9,7 @@ class Endpoints(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMix
     NEW = {
             "name": {"stype": "string", "empty": False, "desc": "Name"},
             "endpoint_url": { "stype": "url", "empty": False, "desc": "Endpoint URL",
-                            "value": "http://127.0.0.1:8080"},
+                            "value": "http://127.0.0.1:8080/v1"},
             "key": {"stype": "string", "desc": "API Access Key"},
             "timeout": {"stype": "uinteger", "empty": False,"desc": "Timeout (0 = no timeout)", "value": 0},
             "reasoning_key": { "stype": "select_no_default", "desc": "Reasoning Key",
