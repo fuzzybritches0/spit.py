@@ -3,7 +3,7 @@ import json
 import httpx
 
 async def get_models(endpoint: dict) -> list:
-    api_endpoint = endpoint["endpoint_url"]["value"] + "/v1/models"
+    api_endpoint = endpoint["endpoint_url"]["value"] + "/models"
     async with httpx.AsyncClient(timeout=3) as client:
         response = await client.get(api_endpoint)
     if not response.status_code == 200:
@@ -44,7 +44,7 @@ class LlamaCppEndpoint:
         self.endpoint = endpoint
         self.model = model
         self.model_settings = model_settings
-        self.api_endpoint = self.endpoint["endpoint_url"]["value"] + "/v1/chat/completions"
+        self.api_endpoint = self.endpoint["endpoint_url"]["value"] + "/chat/completions"
         self.timeout = self.endpoint["timeout"]["value"]
         if self.timeout == 0:
             self.timeout = None
