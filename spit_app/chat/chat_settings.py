@@ -5,6 +5,8 @@ from textual.widgets import Label, Select
 from spit_app.endpoints.llamacpp import get_models_tuple
 
 class ChatSettings(Horizontal):
+    BINDINGS = [("ctrl+s", "leave_settings", "Leave settings")]
+
     def __init__(self, chat) -> None:
         super().__init__()
         self.id = "chat-settings"
@@ -43,6 +45,9 @@ class ChatSettings(Horizontal):
             else:
                 return options[0][1]
         return option
+
+    def action_leave_settings(self) -> None:
+        self.chat.focus()
 
     async def on_mount(self) -> None:
         await self.update_selects()
