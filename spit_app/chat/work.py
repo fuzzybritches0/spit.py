@@ -14,11 +14,14 @@ class Work:
         tools_descs = self.tools_descs()
         prompt = self.prompt()
         endpoint = self.settings.endpoints[chat.chat_endpoint]
+        model_settings = {}
+        if chat.chat_model_settings:
+            model_settings = self.settings.models[chat.chat_model_settings]
         chat_tools_descs = []
         for tool in tools_descs:
             if tool["function"]["name"] in chat.chat_tools:
                 chat_tools_descs.append(tool)
-        self.endpoint = LlamaCppEndpoint(self.messages, endpoint, prompt,
+        self.endpoint = LlamaCppEndpoint(self.messages, endpoint, chat.chat_model, model_settings, prompt,
                                          chat_tools_descs, self.chat_view.callback)
 
     def tools_descs(self) -> list:
