@@ -62,6 +62,10 @@ class ChatTextArea(TextArea):
             case "cancel_edit":
                 return self.is_edit
             case "submit":
+                if self.chat.chat_model == "none":
+                    return False
+                if not "completion" in self.chat.model_capabilities:
+                    return False
                 if self.chat.is_working() or self.is_edit:
                     return False
                 if not self.text:
