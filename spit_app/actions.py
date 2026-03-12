@@ -27,5 +27,9 @@ class ActionsMixIn:
 
     @work
     async def action_exit_app(self) -> None:
+        if self.confirm_exit:
+            return None
+        self.confirm_exit = True
         if await self.push_screen_wait(ConfirmScreen()):
             self.exit()
+        self.confirm_exit = False
