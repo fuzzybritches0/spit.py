@@ -73,10 +73,7 @@ class LlamaCppEndpoint:
 
     def prepare_payload(self) -> dict:
         payload = {}
-        if self.model == "none":
-            raise RuntimeError(f"No model selected! Click on highlighted chat in side-panel to refresh list!")
-        else:
-            payload["model"] = self.model
+        payload["model"] = self.model
         self.reasoning_key = self.endpoint["reasoning_key"]["value"]
         payload["messages"] = []
         if self.prompt:
