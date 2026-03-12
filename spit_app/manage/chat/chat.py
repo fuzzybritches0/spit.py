@@ -7,7 +7,7 @@ from textual import events, work
 from textual.widgets import Select
 from .actions import ActionsMixIn
 from spit_app.manage.manage import Manage
-from spit_app.endpoints.llamacpp import get_models_tuple
+from spit_app.endpoints.llamacpp import get_models, get_models_tuple
 
 class Chat(ActionsMixIn, Manage):
     BINDINGS = [
@@ -149,7 +149,8 @@ class Chat(ActionsMixIn, Manage):
     @work(exclusive=True)
     async def work_model_list(self) -> tuple:
         endpoint = self.query_one("#endpoint").value
-        options = await get_models_tuple(self.settings.endpoints[endpoint])
+        models = await get_models(self.settings.endpoints[endpoint])
+        options = get_models_tuple(models)
         self.query_one("#model").set_options(options)
 
     def model_settings_list(self, default: bool = False) -> tuple:
