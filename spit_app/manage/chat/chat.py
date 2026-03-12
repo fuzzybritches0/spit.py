@@ -25,13 +25,13 @@ class Chat(ActionsMixIn, Manage):
         ("cancel", "Cancel")
     )
     NEW = {
-        "desc": { "stype": "string", "empty": False, "desc": "Description", "value": "New Chat" },
-        "endpoint": { "stype": "select_no_default", "desc": "Endpoint", "ameth": "endpoint_list" },
-        "model": { "stype": "select_no_default", "desc": "Model (list loads when endpoint is reachable)",
-                  "ameth": "model_list" },
-        "model_settings": { "stype": "select", "desc": "Model Settings", "ameth": "model_settings_list" },
-        "prompt": { "stype": "select", "desc": "System Prompt", "ameth": "prompt_list" },
-        "tools": { "stype": "select_list", "desc": "Allowed tools", "ameth": "tools_list" }
+        "desc": {"stype": "string", "empty": False, "desc": "Description", "value": "New Chat"},
+        "endpoint": {"stype": "select_no_default", "desc": "Endpoint", "ameth": "endpoint_list"},
+        "model": {"stype": "select_no_default", "desc": "Model (list loads when endpoint is reachable)",
+                  "ameth": "model_list", "wmeth": "work_model_list"},
+        "model_settings": {"stype": "select", "desc": "Model Settings", "ameth": "model_settings_list"},
+        "prompt": {"stype": "select", "desc": "System Prompt", "ameth": "prompt_list"},
+        "tools": {"stype": "select_list", "desc": "Allowed tools", "ameth": "tools_list"}
     }
 
     def __init__(self, new_chat: bool = False) -> None:
