@@ -16,8 +16,7 @@ async def get_models(endpoint: dict) -> list:
             return []
     return []
 
-async def get_models_tuple(endpoint: dict) -> tuple:
-    models = await get_models(endpoint)
+def get_models_tuple(models: list) -> tuple:
     options = ()
     for model in models:
         options += ((model["name"], model["name"]),)
@@ -25,6 +24,13 @@ async def get_models_tuple(endpoint: dict) -> tuple:
         return (("None", "none"),)
     else:
         return options
+
+def get_model_capabilities(models: list, _model: str) -> list:
+    for model in models:
+        if model["name"] == _model:
+            if "capabilities" in model:
+                return model["capabilities"]
+    return []
 
 def dot2obj(data: dict, dotpath: str, value: str|int|float|bool) -> None:
     path = dotpath.split(".")
