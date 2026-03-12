@@ -45,6 +45,10 @@ class ChatView(VerticalScroll):
                      parameters: tuple[object, ...]) -> bool | None:
         match action:
             case "continue":
+                if self.chat.chat_model == "none":
+                    return False
+                if not "completion" in self.chat.model_capabilities:
+                    return False
                 if self.chat.is_working() or self.chat.text_area.is_edit or not self.messages:
                     return False
                 if self.messages[-1]["role"] == "assistant":
