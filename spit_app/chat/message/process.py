@@ -24,6 +24,10 @@ class Process(Vertical):
     async def process_content(self, content) -> None:
         if not self.display:
             return None
+        if not self.parent.parent.has_focus_within:
+            return None
+        if not self.app.screen.can_view_partial(self.parent):
+            return None
         self.pp.part = ""
         if len(content)-self.pos-self.pp.bsize > 0:
             for pos in range(self.pos, len(content) - self.pp.bsize):
