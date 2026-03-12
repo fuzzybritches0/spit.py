@@ -28,6 +28,7 @@ class Chat(Vertical):
         self.chat_prompt = content["settings"]["prompt"]["value"]
         self.chat_tools = content["settings"]["tools"]["value"]
         self.messages = content["messages"]
+        self.model_capabilities = []
         self.work = None
         self.chat_view = ChatView(self)
         self.text_area = ChatTextArea(self)
