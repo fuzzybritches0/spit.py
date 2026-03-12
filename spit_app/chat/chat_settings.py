@@ -13,7 +13,6 @@ class ChatSettings(Horizontal):
         self.chat = chat
         self.settings = chat.settings
         self.selects = [ 1, 3, 5]
-        self.selects_updating = False
 
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.value == "none" or self.selects_updating:
@@ -54,7 +53,6 @@ class ChatSettings(Horizontal):
         self.disallowed_focus()
 
     async def update_selects(self) -> None:
-        self.selects_updating = True
         await self.remove_children()
         options = self.endpoint_options()
         await self.mount(Label("Endpoint:"))
@@ -78,7 +76,6 @@ class ChatSettings(Horizontal):
         else:
             self.chat.chat_model_settings = self.children[5].value
         self.chat.write_chat_history()
-        self.selects_updating = False
 
     async def on_descendant_focus(self) -> None:
         self.allowed_focus()
