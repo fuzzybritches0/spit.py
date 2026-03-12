@@ -2,7 +2,7 @@
 from textual import events, work
 from textual.containers import Horizontal
 from textual.widgets import Label, Select
-from spit_app.endpoints.llamacpp import get_models_tuple
+from spit_app.endpoints.llamacpp import get_models, get_model_capabilities, get_models_tuple
 
 class ChatSettings(Horizontal):
     BINDINGS = [("ctrl+s", "leave_settings", "Leave settings")]
@@ -19,7 +19,7 @@ class ChatSettings(Horizontal):
             return None
         if event.control.id == "select-endpoint":
             self.chat.chat_endpoint = event.value
-            self.update_model_selects()
+            self.update_models()
         if event.control.id == "select-model":
             self.chat.chat_model = event.value
         if event.control.id == "select-model-settings":
@@ -63,18 +63,24 @@ class ChatSettings(Horizontal):
         self.disallowed_focus()
 
     @work(exclusive=True)
-    async def update_model_selects(self) -> None:
-        options = await self.model_options()
+    async def update_models(self) -> None:
+        capabilities = self.chat.model_capabilities
+        endpoint = self.settings.endpoints[self.chat.chat_endpoint]
+        models = await get_models(endpoint)
+        options = get_models_tuple(models)
         self.children[3].set_options(options)
         self.children[3].value = self.set_value(options, self.chat.chat_model, False)
         self.chat.chat_model = self.children[3].selection
+        self.chat.model_capabilities = get_model_capabilities(models, self.chat.chat_model)
+        if not capabilities == self.chat.model_capabilities:
+            self.chat.refresh_bindings()
 
     def update_selects(self) -> None:
         options = self.get_options()
         self.children[1].set_options(options[0])
         self.children[5].set_options(options[1])
         self.set_selects(options)
-        self.update_model_selects()
+        self.update_models()
 
     def get_options(self) -> list:
         options = []
@@ -101,10 +107,6 @@ class ChatSettings(Horizontal):
         for key in self.settings.endpoints.keys():
             tup += ((self.settings.endpoints[key]["name"]["value"], key),)
         return tup
-
-    async def model_options(self) -> None:
-        endpoint = self.settings.endpoints[self.chat.chat_endpoint]
-        return await get_models_tuple(endpoint)
 
     def model_settings_options(self) -> None:
         tup = ()
