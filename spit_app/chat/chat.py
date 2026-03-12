@@ -28,7 +28,6 @@ class Chat(Vertical):
         self.chat_prompt = content["settings"]["prompt"]["value"]
         self.chat_tools = content["settings"]["tools"]["value"]
         self.messages = content["messages"]
-        self.model = content["model"]
         self.work = None
         self.chat_view = ChatView(self)
         self.text_area = ChatTextArea(self)
@@ -55,7 +54,6 @@ class Chat(Vertical):
         self.csettings["tools"]["value"] = self.chat_tools
         content["settings"] = self.csettings
         content["messages"] = self.messages
-        content["model"] = self.model
         return self.app.write_json(f"chats/{self.id}.json", content)
     
     def action_change_focus(self) -> None:
