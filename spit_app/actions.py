@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual import work
+from textual.binding import Binding
 from .modal_screens import ConfirmScreen
 
 bindings = [
-        ("ctrl+q", "exit_app", "Quit"),
+        Binding("ctrl+q", "exit_app", "Quit", show=False),
         ("shift+escape", "side_panel", "Side Panel")
 ]
 
