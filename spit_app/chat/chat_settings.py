@@ -13,6 +13,7 @@ class ChatSettings(Horizontal):
         self.chat = chat
         self.settings = chat.settings
         self.selects = [ 1, 3, 5]
+        self.models = []
 
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.value == "none":
@@ -22,6 +23,7 @@ class ChatSettings(Horizontal):
             self.update_models()
         if event.control.id == "select-model":
             self.chat.chat_model = event.value
+            self.chat.model_capabilities = get_model_capabilities(self.models, self.chat.chat_model)
         if event.control.id == "select-model-settings":
             if event.value == Select.BLANK:
                 self.chat.chat_model_settings = None
@@ -66,12 +68,12 @@ class ChatSettings(Horizontal):
     async def update_models(self) -> None:
         capabilities = self.chat.model_capabilities
         endpoint = self.settings.endpoints[self.chat.chat_endpoint]
-        models = await get_models(endpoint)
-        options = get_models_tuple(models)
+        self.models = await get_models(endpoint)
+        options = get_models_tuple(self.models)
         self.children[3].set_options(options)
         self.children[3].value = self.set_value(options, self.chat.chat_model, False)
         self.chat.chat_model = self.children[3].selection
-        self.chat.model_capabilities = get_model_capabilities(models, self.chat.chat_model)
+        self.chat.model_capabilities = get_model_capabilities(self.models, self.chat.chat_model)
         if not capabilities == self.chat.model_capabilities:
             self.chat.refresh_bindings()
 
