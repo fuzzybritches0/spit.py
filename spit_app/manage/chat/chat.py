@@ -135,8 +135,7 @@ class Chat(ActionsMixIn, Manage):
 
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.control.id == "endpoint":
-            options = await self.get_model_list().wait()
-            self.query_one("#model").set_options(options)
+            self.work_model_list()
 
     def endpoint_list(self, default: bool = False) -> tuple:
         tup = ()
@@ -144,13 +143,14 @@ class Chat(ActionsMixIn, Manage):
             tup += ((self.settings.endpoints[key]["name"]["value"], key),)
         return tup
 
-    async def model_list(self, default: bool = False) -> tuple:
-        return await self.get_model_list().wait()
+    def model_list(self, default: bool = False) -> tuple:
+        return (("None", "none"),)
 
     @work(exclusive=True)
-    async def get_model_list(self) -> tuple:
+    async def work_model_list(self) -> tuple:
         endpoint = self.query_one("#endpoint").value
-        return await get_models_tuple(self.settings.endpoints[endpoint])
+        options = await get_models_tuple(self.settings.endpoints[endpoint])
+        self.query_one("#model").set_options(options)
 
     def model_settings_list(self, default: bool = False) -> tuple:
         tup = ()
