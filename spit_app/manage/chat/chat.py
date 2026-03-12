@@ -3,7 +3,7 @@ import shutil
 from time import time
 from datetime import datetime
 from copy import deepcopy
-from textual import events
+from textual import events, work
 from textual.widgets import Select
 from .actions import ActionsMixIn
 from spit_app.manage.manage import Manage
@@ -135,7 +135,7 @@ class Chat(ActionsMixIn, Manage):
 
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.control.id == "endpoint":
-            options = await get_models_tuple(self.settings.endpoints[event.value])
+            options = await self.get_model_list().wait()
             self.query_one("#model").set_options(options)
 
     def endpoint_list(self, default: bool = False) -> tuple:
@@ -145,6 +145,10 @@ class Chat(ActionsMixIn, Manage):
         return tup
 
     async def model_list(self, default: bool = False) -> tuple:
+        return await self.get_model_list().wait()
+
+    @work(exclusive=True)
+    async def get_model_list(self) -> tuple:
         endpoint = self.query_one("#endpoint").value
         return await get_models_tuple(self.settings.endpoints[endpoint])
 
