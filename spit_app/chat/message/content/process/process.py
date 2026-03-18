@@ -1,13 +1,20 @@
 import json
-from textual.containers import Vertical
+from textual.containers import VerticalScroll
+from .actions import ActionsMixIn, bindings
 from .containers.part import Part
 from .pattern_processing import PatternProcessing
 
-class Process(Vertical):
-    def __init__(self, display: bool = True) -> None:
+class Process(ActionsMixIn, VerticalScroll):
+    BINDINGS = bindings
+
+    def __init__(self, message, scontent, count) -> None:
         super().__init__()
-        self.classes = "message-section"
-        self.display = display
+        self.classes = "message-content-process"
+        self.message = message
+        self.messages = message.messages
+        self.chat = message.chat
+        self.scontent = scontent
+        self.count = count
         self.reset_state()
 
     def reset_state(self) -> None:
@@ -21,10 +28,10 @@ class Process(Vertical):
         await self.remove_children()
         self.reset_state()
 
-    async def process_content(self, content) -> None:
+    async def process_content(self, content: str) -> None:
         if not self.display:
             return None
-        if not self.parent.parent.has_focus_within:
+        if not self.chat.chat_view.has_focus_within:
             return None
         if not self.app.screen.can_view_partial(self.parent):
             return None
@@ -35,7 +42,7 @@ class Process(Vertical):
             await self.target.stream.write(self.pp.part)
             self.pos=pos+1
 
-    async def finish_content(self, content) -> None:
+    async def finish_content(self, content: str) -> None:
         self.pp.part = ""
         for pos in range(self.pos, len(content)):
             await self.pp.process_patterns(content[pos:])
@@ -43,16 +50,23 @@ class Process(Vertical):
         await self.target.stream.stop()
         self.pos = pos
 
-    async def finish(self, content) -> None:
+    def get_content(self, content: str|list) -> str|None:
+        if type(content) is str:
+            return content
+        elif content[self.count]["type"] == "text":
+            return content[self.count]["text"]
+        return None
+
+    async def finish(self, content: str|list) -> None:
         if self.finished:
             return None
         if not self.target:
             await self.mount(Part())
-        await self.finish_content(content)
+        await self.finish_content(self.get_content(content))
         self.target = None
         self.finished = True
 
-    async def process(self, content) -> None:
+    async def process(self, content: str|list) -> None:
         if not self.target:
             await self.mount(Part())
-        await self.process_content(content)
+        await self.process_content(self.get_content(content))
