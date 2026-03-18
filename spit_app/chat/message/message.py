@@ -1,10 +1,10 @@
 from textual.widgets import Markdown
 from textual.containers import VerticalScroll
-from .process import Process
+from .content.content import Content
 from .tool_calls import ToolCalls
 from .actions import ActionsMixIn, bindings
 
-class Message(VerticalScroll, ActionsMixIn):
+class Message(ActionsMixIn, VerticalScroll):
     BINDINGS = bindings
 
     def __init__(self, chat, message) -> None:
@@ -53,8 +53,6 @@ class Message(VerticalScroll, ActionsMixIn):
         await self.status.update("")
         for process in self.processes:
             proc, update = self.get_update(process)
-            if proc is self.pr["reasoning"] and update:
-                update += "\n\n---"
             if proc:
                 await proc.finish(update)
 
@@ -83,11 +81,11 @@ class Message(VerticalScroll, ActionsMixIn):
         self.status = Markdown()
         await self.mount(self.status)
         await self.status.update("Processing...")
-        self.pr["reasoning"] = Process(False)
+        self.pr["reasoning"] = Content(self, "reasoning", False)
         await self.mount(self.pr["reasoning"])
-        self.pr["content"] = Process()
+        self.pr["content"] = Content(self, "content")
         await self.mount(self.pr["content"])
-        self.pr["tool_calls"] = Process()
+        self.pr["tool_calls"] = Content(self, "tool_calls")
         await self.mount(self.pr["tool_calls"])
 
     async def on_mount(self) -> None:
