@@ -61,8 +61,6 @@ class Message(ActionsMixIn, VerticalScroll):
         self.get_current_process()
         if self.finish_process:
             proc, update = self.get_update(self.finish_process)
-            if proc is self.pr["reasoning"] and update:
-                update += "\n\n---"
             await proc.finish(update)
             self.finish_process = None
         proc, update = self.get_update(self.current_process)
