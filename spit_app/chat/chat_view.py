@@ -41,8 +41,7 @@ class ChatView(VerticalScroll):
     async def action_redo(self) -> None:
         await self.chat.undo.redo()
 
-    def check_action(self, action: str,
-                     parameters: tuple[object, ...]) -> bool | None:
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         match action:
             case "continue":
                 if self.chat.chat_model == "none":
