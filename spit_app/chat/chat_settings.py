@@ -25,7 +25,7 @@ class ChatSettings(Horizontal):
             self.chat.chat_model = event.value
             self.chat.model_capabilities = get_model_capabilities(self.models, self.chat.chat_model)
         if event.control.id == "select-model-settings":
-            if event.value == Select.BLANK:
+            if event.value == Select.NULL:
                 self.chat.chat_model_settings = None
             else:
                 self.chat.chat_model_settings = event.value
@@ -45,7 +45,7 @@ class ChatSettings(Horizontal):
     def set_value(self, options: tuple, option: str, allow_blank: bool) -> str:
         if not option or not option in (i for n, i in options):
             if allow_blank:
-                return Select.BLANK
+                return Select.NULL
             else:
                 return options[0][1]
         return option
