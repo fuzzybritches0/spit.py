@@ -57,7 +57,7 @@ class Code(VerticalScroll):
         return True
 
     async def on_mount(self) -> None:
-        self.classes = "code-listing-" + self.parent.parent.message["role"]
+        self.classes = "code-listing-" + self.parent.parent.message.message["role"]
         await self.mount(Markdown())
         self.stream = Markdown.get_stream(self.children[0])
         self.update = self.children[0].update
