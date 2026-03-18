@@ -24,7 +24,7 @@ class ScreensMixIn:
     async def mount_settings_add_custom(self, stype) -> None:
         while not self.children[-1].id == "custom-setting-select-add":
             await self.children[-1].remove()
-        if not stype == Select.BLANK:
+        if not stype == Select.NULL:
             await self.mount_custom_setting_form(stype)
 
     async def edit_manage_add_custom(self) -> None:
