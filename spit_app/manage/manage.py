@@ -51,7 +51,7 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
                 newvalue = self.query_one(f"#{id}").selected
             else:
                 newvalue = self.query_one(f"#{id}").value
-            if newvalue == Select.BLANK:
+            if newvalue == Select.NULL:
                 newvalue = ""
             self.store_value(setting, newvalue)
 
