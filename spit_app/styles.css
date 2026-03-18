@@ -40,51 +40,58 @@
 	margin: 0;
 	width: auto
 }
-.message-section{
-	border: none;
+.message-content {
+	height: auto
+}
+.message-content-process {
+	border: tall $border-blurred;
+	height: auto
+}
+.message-content-process:focus {
+	border: tall $border;
 	height: auto
 }
 .message-container-tool {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
-	border: tall $border-blurred;
-	height: auto
+	height: auto;
+	border: tall $border-blurred
 }
 .message-container-tool:focus {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
-	border: tall $border;
-	height: auto
+	height: auto;
+	border: tall $border
 }
 .message-container-user {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
-	border: tall $border-blurred;
-	height: auto
+	height: auto;
+	border: tall $border-blurred
 }
 .message-container-user:focus {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
-	border: tall $border;
-	height: auto
+	height: auto;
+	border: tall $border
 }
 .message-container-assistant {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background;
-	border: tall $border-blurred;
-	height: auto
+	height: auto;
+	border: tall $border-blurred
 }
 .message-container-assistant:focus {
 	margin: 1 0 0 0;
 	color: $foreground;
 	background: $background;
-	border: tall $border;
-	height: auto
+	height: auto;
+	border: tall $border
 }
 .code-listing-tool {
 	margin: 0 0 1 0;
