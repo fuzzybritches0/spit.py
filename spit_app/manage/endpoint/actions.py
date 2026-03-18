@@ -26,7 +26,7 @@ class ActionsMixIn:
 
     async def action_remove_setting(self) -> None:
         remove = self.query_one("#custom-setting-select-remove").value
-        if not remove == Select.BLANK:
+        if not remove == Select.NULL:
             await self.remove_custom_setting(remove)
             self.query_one("#custom-setting-select-remove").set_options(self.custom_options())
             remove = remove.replace(".", "-")
