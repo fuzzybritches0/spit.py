@@ -43,7 +43,7 @@ class Settings:
         self.app.write_json("promptsf", self.prompts)
 
     def load(self) -> None:
-        self.theme = None
+        self.theme = "gruvbox"
         self.endpoints = {}
         self.prompts = {}
         self.models = {}
