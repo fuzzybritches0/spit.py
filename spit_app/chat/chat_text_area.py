@@ -30,15 +30,18 @@ class ChatTextArea(TextArea):
     async def action_save_edit(self):
         id = int(self.edit_container.id.split("-")[2])
         self.chat.undo.append_undo("change", self.edit_container.message, id)
-        if self.ctype == "tool_calls":
-            self.edit_container.message[self.ctype] = json.loads(self.text)
+        if self.scontent == "tool_calls":
+            self.edit_container.message[self.scontent] = json.loads(self.text)
         else:
-            self.edit_container.message[self.ctype] = self.text
+            if type(self.edit_container.message[self.scontent]) is str:
+                self.edit_container.message[self.scontent] = self.text
+            else:
+                self.edit_container.message[self.scontent][self.scontent_count]["text"] = self.text
         self.text = self.temp
         await self.edit_container.reset()
         self.chat.write_chat_history()
         self.is_edit = False
-        self.edit_container.focus(scroll_visible=False)
+        self.chat_view.focused_message.focus(scroll_visible=False)
 
     async def action_submit(self) -> None:
         if (self.text and
