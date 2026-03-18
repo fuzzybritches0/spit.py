@@ -58,7 +58,7 @@ class Chat(Vertical):
         return self.app.write_json(f"chats/{self.id}.json", content)
     
     def action_change_focus(self) -> None:
-        if self.app.focused.id.startswith("select-") and not self.text_area.was_focused:
+        if self.app.focused.id and self.app.focused.id.startswith("select-") and not self.text_area.was_focused:
             self.chat_view.focus()
         else:
             self.text_area.focus()
