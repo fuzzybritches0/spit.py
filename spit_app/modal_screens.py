@@ -6,9 +6,6 @@ from textual.containers import Vertical, Horizontal, Center
 class Common(ModalScreen):
     BINDINGS = [("ctrl+q", "exit_app", "Quit")]
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss()
-
     def action_exit_app(self) -> None:
         self.app.action_exit_app()
 
@@ -34,6 +31,9 @@ class ErrorScreen(Common):
         self.mtype = "error"
         self.text = f"# ERROR:\n\n- `{type(exception).__name__}` {exception}"
 
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss()
+
 class InfoScreen(Common):
     def __init__(self, info: str) -> None:
         super().__init__()
@@ -41,11 +41,20 @@ class InfoScreen(Common):
         self.mtype = "info"
         self.text = f"INFO:\n\n{info}"
 
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss()
+
 class ConfirmScreen(Common):
     def __init__(self) -> None:
         super().__init__()
         self.classes = "modal"
         self.mtype = "confirm"
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.control.id == "ok":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
 
     def compose(self) -> ComposeResult:
         with Vertical(id=f"{self.mtype}-modal"):
@@ -54,8 +63,3 @@ class ConfirmScreen(Common):
                 yield Button("CANCEL", id="cancel")
                 yield Button("OK", id="ok")
         yield Footer()
-
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.control.id == "ok":
-            self.dismiss(True)
-        self.dismiss(False)
