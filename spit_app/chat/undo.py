@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+from copy import deepcopy
 from .message.message import Message
 
 class Undo:
@@ -11,15 +12,15 @@ class Undo:
         self.undo_index = -1
 
     async def _change(self, operation: str,message: dict, index: int) -> None:
-        temp_message = self.messages[index].copy()
-        self.messages[index] = message.copy()
-        self.undo_list[self.undo_index] = [operation, temp_message.copy(), index]
-        self.chat_view.children[index].message = message
+        temp_message = deepcopy(self.messages[index])
+        self.messages[index] = deepcopy(message)
+        self.undo_list[self.undo_index] = [operation, deepcopy(temp_message), index]
+        self.chat_view.children[index].message = self.messages[index]
         await self.chat_view.children[index].reset()
         self.chat_view.children[index].focus()
 
     async def _append(self, message: dict) -> None:
-        self.messages.append(message.copy())
+        self.messages.append(deepcopy(message))
         await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         await self.chat_view.children[-1].finish()
         self.chat_view.scroll_end(animate=False)
@@ -63,5 +64,5 @@ class Undo:
             del self.undo_list[-1]
         while len(self.undo_list) > 100:
             del self.undo_list[0]
-        self.undo_list.append([operation, message.copy(), index])
+        self.undo_list.append([operation, deepcopy(message), index])
         self.undo_index=len(self.undo_list)-1
