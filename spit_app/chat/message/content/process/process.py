@@ -44,6 +44,7 @@ class Process(ActionsMixIn, VerticalScroll):
 
     async def finish_content(self, content: str) -> None:
         self.pp.part = ""
+        pos = 0
         for pos in range(self.pos, len(content)):
             await self.pp.process_patterns(content[pos:])
         await self.target.stream.write(self.pp.part)
