@@ -31,7 +31,7 @@ class ChatTextArea(TextArea):
         id = int(self.edit_container.id.split("-")[2])
         self.chat.undo.append_undo("change", self.edit_container.message, id)
         if self.scontent == "tool_calls":
-            self.edit_container.message[self.scontent] = json.loads(self.text)
+            self.edit_container.message[self.scontent][self.scontent_count] = json.loads(self.text)
         else:
             if type(self.edit_container.message[self.scontent]) is str:
                 self.edit_container.message[self.scontent] = self.text
