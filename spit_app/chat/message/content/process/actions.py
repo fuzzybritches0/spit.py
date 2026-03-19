@@ -8,7 +8,7 @@ class ActionsMixIn:
     def action_edit(self) -> None:
         self.chat.text_area.temp = self.chat.text_area.text
         if self.scontent == "tool_calls":
-            self.chat.text_area.text = json.dumps(self.message.message[self.scontent])
+            self.chat.text_area.text = json.dumps(self.message.message[self.scontent][self.count])
         else:
             if type(self.message.message[self.scontent]) is str:
                 self.chat.text_area.text = self.message.message[self.scontent]
