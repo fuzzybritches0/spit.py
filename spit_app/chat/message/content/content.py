@@ -1,23 +1,26 @@
 from .process.process import Process
+from .image import Image
 from textual.containers import Vertical
 
 class Content(Vertical):
-    def __init__(self, message, scontent: str, display: bool = True) -> None:
+    def __init__(self, chat, message, scontent: str, display: bool = True) -> None:
         super().__init__()
         self.classes = "message-content"
+        self.chat = chat
         self.message = message
         self.scontent = scontent
         self.display = display
 
     async def mount_parts(self, content: str|list) -> None:
         if type(content) is str:
-            parts = 1
+            if not self.children:
+                await self.mount(Process(self.chat, self.message, self.scontent, 0))
         else:
-            parts = len(content)
-        count = 0
-        for part in range(len(self.children), parts):
-            await self.mount(Process(self.message, self.scontent, count))
-            count+=1
+            for part in range(len(self.children), len(content)):
+                if self.message.message["content"][part]["type"] == "text":
+                    await self.mount(Process(self.chat, self.message, self.scontent, part))
+                elif self.message.message["content"][part]["type"] == "image_url":
+                    await self.mount(Image())
 
     async def process(self, content: str|list) -> None:
         await self.mount_parts(content)
@@ -39,6 +42,8 @@ class Content(Vertical):
             for part in self.children:
                 if content[count]["type"] == "text":
                     await part.finish(content[count]["text"])
+                elif content[count]["type"] == "image_url":
+                    await part.finish(content[count]["image_url"]["url"])
                 count+=1
 
     async def reset(self) -> None:
