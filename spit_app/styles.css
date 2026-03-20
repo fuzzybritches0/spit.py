@@ -36,6 +36,10 @@
 	background: $background;
 	border: round $border
 }
+.image {
+	margin: 0;
+	width: auto
+}
 .latex-image {
 	margin: 0;
 	width: auto
@@ -44,12 +48,12 @@
 	height: auto
 }
 .message-content-process {
+	height: auto;
 	border: tall $border-blurred;
-	height: auto
 }
 .message-content-process:focus {
+	height: auto;
 	border: tall $border;
-	height: auto
 }
 .message-container-tool {
 	margin: 1 0 0 0;
@@ -166,34 +170,41 @@ Input {
 	background: $background 65%
 }
 #loading-modal {
-    width: 20;
-    height: 5;
-    padding: 1 0 0 0;
-    background: $background-lighten-1;
-    border: round $border;
-    align: center middle;
+	width: 20;
+	height: 5;
+	padding: 1 0 0 0;
+	background: $background-lighten-1;
+	border: round $border;
+	align: center middle
 }
 #error-modal {
-    width: 60;
-    height: auto;
-    padding: 1;
-    background: $background-lighten-1;
-    border: round $error;
-    align: center middle;
+	width: 60;
+	height: auto;
+	padding: 1;
+	background: $background-lighten-1;
+	border: round $error;
+	align: center middle
 }
 #info-modal {
-    width: 60;
-    height: auto;
-    padding: 1;
-    background: $background-lighten-1;
-    border: round $border;
-    align: center middle;
+	width: 60;
+	height: auto;
+	padding: 1;
+	background: $background-lighten-1;
+	border: round $border;
+	align: center middle
 }
 #confirm-modal {
-    width: 40;
-    height: 13;
-    padding: 1;
-    background: $background-lighten-1;
-    border: round $border;
-    align: center middle;
+	width: 40;
+	height: 13;
+	padding: 1;
+	background: $background-lighten-1;
+	border: round $border;
+	align: center middle
+}
+#choose-image-modal {
+	width: 80%;
+	height: 80%;
+	background: $background-lighten-1;
+	border: tall $border;
+	align: center middle
 }
