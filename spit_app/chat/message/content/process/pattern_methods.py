@@ -3,7 +3,7 @@ from .containers.code import Code
 from .containers.latex import LaTeX
 
 def complete(self) -> str:
-    return self.message.target.source + self.part
+    return self.content.target.source + self.part
 
 async def latex_start_end(self, buffer: str, pattern: str, is_display: bool = False) -> None:
     if (not self.pp_last.isalnum() and
@@ -38,11 +38,11 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
             sequence = sequence[:-1]
             escaped = 1
         if  not sequence.strip() == "..." and not sequence.strip() == "…" and not sequence.strip() == "and":
-            await self.message.target.stream.stop()
-            await self.message.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
+            await self.content.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
+            await self.content.target.stream.stop()
             self.part = ""
-            await self.message.mount(LaTeX(sequence, exp_latex_fence, pattern))
-            await self.message.mount(Part())
+            await self.content.mount(LaTeX(self.content.message.message, sequence, exp_latex_fence, pattern))
+            await self.content.mount(Part())
             self.skip_add_part = len(pattern)+escaped
         self.latex = False
         self.seqstart = -1
@@ -111,17 +111,17 @@ def compose_fence(pattern: str) -> str:
     return fence * count
 
 async def code_block_start(self, pattern: str) -> None:
-    await self.message.target.stream.write(self.part)
-    await self.message.target.stream.stop()
+    await self.content.target.stream.write(self.part)
+    await self.content.target.stream.stop()
     self.part = compose_fence(pattern)
-    await self.message.mount(Code())
+    await self.content.mount(Code())
 
 async def code_block_end(self, pattern: str) -> None:
-    await self.message.target.stream.write(self.part+compose_fence(pattern))
-    await self.message.target.stream.stop()
+    await self.content.target.stream.write(self.part+compose_fence(pattern))
+    await self.content.target.stream.stop()
     self.part = ""
-    await self.message.target.update_code()
-    await self.message.mount(Part())
+    await self.content.target.update_code()
+    await self.content.mount(Part())
 
 def code_listing(self, pattern: str) -> None:
     if not self.codeblock:
