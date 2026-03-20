@@ -7,7 +7,7 @@ from .actions import ActionsMixIn, bindings
 class Message(ActionsMixIn, VerticalScroll):
     BINDINGS = bindings
 
-    def __init__(self, chat, message) -> None:
+    def __init__(self, chat, message: dict) -> None:
         super().__init__()
         self.message = message
         self.messages = chat.messages
@@ -79,11 +79,11 @@ class Message(ActionsMixIn, VerticalScroll):
         self.status = Markdown()
         await self.mount(self.status)
         await self.status.update("Processing...")
-        self.pr["reasoning"] = Content(self, "reasoning", False)
+        self.pr["reasoning"] = Content(self.chat, self, "reasoning", False)
         await self.mount(self.pr["reasoning"])
-        self.pr["content"] = Content(self, "content")
+        self.pr["content"] = Content(self.chat, self, "content")
         await self.mount(self.pr["content"])
-        self.pr["tool_calls"] = Content(self, "tool_calls")
+        self.pr["tool_calls"] = Content(self.chat, self, "tool_calls")
         await self.mount(self.pr["tool_calls"])
 
     async def on_mount(self) -> None:
