@@ -1,5 +1,7 @@
+import os
+from pathlib import Path
 from textual.app import ComposeResult
-from textual.widgets import Markdown, Button, Footer
+from textual.widgets import Markdown, Button, Header, Footer, DirectoryTree
 from textual.screen import ModalScreen
 from textual.containers import Vertical, Horizontal, Center
 
@@ -63,3 +65,42 @@ class ConfirmScreen(Common):
                 yield Button("CANCEL", id="cancel")
                 yield Button("OK", id="ok")
         yield Footer()
+
+class ChooseImageFile(ModalScreen):
+    BINDINGS = [("escape", "dismiss", "Dismiss"),
+                ("ctrl+q", "exit_app", "Quit")]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.classes = "modal"
+
+    def action_exit_app(self) -> None:
+        self.app.action_exit_app()
+
+    def action_dismiss(self) -> None:
+        self.dismiss(None)
+
+    def on_directory_tree_file_selected(self, path: Path) -> None:
+        self.dismiss(path)
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Vertical(id="choose-image-modal"):
+            yield FilteredDirectoryTree("./")
+        yield Footer()
+
+class FilteredDirectoryTree(DirectoryTree):
+    def is_image(self, path: str) -> bool:
+        path = path.lower()
+        exts = ["png", "jpeg", "jpg", "gif", "bmp", "tiff", "webp"]
+        for ext in exts:
+            if path.endswith(ext):
+                return True
+        return False
+
+    def filter_paths(self, paths: list) -> list:
+        ret = []
+        for path in paths:
+            if not path.name.startswith(".") and (os.path.isdir(path) or self.is_image(path.name)):
+                ret.append(path)
+        return ret
