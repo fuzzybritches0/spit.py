@@ -11,9 +11,10 @@ class LaTeX(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy LaTeX")
     ]
 
-    def __init__(self, latex, latex_fence_start, latex_fence_end) -> None:
+    def __init__(self, message: dict, latex, latex_fence_start, latex_fence_end) -> None:
         super().__init__()
         self.app.refresh_bindings()
+        self.message = message
         self.latex = latex
         escaped = ""
         if latex_fence_start == "[" or latex_fence_start == "(":
@@ -26,7 +27,7 @@ class LaTeX(VerticalScroll):
         self.app.copy_to_clipboard(self.latex_fence_start + self.latex + self.latex_fence_end)
 
     async def on_mount(self) -> None:
-        self.classes = "code-listing-" + self.parent.parent.message["role"]
+        self.classes = "code-listing-" + self.message["role"]
         color = self.styles.color.css
         background = self.styles.background.css
         latex_png = self.latex_png(self.latex, color, background)
