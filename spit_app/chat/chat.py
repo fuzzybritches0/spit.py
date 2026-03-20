@@ -90,7 +90,7 @@ class Chat(Vertical):
             if image:
                 if self.messages and self.messages[-1]["role"] == "user":
                     self.undo.append_undo("change", self.messages[-1])
-                    self.messages[-1]["role"]["content"].append(image_url(image))
+                    self.messages[-1]["content"].append(image_url(image))
                 else:
                     self.messages.append({"role": "user", "content": [image_url(image)]})
                     self.undo.append_undo("append", self.messages[-1])
