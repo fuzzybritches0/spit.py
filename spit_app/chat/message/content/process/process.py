@@ -7,31 +7,24 @@ from .pattern_processing import PatternProcessing
 class Process(ActionsMixIn, VerticalScroll):
     BINDINGS = bindings
 
-    def __init__(self, message, scontent, count) -> None:
+    def __init__(self, chat, message, scontent: str, count: int) -> None:
         super().__init__()
         self.classes = "message-content-process"
+        self.chat = chat
+        self.chat_view = self.chat.chat_view
         self.message = message
-        self.messages = message.messages
-        self.chat = message.chat
         self.scontent = scontent
         self.count = count
-        self.reset_state()
-
-    def reset_state(self) -> None:
         self.pp = PatternProcessing(self)
         self.pos = 0
         self.pp.part = ""
         self.target = None
         self.finished = False
 
-    async def reset(self) -> None:
-        await self.remove_children()
-        self.reset_state()
-
     async def process_content(self, content: str) -> None:
         if not self.display:
             return None
-        if not self.chat.chat_view.has_focus_within:
+        if not self.chat_view.has_focus_within:
             return None
         if not self.app.screen.can_view_partial(self.parent):
             return None
