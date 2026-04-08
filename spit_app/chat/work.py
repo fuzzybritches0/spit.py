@@ -66,7 +66,9 @@ class Work:
             count = len(self.messages)
             await self.endpoint.stream()
         except Exception as exception:
-            if type(exception).__name__ in ("TimeoutError", "ConnectError", "RuntimeError", "ConnectTimeout"):
+            if type(exception).__name__ in ("TimeoutError", "ConnectError",
+                                            "RuntimeError", "ConnectTimeout",
+                                            "RemoteProtocolError"):
                 self.app.exception = exception
                 if len(self.messages) > count:
                     del self.messages[-1]
