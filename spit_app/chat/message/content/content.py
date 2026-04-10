@@ -12,14 +12,15 @@ class Content(Vertical):
         self.display = display
 
     async def mount_parts(self, content: str|list) -> None:
+        self.app.applog(content)
         if type(content) is str:
             if not self.children:
                 await self.mount(Process(self.chat, self.message, self.scontent, 0))
         else:
             for part in range(len(self.children), len(content)):
-                if self.message.message["content"][part]["type"] == "text":
+                if content[part]["type"] == "text":
                     await self.mount(Process(self.chat, self.message, self.scontent, part))
-                elif self.message.message["content"][part]["type"] == "image_url":
+                elif content[part]["type"] == "image_url":
                     await self.mount(Image())
 
     async def process(self, content: str|list) -> None:
