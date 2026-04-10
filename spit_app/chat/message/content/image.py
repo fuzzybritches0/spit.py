@@ -25,4 +25,3 @@ class Image(VerticalScroll):
         image.styles.height = height
         await self.mount(image)
         self.finished = True
-        self.app.applog(self.finished)
