@@ -11,6 +11,7 @@ class ToolCalls:
         self.last_char = ""
         self.pos = 0
         self.skip = False
+        self.catch_number = False
 
     def tool_call_arguments(self, arguments: str) -> None:
         ret = ""
@@ -27,11 +28,20 @@ class ToolCalls:
                 else:
                     ret += "\n~~~~\n"
             if self.keyvalue % 2 == 1:
+                self.catch_number = False
                 if self.skip:
                     self.skip = False
                 else:
                     ret += char
+            elif char == ":":
+                self.catch_number = True
+                self.skip = True
             self.last_char = char
+            if self.catch_number and not char == "}" and not char == "]":
+                if self.skip:
+                    self.skip = False
+                else:
+                    ret += char
         self.pos = pos+1
         self.parsed_tool_calls[-1]["text"] += ret
         
