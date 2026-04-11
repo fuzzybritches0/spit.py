@@ -26,7 +26,7 @@ class ToolCalls:
                 elif self.keyvalue % 4 == 2:
                     ret += "`:\n"
                 else:
-                    ret += "\n~~~~\n"
+                    ret += "\n``````\n"
             if self.keyvalue % 2 == 1:
                 self.catch_number = False
                 if self.skip:
