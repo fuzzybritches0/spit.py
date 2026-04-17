@@ -35,8 +35,8 @@ Although this is still work in progress, it should work and keep you productive.
 You might want to create a Python venv, first, to ensure no conflicts with other packages:
 
 ```
-mkdir ~/.local/share/spit.py
-python3 -m venv --prompt spit.py ~/.local/share/spit.py
+mkdir -p ~/.local/share/venv/spit.py
+python3 -m venv --prompt spit.py ~/.local/share/venv/spit.py
 ```
 
 
@@ -56,12 +56,12 @@ We assume you want to save the app in `~`, alias `${HOME}`. Now, install spit.py
 ```
 $ cd ~
 $ git clone https://github.com/fuzzybritches0/spit.py.git
-$ source ~/.local/share/spit.py/bin/activate
+$ source ~/.local/share/venv/spit.py/bin/activate
 $ pip install textual platformdirs httpx cairosvg ziamath pillow textual_image playwright bs4 ddgs
 $ playwright install chromium-headless-shell
 ```
 
-We assume the Python venv is still active from the step above. You'll see `(spit.py)` at the start of your command line. If not, `source ~/.local/share/spit.py/bin/activate` will do the trick. Finally, to start the app, do:
+We assume the Python venv is still active from the step above. You'll see `(spit.py)` at the start of your command line. If not, `source ~/.local/share/venv/spit.py/bin/activate` will do the trick. Finally, to start the app, do:
 
 ```
 $ python3 ~/spit.py/main.py
@@ -71,7 +71,7 @@ For a more comfortable invocation you might want to save the following as a Bash
 
 ```bash
 #!/bin/bash
-source ~/.local/share/spit.py/bin/activate
+source ~/.local/share/venv/spit.py/bin/activate
 python3 ~/spit.py/main.py
 ```
 
