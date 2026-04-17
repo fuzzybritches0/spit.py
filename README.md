@@ -37,7 +37,6 @@ You might want to create a python venv, first, to ensure no conflicts with other
 ```
 mkdir ~/.local/share/spit.py
 python3 -m venv --prompt spit.py ~/.local/share/spit.py
-~/.local/share/spit.py/bin/activate
 ```
 
 
