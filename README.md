@@ -84,7 +84,7 @@ If you haven't set up an endpoint, yet, head over to https://github.com/ggml-org
 
 ## Version requirements
 
-Spit.py was tested with Python 3.13. It might work with other versions, too. The textual framework version needs to be at least 8.0.
+Spit.py was tested with Python 3.13. It might work with other versions, too. The Textual framework version needs to be >=8.0.
 
 
 ## Contributions
