@@ -42,10 +42,10 @@ python3 -m venv --prompt spit.py ~/.local/share/spit.py
 
 ## Install system dependencies
 
-Then make sure libcairo2-dev is installed. We need it for LaTeX math formula rendering:
+Then make sure libcairo2 is installed. We need it for LaTeX math formula rendering. On standard installations it is usually present. Try `apt list --installed | grep libcairo2` to find out! If the output of that command shows no `libcairo2`, do the following:
 
 ```
-$ sudo apt install libcairo2-dev
+$ sudo apt install libcairo2
 ```
 
 
