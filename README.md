@@ -67,7 +67,7 @@ We assume the Python venv is still active from the step above. You'll see `(spit
 $ python3 ~/spit.py/main.py
 ```
 
-For a more comfortable invocation you might want to save the following as a bash script, maybe in `~/bin/spit.py`.
+For a more comfortable invocation you might want to save the following as a Bash script, maybe in `~/bin/spit.py`.
 
 ```bash
 #!/bin/bash
@@ -77,9 +77,9 @@ python3 ~/spit.py/main.py
 
 Don't forget to run `chmod u+x ~/bin/spit.py` after you've saved the file. Then it will be as simple as typing `spit.py` to start the app.
 
-The minimum settings to use the app, is to setup an endpoint. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum required.
+The minimum settings to use the app, is to setup an endpoint. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum required. Then choose 'Create New Chat' to start a new chat.
 
-If you haven't set up an endpoint, yet, head over to https://github.com/ggml-org/llama.cpp/, and find out how it's done. If you use any other provider or software with an OAI '/v1/chat/completions' compatible endpoint, I cannot guarantee that it will work, since I've only tested the llama.cpp endpoint.
+If you haven't set up an endpoint, yet, head over to https://github.com/ggml-org/llama.cpp/, and find out how it's done. If you use any other provider or software with an OAI '/v1/chat/completions' compatible endpoint, I cannot guarantee that it will work, since I've only tested the llama.cpp endpoint. But it says it is compatible.
 
 
 ## Version requirements
