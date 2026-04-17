@@ -32,7 +32,7 @@ Although this is still work in progress, it should work and keep you productive.
 
 ## Python venv
 
-You might want to create a python venv, first, to ensure no conflicts with other packages:
+You might want to create a Python venv, first, to ensure no conflicts with other packages:
 
 ```
 mkdir ~/.local/share/spit.py
@@ -51,23 +51,33 @@ $ sudo apt install libcairo2-dev
 
 ## Install and run the app
 
-Then install spit.py and it's dependencies:
+We assume you want to save the app in `~`, alias `${HOME}`. Now, install spit.py and it's dependencies:
 
 ```
 $ cd ~
 $ git clone https://github.com/fuzzybritches0/spit.py.git
+$ source ~/.local/share/spit.py/bin/activate
 $ pip install textual platformdirs httpx cairosvg ziamath pillow textual_image playwright bs4 ddgs
 $ playwright install chromium-headless-shell
 ```
 
-Finally, to start the app, activate the venv environment and start the app:
+We assume the Python venv is still active from the step above. You'll see `(spit.py)` at the start of your command line. If not, `source ~/.local/share/spit.py/bin/activate` will do the trick. Finally, to start the app, do:
 
 ```
-~/.local/share/spit.py/bin/activate
+$ python3 ~/spit.py/main.py
+```
+
+For a more comfortable invocation you might want to save the following as a bash script, maybe in `~/bin/spit.py`.
+
+```bash
+#!/bin/bash
+source ~/.local/share/spit.py/bin/activate
 python3 ~/spit.py/main.py
 ```
 
-The minimum settings to use the app, is to setup an endpoint. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum to get started.
+Don't forget to run `chmod u+x ~/bin/spit.py` after you've saved the file. Then it will be as simple as typing `spit.py` to start the app.
+
+The minimum settings to use the app, is to setup an endpoint. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum required.
 
 If you haven't set up an endpoint, yet, head over to https://github.com/ggml-org/llama.cpp/, and find out how it's done. If you use any other provider or software with an OAI '/v1/chat/completions' compatible endpoint, I cannot guarantee that it will work, since I've only tested the llama.cpp endpoint.
 
