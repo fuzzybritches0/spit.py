@@ -12,7 +12,6 @@ class Content(Vertical):
         self.display = display
 
     async def mount_parts(self, content: str|list) -> None:
-        self.app.applog(content)
         if type(content) is str:
             if not self.children:
                 await self.mount(Process(self.chat, self.message, self.scontent, 0))
