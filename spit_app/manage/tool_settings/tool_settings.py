@@ -54,6 +54,7 @@ class ToolSettings(ValidationMixIn, Manage):
     async def action_reset(self) -> None:
         self.reset()
         await self.remove_children()
+        self.load(self.uuid)
         await self.edit_manage_screen()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
