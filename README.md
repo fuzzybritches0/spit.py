@@ -39,6 +39,12 @@ mkdir -p ~/.local/share/venv/spit.py
 python3 -m venv --prompt spit.py ~/.local/share/venv/spit.py
 ```
 
+If in the last step you got an error message about missing modules, you might have to do first:
+
+```
+$ sudo apt install python3-venv python3-pip python3-setuptools
+```
+
 
 ## Install system dependencies
 
@@ -51,7 +57,7 @@ $ sudo apt install libcairo2
 
 ## Install and run the app
 
-We assume you want to save the app in `~`, alias `${HOME}`. Now, install spit.py and it's dependencies:
+We assume you want to save the app in `~`, alias `${HOME}`. Now, install spit.py and its dependencies:
 
 ```
 $ cd ~
