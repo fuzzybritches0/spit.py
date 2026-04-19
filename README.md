@@ -63,7 +63,7 @@ We assume you want to save the app in `~`, alias `${HOME}`. Now, install spit.py
 $ cd ~
 $ git clone https://github.com/fuzzybritches0/spit.py.git
 $ source ~/.local/share/venv/spit.py/bin/activate
-$ pip install textual platformdirs httpx cairosvg ziamath pillow textual_image playwright bs4 ddgs
+$ pip install -r ./spit.py/requirements.txt
 $ playwright install chromium-headless-shell
 ```
 
@@ -90,7 +90,7 @@ If you haven't set up an endpoint, yet, head over to https://github.com/ggml-org
 
 ## Version requirements
 
-Spit.py was tested with Python 3.13. It might work with other versions, too. The Textual framework version needs to be >=8.0.
+Spit.py was tested with Python 3.13. It might work with other versions, too.
 
 
 ## Contributions
