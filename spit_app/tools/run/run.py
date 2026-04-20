@@ -26,7 +26,7 @@ class Run:
                 args += ["--bind", f"/{d}", f"/{d}"]
         args += ["--chdir", f"/home/{user}"]
         args += ["--bind", self.sandbox_path, f"/home/{user}"]
-        args += ["--share-net", "--unshare-all", "--proc", "/proc",
+        args += ["--unshare-all", "--share-net", "--proc", "/proc",
                  "--dev", "/dev", "--tmpfs", "/tmp", "--new-session"]
         return args
 
