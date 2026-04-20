@@ -23,7 +23,7 @@ class ValidationMixIn:
             return (False, "Must be unique!")
         return (True, None)
 
-    async def validate_add_setting(self) -> tuple:
+    async def validate_add_setting(self) -> bool:
         setting = self.query_one("#new-setting")
         desc = self.query_one("#new-description")
         sel = None
