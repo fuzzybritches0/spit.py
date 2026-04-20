@@ -10,6 +10,8 @@ class Settings:
         self.path["app_home"].mkdir(parents=True, exist_ok=True)
         self.path["custom_tools"] = self.path["app_home"] / "tools"
         self.path["custom_tools"].mkdir(parents=True, exist_ok=True)
+        self.path["sandbox"] = self.path["app_home"] / "sandbox"
+        self.path["sandbox"].mkdir(parents=True, exist_ok=True)
         self.path["data"] = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
         self.path["data"].mkdir(parents=True, exist_ok=True)
         self.path["promptsf"] = self.path["data"] / "prompts.json"
@@ -18,8 +20,6 @@ class Settings:
         self.path["settings"] = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
         self.path["settings"].mkdir(parents=True, exist_ok=True)
         self.path["settingsf"] = self.path["settings"] / "settings.json"
-        self.path["sandbox"] = self.path["data"] / "sandbox"
-        self.path["sandbox"].mkdir(parents=True, exist_ok=True)
         self.path["cache"] = self.path["data"] / "cache"
         self.path["cache"].mkdir(parents=True, exist_ok=True)
         self.path["chats"] = self.path["data"] / "chat"
