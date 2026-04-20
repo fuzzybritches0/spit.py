@@ -19,27 +19,31 @@ def load_module_from_path(name: str, path: Path):
     spec.loader.exec_module(mod)
     return mod
 
+def load_tools(tools: dict, file_path: str) -> None:
+    for tool in os.listdir(file_path):
+        if tool.endswith(".py"):
+            name = tool[:-3]
+            tools[name] = {}
+            module = load_module_from_path(f"tools.{tool}", file_path + "/" + tool)
+            tools[name]["desc"] = getattr(module, "DESC")
+            tools[name]["settings"] = getattr(module, "SETTINGS")
+            if hasattr(module, "call"):
+                tools[name]["call"] = getattr(module, "call")
+            else:
+                tools[name]["call_async_generator"] = getattr(module, "call_async_generator")
+            if hasattr(module, "PROMPT_INST"):
+                tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
+            if hasattr(module, "Validators"):
+                tools[name]["validators"] = getattr(module, "Validators")
+
 class ToolCall:
     def __init__(self, app) -> None:
         self.app = app
         self.tools = {}
         file_path = __file__.split("/")
         file_path = "/".join(file_path[:-1]) + "/tools"
-        for tool in os.listdir(file_path):
-            if tool.endswith(".py"):
-                name = tool[:-3]
-                self.tools[name] = {}
-                module = load_module_from_path(f"tools.{tool}", file_path + "/" + tool)
-                self.tools[name]["desc"] = getattr(module, "DESC")
-                self.tools[name]["settings"] = getattr(module, "SETTINGS")
-                if hasattr(module, "call"):
-                    self.tools[name]["call"] = getattr(module, "call")
-                else:
-                    self.tools[name]["call_async_generator"] = getattr(module, "call_async_generator")
-                if hasattr(module, "PROMPT_INST"):
-                    self.tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
-                if hasattr(module, "Validators"):
-                    self.tools[name]["validators"] = getattr(module, "Validators")
+        load_tools(self.tools, file_path)
+        load_tools(self.tools, str(app.settings.path["custom_tools"]))
 
     def required_arguments(self, name: str, arguments: dict) -> None|str:
         for argument in self.tools[name]["desc"]["function"]["parameters"]["required"]:
