@@ -24,6 +24,8 @@ class Run:
         for d in os.listdir("/"):
             if not d in nobind:
                 args += ["--bind", f"/{d}", f"/{d}"]
+        args += ["--setenv", "PIP_BREAK_SYSTEM_PACKAGES", "True"]
+        args += ["--setenv", "PIP_USER", "True"]
         args += ["--chdir", f"/home/{user}"]
         args += ["--bind", self.sandbox_path, f"/home/{user}"]
         args += ["--unshare-all", "--share-net", "--proc", "/proc",
