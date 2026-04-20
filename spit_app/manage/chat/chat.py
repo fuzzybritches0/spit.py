@@ -31,13 +31,17 @@ class Chat(ActionsMixIn, Manage):
                   "ameth": "model_list", "wmeth": "work_model_list"},
         "model_settings": {"stype": "select", "desc": "Model Settings", "ameth": "model_settings_list"},
         "prompt": {"stype": "select", "desc": "System Prompt", "ameth": "prompt_list"},
-        "tools": {"stype": "select_list", "desc": "Allowed tools", "ameth": "tools_list"}
+        "tools": {"stype": "select_list", "desc": "Allowed tools", "ameth": "tools_list"},
+        "sandbox": {"stype": "string", "empty": False, "desc": "Sandbox home directory", "value": "default"}
     }
 
     def __init__(self, new_chat: bool = False) -> None:
         super().__init__("chat", new_chat)
         self.managed = None
         self.cur_dir = "chats"
+
+    def valid_setting_sandbox(self, value: str) -> tuple:
+        return self.is_valid_setting(value)
 
     def is_loaded(self) -> bool:
         try:
