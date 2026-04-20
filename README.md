@@ -48,10 +48,10 @@ $ sudo apt install python3-venv python3-pip
 
 ## Install system dependencies
 
-Then make sure libcairo2 is installed. We need it for LaTeX math formula rendering. On standard installations it is usually present. Try `apt list --installed | grep libcairo2` to find out! If the output of that command shows no `libcairo2`, do the following:
+Then make sure libcairo2 and bubblewrap are installed. We need the former for LaTeX math formula rendering and the latter for sandboxing LLM function calls. On standard installations both are usually present. To simply make sure they are, do:
 
 ```
-$ sudo apt install libcairo2
+$ sudo apt install libcairo2 bubblewrap
 ```
 
 
