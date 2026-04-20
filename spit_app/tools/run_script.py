@@ -33,7 +33,7 @@ SANDBOX = True
 MAX_SECONDS = 0
 ALLOWED = "bash, python3, perl"
 PROMPT = "Use this function to run a script with any interpreter on the allowed list and receive its output."
-PROMPT_INST = "The following interpreters are allowed: [allowed]. Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
+PROMPT_INST = "The following interpreters are allowed: [interpreters]. Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" },
