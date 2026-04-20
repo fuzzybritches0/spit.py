@@ -36,8 +36,6 @@ class Run:
         if self.sandbox and not shutil.which("bwrap"):
             yield "ERROR: `bwrap` not found! Give user instructions to install `bubblewrap`!"
             return
-        if self.cmd[0] == "python":
-            self.cmd[0] = "python3"
         cmd_args = self.cmd
         if self.sandbox:
             cmd_args = self.bwrap_args() + self.cmd
