@@ -64,7 +64,7 @@ async def call_async_generator(app, arguments: dict, chat_id) -> str:
     content = json.dumps(arguments["content"])
     args = f"path = \"{arguments['path']}\"\ncontent = {content}\n"
     script = args + EXEC["script"]
-    run = Run(app.settings.path["sandbox"], chat_id, EXEC["interpreter"], script,
+    run = Run(app, chat_id, EXEC["interpreter"], script,
               SETTINGS["sandbox"]["value"], 0)
     async for line in run.run():
         yield line

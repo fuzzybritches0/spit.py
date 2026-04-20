@@ -7,9 +7,10 @@ import signal
 from pathlib import Path
 
 class Run:
-    def __init__(self, sandbox_path: Path, chat_id: str, cmd: str, script: str,
+    def __init__(self, app, chat_id: str, cmd: str, script: str,
                  sandbox: bool = True, timeout: int = 0):
-        self.sandbox_path = sandbox_path / chat_id
+        sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").csettings["sandbox"]["value"]
+        self.sandbox_path = app.settings.path["sandbox"] / sandbox_home
         self.sandbox_path.mkdir(parents=True, exist_ok=True)
         self.cmd = [cmd]
         self.script = script

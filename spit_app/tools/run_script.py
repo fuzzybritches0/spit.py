@@ -47,7 +47,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
     if not shutil.which(arguments["interpreter"]):
         yield f"ERROR: {arguments['interpreter']} not found! Give user instructions to install!\n"
         return
-    run = Run(app.settings.path["sandbox"], chat_id, arguments["interpreter"], arguments["script"],
+    run = Run(app, chat_id, arguments["interpreter"], arguments["script"],
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
     async for line in run.run():
         yield line

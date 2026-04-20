@@ -39,7 +39,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
     if not shutil.which("bash"):
         yield f"ERROR: `bash` not found! Give user instructions to install!\n"
         return
-    run = Run(app.settings.path["sandbox"], chat_id, "bash", arguments["command"],
+    run = Run(app, chat_id, "bash", arguments["command"],
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
     async for line in run.run():
         yield line
