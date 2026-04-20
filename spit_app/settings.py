@@ -6,6 +6,10 @@ class Settings:
     def __init__(self, app) -> None:
         self.app = app
         self.path = {}
+        self.path["app_home"] = Path.home() / "spit.py"
+        self.path["app_home"].mkdir(parents=True, exist_ok=True)
+        self.path["custom_tools"] = self.path["app_home"] / "tools"
+        self.path["custom_tools"].mkdir(parents=True, exist_ok=True)
         self.path["data"] = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
         self.path["data"].mkdir(parents=True, exist_ok=True)
         self.path["promptsf"] = self.path["data"] / "prompts.json"
