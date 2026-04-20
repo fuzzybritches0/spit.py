@@ -42,7 +42,7 @@ python3 -m venv --prompt spit.py ~/.local/share/venv/spit.py
 If in the last step you got an error message about missing modules, you might have to do first:
 
 ```
-$ sudo apt install python3-venv python3-pip python3-setuptools
+$ sudo apt install python3-venv python3-pip
 ```
 
 
