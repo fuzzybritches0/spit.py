@@ -151,11 +151,14 @@ class Chat(ActionsMixIn, Manage):
         return (("None", "none"),)
 
     @work(exclusive=True)
-    async def work_model_list(self) -> tuple:
-        endpoint = self.query_one("#endpoint").value
-        models = await get_models(self.settings.endpoints[endpoint])
-        options = get_models_tuple(models)
-        self.query_one("#model").set_options(options)
+    async def work_model_list(self) -> None:
+        try:
+            endpoint = self.query_one("#endpoint").value
+            models = await get_models(self.settings.endpoints[endpoint])
+            options = get_models_tuple(models)
+            self.query_one("#model").set_options(options)
+        except:
+            pass
 
     def model_settings_list(self, default: bool = False) -> tuple:
         tup = ()
