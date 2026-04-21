@@ -1,11 +1,12 @@
 import base64
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 
 def load_image_base64(file: str) -> str:
-    image = Image.open(file)
+    image = Image.open(file).convert("RGB")
+    image = ImageOps.exif_transpose(image)
     width, height = image.size
-    max_dimension = 2024
+    max_dimension = 1600
     if max(width, height) > max_dimension:
         if width > height:
             new_width = max_dimension
