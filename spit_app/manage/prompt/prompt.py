@@ -33,8 +33,8 @@ class Prompts(Manage):
 
     async def after_action(self, action: str) -> None:
         if action == "save" or action == "delete":
-            await self.app.maybe_remove("manage-chat")
-            await self.app.maybe_remove("new-chat")
+            await self.app.maybe_reload("manage-chat")
+            await self.app.maybe_reload("new-chat")
             await super().after_action(action)
         if not action == "duplicate":
             await super().after_action(action)
