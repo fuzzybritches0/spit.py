@@ -47,11 +47,19 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             yield Vertical(id="main")
         yield Footer()
 
-    async def maybe_remove(self, id: str) -> None:
+    async def maybe_reload(self, id: str) -> None:
         try:
-            await self.query_one("#main").query_one(f"#{id}").remove()
+            loaded = self.query_one("#main").query_one(f"#{id}")
         except:
-            pass
+            loaded = None
+        if loaded:
+            if loaded.children[0].id == "option-list":
+                await loaded.remove_children()
+                await loaded.select_main_screen()
+            else:
+                await loaded.remove_children()
+                loaded.load(loaded.uuid)
+                await loaded.edit_manage_screen()
 
     def write_json(self, path, content) -> bool:
         path = path.split("/")
