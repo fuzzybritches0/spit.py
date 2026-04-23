@@ -418,7 +418,7 @@ async def fetch_url(url: str) -> str | None:
 
 def extract_text(html: str) -> str:
     soup = BeautifulSoup(html, 'html.parser')
-    html = soup.select("h1, h2, h3, h4, p, li, pre, blockquote, table")
+    html = soup.select("h1, h2, h3, h4, p, pre, blockquote, table")
     text_parts = []
     for el in html:
         text = str(el)
