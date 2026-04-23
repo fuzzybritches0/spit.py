@@ -20,10 +20,6 @@ DESC = {
                 "url": {
                     "type": "string",
                     "description": "A valid URL like 'https://example.com'."
-                },
-                "max_length": {
-                    "type": "integer",
-                    "description": "Maximum characters to return. Default 5000."
                 }
             },
             "required": ["url"]
@@ -31,28 +27,16 @@ DESC = {
     }
 }
 
-MAX_LENGTH = 5000
 CACHE_TTL = 0
 TIMEOUT = 30_000
 
 PROMPT = "Use this function to access information on the internet."
-PROMPT_INST = "Provide a valid URL beginning with http:// or https://. The function will return plain text content from the page, up to [max_length] characters."
+PROMPT_INST = "Provide a valid URL beginning with http:// or https://. The function will return plain text content from the page."
 
 SETTINGS = {
     "prompt": {"value": PROMPT, "stype": "text", "desc": "Prompt"},
-    "max_length": {"value": MAX_LENGTH, "stype": "uinteger", "empty": False, "desc": "Maximum content length (characters)"},
     "cache_ttl": {"value": CACHE_TTL, "stype": "uinteger", "empty": False, "desc": "Cache TTL (minutes) (0 - don't cache URLs)"}
 }
-
-class Validators:
-    def max_length(value) -> bool:
-        try:
-            int(value)
-        except:
-            return (False, None)
-        if int(value) < 500 or int(value) > 20000:
-            return (False, "Value out of range")
-        return (True, None)
 
 def file_name(app, url: str) -> str:
     safe_url = "".join(c if c.isalnum() or c in "-._~" else "_" for c in url)
@@ -432,28 +416,21 @@ async def fetch_url(url: str) -> str | None:
             await browser.close()
         return html
 
-def extract_text(html: str, max_length: int) -> str:
+def extract_text(html: str) -> str:
     soup = BeautifulSoup(html, 'html.parser')
     html = soup.select("h1, h2, h3, h4, p, li, pre, blockquote, table")
     text_parts = []
-    total_length = 0
     for el in html:
         text = str(el)
         if not text:
             continue
         text_parts.append(text)
-        total_length += len(text)
-        if total_length >= max_length:
-            break
     result = '\n\n'.join(text_parts)
-    if len(result) > max_length:
-        result = result[:max_length - 50].rstrip() + "\n\n[Content truncated...]"
     return result.strip()
 
 async def call(app, arguments: dict, chat_id: str) -> str:
     load_user_settings(app, NAME, SETTINGS)
     url = arguments["url"]
-    max_length = SETTINGS["max_length"]["value"]
     if not url.startswith("http://") and not url.startswith("https://"):
         return "ERROR: Invalid URL. Must begin with http:// or https://"
     cache_path = file_name(app, url)
@@ -468,7 +445,7 @@ async def call(app, arguments: dict, chat_id: str) -> str:
             return html
         cache = {"time": time.time(), "html": html}
         save_cache(cache, cache_path)
-    content = extract_text(html, max_length)
+    content = extract_text(html)
     if not content:
         return "ERROR: No readable content found on this page."
     return "```html\n" + content + "\n```"
