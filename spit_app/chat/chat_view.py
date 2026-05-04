@@ -89,6 +89,5 @@ class ChatView(VerticalScroll):
             self.focused_message.focus(scroll_visible=False)
 
     def on_descendant_focus(self) -> None:
-        if self.has_focus_within:
-            self.focused_message = self.app.focused
-            self.chat.text_area.was_focused = False
+        self.focused_message = self.app.focused
+        self.chat.text_area.was_focused = False
