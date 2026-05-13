@@ -202,8 +202,8 @@ Input {
 	align: center middle
 }
 #choose-image-modal {
-	width: 80%;
-	height: 80%;
+	width: 95%;
+	height: 95%;
 	background: $background-lighten-1;
 	border: tall $border;
 	align: center middle
