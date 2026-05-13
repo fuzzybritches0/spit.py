@@ -2,6 +2,9 @@ import base64
 from PIL import Image, ImageOps
 from io import BytesIO
 
+def image_url(base64_image) -> dict:
+    return {"type": "image_url", "image_url": {"url": base64_image}}
+
 def load_image_base64(file: str) -> str:
     image = Image.open(file).convert("RGB")
     image = ImageOps.exif_transpose(image)

@@ -8,12 +8,9 @@ from .undo import Undo
 from .chat_text_area import ChatTextArea
 from .chat_settings import ChatSettings
 from .chat_view import ChatView
-from .multimodal import load_image_base64
+from .multimodal import load_image_base64, image_url
 from spit_app.modal_screens import ChooseImageFile
 from spit_app.chat.message.message import Message
-
-def image_url(base64_image) -> dict:
-    return {"type": "image_url", "image_url": {"url": base64_image}}
 
 class Chat(Vertical):
     BINDINGS = [
