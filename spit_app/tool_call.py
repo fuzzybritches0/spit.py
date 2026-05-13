@@ -62,30 +62,38 @@ class ToolCall:
         name = tool_call["function"]["name"]
         arguments = json.loads(tool_call["function"]["arguments"])
         messages.append({"role": "tool", "tool_call_id": tool_call["id"],
-                "name": name, "content": ""})
+            "name": name, "content": [{"type": "text", "text": ""}]})
         await self.maybe_callback(1)
         if not name in chat.chat_tools or not name in self.tools.keys():
-            messages[-1]["content"] = f"ERROR: tool {name} not available!"
+            messages[-1]["content"][0]["text"] = f"ERROR: tool {name} not available!"
             await self.maybe_callback(2)
             await self.maybe_callback(0)
             return None
         missing = self.required_arguments(name, arguments)
         if missing:
-            messages[-1]["content"] = missing
+            messages[-1]["content"][0]["text"] = missing
             await self.maybe_callback(2)
             await self.maybe_callback(0)
             return None
         try:
             if "call" in self.tools[name]:
                 if inspect.iscoroutinefunction(self.tools[name]["call"]):
-                    messages[-1]["content"] += await self.tools[name]["call"](self.app, arguments, chat_id)
+                    ret = await self.tools[name]["call"](self.app, arguments, chat_id)
+                    if ret:
+                        messages[-1]["content"][0]["text"] += ret
                 elif inspect.isfunction(self.tools[name]["call"]):
-                    messages[-1]["content"] += self.tools[name]["call"](self.app, arguments, chat_id)
+                    ret = self.tools[name]["call"](self.app, arguments, chat_id)
+                    if ret:
+                        messages[-1]["content"][0]["text"] += ret
                 await self.maybe_callback(2)
-            else:
+            elif "call_async_generator" in self.tools[name]:
                 async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
-                    messages[-1]["content"] += chunk
+                    if chunk:
+                        messages[-1]["content"][0]["text"] += chunk
                     await self.maybe_callback(2)
+            else:
+                messages[-1]["content"][0]["text"] = f"ERROR: no function for {name} defined!"
+                self.maybe_callback(2)
         except Exception as exception:
-            messages[-1]["content"] += f"{type(exception).__name__}: {exception}"
+            messages[-1]["content"][0]["text"] += f"{type(exception).__name__}: {exception}"
         await self.maybe_callback(0)
