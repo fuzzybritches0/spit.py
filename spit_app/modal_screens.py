@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
 from textual.app import ComposeResult
-from textual.widgets import Markdown, Button, Header, Footer, DirectoryTree
+from textual.widgets import Markdown, Button, Header, Footer, DirectoryTree, Input, Button, Label, Rule
 from textual.screen import ModalScreen
 from textual.containers import Vertical, Horizontal, Center
+from spit_app.manage.validation import ValidationMixIn
 
 class Common(ModalScreen):
     BINDINGS = [("ctrl+q", "exit_app", "Quit")]
@@ -66,13 +67,15 @@ class ConfirmScreen(Common):
                 yield Button("OK", id="ok")
         yield Footer()
 
-class ChooseImageFile(ModalScreen):
+class ChooseImageFile(ModalScreen, ValidationMixIn):
     BINDINGS = [("escape", "dismiss", "Dismiss"),
+                ("ctrl+enter", "load_url", "Load image URL"),
                 ("ctrl+q", "exit_app", "Quit")]
 
     def __init__(self) -> None:
         super().__init__()
         self.classes = "modal"
+        self.manage = {"image_url": {"stype": "url", "empty": False, "desc": "Image URL"}}
 
     def action_exit_app(self) -> None:
         self.app.action_exit_app()
@@ -80,12 +83,29 @@ class ChooseImageFile(ModalScreen):
     def action_dismiss(self) -> None:
         self.dismiss(None)
 
+    async def action_load_url(self) -> None:
+        if await self.validate_values_edit():
+            self.dismiss(self.query_one("#image_url").value)
+
     def on_directory_tree_file_selected(self, path: Path) -> None:
-        self.dismiss(path)
+        self.dismiss(str(path.path))
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        if await self.validate_values_edit():
+            self.dismiss(self.query_one("#image_url").value)
+
+    async def on_input_changed(self, event: Input.Changed) -> None:
+        await self.update_val_results_input(event.control.id, event.validation_result.failure_descriptions)
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="choose-image-modal"):
+            yield Label("Load image from URL (http:// or https://):")
+            yield Input(id="image_url", validators=self.validators("image_url", "image_url", "url"))
+            yield Markdown(id="val-image_url")
+            yield Button("Load", id="load-image-url")
+            yield Rule()
+            yield Label("Load local file:")
             yield FilteredDirectoryTree("./")
         yield Footer()
 
