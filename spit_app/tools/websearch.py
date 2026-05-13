@@ -45,7 +45,7 @@ class Validators:
             return (False, "Value out of range")
         return (True, None)
 
-async def call(app, arguments: dict, chat_id: str):
+async def call(app, arguments: dict, chat_id: str) -> str|None:
     load_user_settings(app, NAME, SETTINGS)
     query = arguments["query"]
     safesearch = SETTINGS["safesearch"]["value"]

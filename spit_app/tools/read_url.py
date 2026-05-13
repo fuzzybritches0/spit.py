@@ -428,7 +428,7 @@ def extract_text(html: str) -> str:
     result = '\n\n'.join(text_parts)
     return result.strip()
 
-async def call(app, arguments: dict, chat_id: str) -> str:
+async def call(app, arguments: dict, chat_id: str) -> str|None:
     load_user_settings(app, NAME, SETTINGS)
     url = arguments["url"]
     if not url.startswith("http://") and not url.startswith("https://"):

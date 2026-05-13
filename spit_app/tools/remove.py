@@ -59,7 +59,7 @@ EXEC = {
     "interpreter": "python3"
 }
 
-async def call_async_generator(app, arguments: dict, chat_id) -> str:
+async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
     args = f"path = \"{arguments['path']}\"\n"
     script = args + EXEC["script"]

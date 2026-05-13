@@ -27,7 +27,7 @@ SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
 
-async def call(app, arguments: dict, chat_id) -> dict:
+async def call(app, arguments: dict, chat_id) -> str|None:
     url = f"https://wttr.in/{arguments['location']}?format=j2"
     async with httpx.AsyncClient(timeout=30) as client:
         result = await client.get(url)

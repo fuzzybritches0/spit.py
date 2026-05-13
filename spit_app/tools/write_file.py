@@ -59,7 +59,7 @@ EXEC = {
     "interpreter": "python3"
 }
     
-async def call_async_generator(app, arguments: dict, chat_id) -> str:
+async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
     content = json.dumps(arguments["content"])
     args = f"path = \"{arguments['path']}\"\ncontent = {content}\n"
