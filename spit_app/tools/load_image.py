@@ -12,12 +12,12 @@ DESC = {
         "parameters": {
             "type": "object",
             "properties": {
-                "file_path": {
+                "url": {
                     "type": "string",
-                    "description": "The absolute path to the image file."
+                    "description": "The absolute path to a local image file like '/home/user/image.jpg', or '~/image.jpg', or a 'http://' or 'https://' URL."
                 }
             },
-            "required": ["file_path"]
+            "required": ["url"]
         }
     }
 } 
@@ -31,15 +31,14 @@ SETTINGS = {
 async def call(app, arguments: dict, chat_id) -> str|None:
     sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").csettings["sandbox"]["value"]
     sandbox_path = app.settings.path["sandbox"] / sandbox_home
-    file_path = arguments["file_path"]
-    if file_path.startswith("/home"):
-        file_path = str(sandbox_path) + "/" + "/".join(file_path.split("/")[3:])
-    elif file_path.startswith("~"):
-        file_path = str(sandbox_path) + "/" + file_path[1:]
-    else:
-        return "ERROR: 'file_path' must be absolute!"
-    image = await asyncio.to_thread(load_image_base64, file_path)
+    url = arguments["url"]
+    if url.startswith("/home"):
+        url = str(sandbox_path) + "/" + "/".join(url.split("/")[3:])
+    elif url.startswith("~"):
+        url = str(sandbox_path) + "/" + url[1:]
+    elif not url.startswith("http://") and not url.startswith("https://"):
+        return "ERROR: 'url' must be an absolute local path or start with 'http://' or 'https://'!"
+    image = await asyncio.to_thread(load_image_base64, url)
     messages = app.query_one("#main").query_one(f"#{chat_id}").messages
     messages[-1]["content"].append(image_url(image))
-    return f"Loading image: {arguments['file_path']}"
-
+    return f"Loading image: {arguments['url']}"
