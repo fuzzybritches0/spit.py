@@ -16,6 +16,12 @@ class Function(Validator):
             return self.failure(failure)
 
 class ValidationMixIn:
+    def fid(self, id) -> str:
+        return id.replace("-", ".")
+
+    def rid(self, id) -> str:
+        return id.replace(".", "-")
+
     def validators(self, setting: str, id: str, stype: str) -> list:
         Validators = []
         if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:

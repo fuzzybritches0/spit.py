@@ -21,12 +21,6 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.new_manage = new_manage
         self.focused_el = None
 
-    def fid(self, id) -> str:
-        return id.replace("-", ".")
-
-    def rid(self, id) -> str:
-        return id.replace(".", "-")
-
     def duplicate(self) -> None:
         self.new_manage = True
         self.uuid = str(time()).replace(".", "-")
