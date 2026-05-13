@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-import os
 import asyncio
 from textual import work
 from textual.app import ComposeResult
@@ -81,21 +80,26 @@ class Chat(Vertical):
 
     @work
     async def action_add_image(self) -> None:
-        file = await self.app.push_screen_wait(ChooseImageFile())
-        if file and os.path.exists(file.path) and os.path.isfile(file.path):
-            image = await asyncio.to_thread(load_image_base64, file.path)
-            if image:
-                if self.messages and self.messages[-1]["role"] == "user":
-                    self.undo.append_undo("change", self.messages[-1])
-                    self.messages[-1]["content"].append(image_url(image))
-                else:
-                    self.messages.append({"role": "user", "content": [image_url(image)]})
-                    self.undo.append_undo("append", self.messages[-1])
-                    await self.chat_view.mount(Message(self, self.messages[-1]))
-                self.write_chat_history()
-                await self.chat_view.children[-1].finish()
-                self.chat_view.focus()
-                self.chat_view.scroll_end(animate=False)
+        url = await self.app.push_screen_wait(ChooseImageFile())
+        image = None
+        if url:
+            try:
+                image = await asyncio.to_thread(load_image_base64, url)
+            except Exception as exception:
+                self.app.exception = exception
+                return None
+        if image:
+            if self.messages and self.messages[-1]["role"] == "user":
+                self.undo.append_undo("change", self.messages[-1])
+                self.messages[-1]["content"].append(image_url(image))
+            else:
+                self.messages.append({"role": "user", "content": [image_url(image)]})
+                self.undo.append_undo("append", self.messages[-1])
+                await self.chat_view.mount(Message(self, self.messages[-1]))
+            self.write_chat_history()
+            await self.chat_view.children[-1].finish()
+            self.chat_view.focus()
+            self.chat_view.scroll_end(animate=False)
 
     def check_action(self, action: str,
                      parameters: tuple[object, ...]) -> bool | None:
