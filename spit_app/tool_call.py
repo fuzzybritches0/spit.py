@@ -35,6 +35,10 @@ def load_tools(tools: dict, file_path: str) -> None:
                 tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
             if hasattr(module, "Validators"):
                 tools[name]["validators"] = getattr(module, "Validators")
+            if hasattr(module, "REQUIRES_MULTIMODAL_IMAGE"):
+                tools[name]["requires_multimodal_image"] = getattr(module, "REQUIRES_MULTIMODAL_IMAGE")
+            else:
+                tools[name]["requires_multimodal_image"] = False
 
 class ToolCall:
     def __init__(self, app) -> None:
@@ -55,6 +59,12 @@ class ToolCall:
         if self.callback:
             await self.callback(signal)
 
+    async def end_call(self, messages: list, message: str) -> None:
+        messages[-1]["content"][0]["text"] = message
+        await self.maybe_callback(2)
+        await self.maybe_callback(0)
+        return None
+
     async def call(self, messages: list, tool_call: dict, chat_id: str, callback: callable = None) -> None:
         self.callback = callback
         chat = self.app.query_one("#main").query_one(f"#{chat_id}")
@@ -65,16 +75,13 @@ class ToolCall:
             "name": name, "content": [{"type": "text", "text": ""}]})
         await self.maybe_callback(1)
         if not name in chat.chat_tools or not name in self.tools.keys():
-            messages[-1]["content"][0]["text"] = f"ERROR: tool {name} not available!"
-            await self.maybe_callback(2)
-            await self.maybe_callback(0)
-            return None
+            return await self.end_call(messages, f"ERROR: tool {name} not available!")
+        if (self.app.tool_call.tools[name]["requires_multimodal_image"] and
+            not "multimodal" in chat.model_capabilities):
+            return await self.end_call(messages, f"ERROR: tool {name} requires multimodal capabilities!")
         missing = self.required_arguments(name, arguments)
         if missing:
-            messages[-1]["content"][0]["text"] = missing
-            await self.maybe_callback(2)
-            await self.maybe_callback(0)
-            return None
+            return await self.end_call(messages, missing)
         try:
             if "call" in self.tools[name]:
                 if inspect.iscoroutinefunction(self.tools[name]["call"]):
