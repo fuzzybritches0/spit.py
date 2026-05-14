@@ -4,6 +4,8 @@ from spit_app.chat.multimodal import load_image_base64, image_url
 
 NAME = __file__.split("/")[-1][:-3]
 
+REQUIRES_MULTIMODAL_IMAGE = True
+
 DESC = {
     "type": "function",
     "function": {
