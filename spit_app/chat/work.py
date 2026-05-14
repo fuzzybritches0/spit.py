@@ -18,10 +18,16 @@ class Work:
         tools_descs = []
         for _tool in self.app.tool_call.tools.keys():
             tool = self.app.tool_call.tools[_tool]
-            if tool["desc"]["function"]["name"] in chat.chat_tools:
+            if tool["desc"]["function"]["name"] in chat.chat_tools and self.req_mm_image(_tool):
                 tools_descs.append(tool["desc"])
         self.endpoint = LlamaCppEndpoint(self.messages, endpoint, chat.chat_model, model_settings, prompt,
                                          tools_descs, self.chat_view.callback)
+
+    def req_mm_image(self, tool: dict) -> bool:
+        if (self.app.tool_call.tools[tool]["requires_multimodal_image"] and
+            not "multimodal" in self.chat.model_capabilities):
+            return False
+        return True
 
     def prompt_inst(self, tool) -> str:
         prompt = ""
@@ -38,7 +44,7 @@ class Work:
     def prompt(self) -> str:
         prompt = ""
         for tool in self.app.tool_call.tools.keys():
-            if tool in self.chat.chat_tools:
+            if tool in self.chat.chat_tools and self.req_mm_image(tool):
                 tool_prompt = self.app.tool_call.tools[tool]["settings"]["prompt"]["value"]
                 if tool in self.settings.tool_settings:
                     if "prompt" in self.settings.tool_settings[tool]:
