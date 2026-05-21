@@ -20,6 +20,18 @@ DESC = {
                 "content": {
                     "type": "string",
                     "description": "The content of the file."
+                },
+                "append": {
+                    "type": "boolean",
+                    "description": "Append to file instead of overwriting. Default: False"
+                },
+                "prepend_newline": {
+                    "type": "boolean",
+                    "description": "Prepend newline when appending to file. Default: True"
+                },
+                "create_dirs": {
+                    "type": "boolean",
+                    "description": "Create parent directories if they don't exist. Default: True"
                 }
             },
             "required": ["path", "content"]
@@ -43,7 +55,13 @@ EXEC = {
 async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
     content = json.dumps(arguments["content"])
-    args = f"path = \"{arguments['path']}\"\ncontent = {content}\n"
+    args = f"""
+path = "{arguments['path']}"
+content = {content}
+append = {arguments.get('append', False)}
+prepend_newline = {arguments.get('prepend_newline', True)}
+create_dirs = {arguments.get('create_dirs', True)}
+"""
     script = args + EXEC["script"]
     run = Run(app, chat_id, EXEC["interpreter"], script,
               SETTINGS["sandbox"]["value"], 0)
