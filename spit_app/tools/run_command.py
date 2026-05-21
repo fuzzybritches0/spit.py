@@ -41,5 +41,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
         return
     run = Run(app, chat_id, "bash", arguments["command"],
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
+    yield "~~~~\n"
     async for line in run.run():
         yield line
+    yield "\n~~~~"
