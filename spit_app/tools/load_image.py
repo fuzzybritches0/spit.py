@@ -39,8 +39,8 @@ async def call(app, arguments: dict, chat_id) -> str|None:
     elif url.startswith("~"):
         url = str(sandbox_path) + "/" + url[1:]
     elif not url.startswith("http://") and not url.startswith("https://"):
-        return "ERROR: 'url' must be an absolute local path or start with 'http://' or 'https://'!"
+        return "ERROR: `url` must be an absolute local path or start with `http://` or `https://`!"
     image = await asyncio.to_thread(load_image_base64, url)
     messages = app.query_one("#main").query_one(f"#{chat_id}").messages
     messages[-1]["content"].append(image_url(image))
-    return f"Loading image: {arguments['url']}"
+    return f"Loading image: `{arguments['url']}`"
