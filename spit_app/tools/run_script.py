@@ -48,9 +48,11 @@ async def call_async_generator(app, arguments: dict, chat_id):
     if interpreter == "python":
         interpreter = "python3"
     if not shutil.which(interpreter):
-        yield f"ERROR: {interpreter} not found! Give user instructions to install!\n"
+        yield f"ERROR: `{interpreter}` not found! Give user instructions to install!\n"
         return
     run = Run(app, chat_id, interpreter, arguments["script"],
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
+    yield "~~~~\n"
     async for line in run.run():
         yield line
+    yield "\n~~~~"
