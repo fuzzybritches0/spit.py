@@ -69,7 +69,7 @@ class Run:
                 except ProcessLookupError:
                     pass
                 yield "\n~~~~"
-                yield "\nTIMEOUT: execution exceeded timeout limit!"
+                yield "\nERROR: Terminated! Execution exceeded timeout limit!"
                 return
         else:
             while True:
