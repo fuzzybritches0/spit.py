@@ -6,6 +6,13 @@ import asyncio
 import signal
 from pathlib import Path
 
+def get_script(tool) -> str:
+    script_dir = "/".join(tool.split("/")[0:-1])
+    script = tool.split("/")[-1]
+    script_path = script_dir + "/scripts/" + script
+    with open(script_path, "r") as f:
+        return f.read()
+
 class Run:
     def __init__(self, app, chat_id: str, cmd: str, script: str,
                  sandbox: bool = True, timeout: int = 0):
