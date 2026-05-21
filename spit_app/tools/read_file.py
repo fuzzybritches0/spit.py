@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
-from spit_app.tools.run.run import Run
+from spit_app.tools.run.run import Run, get_script
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -30,19 +30,8 @@ SETTINGS = {
     "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)"}
 }
 
-SCRIPT = """
-import sys
-
-try:
-    with open(path, "r") as f:
-        print(f.read())
-except Exception as exception:
-    print(f"ERROR: {type(exception).__name__}: {exception}")
-    sys.exit(1)
-"""
-
 EXEC = {
-    "script": SCRIPT,
+    "script": get_script(__file__),
     "interpreter": "python3"
 }
 
