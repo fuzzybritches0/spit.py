@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
-from spit_app.tools.run.run import Run
+from spit_app.tools.run.run import Run, get_script
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -30,32 +30,8 @@ SETTINGS = {
     "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)"}
 }
 
-SCRIPT = """
-import os
-import sys
-import shutil
-
-if not os.path.exists(path):
-    print(f"ERROR: {path} does not exist!")
-    sys.exit(1)
-if os.path.isfile(path):
-    try:
-        os.remove(path)
-        print(f"{path} removed.")
-    except Exception as exception:
-        print(f"ERROR: {type(exception).__name__}: {exception}")
-        sys.exit(1)
-elif os.path.isdir(path):
-    try:
-        shutil.rmtree(path)
-        print(f"{path} removed.")
-    except Exception as exception:
-        print(f"ERROR: {type(exception).__name__}: {exception}")
-        sys.exit(1)
-"""
-
 EXEC = {
-    "script": SCRIPT,
+    "script": get_script(__file__),
     "interpreter": "python3"
 }
 
