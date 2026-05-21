@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
-from spit_app.tools.run.run import Run
+from spit_app.tools.run.run import Run, get_script
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -55,7 +55,7 @@ except Exception as exception:
 """
 
 EXEC = {
-    "script": SCRIPT,
+    "script": get_script(__file__),
     "interpreter": "python3"
 }
     
