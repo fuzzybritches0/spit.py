@@ -448,4 +448,4 @@ async def call(app, arguments: dict, chat_id: str) -> str|None:
     content = extract_text(html)
     if not content:
         return "ERROR: No readable content found on this page."
-    return "```html\n" + content + "\n```"
+    return "~~~~html\n" + content + "\n~~~~"
