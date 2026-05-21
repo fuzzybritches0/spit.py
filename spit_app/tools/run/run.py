@@ -57,7 +57,6 @@ class Run:
         proc.stdin.write(self.script.encode())
         await proc.stdin.drain()
         proc.stdin.close()
-        yield "~~~~\n"
         if self.timeout > 0:
             try:
                 stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=self.timeout)
@@ -68,7 +67,6 @@ class Run:
                     os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
                 except ProcessLookupError:
                     pass
-                yield "\n~~~~"
                 yield "\nERROR: Terminated! Execution exceeded timeout limit!"
                 return
         else:
@@ -78,5 +76,4 @@ class Run:
                     break
                 yield line_bytes.decode("UTF-8", errors="replace")
         return_code = await proc.wait()
-        yield "\n~~~~"
         yield f"\nProcess exited with code {return_code}."
