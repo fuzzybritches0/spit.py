@@ -6,12 +6,17 @@ import asyncio
 import signal
 from pathlib import Path
 
-def get_script(tool) -> str:
+def get_script(tool, common: str = "") -> str:
+    ret = ""
     script_dir = "/".join(tool.split("/")[0:-1])
     script = tool.split("/")[-1]
     script_path = script_dir + "/scripts/" + script
+    if common:
+        common_path = script_dir + "/scripts/common/" + common + ".py"
+        with open(common_path, "r") as f:
+            common = f.read() + "\n"
     with open(script_path, "r") as f:
-        return f.read()
+        return common + f.read()
 
 class Run:
     def __init__(self, app, chat_id: str, cmd: str, script: str,
