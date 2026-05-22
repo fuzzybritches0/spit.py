@@ -1,5 +1,8 @@
 import sys
 import os
+import stat
+import pwd
+import grp
 from pathlib import Path
 from datetime import datetime
 
@@ -13,6 +16,37 @@ def human_readable_size(size_bytes):
         size /= 1024
         unit_index += 1
     return f"{size:.1f} {units[unit_index]}"
+
+def get_owner_group(stat_result):
+    try:
+        owner = pwd.getpwuid(stat_result.st_uid).pw_name
+    except KeyError:
+        owner = str(stat_result.st_uid)
+    try:
+        group = grp.getgrgid(stat_result.st_gid).gr_name
+    except KeyError:
+        group = str(stat_result.st_gid)
+    return owner, group
+
+def get_file_type(stat_result):
+    mode = stat_result.st_mode
+    if stat.S_ISBLK(mode):
+        return "block"
+    elif stat.S_ISCHR(mode):
+        return "char"
+    elif stat.S_ISFIFO(mode):
+        return "fifo"
+    elif stat.S_ISSOCK(mode):
+        return "socket"
+    elif stat.S_ISLNK(mode):
+        return "link"
+    elif stat.S_ISREG(mode):
+        return "file"
+    elif stat.S_ISDIR(mode):
+        return "dir"
+    else:
+        return "unknown"
+
 try:
     path = Path(path)
     if not path.exists():
@@ -24,10 +58,10 @@ try:
     print(f"Directory listing for: `{path}`")
     print("\n")
     if recursive:
-        print("| Path | Size | Type | Modified |")
+        print("| Path | Size | Type | Owner | Modified |")
     else:
-        print("| Name | Size | Type | Modified |")
-    print("|------|------|------|----------|")
+        print("| Name | Size | Type | Owner | Modified |")
+    print("|------|------|------|-------|----------|")
     entries = []
     if recursive:
         for root, dirs, files in os.walk(path):
@@ -53,11 +87,13 @@ try:
         note = True
     for entry, is_dir in entries:
         try:
-            stat = entry.stat()
-            size = stat.st_size
-            mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-            perms = oct(stat.st_mode)[-3:]
+            stat_result = entry.stat()
+            size = stat_result.st_size
+            mtime = datetime.fromtimestamp(stat_result.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+            perms = oct(stat_result.st_mode)[-3:]
             is_symlink = entry.is_symlink()
+            owner, group = get_owner_group(stat_result)
+            file_type = get_file_type(stat_result)
             try:
                 relative_path = entry.relative_to(path)
             except ValueError:
@@ -68,7 +104,7 @@ try:
             else:
                 name = str(relative_path)
                 size_str = human_readable_size(size)
-            type_str = "dir" if is_dir else "file"
+            type_str = file_type
             if is_symlink:
                 type_str += " @ "
                 try:
@@ -79,17 +115,17 @@ try:
                         type_str += "-> broken"
                 except:
                     type_str += "-> ?"
-            print(f"| {name} | {size_str} | {type_str} | {mtime} |")
+            print(f"| {name} | {size_str} | {type_str} | {owner}:{group} | {mtime} |")
         except PermissionError:
             name = str(entry.relative_to(path)) if not entry.is_dir() else str(entry.relative_to(path)) + "/"
             if entry.is_dir():
                 name = str(entry.relative_to(path)) + "/"
-            print(f"| {name} | <DENIED> | | |")
+            print(f"| {name} | <DENIED> | | | |")
         except Exception as e:
             name = str(entry.relative_to(path)) if not entry.is_dir() else str(entry.relative_to(path)) + "/"
             if entry.is_dir():
                 name = str(entry.relative_to(path)) + "/"
-            print(f"| {name} | <ERROR> | | |")
+            print(f"| {name} | <ERROR> | | | |")
     print(f"\nTotal entries: {len(entries)}")
     if note:
         print(f"\nNOTE: Showing `{max_results}` of `{count}` entries (use `max_results={count}` for all)")

@@ -8,7 +8,7 @@ DESC = {
     "type": "function",
     "function": {
         "name": NAME,
-        "description": "Get directory contents with metadata including file sizes, permissions, and modification times.",
+        "description": "Get directory contents with metadata including file sizes, owner/group, type (file/dir/link/block/char/fifo/socket), and modification times. Useful for exploring file systems and identifying special files like device nodes and symlinks.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -34,7 +34,7 @@ DESC = {
     }
 }
 
-PROMPT = "Use this function to get directory contents with metadata."
+PROMPT = "Use this function to get directory contents with metadata including owner/group, file type, size, and modification times."
 SANDBOX = True
 
 SETTINGS = {
