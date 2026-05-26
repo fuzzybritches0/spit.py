@@ -113,6 +113,7 @@ class Chat(ActionsMixIn, Manage):
                 chat.chat_model_settings = self.manage["model_settings"]["value"]
                 chat.chat_prompt = self.manage["prompt"]["value"]
                 chat.chat_tools = self.manage["tools"]["value"]
+                chat.csettings["sandbox"]["value"] = self.manage["sandbox"]["value"]
                 ctime = chat.chat_ctime
                 desc = chat.chat_desc
                 chat.write_chat_history()
