@@ -38,6 +38,7 @@ class Chat(Vertical):
         self.work = None
         self.chat_view = ChatView(self)
         self.text_area = ChatTextArea(self)
+        self.chat_settings = ChatSettings(self)
         self.undo = Undo(self)
 
     def is_working(self) -> bool:
@@ -46,7 +47,7 @@ class Chat(Vertical):
         return False
 
     def compose(self) -> ComposeResult:
-        yield ChatSettings(self)
+        yield self.chat_settings
         yield self.chat_view
         yield self.text_area
 
