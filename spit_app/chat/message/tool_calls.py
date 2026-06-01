@@ -7,41 +7,37 @@ class ToolCalls:
 
     def new_arguments(self) -> None:
         self.cur_tool_call_head += 1
-        self.keyvalue = 0
         self.last_char = ""
         self.pos = 0
         self.skip = False
-        self.catch_number = False
+        self.mark = 0
+        self.key = True
 
     def tool_call_arguments(self, arguments: str) -> None:
         ret = ""
         pos = self.pos
         for pos in range(self.pos, len(arguments)):
             char = arguments[pos:pos+1]
-            if char == '"' and not self.last_char == "\\":
+            if char == "{" and self.mark == 0:
                 self.skip = True
-                self.keyvalue += 1
-                if self.keyvalue % 4 == 1:
-                    ret += "\n`"
-                elif self.keyvalue % 4 == 2:
-                    ret += "`:\n"
-                else:
-                    ret += "\n``````\n"
-            if self.keyvalue % 2 == 1:
-                self.catch_number = False
-                if self.skip:
-                    self.skip = False
-                else:
-                    ret += char
-            elif char == ":":
-                self.catch_number = True
+            elif char == '"' and not self.last_char == "\\":
+                self.mark += 1
                 self.skip = True
+                if self.key:
+                    ret += "`"
+            elif char == ":" and self.mark % 2 == 0:
+                self.skip = True
+                self.key = False
+                ret += "\n~~~~\n"
+            elif (char == "," or char == "}") and self.mark % 2 == 0 and not self.key:
+                self.skip = True
+                self.key = True
+                ret += "\n~~~~\n"
             self.last_char = char
-            if self.catch_number and not char == "}" and not char == "]":
-                if self.skip:
-                    self.skip = False
-                else:
-                    ret += char
+            if self.skip:
+                self.skip = False
+                continue
+            ret+=char
         self.pos = pos+1
         self.parsed_tool_calls[-1]["text"] += ret
         
