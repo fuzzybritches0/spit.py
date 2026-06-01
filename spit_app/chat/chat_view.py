@@ -14,6 +14,7 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
 
     def __init__(self, chat) -> None:
         super().__init__()
+        self.lazy_scroll_home_end = 1
         self.chat = chat
         self.messages = self.chat.messages
         self.id = "chat-view"
@@ -39,6 +40,7 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
     async def action_continue(self) -> None:
         if (self.messages[-1]["role"] == "user" or self.messages[-1]["role"] == "tool" or
             (self.messages[-1]["role"] == "assistant" and "tool_calls" in self.messages[-1])):
+            self.lazy_scroll_home_end = 1
             work = Work(self.chat)
             self.chat.work = self.run_worker(work.work_stream())
 
@@ -47,6 +49,12 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
 
     async def action_redo(self) -> None:
         await self.chat.undo.redo()
+
+    def action_scroll_home(self) -> None:
+        self.lazy_scroll_home_end = -1
+
+    def action_scroll_end(self) -> None:
+        self.lazy_scroll_home_end = 1
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         match action:
@@ -77,24 +85,40 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
     async def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
 
-    async def on_mount(self) -> None:
+    def on_focus(self) -> None:
+        self.app.query_one("#side-panel").can_focus = False
+        self.chat.text_area.was_focused = False
+        self.focus_message()
+
+    def watch_scroll_y(self, old_value: float, new_value: float) -> None:
+        self.focus_message()
+        super().watch_scroll_y(old_value, new_value)
+
+    def focus_message(self) -> None:
+        height = 0
+        if self.chat.text_area.has_focus:
+            return None
+        for message in self.displayed_children:
+            if self.scroll_y > self.max_scroll_y - 4 and self.displayed_children[-1] is self.children[-1]:
+                self.displayed_children[-1].focus(scroll_visible=False)
+                break
+            if self.scroll_y < 4 and self.displayed_children[0] is self.children[0]:
+                message.focus(scroll_visible=False)
+                break
+            height += message.outer_size.height
+            if height >= self.scroll_y + 4:
+                if not message.has_focus and not message.has_focus_within:
+                    message.focus(scroll_visible=False)
+                break
+
+    async def load(self) -> None:
         if self.messages:
             loading_screen = LoadingScreen()
             await self.app.push_screen(loading_screen)
             for message in self.messages:
-                await self.mount(Message(self.chat, message))
-                await self.children[-1].finish()
+                await self.mount(Message(self.chat, message, False))
             await loading_screen.dismiss()
-
-    def on_focus(self) -> None:
-        self.app.query_one("#side-panel").can_focus = False
-        if not self.children and not self.chat.undo.undo_list:
+            self.lazy_load_messages()
+        else:
+            self.lazy_load_messages()
             self.chat.text_area.focus()
-        if not self.focused_message and self.children:
-            self.focused_message = self.children[-1]
-        if self.focused_message:
-            self.focused_message.focus(scroll_visible=False)
-
-    def on_descendant_focus(self) -> None:
-        self.focused_message = self.app.focused
-        self.chat.text_area.was_focused = False
