@@ -2,9 +2,10 @@
 from textual.containers import VerticalScroll
 from .message.message import Message
 from .work import Work
+from .lazy_load import LazyLoadMixIn
 from spit_app.modal_screens import LoadingScreen
 
-class ChatView(VerticalScroll):
+class ChatView(VerticalScroll, LazyLoadMixIn):
     BINDINGS = [
         ("ctrl+enter", "continue", "Continue"),
         ("u", "undo", "Undo"),
