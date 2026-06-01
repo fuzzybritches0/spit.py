@@ -17,6 +17,7 @@ class Undo:
         self.undo_list[self.undo_index] = [operation, deepcopy(temp_message), index]
         self.chat_view.children[index].message = self.messages[index]
         await self.chat_view.children[index].reset()
+        await self.chat_view.children[index].finish()
         self.chat_view.children[index].focus()
 
     async def _append(self, message: dict) -> None:
