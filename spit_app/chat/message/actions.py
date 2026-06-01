@@ -36,12 +36,12 @@ class ActionsMixIn:
             return False
         match action:
             case "show_cot":
-                if not self.has_reasoning():
+                if not "reasoning" in self.pr:
                     return False
                 if self.pr["reasoning"].display:
                     return False
             case "hide_cot":
-                if not self.has_reasoning():
+                if not "reasoning" in self.pr:
                     return False
                 if not self.pr["reasoning"].display:
                     return False
