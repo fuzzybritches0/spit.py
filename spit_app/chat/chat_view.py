@@ -17,7 +17,6 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
         self.chat = chat
         self.messages = self.chat.messages
         self.id = "chat-view"
-        self.focused_message = None
 
     async def callback(self, signal: int) -> None:
         if signal == 0:
