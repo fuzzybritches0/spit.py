@@ -14,7 +14,6 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
 
     def __init__(self, chat) -> None:
         super().__init__()
-        self.anchor()
         self.chat = chat
         self.messages = self.chat.messages
         self.id = "chat-view"
@@ -25,9 +24,17 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
             self.chat.write_chat_history()
             self.chat.undo.append_undo("append", self.chat.messages[-1])
             await self.children[-1].finish()
+            self.release_anchor()
+            self.children[-1].processing = False
         elif signal == 1:
             await self.mount(Message(self.chat, self.messages[-1]))
+            self.children[-1].processing = True
+            self.anchor()
         elif signal == 2:
+            if self.children[-1].display and not self.is_anchored:
+                self.anchor()
+            elif not self.children[-1].display and self.is_anchored:
+                self.release_anchor()
             await self.children[-1].process()
 
     async def action_continue(self) -> None:
