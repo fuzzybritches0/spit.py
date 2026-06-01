@@ -14,6 +14,7 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
 
     def __init__(self, chat) -> None:
         super().__init__()
+        self.stop_worker = None
         self.lazy_scroll_home_end = 1
         self.chat = chat
         self.messages = self.chat.messages

@@ -30,6 +30,17 @@ class ActionsMixIn:
         if self.confirm_exit:
             return None
         self.confirm_exit = True
+        self.chats = 0
         if await self.push_screen_wait(ConfirmScreen()):
+            for child in self.query_one("#main").children:
+                if child.id.startswith("chat-"):
+                    self.chats+=1
+                    child.chat_view.stop_worker = self.clean_exit
+        if not self.chats:
             self.exit()
         self.confirm_exit = False
+
+    def clean_exit(self) -> None:
+        self.chats-=1
+        if not self.chats:
+            self.exit()
