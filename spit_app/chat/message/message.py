@@ -7,8 +7,9 @@ from .actions import ActionsMixIn, bindings
 class Message(ActionsMixIn, VerticalScroll):
     BINDINGS = bindings
 
-    def __init__(self, chat, message: dict) -> None:
+    def __init__(self, chat, message: dict, display: bool = True) -> None:
         super().__init__()
+        self.display = display
         self.message = message
         self.messages = chat.messages
         self.chat = chat
@@ -20,6 +21,7 @@ class Message(ActionsMixIn, VerticalScroll):
         self.processes = ["reasoning", "content", "tool_calls"]
         self.current_process = None
         self.finish_process = None
+        self.processing = False
 
     async def update_status(self) -> None:
         if not self.current_process:
@@ -35,9 +37,9 @@ class Message(ActionsMixIn, VerticalScroll):
         if process in self.message and self.message[process]:
             if process == "tool_calls":
                 self.tc.format_tool_calls()
-                return self.pr["tool_calls"], self.tc.parsed_tool_calls
+                return "tool_calls", self.tc.parsed_tool_calls
             else:
-                return self.pr[process], self.message[process]
+                return process, self.message[process]
         else:
             return None, None
 
@@ -54,40 +56,39 @@ class Message(ActionsMixIn, VerticalScroll):
         for process in self.processes:
             proc, update = self.get_update(process)
             if proc:
-                await proc.finish(update)
+                await self.maybe_mount_process(proc)
+                await self.pr[proc].finish(update)
 
     async def process(self) -> None:
         await self.update_status()
         self.get_current_process()
+        await self.maybe_mount_process(self.current_process)
         if self.finish_process:
             proc, update = self.get_update(self.finish_process)
-            await proc.finish(update)
+            await self.pr[proc].finish(update)
             self.finish_process = None
         proc, update = self.get_update(self.current_process)
-        await proc.process(update)
+        await self.pr[proc].process(update)
 
     async def reset(self) -> None:
-        await self.pr["reasoning"].reset()
-        await self.pr["content"].reset()
-        await self.pr["tool_calls"].reset()
+        if self.processing:
+            return None
+        for process in self.pr.keys():
+            await self.pr[process].remove()
         self.current_process = None
         self.finish_process = None
         self.tc = ToolCalls(self)
-        await self.finish()
+        self.pr = {}
 
-    async def prepare(self) -> None:
+    async def maybe_mount_process(self, process: str) -> None:
+        if not process in self.pr:
+            display = True
+            if process == "reasoning":
+                display = False
+            self.pr[process] = Content(self.chat, self, process, display)
+            await self.mount(self.pr[process])
+
+    async def on_mount(self) -> None:
         self.status = Markdown()
         await self.mount(self.status)
         await self.status.update("Processing...")
-        self.pr["reasoning"] = Content(self.chat, self, "reasoning", False)
-        await self.mount(self.pr["reasoning"])
-        self.pr["content"] = Content(self.chat, self, "content")
-        await self.mount(self.pr["content"])
-        self.pr["tool_calls"] = Content(self.chat, self, "tool_calls")
-        await self.mount(self.pr["tool_calls"])
-
-    async def on_mount(self) -> None:
-        await self.prepare()
-        if self.chat.chat_view.has_focus_within:
-            self.focus(scroll_visible=False)
-        self.chat.chat_view.focused_message = self
