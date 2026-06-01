@@ -38,8 +38,7 @@ class ActionsMixIn:
                 return False
         elif action == "unarchive" and self.cur_dir == "chats":
             return False
-        elif action == "archive" and (self.cur_dir == "chats_archive" or
-                                      self.new_manage):
+        elif action == "archive" and (self.cur_dir == "chats_archive" or self.new_manage):
             return False
         return True
 
