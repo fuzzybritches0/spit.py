@@ -91,8 +91,8 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
         self.focus_message()
 
     def watch_scroll_y(self, old_value: float, new_value: float) -> None:
-        self.focus_message()
         super().watch_scroll_y(old_value, new_value)
+        self.focus_message()
 
     def focus_message(self) -> None:
         height = 0
