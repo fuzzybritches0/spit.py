@@ -45,6 +45,3 @@ class Content(Vertical):
                 elif content[count]["type"] == "image_url":
                     await part.finish(content[count]["image_url"]["url"])
                 count+=1
-
-    async def reset(self) -> None:
-        await self.remove_children()
