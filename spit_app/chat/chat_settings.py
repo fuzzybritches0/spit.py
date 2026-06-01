@@ -64,7 +64,7 @@ class ChatSettings(Horizontal):
         self.update_selects()
         self.disallowed_focus()
 
-    @work(exclusive=True)
+    @work(exclusive=True, exit_on_error=False)
     async def update_models(self) -> None:
         capabilities = self.chat.model_capabilities
         endpoint = self.settings.endpoints[self.chat.chat_endpoint]
