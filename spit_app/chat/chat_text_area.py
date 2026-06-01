@@ -39,9 +39,9 @@ class ChatTextArea(TextArea):
                 self.edit_container.message[self.scontent][self.scontent_count]["text"] = self.text
         self.text = self.temp
         await self.edit_container.reset()
+        await self.edit_container.finish()
         self.chat.write_chat_history()
         self.is_edit = False
-        self.chat_view.focused_message.focus(scroll_visible=False)
 
     async def action_submit(self) -> None:
         if self.messages and self.messages[-1]["role"] == "user":
@@ -52,9 +52,9 @@ class ChatTextArea(TextArea):
             self.chat.undo.append_undo("append", self.messages[-1])
             await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         self.chat.write_chat_history()
-        await self.chat_view.children[-1].finish()
         self.chat_view.focus()
-        self.chat_view.scroll_end(animate=False)
+        await self.chat_view.children[-1].finish()
+        self.chat_view.lazy_scroll_home_end = 1
         self.text = ""
         work = Work(self.chat)
         self.chat.work = self.run_worker(work.work_stream())
