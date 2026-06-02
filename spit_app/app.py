@@ -52,7 +52,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         except:
             loaded = None
         if loaded:
-            if loaded.children[0].id == "option-list":
+            if loaded.children[0].id == "option-list" or loaded.new_manage:
                 await loaded.remove_children()
                 await loaded.select_main_screen()
             else:
