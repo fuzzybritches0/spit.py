@@ -1,8 +1,10 @@
+import inspect
 from textual.widgets import OptionList, Input, TextArea, Switch, Label, Select, SelectionList, Markdown
 from .validation import rid, fid
 
 class InputWidget:
-    def __init__(self, manage: dict, validators: callable):
+    def __init__(self, methods, manage: dict, validators: callable):
+        self.methods = methods
         self.manage = manage
         self.validators = validators
 
@@ -16,7 +18,7 @@ class InputWidget:
 
     async def get_tuple(self, setting: str) -> tuple:
         if "ameth" in self.manage[setting]:
-            ameth = getattr(self, self.manage[setting]["ameth"])
+            ameth = getattr(self.methods, self.manage[setting]["ameth"])
             if inspect.iscoroutinefunction(ameth):
                 return await ameth()
             else:
