@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 import inspect
 from textual.widgets import OptionList, Button, Input, TextArea
+from .validation import fid
 
 class HandlersMixIn:
     def on_focus(self) -> None:
@@ -51,4 +52,4 @@ class HandlersMixIn:
 
     async def on_text_area_changed(self, event: TextArea.Changed) -> None:
         id = event.control.id
-        await self.update_val_results_text(id, self.fid(id), event.control.text)
+        await self.update_val_results_text(id, fid(id), event.control.text)
