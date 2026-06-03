@@ -1,8 +1,7 @@
 from copy import deepcopy
 from spit_app.manage.manage import Manage
-from .validation import ValidationMixIn
 
-class ToolSettings(ValidationMixIn, Manage):
+class ToolSettings(Manage):
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+r", "reset", "Reset"),
@@ -19,6 +18,12 @@ class ToolSettings(ValidationMixIn, Manage):
         self.managed = self.app.tool_call.tools
         self.save_managed = self.app.settings.save
 
+    def set_validator(self, setting: str, stype: str) -> list:
+        if "validators" in self.app.tool_call.tools[self.uuid]:
+            validators = self.app.tool_call.tools[self.uuid]["validators"]
+            if hasattr(validators, setting):
+                setattr(self, f"valid_setting_{setting}", getattr(validators, setting))
+
     def extra_options(self) -> list:
         return []
 
@@ -29,6 +34,7 @@ class ToolSettings(ValidationMixIn, Manage):
         self.uuid = uuid
         self.manage = deepcopy(self.managed[uuid]["settings"])
         for setting in self.manage.keys():
+            self.set_validator(setting, self.manage[setting]["stype"])
             if uuid in self.app.settings.tool_settings:
                 if setting in self.app.settings.tool_settings[uuid]:
                     self.manage[setting]["value"] = self.app.settings.tool_settings[uuid][setting]["value"]
