@@ -29,10 +29,10 @@ class InputWidget:
         return ()
 
     def get_widget(self, stype: str) -> str:
-        if stype in ["integer", "uinteger", "float", "ufloat", "url"]:
-            return "string"
-        else:
+        if stype in ["select", "select_no_default", "select_list", "boolean", "text"]:
             return stype
+        else:
+            return "string"
 
     async def setting(self, setting: str) -> list:
         id = rid(setting)
