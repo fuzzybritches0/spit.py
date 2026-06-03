@@ -36,54 +36,6 @@ class ScreensMixIn:
         await self.edit_manage()
         self.children[1].focus()
 
-    async def mount_setting(self, setting: str, stype: str, desc: str, options: list) -> None:
-        id = self.rid(setting)
-        await self.mount(Label(f"{desc}: ({stype})", id="label-"+id), before="#save-delete-cancel")
-        value = ""
-        if "value" in self.manage[setting]:
-            value = self.manage[setting]["value"]
-        if "ameth" in self.manage[setting]:
-            ameth = getattr(self, self.manage[setting]["ameth"])
-            if inspect.iscoroutinefunction(ameth):
-                tup = await ameth()
-            else:
-                tup = ameth()
-        elif options:
-            tup = ()
-            for el in options:
-                tup += ((el, el),)
-        Validators = self.validators(setting, id, stype)
-        if stype == "integer" or stype == "uinteger" or stype == "float" or stype == "ufloat":
-            value=str(value)
-        if stype == "select":
-            if not value or not value in (i for n, i in tup):
-                value = Select.NULL
-            await self.mount(Select(tup, id=id, value=value, prompt="Default"), before="#save-delete-cancel")
-        elif stype == "select_no_default":
-            if not value or not value in (i for n, i in tup):
-                value = tup[0][1]
-            await self.mount(Select(tup, id=id, value=value, allow_blank=False), before="#save-delete-cancel")
-        elif stype == "select_list":
-            if not value:
-                value = []
-            ltup = ()
-            for n, i in tup:
-                if n in value:
-                    ltup += ((n, i, True),)
-                else:
-                    ltup += ((n, i, False),)
-            await self.mount(SelectionList(*ltup, id=id), before="#save-delete-cancel")
-        elif stype == "boolean":
-            await self.mount(Switch(id=id, value=value), before="#save-delete-cancel")
-        elif stype == "text":
-            await self.mount(TextArea(value, id=id, classes="text-area"), before="#save-delete-cancel")
-        else:
-            await self.mount(Input(validators=Validators, id=id, value=value), before="#save-delete-cancel")
-        if not "select" in stype or not stype == "boolean":
-            await self.mount(Markdown(id=f"val-{id}"), before="#save-delete-cancel")
-        if "wmeth" in self.manage[setting]:
-            getattr(self, self.manage[setting]["wmeth"])
-
     async def edit_manage(self) -> None:
         input_widget = InputWidget(self.manage, self.validators)
         for setting in self.manage.keys():
