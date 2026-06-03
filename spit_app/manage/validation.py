@@ -21,7 +21,8 @@ class Function(Validator):
             return self.failure(failure)
 
 class ValidationMixIn:
-    def validators(self, setting: str, id: str, stype: str) -> list:
+    def validators(self, id: str, stype: str) -> list:
+        setting = fid(id)
         Validators = []
         if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
             Validators.append(Function(self.is_not_empty))
