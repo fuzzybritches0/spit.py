@@ -3,6 +3,7 @@ import inspect
 from textual.containers import Horizontal
 from textual.widgets import OptionList, Button, Input, TextArea, Switch, Label, Select, SelectionList, Markdown
 from textual.widgets.option_list import Option
+from .input_widget import InputWidget
 
 class ScreensMixIn:
     def extra_options(self) -> list:
@@ -84,9 +85,6 @@ class ScreensMixIn:
             getattr(self, self.manage[setting]["wmeth"])
 
     async def edit_manage(self) -> None:
+        input_widget = InputWidget(self.manage, self.validators)
         for setting in self.manage.keys():
-            options = []
-            if "options" in self.manage[setting]:
-                options = self.manage[setting]["options"]
-            await self.mount_setting(setting, self.manage[setting]["stype"],
-                                     self.manage[setting]["desc"], options)
+            await self.mount_all(await input_widget.setting(setting), before="#save-delete-cancel")
