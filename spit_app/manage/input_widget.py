@@ -71,5 +71,5 @@ class InputWidget:
         return [TextArea(value, id=id, classes="text-area"), Markdown(id=f"val-{id}")]
 
     def string(self, id: str, value: str, stype: str, desc: str, tup: tuple) -> list:
-        validators = self.validators(fid(id), id, stype)
+        validators = self.validators(id, stype)
         return [Input(validators=validators, id=id, value=value), Markdown(id=f"val-{id}")]
