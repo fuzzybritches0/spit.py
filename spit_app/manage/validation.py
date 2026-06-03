@@ -2,6 +2,11 @@
 import string
 from textual.validation import Validator, ValidationResult
 
+def fid(id: str) -> str:
+    return id.replace("-", ".")
+
+def rid(id: str) -> str:
+    return id.replace(".", "-")
 
 class Function(Validator):
     def __init__(self, function: callable) -> None:
@@ -16,12 +21,6 @@ class Function(Validator):
             return self.failure(failure)
 
 class ValidationMixIn:
-    def fid(self, id) -> str:
-        return id.replace("-", ".")
-
-    def rid(self, id) -> str:
-        return id.replace(".", "-")
-
     def validators(self, setting: str, id: str, stype: str) -> list:
         Validators = []
         if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
@@ -122,7 +121,7 @@ class ValidationMixIn:
         valid = True
         for setting in self.manage.keys():
             stype = self.manage[setting]["stype"]
-            id = self.rid(setting)
+            id = rid(setting)
             if not stype == "boolean" and not stype.startswith("select") and not stype == "text":
                 inp = self.query_one(f"#{id}")
                 validation_result = inp.validate(inp.value)
