@@ -22,7 +22,6 @@ class Message(ActionsMixIn, VerticalScroll):
         self.processes = ["reasoning", "content", "tool_calls"]
         self.current_process = None
         self.finish_process = None
-        self.processing = False
 
     async def update_status(self) -> None:
         if not self.current_process:
@@ -61,6 +60,8 @@ class Message(ActionsMixIn, VerticalScroll):
                 await self.pr[proc].finish(update)
 
     async def process(self) -> None:
+        if not self.has_focus and not self.has_focus_within:
+            return None
         await self.update_status()
         self.get_current_process()
         await self.maybe_mount_process(self.current_process)
@@ -72,8 +73,6 @@ class Message(ActionsMixIn, VerticalScroll):
         await self.pr[proc].process(update)
 
     async def reset(self) -> None:
-        if self.processing:
-            return None
         for process in self.pr.keys():
             await self.pr[process].remove()
         self.current_process = None
