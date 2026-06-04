@@ -126,6 +126,13 @@ class LlamaCppEndpoint:
             self.tool_calls(content[0])
             await self.maybe_callback(2)
 
+    def maybe_error(self, delta) -> None:
+        if "error" in delta and delta["error"]:
+            code = delta["error"].get("code", "unknown")
+            message = delta["error"].get("message", "Unknown error occurred.")
+            typ = delta["error"].get("type", "unknown")
+            raise RuntimeError(f"Endpoint raised Error: {code}, Type: {typ}, {message}")
+
     async def stream(self) -> None:
         headers = {}
         api_key = self.endpoint["key"]["value"]
@@ -149,5 +156,6 @@ class LlamaCppEndpoint:
                         delta = json.loads(line)
                     except json.JSONDecodeError:
                         continue
+                    self.maybe_error(delta)
                     await self.extract_fields(delta)
         await self.maybe_callback(0)
