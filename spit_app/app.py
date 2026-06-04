@@ -32,6 +32,9 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.confirm_exit = False
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
 
+    def _watch_app_focus(self, focus: bool) -> None:
+        '''The base method is very expensive when we have a lot of widgets.'''
+
     async def watch_exception(self, exception: Exception) -> None:
         await self.push_screen(ErrorScreen(exception))
 
