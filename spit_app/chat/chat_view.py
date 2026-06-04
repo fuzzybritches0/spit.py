@@ -15,6 +15,7 @@ class ChatView(VerticalScroll):
 
     def __init__(self, chat) -> None:
         super().__init__()
+        self.working = False
         self.anchor()
         self.chat = chat
         self.messages = self.chat.messages
@@ -99,11 +100,17 @@ class ChatView(VerticalScroll):
 
     @work
     async def finish_messages(self) -> None:
+        self.working = True
         await self.children[-1].finish()
         self.children[-1].display = True
         self.children[-1].focus(scroll_visible=False)
         for message in reversed(self.children[:-1]):
             while not self.chat.has_focus_within:
+                self.working = False
                 await asyncio.sleep(1)
+            if self.app.terminate:
+                break
+            self.working = True
             await message.finish()
             message.display = True
+        self.working = False

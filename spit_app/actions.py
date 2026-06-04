@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+import asyncio
 from textual import work
 from textual.binding import Binding
 from .modal_screens import ConfirmScreen
@@ -30,13 +31,13 @@ class ActionsMixIn:
         if self.confirm_exit:
             return None
         self.confirm_exit = True
-        self.chats = 0
         if await self.push_screen_wait(ConfirmScreen()):
-            for child in self.query_one("#main").children:
-                if child.id.startswith("chat-"):
-                    self.chats+=1
-                    child.chat_view.stop_worker = self.clean_exit
-        if not self.chats:
+            self.terminate = True
+            for cont in self.query_one("#main").children:
+                if cont.id.startswith("chat-"):
+                    while cont.chat_view.working:
+                        await asyncio.sleep(1)
+                await cont.remove()
             self.exit()
         self.confirm_exit = False
 
