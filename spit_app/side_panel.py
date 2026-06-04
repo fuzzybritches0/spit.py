@@ -51,13 +51,20 @@ class SidePanel(OptionList):
         self.clear_options()
         self.add_options(Options)
 
+    def focus_chat_message(self, chat: Chat) -> None:
+        if chat.chat_view.focused_message:
+            chat.chat_view.focused_message.focus()
+
     async def option_selected(self, id: str) -> None:
         ret = False
         for cont in self.app.query_one("#main").children:
             cont.display = False
             if cont.id == id:
                 cont.display = True
-                cont.focus()
+                if id.startswith("chat-"):
+                    self.focus_chat_message(cont)
+                else:
+                    cont.focus()
                 if cont.id.startswith("chat-"):
                     cont.query_one("#chat-settings").update_selects()
                 ret = True
