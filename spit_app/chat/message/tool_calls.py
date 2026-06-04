@@ -20,7 +20,7 @@ class ToolCalls:
             char = arguments[pos:pos+1]
             if char == "{" and self.mark == 0:
                 self.skip = True
-            elif char == '"' and not self.last_char == "\\":
+            elif (char == '"' or char == "`") and not self.last_char == "\\":
                 self.mark += 1
                 self.skip = True
                 if self.key:
