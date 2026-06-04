@@ -42,8 +42,8 @@ EXEC = {
 
 async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
-    path_arg = arguments['path'].strip()
-    if path_arg.startswith("["):
+    path_arg = arguments['path']
+    if isinstance(path_arg, str) and path_arg.strip().startswith("["):
         try:
             path_arg = json.loads(path_arg)
         except Exception as exception:
