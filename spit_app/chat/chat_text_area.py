@@ -54,7 +54,7 @@ class ChatTextArea(TextArea):
         self.chat.write_chat_history()
         self.chat_view.focus()
         await self.chat_view.children[-1].finish()
-        self.chat_view.lazy_scroll_home_end = 1
+        self.chat_view.scroll_end(animate=False, immediate=True)
         self.text = ""
         work = Work(self.chat)
         self.chat.work = self.run_worker(work.work_stream())
