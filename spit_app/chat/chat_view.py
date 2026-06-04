@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
+import asyncio
+from textual import work
 from textual.containers import VerticalScroll
 from .message.message import Message
 from .work import Work
-from .lazy_load import LazyLoadMixIn
 from spit_app.modal_screens import LoadingScreen
 
-class ChatView(VerticalScroll, LazyLoadMixIn):
+class ChatView(VerticalScroll):
     BINDINGS = [
         ("ctrl+enter", "continue", "Continue"),
         ("u", "undo", "Undo"),
@@ -14,10 +15,10 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
 
     def __init__(self, chat) -> None:
         super().__init__()
-        self.stop_worker = None
-        self.lazy_scroll_home_end = 1
+        self.anchor()
         self.chat = chat
         self.messages = self.chat.messages
+        self.focused_message = None
         self.id = "chat-view"
 
     async def callback(self, signal: int) -> None:
@@ -41,7 +42,6 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
     async def action_continue(self) -> None:
         if (self.messages[-1]["role"] == "user" or self.messages[-1]["role"] == "tool" or
             (self.messages[-1]["role"] == "assistant" and "tool_calls" in self.messages[-1])):
-            self.lazy_scroll_home_end = 1
             work = Work(self.chat)
             self.chat.work = self.run_worker(work.work_stream())
 
@@ -50,12 +50,6 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
 
     async def action_redo(self) -> None:
         await self.chat.undo.redo()
-
-    def action_scroll_home(self) -> None:
-        self.lazy_scroll_home_end = -1
-
-    def action_scroll_end(self) -> None:
-        self.lazy_scroll_home_end = 1
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         match action:
@@ -88,29 +82,9 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
 
     def on_focus(self) -> None:
         self.app.query_one("#side-panel").can_focus = False
+        if self.focused_message:
+            self.focused_message.focus()
         self.chat.text_area.was_focused = False
-        self.focus_message()
-
-    def watch_scroll_y(self, old_value: float, new_value: float) -> None:
-        super().watch_scroll_y(old_value, new_value)
-        self.focus_message()
-
-    def focus_message(self) -> None:
-        height = 0
-        if self.chat.text_area.has_focus:
-            return None
-        for message in self.displayed_children:
-            if self.scroll_y > self.max_scroll_y - 4 and self.displayed_children[-1] is self.children[-1]:
-                self.displayed_children[-1].focus(scroll_visible=False)
-                break
-            if self.scroll_y < 4 and self.displayed_children[0] is self.children[0]:
-                message.focus(scroll_visible=False)
-                break
-            height += message.outer_size.height
-            if height >= self.scroll_y + 4:
-                if not message.has_focus and not message.has_focus_within:
-                    message.focus(scroll_visible=False)
-                break
 
     async def load(self) -> None:
         if self.messages:
@@ -119,7 +93,17 @@ class ChatView(VerticalScroll, LazyLoadMixIn):
             for message in self.messages:
                 await self.mount(Message(self.chat, message, False))
             await loading_screen.dismiss()
-            self.lazy_load_messages()
+            self.finish_messages()
         else:
-            self.lazy_load_messages()
             self.chat.text_area.focus()
+
+    @work
+    async def finish_messages(self) -> None:
+        await self.children[-1].finish()
+        self.children[-1].display = True
+        self.children[-1].focus(scroll_visible=False)
+        for message in reversed(self.children[:-1]):
+            while not self.chat.has_focus_within:
+                await asyncio.sleep(1)
+            await message.finish()
+            message.display = True
