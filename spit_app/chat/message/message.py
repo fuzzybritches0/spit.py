@@ -1,3 +1,4 @@
+from textual.events import DescendantFocus
 from textual.widgets import Markdown
 from textual.containers import VerticalScroll
 from .content.content import Content
@@ -92,3 +93,9 @@ class Message(ActionsMixIn, VerticalScroll):
         self.status = Markdown()
         await self.mount(self.status)
         await self.status.update("Processing...")
+
+    def on_focus(self) -> None:
+        self.chat.chat_view.focused_message = self
+
+    def on_descendant_focus(self, event: DescendantFocus) -> None:
+        self.chat.chat_view.focused_message = event.control
