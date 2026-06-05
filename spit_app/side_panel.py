@@ -54,6 +54,9 @@ class SidePanel(OptionList):
     def focus_chat_message(self, chat: Chat) -> None:
         if chat.chat_view.focused_message:
             chat.chat_view.focused_message.focus()
+        else:
+            if chat.chat_view.children:
+                chat.chat_view.children[-1].focus(scroll_visible=False)
 
     async def option_selected(self, id: str) -> None:
         ret = False
