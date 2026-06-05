@@ -85,8 +85,9 @@ def escape_fence(self, pattern) -> str:
 
 async def code_block_start_end(self, pattern: str) -> None:
     _complete = complete(self)
-    if (not _complete or _complete[-1] == "\n" or not _complete.rstrip(" ")
-        or _complete.rstrip(" ").endswith("\n")):
+    if ((not _complete or _complete[-1] == "\n" or not _complete.rstrip(" ")
+        or _complete.rstrip(" ").endswith("\n")) and (self.pp_next == "\n" or
+        self.pp_next.isalnum() or not self.pp_next)):
         if not self.codeblock:
             self.codeblock = True
             self.code_fences.append(pattern)
