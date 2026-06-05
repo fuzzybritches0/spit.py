@@ -42,20 +42,12 @@ EXEC = {
 
 async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
-    path_arg = arguments['path']
-    if isinstance(path_arg, str) and path_arg.strip().startswith("["):
-        try:
-            path_arg = json.loads(path_arg)
-        except Exception as exception:
-            yield f"ERROR: `{type(exception).__name__}`: `{exception}`"
-            return
     encoding = arguments.get('encoding', 'utf-8')
-    if isinstance(path_arg, str):
-        script = f"path = \"{path_arg}\""
-    else:
-        paths_str = ", ".join([f'"{p}"' for p in path_arg])
-        script = f"paths = [{paths_str}]"
-    script = script + f"""
+    path = arguments["path"]
+    if path is type(str) and not path.strip().startswith("["):
+            path = '"' + path + '"'
+    script = f"""
+paths = {path}
 encoding = "{encoding}"
 """ + EXEC["script"]
     run = Run(app, chat_id, EXEC["interpreter"], script,
