@@ -9,9 +9,6 @@ try:
     if not path.exists():
         print(f"ERROR: Path does not exist: `{path}`")
         sys.exit(1)
-    if not path.is_dir():
-        print(f"ERROR: Path is not a directory: `{path}`")
-        sys.exit(1)
     try:
         regex = re.compile(pattern, re.IGNORECASE)
     except re.error as e:
@@ -19,7 +16,9 @@ try:
         sys.exit(1)
     results = []
     total_matches = 0
-    if recursive:
+    if path.is_file():
+        file_iterator = [path]
+    elif recursive:
         file_iterator = path.rglob(file_pattern)
     else:
         file_iterator = path.glob(file_pattern)

@@ -14,7 +14,7 @@ DESC = {
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "Directory path to search in"
+                    "description": "Directory path or file to search in"
                 },
                 "pattern": {
                     "type": "string",
