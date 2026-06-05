@@ -26,7 +26,7 @@ DESC = {
                 },
                 "recursive": {
                     "type": "boolean",
-                    "description": "Search subdirectories. Default: True"
+                    "description": "Search subdirectories. Default: False"
                 },
                 "context": {
                     "type": "integer",
@@ -61,7 +61,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
 path = "{arguments['path']}"
 pattern = r"{arguments['pattern']}"
 file_pattern = "{arguments.get('file_pattern', '*')}"
-recursive = {arguments.get('recursive', True)}
+recursive = {arguments.get('recursive', False)}
 context = {arguments.get('context', 0)}
 max_results = {arguments.get('max_results', 100)}
 """ + EXEC["script"]
