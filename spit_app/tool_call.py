@@ -70,10 +70,20 @@ class ToolCall:
         chat = self.app.query_one("#main").query_one(f"#{chat_id}")
         chat_view = chat.chat_view
         name = tool_call["function"]["name"]
-        arguments = json.loads(tool_call["function"]["arguments"])
         messages.append({"role": "tool", "tool_call_id": tool_call["id"],
             "name": name, "content": [{"type": "text", "text": ""}]})
         await self.maybe_callback(1)
+        try:
+            arguments = json.loads(tool_call["function"]["arguments"])
+        except Exception as exception:
+            args = tool_call["function"]["arguments"]
+            exc = f"{type(exception).__name__}: {exception}"
+            message = f"Received tool call `{name}` with invalid JSON: \n~~~~\n{args}\n~~~~\n"
+            tool_call["function"]["arguments"] = "{\"noop\":\"noop\"}"
+            tool_call["function"]["name"] = "noop"
+            return await self.end_call(messages, exc + "\n\n" + message)
+        if name == "noop":
+            return await self.end_call(messages, f"INFO: Offending tool call replaced by NOOP!")
         if not name in chat.chat_tools or not name in self.tools.keys():
             return await self.end_call(messages, f"ERROR: tool {name} not available!")
         if (self.app.tool_call.tools[name]["requires_multimodal_image"] and
