@@ -3,7 +3,7 @@ import json
 bindings = [
     ("s", "show_cot", "Show CoT"),
     ("s", "hide_cot", "Hide CoT"),
-    ("x", "remove_last", "Remove turn")
+    ("x", "remove", "Remove")
 ]
 
 class ActionsMixIn:
@@ -17,9 +17,10 @@ class ActionsMixIn:
         self.pr["reasoning"].display = False
         self.app.refresh_bindings()
 
-    async def action_remove_last(self) -> None:
-        self.chat.undo.append_undo("remove", self.message)
-        del self.messages[-1]
+    async def action_remove(self) -> None:
+        index = self.messages.index(self.message)
+        self.chat.undo.append_undo("remove", self.message, index)
+        del self.messages[index]
         self.chat.write_chat_history()
         if len(self.chat.chat_view.children) > 1:
             self.chat.chat_view.children[-2].focus(scroll_visible=False)
@@ -45,9 +46,7 @@ class ActionsMixIn:
                     return False
                 if not self.pr["reasoning"].display:
                     return False
-            case "remove_last":
+            case "remove":
                 if not self.chat.chat_view.children:
-                    return False
-                if not self is self.chat.chat_view.children[-1]:
                     return False
         return True
