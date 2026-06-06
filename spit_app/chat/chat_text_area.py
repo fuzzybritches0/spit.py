@@ -26,10 +26,11 @@ class ChatTextArea(TextArea):
     def action_cancel_edit(self):
         self.is_edit = False
         self.text = self.temp
+        self.chat_view.focus()
 
     async def action_save_edit(self):
-        id = int(self.edit_container.id.split("-")[2])
-        self.chat.undo.append_undo("change", self.edit_container.message, id)
+        index = self.chat_view.children.index(self.edit_container)
+        self.chat.undo.append_undo("change", self.edit_container.message, index)
         if self.scontent == "tool_calls":
             self.edit_container.message[self.scontent][self.scontent_count] = json.loads(self.text)
         else:
@@ -42,18 +43,20 @@ class ChatTextArea(TextArea):
         await self.edit_container.finish()
         self.chat.write_chat_history()
         self.is_edit = False
+        self.chat_view.focus()
 
     async def action_submit(self) -> None:
         if self.messages and self.messages[-1]["role"] == "user":
-            self.chat.undo.append_undo("change", self.messages[-1])
+            self.chat.undo.append_undo("change", self.messages[-1], len(self.messages)-1)
             self.messages[-1]["content"].append({"type": "text", "text": self.text})
         else:
             self.messages.append({"role": "user", "content": [{"type": "text", "text": self.text}]})
-            self.chat.undo.append_undo("append", self.messages[-1])
+            self.chat.undo.append_undo("append", self.messages[-1], len(self.messages))
             await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         self.chat.write_chat_history()
         self.chat_view.focus()
         await self.chat_view.children[-1].finish()
+        await self.chat_view.children[-1].wait_for_refresh()
         self.chat_view.scroll_end(animate=False, immediate=True)
         self.text = ""
         work = Work(self.chat)
