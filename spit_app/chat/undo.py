@@ -20,27 +20,32 @@ class Undo:
         await self.chat_view.children[index].finish()
         self.chat_view.children[index].focus()
 
-    async def _append(self, message: dict) -> None:
-        self.messages.append(deepcopy(message))
-        await self.chat_view.mount(Message(self.chat, self.messages[-1]))
-        await self.chat_view.children[-1].finish()
-        self.chat_view.scroll_end(animate=False)
-        self.chat_view.children[-1].focus(scroll_visible=False)
+    async def _append(self, message: dict, index: int) -> None:
+        if index == len(self.messages):
+            self.messages.append(deepcopy(message))
+            await self.chat_view.mount(Message(self.chat, self.messages[-1]))
+        else:
+            self.messages.insert(index, deepcopy(message))
+            await self.chat_view.mount(Message(self.chat, self.messages[index]), before=index)
+        await self.chat_view.children[index].finish()
+        self.chat_view.children[index].focus()
 
-    async def _remove(self) -> None:
-        del self.messages[-1]
-        await self.chat_view.children[-1].remove()
-        self.chat_view.scroll_end(animate=False)
+    async def _remove(self, index: int) -> None:
+        del self.messages[index]
+        await self.chat_view.children[index].remove()
         if self.chat_view.children:
-            self.chat_view.children[-1].focus(scroll_visible=False)
+            if len(self.chat_view.children)-1 >= index:
+                self.chat_view.children[index].focus()
+            else:
+                self.chat_view.children[index-1].focus()
 
     async def undo(self) -> None:
         if self.undo_index >= 0:
             operation, message, index = self.undo_list[self.undo_index]
             if operation == "remove":
-                await self._append(message)
+                await self._append(message, index)
             elif operation == "append":
-                await self._remove()
+                await self._remove(index)
             elif operation == "change":
                 await self._change(operation, message, index)
             self.chat.write_chat_history()
@@ -52,15 +57,15 @@ class Undo:
             self.undo_index+=1
             operation, message, index = self.undo_list[self.undo_index]
             if operation == "remove":
-                await self._remove()
+                await self._remove(index)
             elif operation == "append":
-                await self._append(message)
+                await self._append(message, index)
             elif operation == "change":
                 await self._change(operation, message, index)
             self.chat.write_chat_history()
             self.chat.refresh_bindings()
 
-    def append_undo(self, operation: str, message: dict, index: int = -1) -> None:
+    def append_undo(self, operation: str, message: dict, index: int) -> None:
         while len(self.undo_list)-1 > self.undo_index:
             del self.undo_list[-1]
         while len(self.undo_list) > 100:
