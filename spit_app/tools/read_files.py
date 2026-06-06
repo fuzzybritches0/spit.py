@@ -44,10 +44,10 @@ async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
     encoding = arguments.get('encoding', 'utf-8')
     path = arguments["path"]
-    if path is type(str) and not path.strip().startswith("["):
-            path = '"' + path + '"'
+    if type(path) is str and not path.strip().startswith("["):
+        path = f'"{path}"'
     script = f"""
-paths = {path}
+path = {path}
 encoding = "{encoding}"
 """ + EXEC["script"]
     run = Run(app, chat_id, EXEC["interpreter"], script,

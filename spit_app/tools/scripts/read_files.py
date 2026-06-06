@@ -2,12 +2,10 @@ import sys
 import os
 
 try:
-    if 'path' in dir():
-        paths = [path]
-    elif 'paths' in dir():
-        paths = paths
+    if type(path) is str:
+        path = [path]
     results = {}
-    for p in paths:
+    for p in path:
         try:
             with open(p, "r", encoding=encoding) as f:
                 content = f.read()
@@ -45,10 +43,10 @@ try:
                 "size": 0,
                 "error": f"{type(e).__name__}: {e}"
             }
-    if len(paths) == 1:
-        result = results[paths[0]]
+    if len(path) == 1:
+        result = results[path[0]]
         if result["success"]:
-            print(f"File: `{paths[0]}`")
+            print(f"File: `{path[0]}`")
             print(f"Size: `{result['size']} bytes`")
             print("~~~~")
             print(result["content"])
@@ -57,8 +55,8 @@ try:
             print(f"ERROR: `{result['error']}`")
             sys.exit(1)
     else:
-        print(f"Reading {len(paths)} file(s):\n")
-        for p in paths:
+        print(f"Reading {len(path)} file(s):\n")
+        for p in path:
             result = results[p]
             print(f"File: `{p}`")
             if result["success"]:
@@ -68,7 +66,7 @@ try:
                 print("~~~~")
             else:
                 print(f"\nERROR: `{result['error']}`")
-        print(f"\nTotal: {len(paths)} file(s) processed, {sum(1 for r in results.values() if r['success'])} successful")
+        print(f"\nTotal: {len(path)} file(s) processed, {sum(1 for r in results.values() if r['success'])} successful")
 except Exception as exception:
     print(f"ERROR: `{type(exception).__name__}`: `{exception}`")
     sys.exit(1)
