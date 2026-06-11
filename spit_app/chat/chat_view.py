@@ -18,6 +18,7 @@ class ChatView(VerticalScroll):
         super().__init__()
         self.working = False
         self.anchor()
+        self.anchor_visual()
         self.chat = chat
         self.messages = self.chat.messages
         self.focused_message = None
