@@ -38,8 +38,8 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
             sequence = sequence[:-1]
             escaped = 1
         if  not sequence.strip() == "..." and not sequence.strip() == "…" and not sequence.strip() == "and":
-            await self.content.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
             await self.content.target.stream.stop()
+            await self.content.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
             self.part = ""
             await self.content.mount(LaTeX(self.content.message.message, sequence, exp_latex_fence, pattern))
             await self.content.mount(Part())
