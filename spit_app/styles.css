@@ -15,11 +15,6 @@
 }
 #chat-view {
 	height: 7fr;
-	border: round $border-blurred
-}
-#chat-view:focus {
-	height: 7fr;
-	border: round $border
 }
 #chat-settings {
 	height: auto
