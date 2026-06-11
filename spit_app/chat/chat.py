@@ -74,7 +74,6 @@ class Chat(Vertical):
         self.work.cancel()
         del self.messages[-1]
         await self.chat_view.children[-1].remove()
-        self.chat_view.release_anchor()
         self.refresh_bindings()
 
     def action_settings(self) -> None:
