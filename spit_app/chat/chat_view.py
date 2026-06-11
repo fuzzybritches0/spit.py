@@ -7,6 +7,7 @@ from .work import Work
 from spit_app.modal_screens import LoadingScreen
 
 class ChatView(VerticalScroll):
+    BLANK = True
     BINDINGS = [
         ("ctrl+enter", "continue", "Continue"),
         ("u", "undo", "Undo"),
