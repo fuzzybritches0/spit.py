@@ -1,4 +1,4 @@
-textual>=8.0
+textual-speedups
 platformdirs
 httpx
 cairosvg
