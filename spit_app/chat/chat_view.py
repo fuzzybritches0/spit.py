@@ -4,7 +4,6 @@ from textual import work
 from textual.containers import VerticalScroll
 from .message.message import Message
 from .work import Work
-from spit_app.modal_screens import LoadingScreen
 
 class ChatView(VerticalScroll):
     BLANK = True
@@ -86,30 +85,19 @@ class ChatView(VerticalScroll):
             if self.children:
                 self.children[-1].focus(scroll_visible=False)
 
+    @work
     async def load(self) -> None:
         if self.messages:
-            loading_screen = LoadingScreen()
-            await self.app.push_screen(loading_screen)
-            for message in self.messages:
-                await self.mount(Message(self.chat, message, False))
-            await loading_screen.dismiss()
-            self.finish_messages()
+            self.working = True
+            await self.mount(Message(self.chat, self.messages[-1]))
+            await self.children[0].finish()
+            for message in reversed(self.messages[:-1]):
+                if self.app.terminate:
+                    self.working = False
+                    break
+                await self.mount(Message(self.chat, message), before=0)
+                await self.children[0].finish()
+            self.working = False
+            self.anchor_visual(False)
         else:
             self.chat.text_area.focus()
-
-    @work
-    async def finish_messages(self) -> None:
-        self.working = True
-        await self.children[-1].finish()
-        self.children[-1].display = True
-        self.children[-1].focus(scroll_visible=False)
-        for message in reversed(self.children[:-1]):
-            while not self.chat.has_focus_within:
-                self.working = False
-                await asyncio.sleep(1)
-            if self.app.terminate:
-                break
-            self.working = True
-            await message.finish()
-            message.display = True
-        self.working = False

@@ -75,7 +75,7 @@ class SidePanel(OptionList):
             return None
         if id.startswith("chat"):
             await self.app.query_one("#main").mount(Chat(id))
-            await self.app.query_one("#main").query_one(f"#{id}").chat_view.load()
+            self.app.query_one("#main").query_one(f"#{id}").chat_view.load()
         elif id == "new-chat":
             if self.settings.endpoints:
                 await self.app.query_one("#main").mount(ManageChats(True))
