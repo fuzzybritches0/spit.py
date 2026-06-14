@@ -20,13 +20,6 @@ class Common(ModalScreen):
                     yield Button("OK")
         yield Footer()
 
-class LoadingScreen(Common):
-    def __init__(self) -> None:
-        super().__init__()
-        self.classes = "modal"
-        self.mtype = "loading"
-        self.text = "Loading ..."
-
 class ErrorScreen(Common):
     def __init__(self, exception: Exception) -> None:
         super().__init__()
