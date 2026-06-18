@@ -2,8 +2,6 @@ import sys
 import os
 
 try:
-    if type(path) is str:
-        path = [path]
     results = {}
     for p in path:
         try:
@@ -15,27 +13,6 @@ try:
                     "size": len(content),
                     "error": None
                 }
-        except FileNotFoundError:
-            results[p] = {
-                "success": False,
-                "content": None,
-                "size": 0,
-                "error": f"File not found: {p}"
-            }
-        except PermissionError:
-            results[p] = {
-                "success": False,
-                "content": None,
-                "size": 0,
-                "error": f"Permission denied: {p}"
-            }
-        except UnicodeDecodeError:
-            results[p] = {
-                "success": False,
-                "content": None,
-                "size": 0,
-                "error": f"Encoding error (try different encoding): {p}"
-            }
         except Exception as e:
             results[p] = {
                 "success": False,

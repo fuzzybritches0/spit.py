@@ -45,7 +45,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
     encoding = arguments.get('encoding', 'utf-8')
     path = arguments["path"]
     if type(path) is str and not path.strip().startswith("["):
-        path = f'"{path}"'
+        path = f'["{path}"]'
     script = f"""
 path = {path}
 encoding = "{encoding}"
