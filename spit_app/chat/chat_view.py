@@ -91,6 +91,7 @@ class ChatView(VerticalScroll):
             self.working = True
             await self.mount(Message(self.chat, self.messages[-1]))
             await self.children[0].finish()
+            self.children[0].focus(scroll_visible=False)
             for message in reversed(self.messages[:-1]):
                 if self.app.terminate:
                     self.working = False
