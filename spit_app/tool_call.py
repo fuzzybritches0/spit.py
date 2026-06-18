@@ -35,10 +35,12 @@ def load_tools(tools: dict, file_path: str) -> None:
                 tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
             if hasattr(module, "Validators"):
                 tools[name]["validators"] = getattr(module, "Validators")
+            tools[name]["requires_multimodal_image"] = False
             if hasattr(module, "REQUIRES_MULTIMODAL_IMAGE"):
                 tools[name]["requires_multimodal_image"] = getattr(module, "REQUIRES_MULTIMODAL_IMAGE")
-            else:
-                tools[name]["requires_multimodal_image"] = False
+            tools[name]["stream_tool_response"] = False
+            if hasattr(module, "STREAM_TOOL_RESPONSE"):
+                tools[name]["stream_tool_response"] = getattr(module, "STREAM_TOOL_RESPONSE")
 
 class ToolCall:
     def __init__(self, app) -> None:
@@ -107,7 +109,8 @@ class ToolCall:
                 async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
                     if chunk:
                         messages[-1]["content"][0]["text"] += chunk
-                    await self.maybe_callback(2)
+                        if self.tools[name]["stream_tool_response"]:
+                            await self.maybe_callback(2)
             else:
                 messages[-1]["content"][0]["text"] = f"ERROR: no function for {name} defined!"
                 self.maybe_callback(2)
