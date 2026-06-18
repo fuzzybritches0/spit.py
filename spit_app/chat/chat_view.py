@@ -98,6 +98,7 @@ class ChatView(VerticalScroll):
                     break
                 await self.mount(Message(self.chat, message), before=0)
                 await self.children[0].finish()
+            await self.children[0].wait_for_refresh()
             self.working = False
             self.anchor_visual(False)
         else:
