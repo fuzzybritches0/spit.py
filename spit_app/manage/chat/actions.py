@@ -20,7 +20,7 @@ class ActionsMixIn:
                 await self.app.maybe_reload("manage-chat")
             await self.app.query_one("#main").mount(Chat(f"chat-{self.uuid}"))
             self.app.query_one("#main").query_one(f"#chat-{self.uuid}").text_area.focus()
-            self.app.query_one("#main").query_one(f"#chat-{self.uuid}").chat_view.load()
+            await self.app.query_one("#main").query_one(f"#chat-{self.uuid}").chat_view.load()
             self.app.query_one("#side-panel").option_list()
             self.app.query_one("#side-panel").highlighted=1
         else:
