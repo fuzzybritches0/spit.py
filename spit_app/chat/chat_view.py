@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
-import asyncio
-from textual import work
 from textual.containers import VerticalScroll
 from .message.message import Message
+from ..modal_screens import LoadingScreen
 from .work import Work
 
 class ChatView(VerticalScroll):
@@ -15,9 +14,7 @@ class ChatView(VerticalScroll):
 
     def __init__(self, chat) -> None:
         super().__init__()
-        self.working = False
         self.anchor()
-        self.anchor_visual()
         self.chat = chat
         self.messages = self.chat.messages
         self.focused_message = None
@@ -85,21 +82,15 @@ class ChatView(VerticalScroll):
             if self.children:
                 self.children[-1].focus(scroll_visible=False)
 
-    @work
     async def load(self) -> None:
         if self.messages:
-            self.working = True
-            await self.mount(Message(self.chat, self.messages[-1]))
-            await self.children[0].finish()
-            self.children[0].focus(scroll_visible=False)
-            for message in reversed(self.messages[:-1]):
-                if self.app.terminate:
-                    self.working = False
-                    break
-                await self.mount(Message(self.chat, message), before=0)
-                await self.children[0].finish()
-            await self.children[0].wait_for_refresh()
-            self.working = False
-            self.anchor_visual(False)
+            loading_screen = LoadingScreen()
+            await self.app.push_screen(loading_screen)
+            async with self.batch():
+                for message in self.messages:
+                    await self.mount(Message(self.chat, message))
+                    await self.children[-1].finish()
+            loading_screen.dismiss()
+            self.children[-1].focus(scroll_visible=False)
         else:
             self.chat.text_area.focus()
