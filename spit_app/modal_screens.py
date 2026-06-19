@@ -15,9 +15,18 @@ class Common(ModalScreen):
     def compose(self) -> ComposeResult:
         with Vertical(id=f"{self.mtype}-modal"):
             yield Markdown(self.text)
-            if not self.mtype == "loading":
-                with Center():
-                    yield Button("OK")
+            with Center():
+                yield Button("OK")
+        yield Footer()
+
+class LoadingScreen(ModalScreen):
+    def __init__(self) -> None:
+        super().__init__()
+        self.classes = "modal"
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id=f"loading-modal"):
+            yield Markdown("Loading...")
         yield Footer()
 
 class ErrorScreen(Common):
