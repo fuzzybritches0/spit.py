@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import os
+from textual.events import AppFocus, AppBlur
 from spit_app.chat.chat import Chat
 
 class HandlersMixIn:
@@ -20,3 +21,9 @@ class HandlersMixIn:
         self.settings.active_chat = None
         self.settings.save()
         self.query_one("#side-panel").highlighted = 0
+
+    def on_app_focus(self, event: AppFocus) -> None:
+        event.prevent_default()
+
+    def on_app_blur(self, event: AppBlur) -> None:
+        event.prevent_default()
