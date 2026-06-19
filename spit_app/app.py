@@ -29,7 +29,6 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.path = self.settings.path
         self.settings.load()
         self.tool_call = ToolCall(self)
-        self.terminate = False
         self.confirm_exit = False
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
 
