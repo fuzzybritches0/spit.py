@@ -14,7 +14,10 @@ class InputWidget:
             value = self.manage[setting]["value"]
         stype = self.manage[setting]["stype"]
         desc = self.manage[setting]["desc"]
-        return str(value), stype, desc
+        if stype == "boolean":
+            return value, stype, desc
+        else:
+            return str(value), stype, desc
 
     async def get_tuple(self, setting: str) -> tuple:
         if "ameth" in self.manage[setting]:
