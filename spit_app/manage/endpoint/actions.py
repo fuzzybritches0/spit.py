@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 from spit_app.modal_screens import InfoScreen
 from textual.widgets import Select
+from ..input_widget import InputWidget
 
 class ActionsMixIn:
     async def action_delete(self) -> None:
@@ -11,6 +12,7 @@ class ActionsMixIn:
 
     async def action_add_setting(self) -> None:
         if await self.validate_add_setting():
+            input_widget = InputWidget(self, self.manage, self.validators)
             setting = self.query_one("#new-setting").value
             stype = self.query_one("#custom-setting-select-add").value
             desc = self.query_one("#new-description").value
@@ -22,7 +24,7 @@ class ActionsMixIn:
                     sarray.append(el.strip())
             self.add_custom_setting(setting, stype, desc, sarray)
             self.query_one("#custom-setting-select-remove").set_options(self.custom_options())
-            await self.mount_setting(setting, stype, desc, sarray)
+            await self.mount_all(await input_widget.setting(setting), before="#save-delete-cancel")
 
     async def action_remove_setting(self) -> None:
         remove = self.query_one("#custom-setting-select-remove").value
