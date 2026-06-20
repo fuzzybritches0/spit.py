@@ -63,7 +63,6 @@ We assume you want to save the app in `~`, alias `${HOME}`. Now, install spit.py
 $ cd ~
 $ git clone https://github.com/fuzzybritches0/spit.py.git
 $ source ~/.local/share/venv/spit.py/bin/activate
-$ pip install git+https://github.com/fuzzybritches0/textual@anchor_visual
 $ pip install -r ./spit.py/requirements.txt
 $ playwright install chromium-headless-shell
 ```
