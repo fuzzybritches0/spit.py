@@ -1,3 +1,4 @@
+textual>=8.2.7
 textual-speedups
 platformdirs
 httpx
