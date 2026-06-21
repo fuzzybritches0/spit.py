@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 from textual.containers import VerticalScroll
+from .textual_message import RemoveMessage
 from .message.message import Message
 from ..modal_screens import LoadingScreen
 from .work import Work
@@ -69,6 +70,14 @@ class ChatView(VerticalScroll):
                 if len(self.chat.undo.undo_list) == 0:
                     return False
         return True
+
+    async def on_remove_message(self, message: RemoveMessage) -> None:
+        self.chat.undo.append_undo("remove", self.messages[message.index], message.index)
+        await self.children[message.index].remove()
+        del self.messages[message.index]
+        self.chat.write_chat_history()
+        if not self.children:
+            self.chat.text_area.focus()
 
     async def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
