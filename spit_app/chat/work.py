@@ -1,4 +1,5 @@
 # SPDX-Liicense-Identifier: GPL-2.0
+import asyncio
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 
 TOOL_PROMPT = "# FUNCTION CALLING INSTRUCTIONS\n\nAll of your function calls are rendered in human-readable form for the user to inspect. The user is also informed about the function call results and can see the tool response message. DO NOT REPEAT THEM!\n\n"
@@ -61,7 +62,8 @@ class Work:
     async def work_stream(self) -> None:
         if "tool_calls" in self.messages[-1]:
             for tool_call in self.messages[-1]["tool_calls"]:
-                await self.app.tool_call.call(self.messages, tool_call, self.chat.id, self.chat_view.callback)
+                await asyncio.to_thread(self.app.tool_call.call, self.messages, tool_call,
+                                        self.chat.id, self.chat_view.callback)
         try:
             count = len(self.messages)
             await self.endpoint.stream()
