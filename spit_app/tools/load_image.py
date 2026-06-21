@@ -33,12 +33,12 @@ def call(app, arguments: dict, chat_id) -> str|None:
     sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").csettings["sandbox"]["value"]
     sandbox_path = app.settings.path["sandbox"] / sandbox_home
     url = arguments["url"]
-    if url.startswith("/home"):
+    if url.startswith("/home/"):
         url = str(sandbox_path) + "/" + "/".join(url.split("/")[3:])
-    elif url.startswith("~"):
+    elif url.startswith("~") or url.startswith("."):
         url = str(sandbox_path) + "/" + url[1:]
     elif not url.startswith("http://") and not url.startswith("https://"):
-        return "ERROR: `url` must be an absolute local path or start with `http://` or `https://`!"
+        url = str(sandbox_path) + "/" + url
     image = load_image_base64(url)
     messages = app.query_one("#main").query_one(f"#{chat_id}").messages
     messages[-1]["content"].append(image_url(image))
