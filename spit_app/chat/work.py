@@ -74,7 +74,7 @@ class Work:
                 self.app.exception = exception
                 if len(self.messages) > count:
                     del self.messages[-1]
-                    self.chat_view.children[-1].remove()
+                    await self.chat_view.children[-1].remove()
                 return None
             else:
                 raise exception
