@@ -42,6 +42,8 @@ SETTINGS = {
     "interpreters": {"value": ALLOWED, "stype": "text", "empty": False, "desc": "Allowed interpreters"}
 }
 
+STREAM_TOOL_RESPONSE = True
+
 async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
     interpreter = arguments["interpreter"]
