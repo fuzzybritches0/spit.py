@@ -34,6 +34,8 @@ SETTINGS = {
     "timeout": { "value": MAX_SECONDS, "stype": "uinteger", "empty": False, "desc": "Timeout (0 = no timeout)"},
 }
 
+STREAM_TOOL_RESPONSE = True
+
 async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
     if not shutil.which("bash"):
