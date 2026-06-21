@@ -56,9 +56,9 @@ class LlamaCppEndpoint:
         self.prompt = prompt
         self.tools = tools
 
-    async def maybe_callback(self, signal: int) -> None:
+    def maybe_callback(self, signal: int) -> None:
         if self.callback:
-            await self.callback(signal)
+            self.callback(self.message_index, signal)
 
     def construct_payload(self, payload: dict, settings: dict) -> None:
         for setting in settings.keys():
@@ -114,17 +114,17 @@ class LlamaCppEndpoint:
                     tc_list[-1]["function"]["arguments"] = ""
                 tc_list[-1]["function"]["arguments"] += content["function"]["arguments"]
 
-    async def extract_fields(self, delta: dict) -> None:
+    def extract_fields(self, delta: dict) -> None:
         choice = delta["choices"][0]["delta"]
         if content := choice.get("content"):
             self.messages[-1]["content"] += content
-            await self.maybe_callback(2)
+            self.maybe_callback(2)
         elif content := choice.get(self.reasoning_key):
             self.messages[-1]["reasoning"] += content
-            await self.maybe_callback(2)
+            self.maybe_callback(2)
         elif content := choice.get("tool_calls"):
             self.tool_calls(content[0])
-            await self.maybe_callback(2)
+            self.maybe_callback(2)
 
     def maybe_error(self, delta) -> None:
         if "error" in delta and delta["error"]:
@@ -141,7 +141,8 @@ class LlamaCppEndpoint:
         headers["Content-Type"] = "application/json"
         payload = self.prepare_payload()
         self.messages.append({"role": "assistant", "reasoning": "", "content": ""})
-        await self.maybe_callback(1)
+        self.message_index = len(self.messages) - 1
+        self.maybe_callback(1)
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream("POST", self.api_endpoint, headers=headers, json=payload) as resp:
                 if resp.status_code != 200:
@@ -157,5 +158,5 @@ class LlamaCppEndpoint:
                     except json.JSONDecodeError:
                         continue
                     self.maybe_error(delta)
-                    await self.extract_fields(delta)
-        await self.maybe_callback(0)
+                    self.extract_fields(delta)
+        self.maybe_callback(0)
