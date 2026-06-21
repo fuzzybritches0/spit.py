@@ -95,7 +95,7 @@ class Chat(Vertical):
                 self.messages[-1]["content"].append(image_url(image))
             else:
                 self.messages.append({"role": "user", "content": [image_url(image)]})
-                self.undo.append_undo("append", self.messages[-1])
+                self.undo.append_undo("insert", self.messages[-1])
                 await self.chat_view.mount(Message(self, self.messages[-1]))
             self.write_chat_history()
             await self.chat_view.children[-1].finish()

@@ -51,7 +51,7 @@ class ChatTextArea(TextArea):
             self.messages[-1]["content"].append({"type": "text", "text": self.text})
         else:
             self.messages.append({"role": "user", "content": [{"type": "text", "text": self.text}]})
-            self.chat.undo.append_undo("append", self.messages[-1], len(self.messages))
+            self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages))
             await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         self.chat.write_chat_history()
         self.chat_view.focus()
