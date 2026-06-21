@@ -1,4 +1,5 @@
 import json
+from spit_app.chat.textual_message import RemoveMessage
 
 bindings = [
     ("s", "show_cot", "Show CoT"),
@@ -17,14 +18,10 @@ class ActionsMixIn:
         self.pr["reasoning"].display = False
         self.app.refresh_bindings()
 
-    async def action_remove(self) -> None:
-        index = self.messages.index(self.message)
-        self.chat.undo.append_undo("remove", self.message, index)
-        del self.messages[index]
-        self.chat.write_chat_history()
-        if len(self.chat.chat_view.children) > 1:
-            self.chat.chat_view.children[-2].focus(scroll_visible=False)
-        await self.remove()
+    def action_remove(self) -> None:
+        if not self.is_removing:
+            self.is_removing = True
+            self.chat.chat_view.post_message(RemoveMessage(self.chat.chat_view.children.index(self)))
 
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
@@ -45,8 +42,5 @@ class ActionsMixIn:
                 if not "reasoning" in self.pr:
                     return False
                 if not self.pr["reasoning"].display:
-                    return False
-            case "remove":
-                if not self.chat.chat_view.children:
                     return False
         return True
