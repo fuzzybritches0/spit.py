@@ -8,7 +8,6 @@ class Stream:
     def __init__(self, widget) -> None:
         self.widget = widget
         self.stream = Markdown.get_stream(widget)
-        self.indent = None
 
     async def write(self, part: str) -> None:
         await self.stream.write(part)
