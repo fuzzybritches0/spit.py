@@ -1,5 +1,4 @@
 import json
-import asyncio
 from ddgs import DDGS
 from spit_app.tool_call import load_user_settings
 
@@ -45,13 +44,13 @@ class Validators:
             return (False, "Value out of range")
         return (True, None)
 
-async def call(app, arguments: dict, chat_id: str) -> str|None:
+def call(app, arguments: dict, chat_id: str) -> str|None:
     load_user_settings(app, NAME, SETTINGS)
     query = arguments["query"]
     safesearch = SETTINGS["safesearch"]["value"]
     max_results = SETTINGS["max_results"]["value"]
     try:
-        results = await asyncio.to_thread(DDGS().text, query, safesearch=safesearch, max_results=max_results)
+        results = DDGS().text(query, safesearch=safesearch, max_results=max_results)
     except:
         return "No results found!"
     ret = "# Results"
