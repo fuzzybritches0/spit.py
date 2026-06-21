@@ -21,6 +21,7 @@ class Message(ActionsMixIn, VerticalScroll):
         self.processes = ["reasoning", "content", "tool_calls"]
         self.current_process = None
         self.finish_process = None
+        self.is_removing = False
 
     async def update_status(self) -> None:
         if not self.current_process:
