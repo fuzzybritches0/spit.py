@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import asyncio
 import inspect
 import importlib.util
 from pathlib import Path
@@ -57,24 +58,31 @@ class ToolCall:
                 return f"ERROR: missing argument: {argument}! Function call failed!"
         return None
 
-    async def maybe_callback(self, signal: int) -> None:
+    def maybe_callback(self, signal: int) -> None:
         if self.callback:
-            await self.callback(signal)
+            self.callback(self.message_index, signal)
 
-    async def end_call(self, messages: list, message: str) -> None:
+    def end_call(self, messages: list, message: str) -> None:
         messages[-1]["content"][0]["text"] = message
-        await self.maybe_callback(2)
-        await self.maybe_callback(0)
+        self.maybe_callback(0)
         return None
 
-    async def call(self, messages: list, tool_call: dict, chat_id: str, callback: callable = None) -> None:
+    async def call_async_generator(self, messages: list, chat_id: str, name: str, arguments) -> None:
+        async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
+            if chunk:
+                messages[-1]["content"][0]["text"] += chunk
+                if self.tools[name]["stream_tool_response"]:
+                    self.maybe_callback(2)
+
+    def call(self, messages: list, tool_call: dict, chat_id: str, callback: callable = None) -> None:
         self.callback = callback
         chat = self.app.query_one("#main").query_one(f"#{chat_id}")
         chat_view = chat.chat_view
         name = tool_call["function"]["name"]
         messages.append({"role": "tool", "tool_call_id": tool_call["id"],
             "name": name, "content": [{"type": "text", "text": ""}]})
-        await self.maybe_callback(1)
+        self.message_index = len(messages) - 1
+        self.maybe_callback(1)
         try:
             arguments = json.loads(tool_call["function"]["arguments"])
         except Exception as exception:
@@ -83,37 +91,32 @@ class ToolCall:
             message = f"Received tool call `{name}` with invalid JSON: \n~~~~\n{args}\n~~~~\n"
             tool_call["function"]["arguments"] = "{\"noop\":\"noop\"}"
             tool_call["function"]["name"] = "noop"
-            return await self.end_call(messages, exc + "\n\n" + message)
+            return self.end_call(messages, exc + "\n\n" + message)
         if name == "noop":
-            return await self.end_call(messages, f"INFO: Offending tool call replaced by NOOP!")
+            return self.end_call(messages, f"INFO: Offending tool call replaced by NOOP!")
         if not name in chat.chat_tools or not name in self.tools.keys():
-            return await self.end_call(messages, f"ERROR: tool {name} not available!")
+            return self.end_call(messages, f"ERROR: tool {name} not available!")
         if (self.app.tool_call.tools[name]["requires_multimodal_image"] and
             not "multimodal" in chat.model_capabilities):
-            return await self.end_call(messages, f"ERROR: tool {name} requires multimodal capabilities!")
+            return self.end_call(messages, f"ERROR: tool {name} requires multimodal capabilities!")
         missing = self.required_arguments(name, arguments)
         if missing:
-            return await self.end_call(messages, missing)
+            return self.end_call(messages, missing)
         try:
             if "call" in self.tools[name]:
                 if inspect.iscoroutinefunction(self.tools[name]["call"]):
-                    ret = await self.tools[name]["call"](self.app, arguments, chat_id)
+                    ret = asyncio.run(self.tools[name]["call"](self.app, arguments, chat_id))
                     if ret:
                         messages[-1]["content"][0]["text"] += ret
                 elif inspect.isfunction(self.tools[name]["call"]):
                     ret = self.tools[name]["call"](self.app, arguments, chat_id)
                     if ret:
                         messages[-1]["content"][0]["text"] += ret
-                await self.maybe_callback(2)
             elif "call_async_generator" in self.tools[name]:
-                async for chunk in self.tools[name]["call_async_generator"](self.app, arguments, chat_id):
-                    if chunk:
-                        messages[-1]["content"][0]["text"] += chunk
-                        if self.tools[name]["stream_tool_response"]:
-                            await self.maybe_callback(2)
+                asyncio.run(self.call_async_generator(messages, chat_id, name, arguments))
             else:
                 messages[-1]["content"][0]["text"] = f"ERROR: no function for {name} defined!"
-                self.maybe_callback(2)
         except Exception as exception:
             messages[-1]["content"][0]["text"] += f"{type(exception).__name__}: {exception}"
-        await self.maybe_callback(0)
+        finally:
+            self.maybe_callback(0)
