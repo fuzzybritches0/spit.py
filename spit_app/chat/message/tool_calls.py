@@ -51,6 +51,8 @@ class ToolCalls:
                     self.skip = True
                     self.key = False
                     ret += "\n~~~~\n"
+                elif char == " " and not self.value and not self.key:
+                    self.skip = True
                 elif char == "," and self.mark % 2 == 0 and not self.key:
                     self.skip = True
                     self.key = True
