@@ -26,6 +26,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
         if (self.messages[-1]["role"] == "user" or self.messages[-1]["role"] == "tool" or
             (self.messages[-1]["role"] == "assistant" and "tool_calls" in self.messages[-1])):
             work = Work(self.chat)
+            self.scroll_end(animate=False, immediate=True)
             self.chat.work = self.run_worker(work.work_stream())
 
     async def action_undo(self) -> None:
@@ -75,10 +76,12 @@ class ChatView(VerticalScroll, CallbackMixIn):
         self.app.query_one("#side-panel").can_focus = False
         self.chat.text_area.was_focused = False
         if self.focused_message:
-            self.focused_message.focus()
+            self.focused_message.focus(scroll_visible=False)
         else:
             if self.children:
                 self.children[-1].focus(scroll_visible=False)
+            elif not self.chat.undo.undo_list:
+                self.chat.text_area.focus()
 
     async def load(self) -> None:
         if self.messages:
