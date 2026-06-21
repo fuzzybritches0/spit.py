@@ -4,8 +4,9 @@ from .textual_message import RemoveMessage
 from .message.message import Message
 from ..modal_screens import LoadingScreen
 from .work import Work
+from .callback import CallbackMixIn
 
-class ChatView(VerticalScroll):
+class ChatView(VerticalScroll, CallbackMixIn):
     BLANK = True
     BINDINGS = [
         ("ctrl+enter", "continue", "Continue"),
@@ -20,18 +21,6 @@ class ChatView(VerticalScroll):
         self.messages = self.chat.messages
         self.focused_message = None
         self.id = "chat-view"
-
-    async def callback(self, signal: int) -> None:
-        if signal == 0:
-            self.chat.write_chat_history()
-            self.chat.undo.append_undo("append", self.chat.messages[-1], len(self.messages))
-            await self.children[-1].finish()
-        elif signal == 1:
-            await self.mount(Message(self.chat, self.messages[-1]))
-            self.children[-1].focus(scroll_visible=False)
-            self.scroll_end(animate=False, immediate=True)
-        elif signal == 2:
-            await self.children[-1].process()
 
     async def action_continue(self) -> None:
         if (self.messages[-1]["role"] == "user" or self.messages[-1]["role"] == "tool" or
