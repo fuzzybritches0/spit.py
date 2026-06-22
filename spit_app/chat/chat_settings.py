@@ -70,6 +70,8 @@ class ChatSettings(Horizontal):
         self.children[3].set_options((("None", "none"),))
         while True:
             capabilities = self.chat.model_capabilities
+            if not self.chat.chat_endpoint in self.settings.endpoints:
+                return None
             endpoint = self.settings.endpoints[self.chat.chat_endpoint]
             self.models = await get_models(endpoint)
             if self.models:
