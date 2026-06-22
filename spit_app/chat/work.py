@@ -75,6 +75,7 @@ class Work:
                 if len(self.messages) > count:
                     del self.messages[-1]
                     await self.chat_view.children[-1].remove()
+                self.chat.chat_settings.update_models()
                 return None
             else:
                 raise exception
