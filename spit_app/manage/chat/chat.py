@@ -152,9 +152,9 @@ class Chat(ActionsMixIn, Manage):
     def model_list(self, default: bool = False) -> tuple:
         return (("None", "none"),)
 
-    @work(exclusive=True)
+    @work(exclusive=True, exit_on_error=False)
     async def work_model_list(self) -> None:
-        #widget.set_options(((None, None),))
+        count = 0
         while True:
             endpoint = self.query_one("#endpoint").value
             models = await get_models(self.settings.endpoints[endpoint])
@@ -163,6 +163,9 @@ class Chat(ActionsMixIn, Manage):
             if models:
                 return None
             else:
+                count += 1
+                if count > 60:
+                    return None
                 await asyncio.sleep(10)
 
     def model_settings_list(self, default: bool = False) -> tuple:
