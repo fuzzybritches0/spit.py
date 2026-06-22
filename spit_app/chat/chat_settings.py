@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+import asyncio
 from textual import events, work
 from textual.containers import Horizontal
 from textual.widgets import Label, Select
@@ -64,18 +65,27 @@ class ChatSettings(Horizontal):
         self.update_selects()
         self.disallowed_focus()
 
-    @work(exclusive=True, exit_on_error=False)
+    @work(exclusive=True)
     async def update_models(self) -> None:
-        capabilities = self.chat.model_capabilities
-        endpoint = self.settings.endpoints[self.chat.chat_endpoint]
-        self.models = await get_models(endpoint)
-        options = get_models_tuple(self.models)
-        self.children[3].set_options(options)
-        self.children[3].value = self.set_value(options, self.chat.chat_model, False)
-        self.chat.chat_model = self.children[3].selection
-        self.chat.model_capabilities = get_model_capabilities(self.models, self.chat.chat_model)
-        if not capabilities == self.chat.model_capabilities:
-            self.chat.refresh_bindings()
+        self.children[3].set_options((("None", "none"),))
+        while True:
+            capabilities = self.chat.model_capabilities
+            endpoint = self.settings.endpoints[self.chat.chat_endpoint]
+            self.models = await get_models(endpoint)
+            if self.models:
+                options = get_models_tuple(self.models)
+                self.children[3].set_options(options)
+                self.children[3].value = self.set_value(options, self.chat.chat_model, False)
+                self.chat.chat_model = self.children[3].selection
+                self.chat.model_capabilities = get_model_capabilities(self.models, self.chat.chat_model)
+                if not capabilities == self.chat.model_capabilities:
+                    self.chat.refresh_bindings()
+                return None
+            else:
+                if not self.chat.chat_model == self.children[3].selection:
+                    self.chat.chat_model = self.children[3].selection
+                    self.chat.refresh_bindings
+                await asyncio.sleep(10)
 
     def update_selects(self) -> None:
         options = self.get_options()
