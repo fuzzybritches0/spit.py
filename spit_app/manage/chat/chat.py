@@ -1,5 +1,6 @@
 import os
 import shutil
+import asyncio
 from time import time
 from datetime import datetime
 from copy import deepcopy
@@ -153,13 +154,16 @@ class Chat(ActionsMixIn, Manage):
 
     @work(exclusive=True)
     async def work_model_list(self) -> None:
-        try:
+        #widget.set_options(((None, None),))
+        while True:
             endpoint = self.query_one("#endpoint").value
             models = await get_models(self.settings.endpoints[endpoint])
             options = get_models_tuple(models)
             self.query_one("#model").set_options(options)
-        except:
-            pass
+            if models:
+                return None
+            else:
+                await asyncio.sleep(10)
 
     def model_settings_list(self, default: bool = False) -> tuple:
         tup = ()
