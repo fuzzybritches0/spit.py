@@ -68,6 +68,7 @@ class ChatSettings(Horizontal):
     @work(exclusive=True)
     async def update_models(self) -> None:
         self.children[3].set_options((("None", "none"),))
+        count = 0
         while True:
             capabilities = self.chat.model_capabilities
             if not self.chat.chat_endpoint in self.settings.endpoints:
@@ -87,6 +88,9 @@ class ChatSettings(Horizontal):
                 if not self.chat.chat_model == self.children[3].selection:
                     self.chat.chat_model = self.children[3].selection
                     self.chat.refresh_bindings
+                count += 1
+                if count > 60:
+                    return None
                 await asyncio.sleep(10)
 
     def update_selects(self) -> None:
