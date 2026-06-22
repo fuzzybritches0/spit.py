@@ -56,9 +56,9 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
                 await loaded.remove_children()
                 await loaded.select_main_screen()
             else:
-                await loaded.remove_children()
-                loaded.load(loaded.uuid)
-                await loaded.edit_manage_screen()
+                for child in loaded.children:
+                    if hasattr(child, "method_update_options"):
+                        await getattr(child, "method_update_options")()
 
     def write_json(self, path, content) -> bool:
         path = path.split("/")
