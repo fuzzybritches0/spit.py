@@ -12,6 +12,7 @@ class ChatSettings(Horizontal):
         super().__init__()
         self.id = "chat-settings"
         self.chat = chat
+        self.cs = chat.cs
         self.settings = chat.settings
         self.selects = [ 1, 3, 5]
         self.models = []
@@ -20,16 +21,16 @@ class ChatSettings(Horizontal):
         if event.value == "none":
             return None
         if event.control.id == "select-endpoint":
-            self.chat.chat_endpoint = event.value
+            self.cs("endpoint", event.value)
             self.update_models()
         if event.control.id == "select-model":
-            self.chat.chat_model = event.value
-            self.chat.model_capabilities = get_model_capabilities(self.models, self.chat.chat_model)
+            self.cs("model", event.value)
+            self.chat.model_capabilities = get_model_capabilities(self.models, self.cs("model"))
         if event.control.id == "select-model-settings":
             if event.value == Select.NULL:
-                self.chat.chat_model_settings = None
+                self.cs("model_settings", None)
             else:
-                self.chat.chat_model_settings = event.value
+                self.cs("model_settings", event.value)
         self.chat.write_chat_history()
 
     def focus(self) -> None:
@@ -71,22 +72,22 @@ class ChatSettings(Horizontal):
         count = 0
         while True:
             capabilities = self.chat.model_capabilities
-            if not self.chat.chat_endpoint in self.settings.endpoints:
+            if not self.cs("endpoint") in self.settings.endpoints:
                 return None
-            endpoint = self.settings.endpoints[self.chat.chat_endpoint]
+            endpoint = self.settings.endpoints[self.cs("endpoint")]
             self.models = await get_models(endpoint)
             if self.models:
                 options = get_models_tuple(self.models)
                 self.children[3].set_options(options)
-                self.children[3].value = self.set_value(options, self.chat.chat_model, False)
-                self.chat.chat_model = self.children[3].selection
-                self.chat.model_capabilities = get_model_capabilities(self.models, self.chat.chat_model)
+                self.children[3].value = self.set_value(options, self.cs("model"), False)
+                self.cs("model", self.children[3].selection)
+                self.chat.model_capabilities = get_model_capabilities(self.models, self.cs("model"))
                 if not capabilities == self.chat.model_capabilities:
                     self.chat.refresh_bindings()
                 return None
             else:
-                if not self.chat.chat_model == self.children[3].selection:
-                    self.chat.chat_model = self.children[3].selection
+                if not self.cs("model") == self.children[3].selection:
+                    self.cs("model", self.children[3].selection)
                     self.chat.refresh_bindings
                 count += 1
                 if count > 60:
@@ -107,10 +108,10 @@ class ChatSettings(Horizontal):
         return options
 
     def set_selects(self, options: list) -> None:
-        self.children[1].value = self.set_value(options[0], self.chat.chat_endpoint, False)
-        self.chat.chat_endpoint = self.children[1].selection
-        self.children[5].value = self.set_value(options[1], self.chat.chat_model_settings, True)
-        self.chat.chat_model_settings = self.children[5].selection
+        self.children[1].value = self.set_value(options[0], self.cs("endpoint"), False)
+        self.cs("endpoint", self.children[1].selection)
+        self.children[5].value = self.set_value(options[1], self.cs("model_settings"), True)
+        self.cs("model_settings", self.children[5].selection)
         self.chat.write_chat_history()
 
     async def on_descendant_focus(self) -> None:
