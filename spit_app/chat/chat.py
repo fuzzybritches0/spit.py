@@ -41,6 +41,12 @@ class Chat(Vertical):
         self.chat_settings = ChatSettings(self)
         self.undo = Undo(self)
 
+    def cs(self, key: str, value: str|None = None) -> str|None:
+        if not value == None:
+            self.csetting[key]["value"] = value
+        else:
+            return self.csetting[key]["value"]
+
     def is_working(self) -> bool:
         if self.work and self.work.is_running:
             return True
