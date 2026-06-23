@@ -27,7 +27,7 @@ class ChatTextArea(TextArea):
     def action_cancel_edit(self):
         self.is_edit = False
         self.text = self.temp
-        self.chat_view.focus()
+        self.chat_view.focused_message.focus(scroll_visible=False)
 
     async def action_save_edit(self):
         index = self.chat_view.children.index(self.edit_container)
