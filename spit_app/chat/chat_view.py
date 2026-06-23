@@ -18,6 +18,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
         super().__init__()
         self.anchor()
         self.chat = chat
+        self.cs = chat.cs
         self.messages = self.chat.messages
         self.focused_message = None
         self.id = "chat-view"
@@ -38,7 +39,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         match action:
             case "continue":
-                if self.chat.chat_model == "none":
+                if self.cs("model") == "none":
                     return False
                 if not "completion" in self.chat.model_capabilities:
                     return False
