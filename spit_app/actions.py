@@ -35,8 +35,3 @@ class ActionsMixIn:
                 await cont.remove()
             self.exit()
         self.confirm_exit = False
-
-    def clean_exit(self) -> None:
-        self.chats-=1
-        if not self.chats:
-            self.exit()
