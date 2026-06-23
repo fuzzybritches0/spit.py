@@ -14,6 +14,7 @@ class ChatTextArea(TextArea):
     def __init__(self, chat):
         super().__init__()
         self.chat = chat
+        self.cs = chat.cs
         self.chat_view = self.chat.chat_view
         self.messages = self.chat.messages
         self.id = "text-area"
@@ -70,7 +71,7 @@ class ChatTextArea(TextArea):
             case "cancel_edit":
                 return self.is_edit
             case "submit":
-                if self.chat.chat_model == "none":
+                if self.cs("model") == "none":
                     return False
                 if not "completion" in self.chat.model_capabilities:
                     return False
