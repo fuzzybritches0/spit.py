@@ -94,7 +94,7 @@ class ToolCall:
             return self.end_call(messages, exc + "\n\n" + message)
         if name == "noop":
             return self.end_call(messages, f"INFO: Offending tool call replaced by NOOP!")
-        if not name in chat.chat_tools or not name in self.tools.keys():
+        if not name in chat.cs("tools") or not name in self.tools.keys():
             return self.end_call(messages, f"ERROR: tool {name} not available!")
         if (self.app.tool_call.tools[name]["requires_multimodal_image"] and
             not "multimodal" in chat.model_capabilities):
