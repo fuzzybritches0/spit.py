@@ -108,15 +108,9 @@ class Chat(ActionsMixIn, Manage):
         else:
             if self.is_loaded():
                 chat = self.app.query_one("#main").query_one(f"#chat-{self.uuid}")
-                chat.chat_desc = self.manage["desc"]["value"]
-                chat.chat_endpoint = self.manage["endpoint"]["value"]
-                chat.chat_model = self.manage["model"]["value"]
-                chat.chat_model_settings = self.manage["model_settings"]["value"]
-                chat.chat_prompt = self.manage["prompt"]["value"]
-                chat.chat_tools = self.manage["tools"]["value"]
-                chat.csettings["sandbox"]["value"] = self.manage["sandbox"]["value"]
-                ctime = chat.chat_ctime
-                desc = chat.chat_desc
+                chat.csettings = self.manage
+                ctime = chat.ctime
+                desc = chat.cs("desc")
                 chat.write_chat_history()
             else:
                 content = self.app.read_json(f"{self.cur_dir}/chat-{self.uuid}.json")
