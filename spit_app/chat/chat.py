@@ -43,9 +43,9 @@ class Chat(Vertical):
 
     def cs(self, key: str, value: any = "_None_") -> str|None:
         if not value == "_None_":
-            self.csetting[key]["value"] = value
+            self.csettings[key]["value"] = value
         else:
-            return self.csetting[key]["value"]
+            return self.csettings[key]["value"]
 
     def is_working(self) -> bool:
         if self.work and self.work.is_running:
