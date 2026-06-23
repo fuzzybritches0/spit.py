@@ -20,8 +20,8 @@ class SidePanel(OptionList):
 
     def update_option_prompt(self, chat_id: str) -> None:
         chat = self.app.query_one("#main").query_one(f"#{chat_id}")
-        ctime = chat.chat_ctime
-        desc = chat.chat_desc
+        ctime = chat.ctime
+        desc = chat.cs("desc")
         ctime = datetime.fromtimestamp(int(ctime))
         self.replace_option_prompt(chat_id, f"\n{desc}\n{ctime}\n")
 
