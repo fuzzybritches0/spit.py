@@ -8,20 +8,21 @@ class Work:
     def __init__(self, chat) -> None:
         self.chat = chat
         self.chat_view = chat.chat_view
+        self.cs = chat.cs
         self.app = chat.app
         self.settings = chat.app.settings
         self.messages = chat.messages
         prompt = self.prompt()
-        endpoint = self.settings.endpoints[chat.chat_endpoint]
+        endpoint = self.settings.endpoints[self.cs("endpoint")]
         model_settings = {}
-        if chat.chat_model_settings:
-            model_settings = self.settings.models[chat.chat_model_settings]
+        if self.cs("model_settings"):
+            model_settings = self.settings.models[self.cs("model_settings")]
         tools_descs = []
         for _tool in self.app.tool_call.tools.keys():
             tool = self.app.tool_call.tools[_tool]
-            if tool["desc"]["function"]["name"] in chat.chat_tools and self.req_mm_image(_tool):
+            if tool["desc"]["function"]["name"] in self.cs("tools") and self.req_mm_image(_tool):
                 tools_descs.append(tool["desc"])
-        self.endpoint = LlamaCppEndpoint(self.messages, endpoint, chat.chat_model, model_settings, prompt,
+        self.endpoint = LlamaCppEndpoint(self.messages, endpoint, self.cs("model"), model_settings, prompt,
                                          tools_descs, self.chat_view.callback)
 
     def req_mm_image(self, tool: dict) -> bool:
@@ -45,7 +46,7 @@ class Work:
     def prompt(self) -> str:
         prompt = ""
         for tool in self.app.tool_call.tools.keys():
-            if tool in self.chat.chat_tools and self.req_mm_image(tool):
+            if tool in self.cs("tools") and self.req_mm_image(tool):
                 tool_prompt = self.app.tool_call.tools[tool]["settings"]["prompt"]["value"]
                 if tool in self.settings.tool_settings:
                     if "prompt" in self.settings.tool_settings[tool]:
@@ -54,8 +55,8 @@ class Work:
                 prompt += self.prompt_inst(tool)
         if prompt:
             prompt = TOOL_PROMPT + prompt
-        if self.chat.chat_prompt and self.chat.chat_prompt in self.settings.prompts:
-            chat_prompt = self.settings.prompts[self.chat.chat_prompt]["text"]["value"]
+        if self.cs("prompt") and self.cs("prompt") in self.settings.prompts:
+            chat_prompt = self.settings.prompts[self.cs("prompt")]["text"]["value"]
             prompt =  "# INSTRUCTIONS\n\n" + chat_prompt + "\n\n" + prompt
         return prompt
 
