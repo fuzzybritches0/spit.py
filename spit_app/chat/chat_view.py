@@ -38,24 +38,20 @@ class ChatView(VerticalScroll, CallbackMixIn):
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         match action:
+            if self.chat.is_working() or self.chat.text_area.is_edit:
+                return False
             case "continue":
-                if self.cs("model") == "none":
+                if self.cs("model") == "none" or not self.messages:
                     return False
                 if not "completion" in self.chat.model_capabilities:
-                    return False
-                if self.chat.is_working() or self.chat.text_area.is_edit or not self.messages:
                     return False
                 if self.messages[-1]["role"] == "assistant":
                     if not "tool_calls" in self.messages[-1]:
                         return False
             case "undo":
-                if self.chat.is_working() or self.chat.text_area.is_edit:
-                    return False
                 if self.chat.undo.undo_index == -1:
                     return False
             case "redo":
-                if self.chat.is_working() or self.chat.text_area.is_edit:
-                    return False
                 if self.chat.undo.undo_index == len(self.chat.undo.undo_list)-1:
                     return False
                 if len(self.chat.undo.undo_list) == 0:
