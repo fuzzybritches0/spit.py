@@ -37,9 +37,9 @@ class ChatView(VerticalScroll, CallbackMixIn):
         await self.chat.undo.redo()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if self.chat.is_working() or self.chat.text_area.is_edit:
+            return False
         match action:
-            if self.chat.is_working() or self.chat.text_area.is_edit:
-                return False
             case "continue":
                 if self.cs("model") == "none" or not self.messages:
                     return False
