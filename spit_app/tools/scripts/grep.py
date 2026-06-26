@@ -51,7 +51,7 @@ try:
         print(f"No matches found for pattern: `{pattern}`")
     else:
         print(f"Found {total_matches} match(es) in {len(set(r['file'] for r in results))} file(s):")
-        print("~~~~")
+        print("\n~~~~")
         for result in results:
             print(f"{result['file']}:{result['line']}: {result['text']}")
             if context > 0:
@@ -60,7 +60,7 @@ try:
                     if line_num != result['line'] - 1:
                         print(f"  {line_num}: {ctx_line}")
             print()
-        print("~~~~")
+        print("~~~~\n")
 except Exception as exception:
     print(f"ERROR: `{type(exception).__name__}`: `{exception}`")
     sys.exit(1)
