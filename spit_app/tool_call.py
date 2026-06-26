@@ -88,7 +88,7 @@ class ToolCall:
         except Exception as exception:
             args = tool_call["function"]["arguments"]
             exc = f"{type(exception).__name__}: {exception}"
-            message = f"Received tool call `{name}` with invalid JSON: \n~~~~\n{args}\n~~~~\n"
+            message = f"Received tool call `{name}` with invalid JSON:\n\n~~~~\n{args}\n~~~~\n"
             tool_call["function"]["arguments"] = "{\"noop\":\"noop\"}"
             tool_call["function"]["name"] = "noop"
             return self.end_call(messages, exc + "\n\n" + message)
