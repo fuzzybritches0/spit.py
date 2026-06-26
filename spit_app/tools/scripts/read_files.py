@@ -25,9 +25,9 @@ try:
         if result["success"]:
             print(f"File: `{path[0]}`")
             print(f"Size: `{result['size']} bytes`")
-            print("~~~~")
+            print("\n~~~~")
             print(result["content"])
-            print("~~~~")
+            print("~~~~\n")
         else:
             print(f"ERROR: `{result['error']}`")
             sys.exit(1)
@@ -38,9 +38,9 @@ try:
             print(f"File: `{p}`")
             if result["success"]:
                 print(f"Size: `{result['size']} bytes`")
-                print("~~~~")
+                print("\n~~~~")
                 print(result["content"])
-                print("~~~~")
+                print("~~~~\n")
             else:
                 print(f"\nERROR: `{result['error']}`")
         print(f"\nTotal: {len(path)} file(s) processed, {sum(1 for r in results.values() if r['success'])} successful")
