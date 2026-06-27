@@ -105,20 +105,14 @@ async def code_block_start_end(self, pattern: str) -> None:
     else:
         self.part += escape_fence(self, pattern)
 
-def compose_fence(pattern: str) -> str:
-    fence = "`" if pattern[0] == "~" else "~"
-    count = len(pattern)
-    count+=1
-    return fence * count
-
 async def code_block_start(self, pattern: str) -> None:
     await self.content.target.stream.write(self.part)
     await self.content.target.stream.stop()
-    self.part = compose_fence(pattern)
+    self.part = pattern
     await self.content.mount(Code())
 
 async def code_block_end(self, pattern: str) -> None:
-    await self.content.target.stream.write(self.part+compose_fence(pattern))
+    await self.content.target.stream.write(self.part+pattern)
     await self.content.target.stream.stop()
     self.part = ""
     await self.content.target.update_code()
