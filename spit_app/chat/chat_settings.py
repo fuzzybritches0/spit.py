@@ -66,7 +66,7 @@ class ChatSettings(Horizontal):
         self.update_selects()
         self.disallowed_focus()
 
-    @work(exclusive=True)
+    @work(exclusive=True, exit_on_error=False)
     async def update_models(self) -> None:
         self.children[3].set_options((("None", "none"),))
         count = 0
