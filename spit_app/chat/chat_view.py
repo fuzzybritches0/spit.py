@@ -10,6 +10,8 @@ class ChatView(VerticalScroll, CallbackMixIn):
     BLANK = True
     BINDINGS = [
         ("ctrl+enter", "continue", "Continue"),
+        ("ctrl+e", "edit_on", "Edit On"),
+        ("ctrl+e", "edit_off", "Edit Off"),
         ("u", "undo", "Undo"),
         ("r", "redo", "Redo")
     ]
@@ -21,7 +23,20 @@ class ChatView(VerticalScroll, CallbackMixIn):
         self.cs = chat.cs
         self.messages = self.chat.messages
         self.focused_message = None
+        self.is_edit = False
         self.id = "chat-view"
+
+    def show_cots(self, show: bool = True) -> None:
+        for message in self.children:
+            if "reasoning" in message.pr:
+                message.pr["reasoning"].display = show
+
+    async def reset_message_edit(self) -> None:
+        async with self.batch():
+            for child in self.children:
+                if child.is_edit:
+                    await child.reset()
+                    await child.finish()
 
     async def action_continue(self) -> None:
         if (self.messages[-1]["role"] == "user" or self.messages[-1]["role"] == "tool" or
@@ -30,6 +45,19 @@ class ChatView(VerticalScroll, CallbackMixIn):
             self.scroll_end(animate=False, immediate=True)
             self.chat.work = self.run_worker(work.work_stream())
 
+    def action_edit_on(self) -> None:
+        self.show_cots(True)
+        self.chat.text_area.display = False
+        self.is_edit = True
+        self.refresh_bindings()
+
+    async def action_edit_off(self) -> None:
+        await self.reset_message_edit()
+        self.show_cots(False)
+        self.chat.text_area.display = True
+        self.is_edit = False
+        self.refresh_bindings()
+
     async def action_undo(self) -> None:
         await self.chat.undo.undo()
 
@@ -37,25 +65,32 @@ class ChatView(VerticalScroll, CallbackMixIn):
         await self.chat.undo.redo()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if self.chat.is_working() or self.chat.text_area.is_edit:
+        if self.chat.is_working():
             return False
-        match action:
-            case "continue":
-                if self.cs("model") == "none" or not self.messages:
+        if action == "continue":
+            if self.is_edit:
+                return False
+            if self.cs("model") == "none" or not self.messages:
+                return False
+            if not "completion" in self.chat.model_capabilities:
+                return False
+            if self.messages[-1]["role"] == "assistant":
+                if not "tool_calls" in self.messages[-1]:
                     return False
-                if not "completion" in self.chat.model_capabilities:
-                    return False
-                if self.messages[-1]["role"] == "assistant":
-                    if not "tool_calls" in self.messages[-1]:
-                        return False
-            case "undo":
-                if self.chat.undo.undo_index == -1:
-                    return False
-            case "redo":
-                if self.chat.undo.undo_index == len(self.chat.undo.undo_list)-1:
-                    return False
-                if len(self.chat.undo.undo_list) == 0:
-                    return False
+        elif action ==  "undo":
+            if self.chat.undo.undo_index == -1:
+                return False
+        elif action ==  "redo":
+            if self.chat.undo.undo_index == len(self.chat.undo.undo_list)-1:
+                return False
+            if len(self.chat.undo.undo_list) == 0:
+                return False
+        elif action == "edit_on":
+            if self.is_edit:
+                return False
+        elif action == "edit_off":
+            if not self.is_edit:
+                return False
         return True
 
     async def on_remove_message(self, message: RemoveMessage) -> None:
