@@ -1,12 +1,8 @@
-class ToolCalls:
-    def __init__(self, message) -> None:
-        self.message = message.message
-        self.cur_tool_call = 1
-        self.cur_tool_call_head = 1
-        self.parsed_tool_calls = []
-
-    def new_arguments(self) -> None:
-        self.cur_tool_call_head += 1
+class ToolCall:
+    def __init__(self, tool_call: list) -> None:
+        self.tool_call = tool_call
+        text = f"\n### function: `{self.tool_call['name']}`\n#### arguments:\n"
+        self.formatted_tool_call = text
         self.last_char = ""
         self.pos = 0
         self.skip = False
@@ -63,18 +59,9 @@ class ToolCalls:
                 continue
             ret+=char
         self.pos = pos+1
-        self.parsed_tool_calls[-1]["text"] += ret
+        self.formatted_tool_call += ret
         
-    def format_tool_calls(self) -> None:
-        for tool_call in self.message["tool_calls"][self.cur_tool_call-1:]:
-            if self.cur_tool_call == self.cur_tool_call_head:
-                self.parsed_tool_calls.append({"type": "text", "text": ""})
-                text = f"\n### function: `{tool_call['function']['name']}`\n#### arguments:\n"
-                self.parsed_tool_calls[-1]["text"] += text
-                self.new_arguments()
-            self.tool_call_arguments(tool_call["function"]["arguments"])
-            self.parsed_tool_calls[-1]["text"] = self.parsed_tool_calls[-1]["text"].replace(r'\"', '"')
-            self.parsed_tool_calls[-1]["text"] = self.parsed_tool_calls[-1]["text"].replace("\\n", "\n")
-            if len(self.message["tool_calls"]) > self.cur_tool_call:
-                self.cur_tool_call+=1
-
+    def format_tool_call(self) -> None:
+        self.tool_call_arguments(self.tool_call["arguments"])
+        self.formatted_tool_call = self.formatted_tool_call.replace(r'\"', '"')
+        self.formatted_tool_call = self.formatted_tool_call.replace("\\n", "\n")
