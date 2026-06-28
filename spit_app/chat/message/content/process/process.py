@@ -3,6 +3,7 @@ from textual.containers import VerticalScroll
 from .actions import ActionsMixIn, bindings
 from .containers.part import Part
 from .pattern_processing import PatternProcessing
+from .tool_call import ToolCall
 
 class Process(ActionsMixIn, VerticalScroll):
     BINDINGS = bindings
@@ -15,11 +16,20 @@ class Process(ActionsMixIn, VerticalScroll):
         self.message = message
         self.scontent = scontent
         self.count = count
+        self.init()
+
+    def init(self) -> None:
         self.pp = PatternProcessing(self)
         self.pos = 0
         self.pp.part = ""
+        self.tc = None
         self.target = None
         self.finished = False
+        self.is_edit = False
+
+    async def reset(self) -> None:
+        await self.remove_children()
+        self.init()
 
     async def process_content(self, content: str) -> None:
         if not self.display:
@@ -44,14 +54,17 @@ class Process(ActionsMixIn, VerticalScroll):
         await self.target.stream.stop()
         self.pos = pos
 
-    def get_content(self, content: str|list) -> str|None:
+    def get_content(self, content: str|dict) -> str|None:
         if type(content) is str:
             return content
-        elif content[self.count]["type"] == "text":
-            return content[self.count]["text"]
+        elif type(content) is dict and self.scontent == "tool_calls":
+            if not self.tc:
+                self.tc = ToolCall(content)
+            self.tc.format_tool_call()
+            return self.tc.formatted_tool_call
         return None
 
-    async def finish(self, content: str|list) -> None:
+    async def finish(self, content: str|dict) -> None:
         if self.finished:
             return None
         if not self.target:
@@ -60,7 +73,7 @@ class Process(ActionsMixIn, VerticalScroll):
         self.target = None
         self.finished = True
 
-    async def process(self, content: str|list) -> None:
+    async def process(self, content: str|dict) -> None:
         if not self.target:
             await self.mount(Part())
         await self.process_content(self.get_content(content))
