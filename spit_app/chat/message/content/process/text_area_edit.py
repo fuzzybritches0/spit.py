@@ -1,11 +1,6 @@
 from textual.widgets import TextArea
 
 class TextAreaEdit(TextArea):
-    BINDINGS = [
-        ("ctrl+enter", "save", "Save"),
-        ("ctrl+escape", "cancel", "Cancel")
-    ]
-
     def __init__(self, process, text: str):
         super().__init__()
         self.process = process
@@ -19,7 +14,7 @@ class TextAreaEdit(TextArea):
     def on_mount(self) -> None:
         self.focus()
 
-    async def action_save(self) -> None:
+    async def save(self) -> None:
         if not self.text == self.old_text:
             index = self.chat_view.messages.index(self.message.message)
             self.chat.undo.append_undo("change", self.message.message, index)
@@ -28,9 +23,9 @@ class TextAreaEdit(TextArea):
             else:
                 self.message.message[self.process.scontent][self.process.count]["text"] = self.text
             self.chat.write_chat_history()
-        await self.action_cancel()
+        await self.cancel()
 
-    async def action_cancel(self) -> None:
+    async def cancel(self) -> None:
         async with self.process.batch():
             await self.process.reset()
             await self.process.finish(self.text)

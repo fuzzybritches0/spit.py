@@ -4,10 +4,18 @@ from .text_area_tool import TextAreaTool
 
 bindings = [
     ("e", "edit", "Edit"),
-    ("x", "remove", "Remove")
+    ("x", "remove", "Remove"),
+    ("ctrl+enter", "save", "Save"),
+    ("ctrl+escape", "cancel", "Cancel")
 ]
 
 class ActionsMixIn:
+    async def action_save(self) -> None:
+        await self.edit.save()
+
+    async def action_cancel(self) -> None:
+        await self.edit.cancel()
+
     async def action_remove(self) -> None:
         index = self.chat_view.messages.index(self.message.message)
         self.chat.undo.append_undo("change", self.message.message, index)

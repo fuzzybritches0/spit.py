@@ -3,19 +3,12 @@ from textual.widgets import TextArea, Markdown
 from textual.containers import Vertical
 from .tool_call import ToolCall
 
-class TextAreaTool(Vertical):
-    BINDINGS = [
-        ("ctrl+enter", "save", "Save"),
-        ("ctrl+escape", "cancel", "Cancel")
-    ]
-
+class TextAreaTool():
     def __init__(self, process, tool: dict):
-        super().__init__()
         self.process = process
         self.chat_view = process.chat_view
         self.message = process.message
         self.chat = process.chat
-        self.styles.height = "auto"
         self.tool = tool
         self.init()
 
@@ -68,7 +61,7 @@ class TextAreaTool(Vertical):
         arguments = json.dumps(arguments)
         self.message.message["tool_calls"][self.process.count]["function"]["arguments"] = arguments
 
-    async def action_save(self) -> None:
+    async def save(self) -> None:
         index = self.chat_view.messages.index(self.message.message)
         self.chat.undo.append_undo("change", self.message.message, index)
         if self.unknown_tool:
@@ -76,9 +69,9 @@ class TextAreaTool(Vertical):
         else:
             self.save_known()
         self.chat.write_chat_history()
-        await self.action_cancel()
+        await self.cancel()
 
-    async def action_cancel(self) -> None:
+    async def cancel(self) -> None:
         async with self.process.batch():
             await self.process.reset()
             tc = ToolCall(self.tool["function"])
