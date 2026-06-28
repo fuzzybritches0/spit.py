@@ -65,7 +65,12 @@ class Chat(Vertical):
             self.text_area.focus()
 
     async def action_abort(self) -> None:
+        if self._work.busy:
+            self._work.exit_after_busy = True
+            return None
         self.work.cancel()
+        await self.chat_view.children[-1].remove()
+        del self.chat_view.messages[-1]
         self.refresh_bindings()
 
     def action_settings(self) -> None:
