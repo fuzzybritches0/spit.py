@@ -1,26 +1,42 @@
 import json
+from .text_area_edit import TextAreaEdit
+from .text_area_tool import TextAreaTool
 
 bindings = [
     ("e", "edit", "Edit"),
+    ("x", "remove", "Remove")
 ]
 
 class ActionsMixIn:
-    def action_edit(self) -> None:
-        self.chat.text_area.temp = self.chat.text_area.text
+    async def action_remove(self) -> None:
+        index = self.chat_view.messages.index(self.message.message)
+        self.chat.undo.append_undo("change", self.message.message, index)
+        if type(self.message.message[self.scontent]) is str:
+            del self.message.message[self.scontent]
+        else:
+            del self.message.message[self.scontent][self.count]
+        await self.message.reset()
+        await self.message.finish()
+        self.chat.write_chat_history()
+
+    async def action_edit(self) -> None:
+        self.message.is_edit += 1
+        self.is_edit = True
         if self.scontent == "tool_calls":
-            self.chat.text_area.text = json.dumps(self.message.message[self.scontent][self.count])
+            async with self.batch():
+                await self.remove_children()
+                tool = self.message.message[self.scontent][self.count]
+                await self.mount(TextAreaTool(self, tool))
         else:
             if type(self.message.message[self.scontent]) is str:
-                self.chat.text_area.text = self.message.message[self.scontent]
+                text = self.message.message[self.scontent]
             else:
-                self.chat.text_area.text = self.message.message[self.scontent][self.count]["text"]
-        self.chat.text_area.is_edit = True
-        self.chat.text_area.scontent = self.scontent
-        self.chat.text_area.scontent_count = self.count
-        self.chat.text_area.edit_container = self.message
-        self.chat.text_area.focus()
+                text = self.message.message[self.scontent][self.count]["text"]
+            async with self.batch():
+                await self.remove_children()
+                await self.mount(TextAreaEdit(self, text))
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if self.chat.is_working() or self.chat.text_area.is_edit:
+        if self.chat.is_working() or not self.chat_view.is_edit or self.is_edit:
             return False
         return True
