@@ -66,8 +66,6 @@ class Chat(Vertical):
 
     async def action_abort(self) -> None:
         self.work.cancel()
-        del self.messages[-1]
-        await self.chat_view.children[-1].remove()
         self.refresh_bindings()
 
     def action_settings(self) -> None:
