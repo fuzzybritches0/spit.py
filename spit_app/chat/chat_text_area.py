@@ -34,8 +34,8 @@ class ChatTextArea(TextArea):
         self.chat_view.children[-1].focus(scroll_visible=False)
         self.chat_view.scroll_end(animate=False, immediate=True)
         self.text = ""
-        work = Work(self.chat)
-        self.chat.work = self.run_worker(work.work_stream())
+        self.chat._work = Work(self.chat)
+        self.chat.work = self.run_worker(self.chat._work.work_stream())
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "submit":
