@@ -43,7 +43,8 @@ class ActionsMixIn:
                 text = self.message.message[self.scontent][self.count]["text"]
             async with self.batch():
                 await self.remove_children()
-                await self.mount(TextAreaEdit(self, text))
+                self.edit = TextAreaEdit(self, text)
+                await self.mount(self.edit)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.chat.is_working() or not self.chat_view.is_edit:
