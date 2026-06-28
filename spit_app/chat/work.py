@@ -13,6 +13,8 @@ class Work:
         self.app = chat.app
         self.settings = chat.app.settings
         self.messages = chat.messages
+        self.busy = False
+        self.exit_after_busy = False
         prompt = self.prompt()
         endpoint = self.settings.endpoints[self.cs("endpoint")]
         model_settings = {}
@@ -64,8 +66,13 @@ class Work:
     async def work_stream(self) -> None:
         if "tool_calls" in self.messages[-1]:
             for tool_call in self.messages[-1]["tool_calls"]:
+                self.busy = True
                 await asyncio.to_thread(self.app.tool_call.call, self.messages, tool_call,
                                         self.chat.id, self.chat_view.callback)
+                self.busy = False
+                if self.exit_after_busy:
+                    return None
+
         try:
             count = len(self.messages)
             await self.endpoint.stream()
