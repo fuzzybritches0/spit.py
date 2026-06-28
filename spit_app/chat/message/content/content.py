@@ -17,9 +17,10 @@ class Content(Vertical):
                 await self.mount(Process(self.chat, self.message, self.scontent, 0))
         else:
             for part in range(len(self.children), len(content)):
-                if content[part]["type"] == "text":
+                _type = content[part]["type"]
+                if _type == "text" or _type == "function":
                     await self.mount(Process(self.chat, self.message, self.scontent, part))
-                elif content[part]["type"] == "image_url":
+                elif _type == "image_url":
                     await self.mount(Image())
 
     async def process(self, content: str|list) -> None:
@@ -29,8 +30,9 @@ class Content(Vertical):
         else:
             count = 0
             for part in self.children:
-                if content[count]["type"] == "text":
-                    await part.process(content[count]["text"])
+                _type = content[count]["type"]
+                if _type == "text" or _type == "function":
+                    await part.process(content[count][_type])
                 count+=1
 
     async def finish(self, content: str|list) -> None:
@@ -40,8 +42,9 @@ class Content(Vertical):
         else:
             count = 0
             for part in self.children:
-                if content[count]["type"] == "text":
-                    await part.finish(content[count]["text"])
-                elif content[count]["type"] == "image_url":
-                    await part.finish(content[count]["image_url"]["url"])
+                _type = content[count]["type"]
+                if _type == "text" or _type == "function":
+                    await part.finish(content[count][_type])
+                elif _type == "image_url":
+                    await part.finish(content[count][_type]["url"])
                 count+=1
