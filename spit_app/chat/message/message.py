@@ -2,7 +2,6 @@ from textual.events import DescendantFocus
 from textual.widgets import Markdown
 from textual.containers import VerticalScroll
 from .content.content import Content
-from .tool_calls import ToolCalls
 from .actions import ActionsMixIn, bindings
 
 class Message(ActionsMixIn, VerticalScroll):
@@ -14,14 +13,16 @@ class Message(ActionsMixIn, VerticalScroll):
         self.message = message
         self.messages = chat.messages
         self.chat = chat
+        self.chat_view = chat.chat_view
+        self.text_area = chat.text_area
         self.role = self.message["role"]
         self.classes = "message-container-" + self.role
-        self.tc = ToolCalls(self)
         self.pr = {}
         self.processes = ["reasoning", "content", "tool_calls"]
         self.current_process = None
         self.finish_process = None
         self.is_removing = False
+        self.is_edit = 0
 
     async def update_status(self) -> None:
         if not self.current_process:
@@ -35,11 +36,7 @@ class Message(ActionsMixIn, VerticalScroll):
 
     def get_update(self, process: str) -> tuple:
         if process in self.message and self.message[process]:
-            if process == "tool_calls":
-                self.tc.format_tool_calls()
-                return "tool_calls", self.tc.parsed_tool_calls
-            else:
-                return process, self.message[process]
+            return process, self.message[process]
         else:
             return None, None
 
@@ -77,13 +74,13 @@ class Message(ActionsMixIn, VerticalScroll):
             await self.pr[process].remove()
         self.current_process = None
         self.finish_process = None
-        self.tc = ToolCalls(self)
         self.pr = {}
+        self.is_edit = 0
 
     async def maybe_mount_process(self, process: str) -> None:
         if not process in self.pr:
             display = True
-            if process == "reasoning":
+            if process == "reasoning" and not self.chat_view.is_edit:
                 display = False
             self.pr[process] = Content(self.chat, self, process, display)
             await self.mount(self.pr[process])
@@ -94,7 +91,7 @@ class Message(ActionsMixIn, VerticalScroll):
         await self.status.update("Processing...")
 
     def on_focus(self) -> None:
-        self.chat.chat_view.focused_message = self
+        self.chat_view.focused_message = self
 
     def on_descendant_focus(self, event: DescendantFocus) -> None:
-        self.chat.chat_view.focused_message = event.control
+        self.chat_view.focused_message = event.control
