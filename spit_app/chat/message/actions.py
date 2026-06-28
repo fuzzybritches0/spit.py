@@ -21,7 +21,7 @@ class ActionsMixIn:
     def action_remove(self) -> None:
         if not self.is_removing:
             self.is_removing = True
-            self.chat.chat_view.post_message(RemoveMessage(self.chat.chat_view.children.index(self)))
+            self.chat_view.post_message(RemoveMessage(self.chat_view.children.index(self)))
 
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
@@ -29,18 +29,23 @@ class ActionsMixIn:
         return False
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if ((self.chat.is_working() or self.chat.text_area.is_edit) and
-            not (action == "show_cot" or action == "hide_cot")):
-            return False
-        match action:
-            case "show_cot":
-                if not "reasoning" in self.pr:
-                    return False
-                if self.pr["reasoning"].display:
-                    return False
-            case "hide_cot":
-                if not "reasoning" in self.pr:
-                    return False
-                if not self.pr["reasoning"].display:
-                    return False
+        if action == "show_cot":
+            if self.chat_view.is_edit:
+                return False
+            if not "reasoning" in self.pr:
+                return False
+            if self.pr["reasoning"].display:
+                return False
+        elif action == "hide_cot":
+            if self.chat_view.is_edit:
+                return False
+            if not "reasoning" in self.pr:
+                return False
+            if not self.pr["reasoning"].display:
+                return False
+        elif action == "remove":
+            if self.chat.is_working() or self.is_edit:
+                return False
+            if not self.chat_view.is_edit:
+                return False
         return True
