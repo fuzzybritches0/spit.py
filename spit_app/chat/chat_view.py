@@ -41,9 +41,9 @@ class ChatView(VerticalScroll, CallbackMixIn):
     async def action_continue(self) -> None:
         if (self.messages[-1]["role"] == "user" or self.messages[-1]["role"] == "tool" or
             (self.messages[-1]["role"] == "assistant" and "tool_calls" in self.messages[-1])):
-            work = Work(self.chat)
+            self.chat._work = Work(self.chat)
             self.scroll_end(animate=False, immediate=True)
-            self.chat.work = self.run_worker(work.work_stream())
+            self.chat.work = self.run_worker(self.chat._work.work_stream())
 
     def action_edit_on(self) -> None:
         self.show_cots(True)
