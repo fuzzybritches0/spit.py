@@ -45,6 +45,12 @@ class ActionsMixIn:
                 await self.mount(TextAreaEdit(self, text))
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if self.chat.is_working() or not self.chat_view.is_edit or self.is_edit:
+        if self.chat.is_working() or not self.chat_view.is_edit:
             return False
+        if action == "edit" or action == "remove":
+            if self.is_edit:
+                return False
+        if action == "save" or action == "cancel":
+            if not self.is_edit:
+                return False
         return True
