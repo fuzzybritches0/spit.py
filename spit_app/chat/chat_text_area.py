@@ -6,45 +6,19 @@ from .message.message import Message
 
 class ChatTextArea(TextArea):
     BINDINGS = [
-        ("ctrl+enter", "submit", "Submit"),
-        ("ctrl+enter", "save_edit", "Save"),
-        ("ctrl+escape", "cancel_edit", "Cancel")
+        ("ctrl+enter", "submit", "Submit")
     ]
 
     def __init__(self, chat):
         super().__init__()
         self.chat = chat
         self.cs = chat.cs
-        self.chat_view = self.chat.chat_view
-        self.messages = self.chat.messages
+        self.chat_view = chat.chat_view
+        self.messages = chat.messages
         self.id = "text-area"
         self.tab_behavior = "indent"
-        self.temp = ""
-        self.is_edit = False
         self.was_focused = False
         self.was_empty = True
-
-    def action_cancel_edit(self):
-        self.is_edit = False
-        self.text = self.temp
-        self.chat_view.focused_message.focus(scroll_visible=False)
-
-    async def action_save_edit(self):
-        index = self.chat_view.children.index(self.edit_container)
-        self.chat.undo.append_undo("change", self.edit_container.message, index)
-        if self.scontent == "tool_calls":
-            self.edit_container.message[self.scontent][self.scontent_count] = json.loads(self.text)
-        else:
-            if type(self.edit_container.message[self.scontent]) is str:
-                self.edit_container.message[self.scontent] = self.text
-            else:
-                self.edit_container.message[self.scontent][self.scontent_count]["text"] = self.text
-        self.text = self.temp
-        await self.edit_container.reset()
-        await self.edit_container.finish()
-        self.chat.write_chat_history()
-        self.edit_container.focus(scroll_visible=False)
-        self.is_edit = False
 
     async def action_submit(self) -> None:
         if self.messages and self.messages[-1]["role"] == "user":
@@ -63,22 +37,16 @@ class ChatTextArea(TextArea):
         work = Work(self.chat)
         self.chat.work = self.run_worker(work.work_stream())
 
-    def check_action(self, action: str,
-                     parameters: tuple[object, ...]) -> bool | None:
-        match action:
-            case "save_edit":
-                return self.is_edit
-            case "cancel_edit":
-                return self.is_edit
-            case "submit":
-                if self.cs("model") == "none":
-                    return False
-                if not "completion" in self.chat.model_capabilities:
-                    return False
-                if self.chat.is_working() or self.is_edit:
-                    return False
-                if not self.text:
-                    return False
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action == "submit":
+            if self.cs("model") == "none":
+                return False
+            if not "completion" in self.chat.model_capabilities:
+                return False
+            if self.chat.is_working() or self.chat_view.is_edit:
+                return False
+            if not self.text:
+                return False
         return True
 
     async def on_worker_state_changed(self) -> None:
