@@ -17,37 +17,37 @@ class TextAreaTool():
         self.arguments =  json.loads(self.tool["function"]["arguments"])
         self.tool_name = self.tool["function"]["name"]
         self.unknown_tool = True
-        if self.tool_name in self.app.tool_call.tools:
+        if self.tool_name in self.process.app.tool_call.tools:
             self.unknown_tool = False
-            self.known_tool = self.app.tool_call.tools[self.tool_name]
+            self.known_tool = self.process.app.tool_call.tools[self.tool_name]
             self.properties = self.known_tool["desc"]["function"]["parameters"]["properties"]
 
-    async def on_mount(self) -> None:
+    async def mount(self) -> None:
         if self.unknown_tool:
-            await self.mount(TextArea())
-            self.children[0].styles.height = "auto"
-            self.children[0].text = self.old_tool
-            self.children[0].focus()
+            await self.process.mount(TextArea())
+            self.process.children[0].styles.height = "auto"
+            self.process.children[0].text = self.old_tool
+            self.process.children[0].focus()
         else:
-            await self.mount(Markdown(f"### function: `{self.tool_name}`\n#### arguments:"))
+            await self.process.mount(Markdown(f"### function: `{self.tool_name}`\n#### arguments:"))
             for prop in self.properties.keys():
                 value = ""
                 if prop in self.arguments:
                     value = self.arguments[prop]
-                await self.mount(Markdown(f"`{prop}`"))
-                await self.mount(TextArea(id=prop))
-                self.children[-1].text = value
-                self.children[-1].styles.height = "auto"
-            self.children[2].focus()
+                await self.process.mount(Markdown(f"`{prop}`"))
+                await self.process.mount(TextArea(id=prop))
+                self.process.children[-1].text = value
+                self.process.children[-1].styles.height = "auto"
+            self.process.children[2].focus()
 
     def save_unknown(self) -> None:
-        text = self.children[0].text
+        text = self.process.children[0].text
         if not text == self.old_tool:
             tool = None
             try:
                 tool = json.loads(text)
             except:
-                self.app.exception = Exception("no valid JSON!")
+                self.process.app.exception = Exception("no valid JSON!")
                 return None
             if tool:
                 self.message.message["tool_calls"][self.process.count] = tool
@@ -55,7 +55,7 @@ class TextAreaTool():
     def save_known(self) -> None:
         arguments = {}
         for prop in self.properties.keys():
-            text = self.query_one(f"#{prop}").text
+            text = self.process.query_one(f"#{prop}").text
             if text:
                 arguments[prop] = text
         arguments = json.dumps(arguments)

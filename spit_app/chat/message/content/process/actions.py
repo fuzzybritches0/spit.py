@@ -34,7 +34,8 @@ class ActionsMixIn:
             async with self.batch():
                 await self.remove_children()
                 tool = self.message.message[self.scontent][self.count]
-                await self.mount(TextAreaTool(self, tool))
+                self.edit = TextAreaTool(self, tool)
+                await self.edit.mount()
         else:
             if type(self.message.message[self.scontent]) is str:
                 text = self.message.message[self.scontent]
