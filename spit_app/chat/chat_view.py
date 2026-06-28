@@ -66,9 +66,6 @@ class ChatView(VerticalScroll, CallbackMixIn):
         if not self.children:
             self.chat.text_area.focus()
 
-    async def on_worker_state_changed(self) -> None:
-        self.refresh_bindings()
-
     def on_focus(self) -> None:
         self.app.query_one("#side-panel").can_focus = False
         self.chat.text_area.was_focused = False
