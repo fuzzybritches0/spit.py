@@ -69,6 +69,7 @@ class Work:
                 self.busy = True
                 await asyncio.to_thread(self.app.tool_call.call, self.messages, tool_call,
                                         self.chat.id, self.chat_view.callback)
+                self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages)-1)
                 self.busy = False
                 if self.exit_after_busy:
                     return None
@@ -87,5 +88,7 @@ class Work:
                 return None
             else:
                 raise exception
+                return None
+        self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages))
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
