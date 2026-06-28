@@ -26,6 +26,7 @@ class Process(ActionsMixIn, VerticalScroll):
         self.target = None
         self.finished = False
         self.is_edit = False
+        self.edit = None
 
     async def reset(self) -> None:
         await self.remove_children()
