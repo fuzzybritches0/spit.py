@@ -94,14 +94,15 @@ class Chat(Vertical):
             self.chat_view.focus()
             self.chat_view.scroll_end(animate=False)
 
-    def check_action(self, action: str,
-                     parameters: tuple[object, ...]) -> bool | None:
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if self.chat_view.is_edit:
+            return False
         if action == "abort":
             return self.is_working()
         elif action == "settings":
             return not self.is_working()
         elif action == "add_image":
-            if not "multimodal" in self.model_capabilities or self.is_working() or self.text_area.is_edit:
+            if not "multimodal" in self.model_capabilities or self.is_working():
                 return False
         return True
 
