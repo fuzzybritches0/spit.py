@@ -10,11 +10,20 @@ class TextAreaEdit(TextArea):
         self.text = text
         self.old_text = text
         self.styles.height = "auto"
+        self._background = self.styles.background
 
     def on_mount(self) -> None:
         self.focus()
 
+    def on_text_area_changed(self) -> None:
+        if not self.text:
+            self.styles.background = "red"
+        else:
+            self.styles.background = self._background
+
     async def save(self) -> None:
+        if not self.styles.background == self._background:
+            return None
         if not self.text == self.old_text:
             index = self.chat_view.messages.index(self.message.message)
             self.chat.undo.append_undo("change", self.message.message, index)
