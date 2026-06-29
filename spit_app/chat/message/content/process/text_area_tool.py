@@ -1,7 +1,20 @@
 import json
-from textual.widgets import TextArea, Markdown
+from textual.widgets import TextArea as _TextArea, Markdown
 from textual.containers import Vertical
 from .tool_call import ToolCall
+
+class TextArea(_TextArea):
+    def __init__(self, id: str, required: bool = False) -> None:
+        super().__init__()
+        self.id = id
+        self.required = required
+        self._background = self.styles.background
+
+    def on_text_area_changed(self) -> None:
+        if not self.text:
+            self.styles.background = "red"
+        else:
+            self.styles.background = self._background
 
 class TextAreaTool():
     def __init__(self, process, tool: dict):
