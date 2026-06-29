@@ -9,6 +9,7 @@ class TextAreaEdit(TextArea):
         self.chat = process.chat
         self.text = text
         self.old_text = text
+        self.save_text = text
         self.styles.height = "auto"
         self._background = self.styles.background
 
@@ -32,11 +33,14 @@ class TextAreaEdit(TextArea):
             else:
                 self.message.message[self.process.scontent][self.process.count]["text"] = self.text
             self.chat.write_chat_history()
+            self.save_text = self.text
+        else:
+            self.save_text = self.old_text
         await self.cancel()
 
     async def cancel(self) -> None:
         async with self.process.batch():
             await self.process.reset()
-            await self.process.finish(self.text)
+            await self.process.finish(self.save_text)
         self.message.is_edit -= 1
         self.process.is_edit = False
