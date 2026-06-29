@@ -26,6 +26,7 @@ class TextAreaTool():
         self.init()
 
     def init(self) -> None:
+        self.ori_tool = self.tool
         self.old_tool = json.dumps(self.tool)
         self.arguments =  json.loads(self.tool["function"]["arguments"])
         self.tool_name = self.tool["function"]["name"]
@@ -34,10 +35,11 @@ class TextAreaTool():
             self.unknown_tool = False
             self.known_tool = self.process.app.tool_call.tools[self.tool_name]
             self.properties = self.known_tool["desc"]["function"]["parameters"]["properties"]
+            self.required = self.known_tool["desc"]["function"]["parameters"]["required"]
 
     async def mount(self) -> None:
         if self.unknown_tool:
-            await self.process.mount(TextArea())
+            await self.process.mount(TextArea("unkdnown", True))
             self.process.children[0].styles.height = "auto"
             self.process.children[0].text = self.old_tool
             self.process.children[0].focus()
@@ -48,39 +50,55 @@ class TextAreaTool():
                 if prop in self.arguments:
                     value = self.arguments[prop]
                 await self.process.mount(Markdown(f"`{prop}`"))
-                await self.process.mount(TextArea(id=prop))
+                if prop in self.required:
+                    await self.process.mount(TextArea(prop, True))
+                else:
+                    await self.process.mount(TextArea(prop))
                 self.process.children[-1].text = value
                 self.process.children[-1].styles.height = "auto"
             self.process.children[2].focus()
 
-    def save_unknown(self) -> None:
+    def save_unknown(self) -> bool:
         text = self.process.children[0].text
+        required = self.process.children[0].required
+        if required and not text:
+            return False
         if not text == self.old_tool:
-            tool = None
+            self.tool = None
             try:
-                tool = json.loads(text)
+                self.tool = json.loads(text)
             except:
                 self.process.app.exception = Exception("no valid JSON!")
-                return None
-            if tool:
-                self.message.message["tool_calls"][self.process.count] = tool
+                self.tool = self.ori_tool
+                return False
+            if self.tool:
+                index = self.chat_view.messages.index(self.message.message)
+                self.chat.undo.append_undo("change", self.message.message, index)
+                self.message.message["tool_calls"][self.process.count] = self.tool
+        return True
 
-    def save_known(self) -> None:
+    def save_known(self) -> bool:
         arguments = {}
         for prop in self.properties.keys():
             text = self.process.query_one(f"#{prop}").text
-            if text:
-                arguments[prop] = text
+            required = self.process.query_one(f"#{prop}").required
+            if required and not text:
+                return False
+            arguments[prop] = text
         arguments = json.dumps(arguments)
-        self.message.message["tool_calls"][self.process.count]["function"]["arguments"] = arguments
-
-    async def save(self) -> None:
         index = self.chat_view.messages.index(self.message.message)
         self.chat.undo.append_undo("change", self.message.message, index)
+        self.tool["function"]["arguments"] = arguments
+        self.message.message["tool_calls"][self.process.count]["function"]["arguments"] = arguments
+        return True
+
+    async def save(self) -> None:
         if self.unknown_tool:
-            self.save_unknown()
+            if not self.save_unknown():
+                return None
         else:
-            self.save_known()
+            if not self.save_known():
+                return None
         self.chat.write_chat_history()
         await self.cancel()
 
