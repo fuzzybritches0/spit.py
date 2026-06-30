@@ -117,7 +117,7 @@ class LlamaCppEndpoint:
     def extract_fields(self, delta: dict) -> None:
         choice = delta["choices"][0]["delta"]
         if content := choice.get("content"):
-            self.messages[-1]["content"] += content
+            self.messages[-1]["content"][0]["text"] += content
             self.maybe_callback(2)
         elif content := choice.get(self.reasoning_key):
             self.messages[-1]["reasoning"] += content
@@ -140,7 +140,7 @@ class LlamaCppEndpoint:
             headers["Authorization"] = f"Bearer {api_key}"
         headers["Content-Type"] = "application/json"
         payload = self.prepare_payload()
-        self.messages.append({"role": "assistant", "reasoning": "", "content": ""})
+        self.messages.append({"role": "assistant", "reasoning": "", "content": [{"type": "text", "text": ""}]})
         self.message_index = len(self.messages) - 1
         self.maybe_callback(1)
         async with httpx.AsyncClient(timeout=self.timeout) as client:
