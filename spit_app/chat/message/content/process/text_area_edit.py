@@ -1,15 +1,18 @@
 from textual.widgets import TextArea
 
 class TextAreaEdit(TextArea):
-    def __init__(self, process, text: str):
+    def __init__(self, process):
         super().__init__()
         self.process = process
         self.chat_view = process.chat_view
         self.message = process.message
         self.chat = process.chat
-        self.text = text
-        self.old_text = text
-        self.save_text = text
+        if type(self.message.message[self.process.scontent]) is str:
+            self.text = self.message.message[self.process.scontent]
+        else:
+            self.text = self.message.message[self.process.scontent][self.process.count]["text"]
+        self.old_text = self.text
+        self.save_text = self.text
         self.styles.height = "auto"
         self._background = self.styles.background
 

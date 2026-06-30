@@ -33,17 +33,12 @@ class ActionsMixIn:
         if self.scontent == "tool_calls":
             async with self.batch():
                 await self.remove_children()
-                tool = self.message.message[self.scontent][self.count]
-                self.edit = TextAreaTool(self, tool)
+                self.edit = TextAreaTool(self)
                 await self.edit.mount()
         else:
-            if type(self.message.message[self.scontent]) is str:
-                text = self.message.message[self.scontent]
-            else:
-                text = self.message.message[self.scontent][self.count]["text"]
             async with self.batch():
                 await self.remove_children()
-                self.edit = TextAreaEdit(self, text)
+                self.edit = TextAreaEdit(self)
                 await self.mount(self.edit)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
