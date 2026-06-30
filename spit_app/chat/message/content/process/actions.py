@@ -1,4 +1,5 @@
 import json
+from textual.widgets import Select
 from .text_area_edit import TextAreaEdit
 from .text_area_tool import TextAreaTool
 
@@ -40,6 +41,12 @@ class ActionsMixIn:
                 await self.remove_children()
                 self.edit = TextAreaEdit(self)
                 await self.mount(self.edit)
+
+    async def on_select_changed(self, event: Select.Changed) -> None:
+        for child in self.children[2:]:
+            await child.remove()
+        self.edit.tool_change = event.control.value
+        await self.edit.mount(False, False)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.chat.is_working() or not self.chat_view.is_edit:
