@@ -98,6 +98,8 @@ class ChatView(VerticalScroll, CallbackMixIn):
         await self.children[message.index].remove()
         del self.messages[message.index]
         self.chat.write_chat_history()
+        if self.messages:
+            self.children[message.index-1].focus(scroll_visible=False)
         if not self.children:
             self.chat.text_area.focus()
 
