@@ -115,9 +115,6 @@ class Chat(Vertical):
         self.settings.active_chat = self.id
         self.settings.save()
 
-    async def on_worker_state_changed(self) -> None:
-        self.refresh_bindings()
-
     def focus(self) -> None:
         self.settings.active_chat = self.id
         self.settings.save()

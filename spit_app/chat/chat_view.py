@@ -114,6 +114,9 @@ class ChatView(VerticalScroll, CallbackMixIn):
             elif not self.chat.undo.undo_list:
                 self.chat.text_area.focus()
 
+    async def on_worker_state_changed(self) -> None:
+        self.refresh_bindings()
+
     async def load(self) -> None:
         if self.messages:
             loading_screen = LoadingScreen()
