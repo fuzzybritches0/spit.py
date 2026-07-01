@@ -69,9 +69,8 @@ class ActionsMixIn:
             if not self.pr["reasoning"].display:
                 return False
         elif action == "remove":
-            if self.chat.is_working() or self.is_edit:
+            if self.chat.is_working() or self.is_edit or not self.chat_view.is_edit:
                 return False
-            if not self.chat_view.is_edit:
         elif action == "add_tool":
             if not self.role == "assistant" or not self.chat_view.is_edit:
                 return False
