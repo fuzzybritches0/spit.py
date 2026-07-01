@@ -2,6 +2,7 @@ import json
 from textual.widgets import Select
 from .text_area_edit import TextAreaEdit
 from .text_area_tool import TextAreaTool
+from spit_app.chat.textual_message import RemoveProcess
 
 bindings = [
     ("e", "edit", "Edit"),
@@ -21,11 +22,9 @@ class ActionsMixIn:
         index = self.chat_view.messages.index(self.message.message)
         self.chat.undo.append_undo("change", self.message.message, index)
         if type(self.message.message[self.scontent]) is str:
-            del self.message.message[self.scontent]
+            self.message.post_message(RemoveProcess(self.scontent))
         else:
-            del self.message.message[self.scontent][self.count]
-        await self.message.reset()
-        await self.message.finish()
+            self.message.post_message(RemoveProcess(self.scontent, self.count))
         self.chat.write_chat_history()
 
     async def action_edit(self) -> None:
