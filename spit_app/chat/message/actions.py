@@ -83,4 +83,5 @@ class ActionsMixIn:
             if self.message[message.scontent]:
                 return None
         await self.pr[message.scontent].remove()
+        del self.pr[message.scontent]
         del self.message[message.scontent]
