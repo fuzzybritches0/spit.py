@@ -1,8 +1,10 @@
 from textual.widgets import TextArea
+from spit_app.chat.textual_message import RemoveProcess
 
 class TextAreaEdit(TextArea):
-    def __init__(self, process):
+    def __init__(self, process, new: bool = False):
         super().__init__()
+        self.new = new
         self.process = process
         self.chat_view = process.chat_view
         self.message = process.message
@@ -26,6 +28,7 @@ class TextAreaEdit(TextArea):
             self.styles.background = self._background
 
     async def save(self) -> None:
+        self.new = False
         if not self.styles.background == self._background:
             return None
         if not self.text == self.old_text:
@@ -42,6 +45,9 @@ class TextAreaEdit(TextArea):
         await self.cancel()
 
     async def cancel(self) -> None:
+        if self.new:
+            self.message.post_message(RemoveProcess(self.process.scontent, self.process.count))
+            return None
         async with self.process.batch():
             await self.process.reset()
             await self.process.finish(self.save_text)
