@@ -3,6 +3,7 @@ from copy import deepcopy
 from textual.widgets import TextArea as _TextArea, Label, Select
 from textual.containers import Vertical
 from .tool_call import ToolCall
+from spit_app.chat.textual_message import RemoveProcess
 
 class TextArea(_TextArea):
     def __init__(self, id: str, required: bool = False) -> None:
@@ -18,7 +19,8 @@ class TextArea(_TextArea):
             self.styles.background = self._background
 
 class TextAreaTool():
-    def __init__(self, process):
+    def __init__(self, process, new: bool = False):
+        self.new = new
         self.process = process
         self.chat = process.chat
         self.chat_view = process.chat_view
@@ -114,6 +116,7 @@ class TextAreaTool():
         return True
 
     async def save(self) -> None:
+        self.new = False
         if self.unknown_tool:
             if not self.save_unknown():
                 return None
@@ -124,6 +127,9 @@ class TextAreaTool():
         await self.cancel()
 
     async def cancel(self) -> None:
+        if self.new:
+            self.message.post_message(RemoveProcess(self.process.scontent, self.process.count))
+            return None
         async with self.process.batch():
             await self.process.reset()
             tc = ToolCall(self.tool["function"])
