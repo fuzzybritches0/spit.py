@@ -1,10 +1,15 @@
 import json
+import random
+import hashlib
+from .content.process.process import Process
+from .content.process.text_area_tool import TextAreaTool
 from spit_app.chat.textual_message import RemoveMessage, RemoveProcess
 
 bindings = [
     ("s", "show_cot", "Show CoT"),
     ("s", "hide_cot", "Hide CoT"),
-    ("x", "remove", "Remove")
+    ("x", "remove", "Remove"),
+    ("t", "add_tool", "Add Tool")
 ]
 
 class ActionsMixIn:
@@ -22,6 +27,26 @@ class ActionsMixIn:
         if not self.is_removing:
             self.is_removing = True
             self.chat_view.post_message(RemoveMessage(self.chat_view.children.index(self)))
+
+    async def action_add_tool(self) -> None:
+        hash_id = random.randint(1, 1000000000000)
+        hash_id = hashlib.md5(str(hash_id).encode())
+        hash_id = hash_id.hexdigest()
+        name = self.chat.cs("tools")[0]
+        function = {"id": hash_id, "type": "function", "function": {"name": name, "arguments": "{}"}}
+        if not "tool_calls" in self.pr:
+            self.message["tool_calls"] = [function]
+            await self.maybe_mount_process("tool_calls")
+        else:
+            self.message["tool_calls"].append(function)
+        index = len(self.message["tool_calls"])-1
+        await self.pr["tool_calls"].mount(Process(self.chat, self, "tool_calls", index))
+        process = self.pr["tool_calls"].children[-1]
+        process.edit = TextAreaTool(process, True)
+        self.is_edit += 1
+        process.is_edit = True
+        await process.edit.mount()
+        process.focus()
 
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
@@ -47,6 +72,8 @@ class ActionsMixIn:
             if self.chat.is_working() or self.is_edit:
                 return False
             if not self.chat_view.is_edit:
+        elif action == "add_tool":
+            if not self.role == "assistant" or not self.chat_view.is_edit:
                 return False
         return True
 
