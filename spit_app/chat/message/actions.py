@@ -3,12 +3,14 @@ import random
 import hashlib
 from .content.process.process import Process
 from .content.process.text_area_tool import TextAreaTool
+from .content.process.text_area_edit import TextAreaEdit
 from spit_app.chat.textual_message import RemoveMessage, RemoveProcess
 
 bindings = [
     ("s", "show_cot", "Show CoT"),
     ("s", "hide_cot", "Hide CoT"),
     ("x", "remove", "Remove"),
+    ("c", "add_content", "Add content"),
     ("t", "add_tool", "Add Tool")
 ]
 
@@ -26,7 +28,22 @@ class ActionsMixIn:
     def action_remove(self) -> None:
         if not self.is_removing:
             self.is_removing = True
-            self.chat_view.post_message(RemoveMessage(self.chat_view.children.index(self)))
+            self.chat_view.post_message(RemoveMessage(self.messages.index(self.message)))
+
+    async def action_add_content(self) -> None:
+        content = {"type": "text", "text": ""}
+        if not "content" in self.pr:
+            self.message["content"] = [content]
+            await self.maybe_mount_process("content")
+        else:
+            self.message["content"].append(content)
+        index = len(self.message["content"])-1
+        await self.pr["content"].mount(Process(self.chat, self, "content", index))
+        process = self.pr["content"].children[-1]
+        process.edit = TextAreaEdit(process, True)
+        self.is_edit += 1
+        process.is_edit = True
+        await process.mount(process.edit)
 
     async def action_add_tool(self) -> None:
         hash_id = random.randint(1, 1000000000000)
@@ -70,6 +87,9 @@ class ActionsMixIn:
                 return False
         elif action == "remove":
             if self.chat.is_working() or self.is_edit or not self.chat_view.is_edit:
+                return False
+        elif action == "add_content":
+            if not self.chat_view.is_edit:
                 return False
         elif action == "add_tool":
             if not self.role == "assistant" or not self.chat_view.is_edit:
