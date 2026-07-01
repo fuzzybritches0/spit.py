@@ -1,5 +1,5 @@
 import json
-from spit_app.chat.textual_message import RemoveMessage
+from spit_app.chat.textual_message import RemoveMessage, RemoveProcess
 
 bindings = [
     ("s", "show_cot", "Show CoT"),
@@ -49,3 +49,12 @@ class ActionsMixIn:
             if not self.chat_view.is_edit:
                 return False
         return True
+
+    async def on_remove_process(self, message: RemoveProcess) -> None:
+        if message.index:
+            await self.pr[message.scontent].children[message.index].remove()
+            del self.message[message.scontent][message.index]
+            if self.message[message.scontent]:
+                return None
+        await self.pr[message.scontent].remove()
+        del self.message[message.scontent]
