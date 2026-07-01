@@ -77,11 +77,15 @@ class ActionsMixIn:
         return True
 
     async def on_remove_process(self, message: RemoveProcess) -> None:
+        index = self.messages.index(self.message)
+        self.chat.undo.append_undo("change", self.message, index)
         if message.index:
             await self.pr[message.scontent].children[message.index].remove()
             del self.message[message.scontent][message.index]
             if self.message[message.scontent]:
+                self.chat.write_chat_history()
                 return None
         await self.pr[message.scontent].remove()
         del self.pr[message.scontent]
         del self.message[message.scontent]
+        self.chat.write_chat_history()
