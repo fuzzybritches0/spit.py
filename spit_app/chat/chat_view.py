@@ -86,7 +86,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
             if len(self.chat.undo.undo_list) == 0:
                 return False
         elif action == "edit_on":
-            if self.is_edit:
+            if self.is_edit or not self.messages:
                 return False
         elif action == "edit_off":
             if not self.is_edit:
