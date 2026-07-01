@@ -63,7 +63,6 @@ class ActionsMixIn:
         self.is_edit += 1
         process.is_edit = True
         await process.edit.mount()
-        process.focus()
 
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
