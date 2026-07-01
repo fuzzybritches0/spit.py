@@ -19,13 +19,10 @@ class ActionsMixIn:
         await self.edit.cancel()
 
     async def action_remove(self) -> None:
-        index = self.chat_view.messages.index(self.message.message)
-        self.chat.undo.append_undo("change", self.message.message, index)
         if type(self.message.message[self.scontent]) is str:
             self.message.post_message(RemoveProcess(self.scontent))
         else:
             self.message.post_message(RemoveProcess(self.scontent, self.count))
-        self.chat.write_chat_history()
 
     async def action_edit(self) -> None:
         self.message.is_edit += 1
