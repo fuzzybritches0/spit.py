@@ -15,8 +15,6 @@ class HandlersMixIn:
             if os.path.exists(self.path["chats"] / filename):
                 await self.app.query_one("#main").mount(Chat(active))
                 await self.app.query_one("#main").query_one(f"#{active}").chat_view.load()
-                index = self.query_one("#side-panel").get_option_index(active)
-                self.query_one("#side-panel").highlighted = index
                 return None
         self.settings.active_chat = None
         self.settings.save()
