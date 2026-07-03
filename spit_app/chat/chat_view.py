@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+from textual.events import Focus
 from textual.containers import VerticalScroll
 from .textual_message import RemoveMessage
 from .message.message import Message
@@ -86,7 +87,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
             if len(self.chat.undo.undo_list) == 0:
                 return False
         elif action == "edit_on":
-            if self.is_edit or not self.messages:
+            if self.is_edit:
                 return False
         elif action == "edit_off":
             if not self.is_edit:
@@ -104,16 +105,30 @@ class ChatView(VerticalScroll, CallbackMixIn):
             self.chat.text_area.focus()
         self.chat.write_chat_history()
 
-    def on_focus(self) -> None:
-        self.app.query_one("#side-panel").can_focus = False
-        self.chat.text_area.was_focused = False
-        if self.focused_message:
+
+    def on_descendant_focus(self) -> None:
+        if self.chat.display:
+            self.chat.text_area.was_focused = False
+            self.focused_message = self.app.focused
+
+    def on_focus(self, event: Focus|None) -> None:
+        event.prevent_default()
+        self._focus()
+
+    def _focus(self) -> None:
+        side_panel = self.app.query_one("#side-panel")
+        index = side_panel.get_option_index(self.chat.id)
+        side_panel.highlighted = index
+        side_panel.can_focus = False
+        self.chat.settings.active_chat = self.chat.id
+        self.chat.settings.save()
+        if self.chat.text_area.was_focused:
+            self.chat.text_area.focus()
+        elif self.focused_message:
             self.focused_message.focus(scroll_visible=False)
         else:
             if self.children:
                 self.children[-1].focus(scroll_visible=False)
-            elif not self.chat.undo.undo_list:
-                self.chat.text_area.focus()
 
     async def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
@@ -127,6 +142,6 @@ class ChatView(VerticalScroll, CallbackMixIn):
                     await self.mount(Message(self.chat, message))
                     await self.children[-1].finish()
             loading_screen.dismiss()
-            self.children[-1].focus(scroll_visible=False)
         else:
             self.chat.text_area.focus()
+        self._focus()
