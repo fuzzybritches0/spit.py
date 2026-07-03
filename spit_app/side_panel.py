@@ -57,12 +57,7 @@ class SidePanel(OptionList):
             cont.display = False
             if cont.id == id:
                 cont.display = True
-                if cont.id.startswith("chat-"):
-                    cont.chat_view._focus()
-                else:
-                    cont.focus()
-                if cont.id.startswith("chat-"):
-                    cont.query_one("#chat-settings").update_selects()
+                cont.focus()
                 ret = True
         if ret:
             return None
