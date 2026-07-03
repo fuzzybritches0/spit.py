@@ -110,16 +110,3 @@ class Chat(Vertical):
             if not "multimodal" in self.model_capabilities or self.is_working():
                 return False
         return True
-
-    async def on_mount(self) -> None:
-        self.settings.active_chat = self.id
-        self.settings.save()
-
-    def focus(self) -> None:
-        self.settings.active_chat = self.id
-        self.settings.save()
-        self.app.query_one("#side-panel").can_focus = False
-        if self.text_area.was_focused:
-            self.text_area.focus()
-        else:
-            self.chat_view.focus()
