@@ -110,3 +110,10 @@ class Chat(Vertical):
             if not "multimodal" in self.model_capabilities or self.is_working():
                 return False
         return True
+
+    def focus(self) -> None:
+        self.chat_settings.update_selects()
+        if self.text_area.was_focused:
+            self.text_area.focus()
+        else:
+            self.chat_view.focus()
