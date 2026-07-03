@@ -105,7 +105,6 @@ class ChatView(VerticalScroll, CallbackMixIn):
             self.chat.text_area.focus()
         self.chat.write_chat_history()
 
-
     def on_descendant_focus(self) -> None:
         if self.chat.display:
             self.chat.text_area.was_focused = False
@@ -113,22 +112,26 @@ class ChatView(VerticalScroll, CallbackMixIn):
 
     def on_focus(self, event: Focus|None) -> None:
         event.prevent_default()
-        self._focus()
+        self.focus_message()
 
-    def _focus(self) -> None:
-        side_panel = self.app.query_one("#side-panel")
-        index = side_panel.get_option_index(self.chat.id)
-        side_panel.highlighted = index
-        side_panel.can_focus = False
+    def set_active(self) -> None:
         self.chat.settings.active_chat = self.chat.id
         self.chat.settings.save()
-        if self.chat.text_area.was_focused:
-            self.chat.text_area.focus()
-        elif self.focused_message:
+        self.ensure_is_highlighted()
+        if self.children:
+            self.children[-1].focus(scroll_visible=False)
+            self.chat.text_area.was_focused = False
+
+    def ensure_is_highlighted(self) -> None:
+        side_panel = self.app.query_one("#side-panel")
+        side_panel.can_focus = False
+        index = side_panel.get_option_index(self.chat.id)
+        side_panel.highlighted = index
+
+    def focus_message(self) -> None:
+        self.ensure_is_highlighted()
+        if self.focused_message:
             self.focused_message.focus(scroll_visible=False)
-        else:
-            if self.children:
-                self.children[-1].focus(scroll_visible=False)
 
     async def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
@@ -144,4 +147,4 @@ class ChatView(VerticalScroll, CallbackMixIn):
             loading_screen.dismiss()
         else:
             self.chat.text_area.focus()
-        self._focus()
+        self.set_active()
