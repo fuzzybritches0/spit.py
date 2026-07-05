@@ -6,7 +6,6 @@ class TextAreaEdit(TextArea):
         super().__init__()
         self.new = new
         self.process = process
-        self.chat_view = process.chat_view
         self.message = process.message
         self.chat = process.chat
         if type(self.message.message[self.process.scontent]) is str:

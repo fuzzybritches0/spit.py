@@ -23,7 +23,6 @@ class TextAreaTool():
         self.new = new
         self.process = process
         self.chat = process.chat
-        self.chat_view = process.chat_view
         self.message = process.message
         self.chat = process.chat
         self.tool_change = None
