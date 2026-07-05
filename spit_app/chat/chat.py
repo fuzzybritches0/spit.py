@@ -107,14 +107,11 @@ class Chat(Vertical):
             self.chat_view.scroll_end(animate=False)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if self.chat_view.is_edit:
-            return False
         if action == "abort":
             return self.is_working()
-        elif action == "settings":
-            return not self.is_working()
         elif action == "add_image":
-            if not "multimodal" in self.model_capabilities or self.is_working():
+            if (not "multimodal" in self.model_capabilities or self.is_working() or
+                not self.messages or self.messages[-1]["role"] == "assistant"):
                 return False
         return True
 
