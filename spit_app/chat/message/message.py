@@ -40,11 +40,21 @@ class Message(ActionsMixIn, VerticalScroll):
         else:
             return None, None
 
+    def is_message_type(self, process: str) -> bool:
+        if not self.message[process]:
+            return False
+        _type = self.message[process][0]["type"]
+        if self.message[process][0][_type]:
+            return True
+        return False
+
     def get_current_process(self) -> None:
         old_process = self.current_process
         for process in self.processes:
-            if process in self.message and self.message[process]:
-                self.current_process = process
+            if process in self.message:
+                if ((type(self.message[process]) is str and self.message[process]) or
+                    self.is_message_type(process)):
+                    self.current_process = process
         if not old_process == self.current_process:
             self.finish_process = old_process
 
