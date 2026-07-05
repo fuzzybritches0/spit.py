@@ -67,7 +67,7 @@ class ActionsMixIn:
         await process.edit.mount()
 
     async def add_message(self, index: int, role: str, id: str|None = None, name: str|None = None ) -> None:
-        if not role and not name:
+        if not id and not name:
             message = {"role": role, "content": []}
         else:
             message = {"role": role, "tool_call_id": id, "name": name, "content": []}
