@@ -25,6 +25,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
         self.messages = self.chat.messages
         self.focused_widget = None
         self.is_edit = False
+        self.is_removing = False
         self.id = "chat-view"
 
     def show_cots(self, show: bool = True) -> None:
@@ -109,6 +110,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
             self.chat.text_area.focus()
         else:
             self.focus()
+        self.is_removing = False
 
     def on_descendant_focus(self) -> None:
         if self.chat.display:

@@ -28,6 +28,7 @@ class ActionsMixIn:
     def action_remove(self) -> None:
         if not self.is_removing:
             self.is_removing = True
+            self.chat_view.is_removing = True
             self.chat_view.post_message(RemoveMessage(self.chat.message_index(self.message)))
 
     async def action_add_content(self) -> None:
@@ -70,6 +71,8 @@ class ActionsMixIn:
         return False
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if self.is_removing or self.chat_view.is_removing:
+            return False
         if action == "show_cot":
             if self.chat_view.is_edit:
                 return False
