@@ -14,7 +14,8 @@ class ChatView(VerticalScroll, CallbackMixIn):
         ("ctrl+e", "edit_on", "Edit On"),
         ("ctrl+e", "edit_off", "Edit Off"),
         ("u", "undo", "Undo"),
-        ("r", "redo", "Redo")
+        ("r", "redo", "Redo"),
+        ("a", "add", "Add")
     ]
 
     def __init__(self, chat) -> None:
@@ -66,6 +67,14 @@ class ChatView(VerticalScroll, CallbackMixIn):
     async def action_redo(self) -> None:
         await self.chat.undo.redo()
 
+    async def action_add(self) -> None:
+        self.messages.append({"role": "user", "content": []})
+        self.chat.undo.append_undo("insert", self.messages[0], 0)
+        await self.mount(Message(self.chat, self.messages[0]))
+        await self.children[0].status.update("")
+        self.chat.write_chat_history()
+        self.children[0].focus()
+
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.chat.is_working():
             return False
@@ -96,6 +105,9 @@ class ChatView(VerticalScroll, CallbackMixIn):
                 return False
         elif action == "edit_off":
             if not self.is_edit:
+                return False
+        elif action == "add":
+            if not self.is_edit or self.messages:
                 return False
         return True
 
