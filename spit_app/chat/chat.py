@@ -35,6 +35,13 @@ class Chat(Vertical):
         self.chat_settings = ChatSettings(self)
         self.undo = Undo(self)
 
+    def message_index(self, element: dict) -> int:
+        count = 0
+        for message in self.messages:
+            if message is element:
+                return count
+            count += 1
+
     def cs(self, key: str, value: any = "_None_") -> str|None:
         if not value == "_None_":
             self.csettings[key]["value"] = value
