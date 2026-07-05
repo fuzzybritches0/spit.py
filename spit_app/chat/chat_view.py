@@ -100,9 +100,15 @@ class ChatView(VerticalScroll, CallbackMixIn):
         del self.messages[message.index]
         self.chat.write_chat_history()
         if self.messages:
-            self.children[message.index-1].focus(scroll_visible=False)
-        if not self.children:
+            if message.index == 0:
+                index = 0
+            else:
+                index = message.index - 1
+            self.children[index].focus(scroll_visible=False)
+        elif not self.messages and not self.is_edit:
             self.chat.text_area.focus()
+        else:
+            self.focus()
 
     def on_descendant_focus(self) -> None:
         if self.chat.display:
