@@ -9,7 +9,7 @@ from .chat_settings import ChatSettings
 from .chat_view import ChatView
 from .multimodal import load_image_base64, image_url
 from spit_app.modal_screens import ChooseImageFile
-from spit_app.chat.message.message import Message
+from .message.message import Message
 
 class Chat(Vertical):
     BINDINGS = [
