@@ -103,7 +103,7 @@ class ChooseImageFile(ModalScreen, ValidationMixIn):
         yield Header()
         with Vertical(id="choose-image-modal"):
             yield Label("Load image from URL (http:// or https://):")
-            yield Input(id="image_url", validators=self.validators("image_url", "image_url", "url"))
+            yield Input(id="image_url", validators=self.validators("image_url", "url"))
             yield Markdown(id="val-image_url")
             yield Button("Load", id="load-image-url")
             yield Rule()
