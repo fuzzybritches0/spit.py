@@ -79,6 +79,10 @@ class ChatView(VerticalScroll, CallbackMixIn):
             if self.messages[-1]["role"] == "assistant":
                 if not "tool_calls" in self.messages[-1]:
                     return False
+            if not self.messages[-1]["content"]:
+                return False
+            if not self.messages[-1]["content"][0]["text"]:
+                return False
         elif action ==  "undo":
             if self.chat.undo.undo_index == -1:
                 return False
