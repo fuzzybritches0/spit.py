@@ -52,45 +52,57 @@
 }
 .message-container-tool {
 	margin: 1 0 0 0;
+	padding: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	height: auto;
-	border: tall $border-blurred
+	border: tall $border-blurred;
+	border-title-color: $accent
 }
 .message-container-tool:focus {
 	margin: 1 0 0 0;
+	padding: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	height: auto;
-	border: tall $border
+	border: tall $border;
+	border-title-color: $accent
 }
 .message-container-user {
 	margin: 1 0 0 0;
+	padding: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	height: auto;
-	border: tall $border-blurred
+	border: tall $border-blurred;
+	border-title-color: $accent
 }
 .message-container-user:focus {
 	margin: 1 0 0 0;
+	padding: 1 0 0 0;
 	color: $foreground;
 	background: $background-lighten-1;
 	height: auto;
-	border: tall $border
+	border: tall $border;
+	border-title-color: $accent
 }
 .message-container-assistant {
 	margin: 1 0 0 0;
+	padding: 1 0 0 0;
 	color: $foreground;
 	background: $background;
 	height: auto;
-	border: tall $border-blurred
+	border: tall $border-blurred;
+	border-title-color: $accent
 }
 .message-container-assistant:focus {
 	margin: 1 0 0 0;
+	padding: 1 0 0 0;
 	color: $foreground;
 	background: $background;
 	height: auto;
-	border: tall $border
+	border: tall $border;
+	border-title-color: $accent
 }
 .code-listing-tool {
 	margin: 0 0 1 0;
