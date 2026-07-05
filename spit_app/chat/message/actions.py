@@ -28,7 +28,7 @@ class ActionsMixIn:
     def action_remove(self) -> None:
         if not self.is_removing:
             self.is_removing = True
-            self.chat_view.post_message(RemoveMessage(self.messages.index(self.message)))
+            self.chat_view.post_message(RemoveMessage(self.chat.message_index(self.message)))
 
     async def action_add_content(self) -> None:
         content = {"type": "text", "text": ""}
