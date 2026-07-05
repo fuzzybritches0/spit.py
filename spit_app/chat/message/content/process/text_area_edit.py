@@ -32,7 +32,7 @@ class TextAreaEdit(TextArea):
         if not self.styles.background == self._background:
             return None
         if not self.text == self.old_text:
-            index = self.chat_view.messages.index(self.message.message)
+            index = self.chat.message_index(self.message.message)
             self.chat.undo.append_undo("change", self.message.message, index)
             if type(self.message.message[self.process.scontent]) is str:
                 self.message.message[self.process.scontent] = self.text

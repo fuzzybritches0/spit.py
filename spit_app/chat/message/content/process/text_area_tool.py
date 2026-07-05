@@ -92,7 +92,7 @@ class TextAreaTool():
                 self.tool = self.ori_tool
                 return False
             if self.tool:
-                index = self.chat_view.messages.index(self.message.message)
+                index = self.chat.message_index(self.message.message)
                 self.chat.undo.append_undo("change", self.message.message, index)
                 self.message.message["tool_calls"][self.process.count] = self.tool
         return True
@@ -110,7 +110,7 @@ class TextAreaTool():
             if prop in self.properties.keys() and arguments[prop]:
                 save_arguments[prop] = arguments[prop]
         self.tool["function"]["arguments"] = json.dumps(save_arguments)
-        index = self.chat_view.messages.index(self.message.message)
+        index = self.chat.message_index(self.message.message)
         self.chat.undo.append_undo("change", self.message.message, index)
         self.message.message["tool_calls"][self.process.count] = self.tool
         return True
