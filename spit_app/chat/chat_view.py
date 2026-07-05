@@ -23,7 +23,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
         self.chat = chat
         self.cs = chat.cs
         self.messages = self.chat.messages
-        self.focused_message = None
+        self.focused_widget = None
         self.is_edit = False
         self.id = "chat-view"
 
@@ -108,7 +108,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
     def on_descendant_focus(self) -> None:
         if self.chat.display:
             self.chat.text_area.was_focused = False
-            self.focused_message = self.app.focused
+            self.focused_widget = self.app.focused
 
     def on_focus(self, event: Focus|None) -> None:
         event.prevent_default()
@@ -130,8 +130,8 @@ class ChatView(VerticalScroll, CallbackMixIn):
 
     def focus_message(self) -> None:
         self.ensure_is_highlighted()
-        if self.focused_message:
-            self.focused_message.focus(scroll_visible=False)
+        if self.focused_widget:
+            self.focused_widget.focus(scroll_visible=False)
 
     async def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
