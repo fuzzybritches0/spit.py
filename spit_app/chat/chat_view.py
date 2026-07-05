@@ -29,6 +29,12 @@ class ChatView(VerticalScroll, CallbackMixIn):
         self.is_removing = False
         self.id = "chat-view"
 
+    async def mount_message(self, index: int) -> None:
+        if index == len(self.messages):
+            await self.mount(Message(self.chat, self.messages[index]))
+        else:
+            await self.mount(Message(self.chat, self.messages[index]), before=index)
+
     def show_cots(self, show: bool = True) -> None:
         for message in self.children:
             if "reasoning" in message.pr:
