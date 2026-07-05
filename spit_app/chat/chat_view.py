@@ -25,6 +25,7 @@ class ChatView(VerticalScroll, CallbackMixIn):
         self.cs = chat.cs
         self.messages = self.chat.messages
         self.focused_widget = None
+        self.focused_message = None
         self.is_edit = False
         self.is_removing = False
         self.id = "chat-view"

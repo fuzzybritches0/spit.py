@@ -89,3 +89,9 @@ class Message(ActionsMixIn, VerticalScroll):
         self.status = Markdown()
         await self.mount(self.status)
         await self.status.update("Processing...")
+
+    def on_focus(self) -> None:
+        self.chat_view.focused_message = self
+
+    def on_descendant_focus(self) -> None:
+        self.chat_view.focused_message = self
