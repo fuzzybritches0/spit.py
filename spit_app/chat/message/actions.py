@@ -11,7 +11,8 @@ bindings = [
     ("s", "hide_cot", "Hide CoT"),
     ("x", "remove", "Remove"),
     ("c", "add_content", "Add content"),
-    ("t", "add_tool", "Add Tool")
+    ("t", "add_tool", "Add Tool"),
+    ("a", "add_message", "Add")
 ]
 
 class ActionsMixIn:
@@ -65,8 +66,53 @@ class ActionsMixIn:
         process.is_edit = True
         await process.edit.mount()
 
+    async def add_message(self, index: int, role: str, id: str|None = None, name: str|None = None ) -> None:
+        if not role and not name:
+            message = {"role": role, "content": []}
+        else:
+            message = {"role": role, "tool_call_id": id, "name": name, "content": []}
+        if len(self.messages) == index:
+            self.messages.append(message)
+        else:
+            self.messages.insert(index, message)
+        self.chat.undo.append_undo("insert", self.messages[index], index)
+        await self.chat_view.mount_message(index)
+        await self.chat_view.children[index].status.update("")
+        self.chat.write_chat_history()
+        self.chat_view.children[index].focus()
+
+    async def action_add_message(self) -> None:
+        index = self.chat.message_index(self.message) + 1
+        if self.role == "assistant" and "tool_calls" in self.message and self.message["tool_calls"]:
+            for tool_call in self.message["tool_calls"]:
+                await self.add_message(index, "tool", tool_call["id"], tool_call["function"]["name"])
+                index += 1
+        elif self.role == "assistant":
+            await self.add_message(index, "user")
+        elif self.role == "user":
+            await self.add_message(index, "assistant")
+        elif self.role == "tool":
+            await self.add_message(index, "assistant")
+
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
+            return True
+        return False
+
+    def maybe_add_message(self) -> None:
+        index = self.chat.message_index(self.message)
+        if len(self.messages)-1 == index:
+            return True
+        next_child = self.chat_view.children[index+1]
+        if self.role == "assistant" and "tool_calls" in self.message and self.message["tool_calls"]:
+            if not next_child.role == "tool":
+                return True
+        elif self.role == "assistant":
+            if not next_child.role == "user":
+                return True
+        elif self.role == "tool" and not next_child.role == "assistant":
+            return True
+        elif self.role == "user" and not next_child.role == "assistant":
             return True
         return False
 
@@ -96,6 +142,10 @@ class ActionsMixIn:
         elif action == "add_tool":
             if not self.role == "assistant" or not self.chat_view.is_edit:
                 return False
+        elif action == "add_message":
+            if not self.chat_view.is_edit:
+                return False
+            return self.maybe_add_message()
         return True
 
     async def on_remove_process(self, message: RemoveProcess) -> None:
