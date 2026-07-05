@@ -15,6 +15,7 @@ class Message(ActionsMixIn, VerticalScroll):
         self.chat_view = chat.chat_view
         self.text_area = chat.text_area
         self.role = self.message["role"]
+        self.border_title = self.role
         self.classes = "message-container-" + self.role
         self.pr = {}
         self.processes = ["reasoning", "content", "tool_calls"]
