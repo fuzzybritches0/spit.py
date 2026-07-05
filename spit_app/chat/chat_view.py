@@ -103,7 +103,6 @@ class ChatView(VerticalScroll, CallbackMixIn):
             self.children[message.index-1].focus(scroll_visible=False)
         if not self.children:
             self.chat.text_area.focus()
-        self.chat.write_chat_history()
 
     def on_descendant_focus(self) -> None:
         if self.chat.display:
