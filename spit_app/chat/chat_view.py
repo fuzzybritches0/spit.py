@@ -13,6 +13,8 @@ class ChatView(VerticalScroll, CallbackMixIn):
         ("ctrl+enter", "continue", "Continue"),
         ("ctrl+e", "edit_on", "Edit On"),
         ("ctrl+e", "edit_off", "Edit Off"),
+        ("ctrl+up", "previous_message"),
+        ("ctrl+down", "next_message"),
         ("u", "undo", "Undo"),
         ("r", "redo", "Redo"),
         ("a", "add", "Add")
@@ -67,6 +69,17 @@ class ChatView(VerticalScroll, CallbackMixIn):
         self.chat.text_area.display = True
         self.is_edit = False
         self.refresh_bindings()
+
+    def action_previous_message(self) -> None:
+        index = self.chat.message_index(self.focused_message.message) - 1
+        if index >= 0:
+            self.children[index].focus()
+
+    def action_next_message(self) -> None:
+        index = self.chat.message_index(self.focused_message.message) + 1
+        last_index = len(self.messages) - 1
+        if index <= last_index:
+            self.children[index].focus()
 
     async def action_undo(self) -> None:
         await self.chat.undo.undo()
