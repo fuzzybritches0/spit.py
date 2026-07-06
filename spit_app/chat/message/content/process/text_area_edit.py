@@ -44,11 +44,11 @@ class TextAreaEdit(TextArea):
         await self.cancel()
 
     async def cancel(self) -> None:
+        self.message.is_edit -= 1
+        self.process.is_edit = False
         if self.new:
             self.message.post_message(RemoveProcess(self.process.scontent, self.process.count))
             return None
         async with self.process.batch():
             await self.process.reset()
             await self.process.finish(self.save_text)
-        self.message.is_edit -= 1
-        self.process.is_edit = False

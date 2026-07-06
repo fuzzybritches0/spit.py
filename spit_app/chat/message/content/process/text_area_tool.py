@@ -126,6 +126,8 @@ class TextAreaTool():
         await self.cancel()
 
     async def cancel(self) -> None:
+        self.message.is_edit -= 1
+        self.process.is_edit = False
         if self.new:
             self.message.post_message(RemoveProcess(self.process.scontent, self.process.count))
             return None
@@ -134,5 +136,3 @@ class TextAreaTool():
             tc = ToolCall(self.tool["function"])
             tc.format_tool_call()
             await self.process.finish(tc.formatted_tool_call)
-        self.message.is_edit -= 1
-        self.process.is_edit = False
