@@ -44,7 +44,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         with Horizontal(id="app"):
             yield SidePanel()
             yield Vertical(id="main")
-        yield Footer()
+        yield Footer(compact=True, show_command_palette=False)
 
     async def maybe_reload(self, id: str) -> None:
         try:
