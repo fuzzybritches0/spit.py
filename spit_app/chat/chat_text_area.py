@@ -6,7 +6,7 @@ from .message.message import Message
 
 class ChatTextArea(TextArea):
     BINDINGS = [
-        ("ctrl+enter", "submit", "Submit")
+        ("ctrl+enter", "submit", "Send")
     ]
 
     def __init__(self, chat):

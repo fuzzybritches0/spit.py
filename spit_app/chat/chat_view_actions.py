@@ -7,14 +7,14 @@ from ..modal_screens import LoadingScreen
 from .work import Work
 
 bindings = [
-    ("ctrl+enter", "continue", "Continue"),
-    ("ctrl+e", "edit_on", "Edit On"),
-    ("ctrl+e", "edit_off", "Edit Off"),
-    ("ctrl+up", "previous_message"),
-    ("ctrl+down", "next_message"),
+    ("ctrl+up", "previous_message", "Prev."),
+    ("ctrl+down", "next_message", "Next"),
+    ("ctrl+enter", "continue", "Cont."),
     ("u", "undo", "Undo"),
     ("r", "redo", "Redo"),
-    ("a", "add", "Add")
+    ("a", "add", "+"),
+    ("ctrl+e", "edit_on", "Edit On"),
+    ("ctrl+e", "edit_off", "Edit Off")
 ]
 
 class ChatViewActionsMixIn:

@@ -16,7 +16,7 @@ class Chat(Vertical):
         ("ctrl+escape", "abort", "Abort"),
         ("escape", "change_focus", "Focus"),
         ("ctrl+s", "settings", "Settings"),
-        ("ctrl+i", "add_image", "Add image")
+        ("ctrl+i", "add_image", "+Image")
     ]
 
     def __init__(self, id: str) -> None:

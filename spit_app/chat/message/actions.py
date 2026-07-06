@@ -7,12 +7,12 @@ from .content.process.text_area_edit import TextAreaEdit
 from spit_app.chat.textual_message import RemoveMessage, RemoveProcess
 
 bindings = [
-    ("s", "show_cot", "Show CoT"),
-    ("s", "hide_cot", "Hide CoT"),
-    ("x", "remove", "Remove"),
-    ("c", "add_content", "Add content"),
-    ("t", "add_tool", "Add Tool"),
-    ("a", "add_message", "Add")
+    ("c", "add_content", "+Cont."),
+    ("t", "add_tool", "+Tool"),
+    ("a", "add_message_next", "+Msg.↓"),
+    ("x", "remove", "-"),
+    ("s", "show_cot", "CoT"),
+    ("s", "hide_cot", "no CoT")
 ]
 
 class ActionsMixIn:
