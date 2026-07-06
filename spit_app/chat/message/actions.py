@@ -11,9 +11,9 @@ bindings = [
     ("t", "add_tool", "+Tool"),
     ("a", "add_message_next", "+Msg.↓"),
     ("ctrl+a", "add_message_prev", "+Msg.↑"),
-    ("x", "remove", "-"),
+    ("x", "remove", "-Msg."),
     ("s", "show_cot", "CoT"),
-    ("s", "hide_cot", "no CoT")
+    ("s", "hide_cot", "!CoT")
 ]
 
 class ActionsMixIn:
