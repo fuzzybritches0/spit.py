@@ -50,8 +50,7 @@ class Code(VerticalScroll):
             self.extract_code()
         self.app.copy_to_clipboard(self.code)
 
-    def check_action(self, action: str,
-                     parameters: tuple[object, ...]) -> bool | None:
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if self.parent.target is self:
             return False
         return True
