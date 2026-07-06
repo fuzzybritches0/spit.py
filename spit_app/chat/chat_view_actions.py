@@ -12,7 +12,7 @@ bindings = [
     ("ctrl+enter", "continue", "Cont."),
     ("u", "undo", "Undo"),
     ("r", "redo", "Redo"),
-    ("a", "add", "+"),
+    ("a", "add", "+Msg."),
     ("ctrl+e", "edit_on", "Edit On"),
     ("ctrl+e", "edit_off", "Edit Off")
 ]

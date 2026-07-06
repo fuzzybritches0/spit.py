@@ -6,7 +6,7 @@ from spit_app.chat.textual_message import RemoveProcess
 
 bindings = [
     ("e", "edit", "Edit"),
-    ("x", "remove", "Remove"),
+    ("x", "remove", "Rem."),
     ("ctrl+enter", "save", "Save"),
     ("ctrl+escape", "cancel", "Cancel")
 ]
