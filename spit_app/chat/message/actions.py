@@ -10,6 +10,7 @@ bindings = [
     ("c", "add_content", "+Cont."),
     ("t", "add_tool", "+Tool"),
     ("a", "add_message_next", "+Msg.↓"),
+    ("ctrl+a", "add_message_prev", "+Msg.↑"),
     ("x", "remove", "-"),
     ("s", "show_cot", "CoT"),
     ("s", "hide_cot", "no CoT")
@@ -66,7 +67,7 @@ class ActionsMixIn:
         process.is_edit = True
         await process.edit.mount()
 
-    async def add_message(self, index: int, role: str, id: str|None = None, name: str|None = None ) -> None:
+    async def add_message_next(self, index: int, role: str, id: str|None = None, name: str|None = None ) -> None:
         if not id and not name:
             message = {"role": role, "content": []}
         else:
@@ -81,25 +82,50 @@ class ActionsMixIn:
         self.chat.write_chat_history()
         self.chat_view.children[index].focus()
 
-    async def action_add_message(self) -> None:
+    async def action_add_message_next(self) -> None:
         index = self.chat.message_index(self.message) + 1
         if self.role == "assistant" and "tool_calls" in self.message and self.message["tool_calls"]:
             for tool_call in self.message["tool_calls"]:
-                await self.add_message(index, "tool", tool_call["id"], tool_call["function"]["name"])
+                await self.add_message_next(index, "tool", tool_call["id"], tool_call["function"]["name"])
                 index += 1
         elif self.role == "assistant":
-            await self.add_message(index, "user")
+            await self.add_message_next(index, "user")
         elif self.role == "user":
-            await self.add_message(index, "assistant")
+            await self.add_message_next(index, "assistant")
         elif self.role == "tool":
-            await self.add_message(index, "assistant")
+            await self.add_message_next(index, "assistant")
+
+    async def action_add_message_prev(self) -> None:
+        if self.role == "tool":
+            tools = []
+            for message in self.messages:
+                if message["role"] == "tool":
+                    tools.append(message)
+                else:
+                    break
+            message = {"role": "assistant", "content": [], "reasoning": "", "tool_calls": []}
+            for tool in reversed(tools):
+                message["tool_calls"].append({"id": tool["tool_call_id"], "type": "function",
+                    "function": {"name": tool["name"], "arguments": "{}"}})
+        elif self.role == "assistant":
+            message = {"role": "user", "content": []}
+        elif self.role == "user":
+            message = {"role": "assistant", "content": []}
+        self.messages.insert(0, message)
+        self.chat.undo.append_undo("insert", self.messages[0], 0)
+        await self.chat_view.mount_message(0)
+        await self.chat_view.children[0].status.update("")
+        if self.role == "tool":
+            await self.chat_view.children[0].finish()
+        self.chat.write_chat_history()
+        self.chat_view.children[0].focus()
 
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
             return True
         return False
 
-    def maybe_add_message(self) -> None:
+    def maybe_add_message_next(self) -> None:
         index = self.chat.message_index(self.message)
         if len(self.messages)-1 == index:
             return True
@@ -142,10 +168,15 @@ class ActionsMixIn:
         elif action == "add_tool":
             if not self.role == "assistant" or not self.chat_view.is_edit:
                 return False
-        elif action == "add_message":
+        elif action == "add_message_next":
             if not self.chat_view.is_edit:
                 return False
-            return self.maybe_add_message()
+            return self.maybe_add_message_next()
+        elif action == "add_message_prev":
+            if not self.chat_view.is_edit:
+                return False
+            if not self.chat.message_index(self.message) == 0:
+                return False
         return True
 
     async def on_remove_process(self, message: RemoveProcess) -> None:
