@@ -53,7 +53,7 @@ class LoadingScreen(ModalScreen):
         self.classes = "modal"
 
     def compose(self) -> ComposeResult:
-        with Vertical(id=f"loading-modal"):
+        with Vertical(id="loading-modal"):
             yield Markdown("Loading...")
         yield Footer()
 
