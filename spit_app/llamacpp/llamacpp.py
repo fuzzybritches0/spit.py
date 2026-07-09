@@ -11,9 +11,9 @@ from textual.widgets import Label, Button, Select, Input, Rule
 
 class Llamacpp(VerticalScroll):
     BINDINGS = [
-        ("u", "update", "Update Llamacpp"),
-        ("s", "set_active", "Set Active"),
-        ("d", "delete", "Delete")
+        ("ctrl+l", "update", "Update Llamacpp"),
+        ("ctrl+s", "set_active", "Set Active"),
+        ("ctrl+r", "delete", "Delete")
     ]
 
     def __init__(self) -> None:
