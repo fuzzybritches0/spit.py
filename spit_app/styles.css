@@ -152,6 +152,9 @@
 .manage {
 	border: round $border-blurred
 }
+.auto-height{
+	height: auto
+}
 #save-delete-cancel {
 	height: 4
 }
@@ -175,6 +178,14 @@ Input {
 .modal {
 	align: center middle;
 	background: $background 65%
+}
+#progress-bar-modal {
+	width: 40;
+	height: auto;
+	padding: 1 0 0 0;
+	background: $background-lighten-1;
+	border: round $border;
+	align: center middle
 }
 #loading-modal {
 	width: 20;
