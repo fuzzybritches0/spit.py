@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
 import httpx
+from copy import deepcopy
 
 async def get_models(endpoint: dict) -> list:
     api_endpoint = endpoint["endpoint_url"]["value"] + "/models"
@@ -79,7 +80,7 @@ class LlamaCppEndpoint:
         if self.prompt:
             payload["messages"].append({"role": "system", "content": self.prompt})
         for message in self.messages:
-            _message = message.copy()
+            _message = deepcopy(message)
             if "reasoning" in _message:
                 reasoning = _message["reasoning"]
                 del _message["reasoning"]
