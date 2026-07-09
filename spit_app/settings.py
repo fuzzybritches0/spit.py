@@ -26,12 +26,15 @@ class Settings:
         self.path["chats"].mkdir(parents=True, exist_ok=True)
         self.path["chats_archive"] = self.path["data"] / "archive"
         self.path["chats_archive"].mkdir(parents=True, exist_ok=True)
+        self.path["llamacpp"] = self.path["data"] / "llamacpp"
+        self.path["llamacpp"].mkdir(parents=True, exist_ok=True)
 
     def save(self) -> None:
         settings = {}
         settings["theme"] = self.app.theme
         settings["active_chat"] = self.active_chat
         settings["tool_settings"] = self.tool_settings
+        settings["llamacpp"] = self.llamacpp
         self.app.write_json("settingsf", settings)
         self.save_endpoints()
         self.save_models()
@@ -52,6 +55,7 @@ class Settings:
         self.prompts = {}
         self.models = {}
         self.tool_settings = {}
+        self.llamacpp = {"selected": None}
         self.active_chat = None
         if self.path["settingsf"].exists():
             settings = self.app.read_json("settingsf")
@@ -61,6 +65,8 @@ class Settings:
                 self.active_chat = settings["active_chat"]
             if "tool_settings" in settings:
                 self.tool_settings = settings["tool_settings"]
+            if "llamacpp" in settings:
+                self.llamacpp = settings["llamacpp"]
         if self.path["endpointsf"].exists():
             self.endpoints = self.app.read_json("endpointsf")
         if self.path["modelsf"].exists():
