@@ -28,6 +28,8 @@ class Settings:
         self.path["chats_archive"].mkdir(parents=True, exist_ok=True)
         self.path["llamacpp"] = self.path["data"] / "llamacpp"
         self.path["llamacpp"].mkdir(parents=True, exist_ok=True)
+        self.path["models"] = self.path["data"] / "models"
+        self.path["models"].mkdir(parents=True, exist_ok=True)
 
     def save(self) -> None:
         settings = {}
