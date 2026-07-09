@@ -12,6 +12,13 @@ class HandlersMixIn:
                 self.children[0].focus()
             elif len(self.children) > 0:
                 self.children[1].focus()
+        self.ensure_is_highlighted()
+
+    def ensure_is_highlighted(self) -> None:
+        side_panel = self.app.query_one("#side-panel")
+        side_panel.can_focus = False
+        index = side_panel.get_option_index(self.id)
+        side_panel.highlighted = index
 
     def on_descendant_focus(self) -> None:
         self.focused_el = self.app.focused
