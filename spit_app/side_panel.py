@@ -7,6 +7,7 @@ from spit_app.manage.endpoint.endpoint import Endpoints as ManageEndpoints
 from spit_app.manage.model_settings.model_settings import ModelSettings as ManageModelSettings
 from spit_app.manage.prompt.prompt import Prompts as ManagePrompts
 from spit_app.manage.tool_settings.tool_settings import ToolSettings as ManageToolSettings
+from spit_app.llamacpp.llamacpp import Llamacpp as ManageLlamacpp
 from spit_app.modal_screens import InfoScreen 
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
@@ -43,6 +44,7 @@ class SidePanel(OptionList):
         Options.append(Option("\nManage Model Settings\n", id="manage-model-settings"))
         Options.append(Option("\nManage System Prompts\n", id="manage-prompt"))
         Options.append(Option("\nManage Tool Settings\n", id="manage-tool-settings"))
+        Options.append(Option("\nManage Llamacpp\n", id="manage-llamacpp"))
         Options.append(None)
         Options.append(Option("\nHelp\n", id="help"))
         Options.append(Option("\nAbout\n", id="about"))
@@ -79,6 +81,8 @@ class SidePanel(OptionList):
             await self.app.query_one("#main").mount(ManagePrompts())
         elif id == "manage-tool-settings":
             await self.app.query_one("#main").mount(ManageToolSettings())
+        elif id == "manage-llamacpp":
+            await self.app.query_one("#main").mount(ManageLlamacpp())
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         if event.option.id == "quit":
