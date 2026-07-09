@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 from textual.app import ComposeResult
-from textual.widgets import Markdown, Button, Header, Footer, DirectoryTree, Input, Button, Label, Rule
+from textual.widgets import (Markdown, Button, Header, Footer, DirectoryTree,
+                             Input, Button, Label, Rule, ProgressBar)
 from textual.screen import ModalScreen
 from textual.containers import Vertical, Horizontal, Center
 from spit_app.manage.validation import ValidationMixIn
@@ -18,6 +19,33 @@ class Common(ModalScreen):
             with Center():
                 yield Button("OK")
         yield Footer()
+
+class ProgressBarScreen(ModalScreen):
+    def __init__(self, manage) -> None:
+        super().__init__()
+        self.classes = "modal"
+        self.manage = manage
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="progress-bar-modal"):
+            yield Label("", id="text")
+            yield ProgressBar(id="progress-bar")
+            with Center():
+                yield Button("Cancel")
+        yield Footer()
+
+    def update_text(self, text: str) -> None:
+        self.query_one("#text").update(text)
+
+    def update_total(self, total: int) -> None:
+        self.query_one("#progress-bar").update(total=total)
+
+    def update_progress(self, advance: int) -> None:
+        self.query_one("#progress-bar").advance(advance)
+
+    def on_button_pressed(self) -> None:
+        self.manage.work.cancel()
+        self.dismiss()
 
 class LoadingScreen(ModalScreen):
     def __init__(self) -> None:
