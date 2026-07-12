@@ -57,7 +57,7 @@ class Settings:
         self.prompts = {}
         self.models = {}
         self.tool_settings = {}
-        self.llamacpp = {"selected": None}
+        self.llamacpp = {}
         self.active_chat = None
         if self.path["settingsf"].exists():
             settings = self.app.read_json("settingsf")
