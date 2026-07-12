@@ -4,7 +4,6 @@ import httpx
 import tarfile
 import platform
 from pathlib import Path
-from .models import MODELS
 
 async def try_download(progress_bar, url: str, path: Path) -> bool:
     async with httpx.AsyncClient(timeout=15) as client:
