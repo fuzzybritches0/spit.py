@@ -6,14 +6,28 @@ import platform
 from pathlib import Path
 
 async def try_download(progress_bar, url: str, path: Path) -> bool:
+    headers = {}
+    size = 0
+    if os.path.exists(path):
+        size = os.path.getsize(path)
+    if size > 0:
+        headers = {
+            "Range": f"bytes={size}-",
+        }
+    progress_bar.update_progress(size)
     async with httpx.AsyncClient(timeout=15) as client:
-        async with client.stream("GET", url, follow_redirects=True) as resp:
-            if resp.status_code != 200:
+        async with client.stream("GET", url, follow_redirects=True, headers=headers) as resp:
+            if resp.status_code == 200 or resp.status_code == 206:
+                pass
+            else:
                 return False
             length = -1
             downloaded = 0
             if "Content-Length" in resp.headers:
                 length = int(resp.headers["Content-Length"])
+                if length == size:
+                    progress_bar.update_total(length)
+                    return True
             if length > 0:
                 progress_bar.update_total(length)
             async for binary in resp.aiter_bytes():
