@@ -65,5 +65,6 @@ class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.save_managed()
 
     def delete(self) -> None:
-        del self.managed[self.uuid]
-        self.save_managed()
+        if self.uuid in self.managed:
+            del self.managed[self.uuid]
+            self.save_managed()
