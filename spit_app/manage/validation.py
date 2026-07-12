@@ -118,9 +118,11 @@ class ValidationMixIn:
         else:
             return (False, "No selections!")
 
-    async def validate_values_edit(self) -> bool:
+    async def validate_values_edit(self, settings: list|None = None) -> bool:
         valid = True
-        for setting in self.manage.keys():
+        if not settings:
+            settings = self.manage.keys()
+        for setting in settings:
             stype = self.manage[setting]["stype"]
             id = rid(setting)
             if not stype == "boolean" and not stype.startswith("select") and not stype == "text":
