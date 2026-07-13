@@ -75,12 +75,10 @@ async def download_llamacpp(progress_bar, path: Path, version: int, callback: ca
         machine = "x64"
     elif machine == "aarch64":
         machine = "amd64"
-    url = "https://github.com/ggml-org/llama.cpp/releases/download/"
-    url += f"b{str(version)}/llama-b{str(version)}-bin-ubuntu-vulkan-{machine}.tar.gz"
-    progress_bar.update_text(f"downloading version b{str(version)}...")
-    tar_path = path / "llamacpp.tar.gz"
-    if os.path.exists(tar_path):
-        os.remove(tar_path)
+    file = f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
+    url = f"https://github.com/ggml-org/llama.cpp/releases/download/b{version}/{file}"
+    progress_bar.update_text(f"downloading version b{version}...")
+    tar_path = path / file
     if not await try_download(progress_bar, url, tar_path):
         progress_bar.dismiss()
         return False
