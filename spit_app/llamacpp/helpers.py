@@ -36,15 +36,6 @@ async def try_download(progress_bar, url: str, path: Path) -> bool:
                     f.write(binary)
     return True
 
-async def download_model(model: dict, path: Path) -> bool:
-    org = model["org"]
-    model = model["model"]
-    for file in model["files"]:
-        url = f"https://huggingface.co/{org}/{model}/resolve/main/{file}?download=true"
-        if not await try_download(url, path / file):
-            return False
-    return True
-
 async def get_latest_llamacpp_version(settings) -> int:
     if "latest" in settings.llamacpp and "latest_time" in settings.llamacpp:
         if time.time() < settings.llamacpp["latest_time"] + 3600:
@@ -88,4 +79,17 @@ async def download_llamacpp(progress_bar, path: Path, version: int, callback: ca
     os.remove(tar_path)
     callback()
     progress_bar.dismiss()
+    return True
+
+async def download_model(progress_bar, path: Path, model: dict, callback: callable) -> bool:
+    org = model["org"]
+    model = model["model"]
+    files_count = len(model["files"])
+    count = 1
+    for file in model["files"]:
+        progress_bar.update_text(f"downloading {file} ({count}/{files_count})...")
+        url = f"https://huggingface.co/{org}/{model}/resolve/main/{file}?download=true"
+        if not await try_download(progress_bar, url, path / file):
+            return False
+        count += 1
     return True
