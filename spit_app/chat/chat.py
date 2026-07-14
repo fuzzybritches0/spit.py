@@ -42,8 +42,8 @@ class Chat(Vertical):
                 return count
             count += 1
 
-    def cs(self, key: str, value: any = "_None_") -> str|None:
-        if not value == "_None_":
+    def cs(self, key: str, value: any = "__NONE__") -> str|None:
+        if not value == "__NONE__":
             self.csettings[key]["value"] = value
         else:
             return self.csettings[key]["value"]
