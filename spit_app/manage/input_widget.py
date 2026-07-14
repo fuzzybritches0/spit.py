@@ -84,7 +84,7 @@ class InputWidget:
     def select(self, id: str, value: str, stype: str, method: callable, tup: tuple) -> list:
         if not value or not value in (i for n, i in tup):
             value = Select.NULL
-        return [SelectMethod(tup, id=id, value=value, prompt="Default", method=method)]
+        return [SelectMethod(tup, id=id, value=value, prompt="Default/None", method=method)]
         
     def select_no_default(self, id: str, value: str, stype: str, method: callable, tup: tuple) -> list:
         if not value or not value in (i for n, i in tup):
