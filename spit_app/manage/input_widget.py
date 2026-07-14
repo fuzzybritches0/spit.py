@@ -69,9 +69,11 @@ class InputWidget:
         else:
             return "string"
 
-    async def setting(self, setting: str) -> list:
+    async def setting(self, setting: str, svalue: any = "__NONE__") -> list:
         id = rid(setting)
         value, stype, desc = self.get_setting(setting)
+        if not svalue == "__NONE__":
+            value = svalue
         tup = self.get_options(setting)
         method = self.get_method(setting)
         if method:
