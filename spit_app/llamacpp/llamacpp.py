@@ -3,27 +3,62 @@ import shutil
 import tarfile
 import asyncio
 from textual import work
+from textual.app import ComposeResult
 from textual.events import Focus
-from .helpers import download_llamacpp, get_latest_llamacpp_version
+from .helpers import download_llamacpp, get_latest_llamacpp_version, download_model
 from spit_app.modal_screens import ProgressBarScreen
+from spit_app.manage.validation import ValidationMixIn
+from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
-from textual.widgets import Label, Button, Select, Input, Rule
+from textual.widgets import Label, Button, Select, Input, Switch, Rule, Markdown
+from .models import MODELS
 
-class Llamacpp(VerticalScroll):
-    BINDINGS = [
-        ("ctrl+l", "update", "Update Llamacpp"),
-        ("ctrl+s", "set_active", "Set Active"),
-        ("ctrl+r", "delete", "Delete")
-    ]
-
+class Llamacpp(VerticalScroll, ValidationMixIn):
     def __init__(self) -> None:
         super().__init__()
         self.id = "manage-llamacpp"
         self.classes = "manage"
+        self.manage = {
+            "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
+            "active_model": {"stype": "select", "desc": "Active Model", "ameth": "get_models"},
+            "use_vulkan": {"stype": "boolean", "desc": "Use Vulkan Hardware Acceleration"},
+            "content_length": {"stype": "uinteger", "empty": False, "desc": "Content Length (0 = model default)"},
+            "server_arguments": {"stype": "string", "desc": "Server Arguments", "empty": True},
+            "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
+            "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
+            "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_list"},
+            "name": {"stype": "string", "empty": False, "desc": "Model Identifier"},
+            "org": {"stype": "string", "empty": False, "desc": "Organisation"},
+            "model": {"stype": "string", "empty": False, "desc": "Model"},
+            "files": {"stype": "string", "empty": False, "desc": "Files"},
+            "downloaded_models": {"stype": "list"},
+            "custom_models": {"stype": "list"}
+        }
         self.settings = self.app.settings
         self.path = self.app.settings.path
 
-    def get_llamacpp_versions(self) -> tuple:
+    def gets(self, setting: str) -> any:
+        if setting in self.settings.llamacpp and self.settings.llamacpp[setting]:
+            return self.settings.llamacpp[setting]
+        if not setting in self.settings.llamacpp or not self.settings.llamacpp[setting]:
+            if self.manage[setting]["stype"] == "select":
+                return None
+            if self.manage[setting]["stype"] == "boolean":
+                return False
+            if self.manage[setting]["stype"] == "uinteger":
+                return "0"
+            if self.manage[setting]["stype"] == "string":
+                return ""
+            if self.manage[setting]["stype"] == "list":
+                return []
+
+    def puts(self, setting: str) -> None:
+        value = self.query_one(f"#{setting}").value
+        if value == Select.NULL:
+            value = None
+        self.settings.llamacpp[setting] = value
+
+    def get_versions(self) -> tuple:
         versions = ()
         for item in os.listdir(self.path["llamacpp"]):
             if os.path.isdir(self.path["llamacpp"] / item):
@@ -31,33 +66,55 @@ class Llamacpp(VerticalScroll):
                 versions += ((version, version),)
         return versions
 
-    def update_label(self, version: str) -> str:
-        return f"\nActive llama.cpp version: [bold $accent]{version}\n"
+    def get_models_list(self) -> tuple:
+        models = ()
+        for model in MODELS:
+            models += ((model["name"], model["name"]),)
+        if self.gets("custom_models"):
+            for model in self.gets("custom_models"):
+                models += ((model["name"], model["name"]),)
+        return models
 
-    def compose(self) -> None:
-        yield Label("Manage llama.cpp server installations:\n\nVersion:\n")
-        yield Input(value="", id="input-llamacpp-version")
-        yield Button("Download", id="update-llamacpp")
-        yield Rule()
-        selected = self.settings.llamacpp["selected"]
-        yield Label(self.update_label(selected), id="active-version")
-        llamacpp_versions = self.get_llamacpp_versions()
-        yield Select(llamacpp_versions, value=Select.NULL, id="select-llamacpp-version", prompt="None")
-        with Horizontal(classes="auto-height"):
-            yield Button("Set Active", id="set-active")
-            yield Button("Delete", id="delete-selected")
-        yield Rule()
-        yield Label("Manage llama.cpp models:\n\n")
+    def get_models(self) -> tuple:
+        models = ()
+        for model in self.gets("downloaded_models"):
+            models += ((model, model),)
+        return models
 
-    def on_mount(self) -> None:
-        self.children[1].focus()
+    async def edit_manage_screen(self) -> None:
+        input_widget = InputWidget(self, self.manage, self.validators)
+        await self.mount(Label("Manage llama.cpp server settings:\n"))
+        for item in ["active_version", "active_model", "use_vulkan", "content_length", "server_arguments"]:
+            await self.mount_all(await input_widget.setting(item, self.gets(item)))
+        await self.mount(Button("Apply", id="apply-llamacpp-settings"))
+        await self.mount(Rule())
+        await self.mount(Label("Manage llama.cpp server installations:\n"))
+        await self.mount_all(await input_widget.setting("llamacpp_version"))
+        await self.mount(Button("Download", id="update-llamacpp"))
+        await self.mount_all(await input_widget.setting("delete_version"))
+        await self.mount(Button("Delete", id="delete-llamacpp"))
+        await self.mount(Rule())
+        await self.mount_all(await input_widget.setting("download_model"))
+        horizontal = Horizontal(classes="auto-height")
+        await self.mount(horizontal)
+        await horizontal.mount(Button("Download", id="download-model"))
+        await horizontal.mount(Button("Delete", id="delete-model"))
+        await self.mount(Rule())
+        await self.mount(Label("Add custom llama.cpp model:\n"))
+        for item in ["name", "org", "model", "files"]:
+            await self.mount_all(await input_widget.setting(item))
+        await self.mount(Button("Add", id="add-custom-model"))
+
+    async def on_mount(self) -> None:
+        await self.edit_manage_screen()
+        self.children[2].focus()
         self.work_update_input_llamacpp_version()
 
     async def update_input_llamacpp_version(self) -> None:
         latest_version = await get_latest_llamacpp_version(self.settings)
         if latest_version <= 0:
             latest_version = 0
-        self.query_one("#input-llamacpp-version").value = "b" + str(latest_version)
+        self.query_one("#llamacpp_version").value = "b" + str(latest_version)
 
     @work(exclusive=True, exit_on_error=False)
     async def work_update_input_llamacpp_version(self) -> None:
@@ -66,17 +123,28 @@ class Llamacpp(VerticalScroll):
             await asyncio.sleep(600)
 
     def update_options(self) -> None:
-        self.query_one("#select-llamacpp-version").set_options(self.get_llamacpp_versions())
+        options = self.get_versions()
+        self.query_one("#active_version").set_options(options)
+        self.query_one("#delete_version").set_options(options)
 
     async def update_llamacpp(self, progress_bar, version: str) -> None:
         success = await download_llamacpp(progress_bar, self.path["llamacpp"], version, self.update_options)
         if not success:
-            failed_version = self.query_one("#input-llamacpp-version").value
+            failed_version = self.query_one("#llamacpp_version").value
             self.app.exception = Exception(f"Could not download {failed_version}!")
             await self.update_input_llamacpp_version()
 
+    def button_apply_llamacpp_settings(self) -> None:
+        self.puts("active_version")
+        self.puts("active_model")
+        self.puts("use_vulkan")
+        self.puts("content_length")
+        self.puts("server_arguments")
+        self.settings.save()
+        self.app.action_notify("Changes applied!")
+
     async def button_update_llamacpp(self) -> None:
-        version = self.query_one("#input-llamacpp-version").value
+        version = self.query_one("#llamacpp_version").value
         if os.path.isdir(self.path["llamacpp"] / f"llama-{version}"):
             self.app.exception = Exception(f"Info: {version} already downloaded! To re-download, delete first!")
             await self.update_input_llamacpp_version()
@@ -95,47 +163,35 @@ class Llamacpp(VerticalScroll):
         self.app.push_screen(progress_bar)
         self.work = self.run_worker(self.update_llamacpp(progress_bar, version))
 
-    def set_active(self, selection: str|None = None) -> None:
-        self.query_one("#active-version").update(self.update_label(selection))
-        self.settings.llamacpp["selected"] = selection
-        self.settings.save()
-
-    def button_set_active(self) -> None:
-        selection = self.query_one("#select-llamacpp-version").value
-        if selection == Select.NULL:
-            selection = None
-        self.set_active(selection)
-
     def button_delete_selected(self) -> None:
-        selection = self.query_one("#select-llamacpp-version").value
+        selection = self.query_one("#delete_version").value
         if selection == Select.NULL:
             return None
         path = self.path["llamacpp"] / f"llama-{selection}"
         shutil.rmtree(path)
         self.update_options()
-        if selection == self.settings.llamacpp["selected"]:
-            self.set_active()
+        if selection == self.gets("active_version"):
+            self.query_one("#active_version").value = None
+            self.puts("active_version")
+            self.settings.save()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.control.id == "update-llamacpp":
+        id = event.control.id
+        if id == "update-llamacpp":
             await self.button_update_llamacpp()
-        elif event.control.id == "set-active":
-            self.button_set_active()
-        elif event.control.id =="delete-selected":
+        elif id =="delete-llamacpp":
             self.button_delete_selected()
+        elif id == "apply-llamacpp-settings":
+            if await self.validate_values_edit(["content_length"]):
+                self.button_apply_llamacpp_settings()
 
-    async def action_update(self) -> None:
-        await self.button_update_llamacpp()
-
-    def action_set_active(self) -> None:
-        self.button_set_active()
-
-    def action_delete(self) -> None:
-        self.button_delete_selected()
+    async def on_input_changed(self, event: Input.Changed) -> None:
+        if event.validation_result:
+            await self.update_val_results_input(event.control.id, event.validation_result.failure_descriptions)
 
     async def on_focus(self, event: Focus) -> None:
         event.prevent_default()
-        self.children[1].focus()
+        self.children[2].focus()
         self.ensure_is_highlighted()
         await self.update_input_llamacpp_version()
 
