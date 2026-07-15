@@ -21,10 +21,9 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.manage = {
             "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
             "active_model": {"stype": "select", "desc": "Active Model", "ameth": "get_models"},
-            "use_vulkan": {"stype": "boolean", "desc": "Use Vulkan Hardware Acceleration"},
-            "devices": {"stype": "string", "desc": "Use devices"},
             "content_length": {"stype": "uinteger", "empty": False, "desc": "Content Length (0 = model default)"},
             "server_arguments": {"stype": "string", "desc": "Server Arguments", "empty": True},
+            "vulkan_devices": {"stype": "select_list", "desc": "Use Vulkan devices", "options": []},
             "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
             "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
             "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_list"},
@@ -45,6 +44,8 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         if not setting in self.settings.llamacpp or not self.settings.llamacpp[setting]:
             if self.manage[setting]["stype"] == "select":
                 return None
+            if self.manage[setting]["stype"] == "select_list":
+                return []
             if self.manage[setting]["stype"] == "boolean":
                 return False
             if self.manage[setting]["stype"] == "uinteger":
@@ -54,8 +55,12 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
             if self.manage[setting]["stype"] == "list":
                 return []
 
+
     def puts(self, setting: str) -> None:
-        value = self.query_one(f"#{setting}").value
+        if self.manage[setting]["stype"] == "select_list":
+            value = self.query_one(f"#{setting}").selected
+        else:
+            value = self.query_one(f"#{setting}").value
         if value == Select.NULL:
             value = None
         self.settings.llamacpp[setting] = value
@@ -86,8 +91,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
     async def edit_manage_screen(self) -> None:
         input_widget = InputWidget(self, self.manage, self.validators)
         await self.mount(Label("Manage llama.cpp server settings:\n"))
-        for item in ["active_version", "active_model", "use_vulkan", "devices",
-                     "content_length", "server_arguments"]:
+        for item in ["active_version", "active_model", "content_length", "server_arguments", "vulkan_devices"]:
             await self.mount_all(await input_widget.setting(item, self.gets(item)))
         await self.mount(Button("Apply", id="apply-llamacpp-settings"))
         await self.mount(Rule())
@@ -114,28 +118,29 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.work_update_input_llamacpp_version()
         await self.update_input_vulkan_devices()
 
+    def add_devices(self, devices: list) -> tuple:
+        tup = ()
+        vulkan_devices = []
+        if "vulkan_devices" in self.settings.llamacpp:
+            vulkan_devices = self.settings.llamacpp["vulkan_devices"]
+        for device in devices:
+            tup += ((device, device, device in vulkan_devices),)
+        return tup
+
     async def update_input_vulkan_devices(self) -> None:
-        self.query_one("#use_vulkan").display = False
-        self.query_one("#label-use_vulkan").display = False
-        self.query_one("#devices").display = False
-        self.query_one("#label-devices").display = False
-        if self.settings.llamacpp["active_version"]:
-            llamacpp = self.path["llamacpp"] / ("llama-" + self.settings.llamacpp["active_version"])
-            devices = await get_vulkan_devices(llamacpp)
-            if devices:
-                self.query_one("#use_vulkan").display = True
-                self.query_one("#label-use_vulkan").display = True
-                self.query_one("#devices").display = True
-                self.query_one("#label-devices").display = True
-                if not "devices" in self.settings.llamacpp or not self.settings.llamacpp["devices"]:
-                    self.query_one("#devices").value = devices
-                    self.settings.llamacpp["devices"] = devices
-            else:
-                if "use_vulkan" in self.settings.llamacpp:
-                    del self.settings.llamacpp["use_vulkan"]
-                if "devices" in self.settings.llamacpp:
-                    del self.settings.llamacpp["devices"]
-            self.settings.save()
+        async with self.batch():
+            self.query_one("#vulkan_devices").display = False
+            if "active_version" in self.settings.llamacpp and self.settings.llamacpp["active_version"]:
+                llamacpp = self.path["llamacpp"] / ("llama-" + self.settings.llamacpp["active_version"])
+                devices = await get_vulkan_devices(llamacpp)
+                if devices:
+                    self.query_one("#vulkan_devices").display = True
+                    self.query_one("#vulkan_devices").clear_options()
+                    self.query_one("#vulkan_devices").add_options(self.add_devices(devices))
+                else:
+                    if "vulkan_devices" in self.settings.llamacpp:
+                        del self.settings.llamacpp["vulkan_devices"]
+                self.settings.save()
 
     async def update_input_llamacpp_version(self) -> None:
         latest_version = await get_latest_llamacpp_version(self.settings)
@@ -165,8 +170,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
     async def button_apply_llamacpp_settings(self) -> None:
         self.puts("active_version")
         self.puts("active_model")
-        self.puts("use_vulkan")
-        self.puts("devices")
+        self.puts("vulkan_devices")
         self.puts("content_length")
         self.puts("server_arguments")
         self.settings.save()
