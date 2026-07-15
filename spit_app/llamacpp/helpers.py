@@ -2,8 +2,35 @@ import os
 import time
 import httpx
 import tarfile
+import asyncio
 import platform
 from pathlib import Path
+
+async def get_vulkan_devices(llama_server: Path) -> str:
+    llama_server = llama_server / "llama-server"
+    devices = ""
+    try:
+        output = await run_get_output([str(llama_server), "--list-devices"])
+        for line in output.split("\n"):
+            if line.strip().startswith("Vulkan"):
+                devices += line.strip().split(":")[0] + ","
+        return devices[:-1]
+    except:
+        return ""
+
+async def run_get_output(cmd: list) -> str:
+    output = ""
+    async for line in run(cmd):
+        output += line
+    return output
+
+async def run(cmd: list):
+    proc = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE,
+                                                stderr=asyncio.subprocess.STDOUT,
+                                                start_new_session=True)
+    stdout, _ = await proc.communicate()
+    for line in stdout.decode("UTF-8", errors="replace").splitlines(keepends=True):
+        yield line
 
 async def try_download(progress_bar, url: str, path: Path) -> bool:
     headers = {}
