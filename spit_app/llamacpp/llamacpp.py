@@ -5,7 +5,7 @@ import asyncio
 from textual import work
 from textual.app import ComposeResult
 from textual.events import Focus
-from .helpers import download_llamacpp, get_latest_llamacpp_version, download_model
+from .helpers import download_llamacpp, get_latest_llamacpp_version, download_model, get_vulkan_devices
 from spit_app.modal_screens import ProgressBarScreen
 from spit_app.manage.validation import ValidationMixIn
 from spit_app.manage.input_widget import InputWidget
@@ -22,6 +22,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
             "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
             "active_model": {"stype": "select", "desc": "Active Model", "ameth": "get_models"},
             "use_vulkan": {"stype": "boolean", "desc": "Use Vulkan Hardware Acceleration"},
+            "devices": {"stype": "string", "desc": "Use devices"},
             "content_length": {"stype": "uinteger", "empty": False, "desc": "Content Length (0 = model default)"},
             "server_arguments": {"stype": "string", "desc": "Server Arguments", "empty": True},
             "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
@@ -84,7 +85,8 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
     async def edit_manage_screen(self) -> None:
         input_widget = InputWidget(self, self.manage, self.validators)
         await self.mount(Label("Manage llama.cpp server settings:\n"))
-        for item in ["active_version", "active_model", "use_vulkan", "content_length", "server_arguments"]:
+        for item in ["active_version", "active_model", "use_vulkan", "devices",
+                     "content_length", "server_arguments"]:
             await self.mount_all(await input_widget.setting(item, self.gets(item)))
         await self.mount(Button("Apply", id="apply-llamacpp-settings"))
         await self.mount(Rule())
@@ -109,6 +111,30 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         await self.edit_manage_screen()
         self.children[2].focus()
         self.work_update_input_llamacpp_version()
+        await self.update_input_vulkan_devices()
+
+    async def update_input_vulkan_devices(self) -> None:
+        self.query_one("#use_vulkan").display = False
+        self.query_one("#label-use_vulkan").display = False
+        self.query_one("#devices").display = False
+        self.query_one("#label-devices").display = False
+        if self.settings.llamacpp["active_version"]:
+            llamacpp = self.path["llamacpp"] / ("llama-" + self.settings.llamacpp["active_version"])
+            devices = await get_vulkan_devices(llamacpp)
+            if devices:
+                self.query_one("#use_vulkan").display = True
+                self.query_one("#label-use_vulkan").display = True
+                self.query_one("#devices").display = True
+                self.query_one("#label-devices").display = True
+                if not "devices" in self.settings.llamacpp or not self.settings.llamacpp["devices"]:
+                    self.query_one("#devices").value = devices
+                    self.settings.llamacpp["devices"] = devices
+            else:
+                if "use_vulkan" in self.settings.llamacpp:
+                    del self.settings.llamacpp["use_vulkan"]
+                if "devices" in self.settings.llamacpp:
+                    del self.settings.llamacpp["devices"]
+            self.settings.save()
 
     async def update_input_llamacpp_version(self) -> None:
         latest_version = await get_latest_llamacpp_version(self.settings)
@@ -133,15 +159,18 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
             failed_version = self.query_one("#llamacpp_version").value
             self.app.exception = Exception(f"Could not download {failed_version}!")
             await self.update_input_llamacpp_version()
+        await self.update_input_vulkan_devices()
 
-    def button_apply_llamacpp_settings(self) -> None:
+    async def button_apply_llamacpp_settings(self) -> None:
         self.puts("active_version")
         self.puts("active_model")
         self.puts("use_vulkan")
+        self.puts("devices")
         self.puts("content_length")
         self.puts("server_arguments")
         self.settings.save()
         self.app.action_notify("Changes applied!")
+        await self.update_input_vulkan_devices()
 
     async def button_update_llamacpp(self) -> None:
         version = self.query_one("#llamacpp_version").value
@@ -163,7 +192,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.app.push_screen(progress_bar)
         self.work = self.run_worker(self.update_llamacpp(progress_bar, version))
 
-    def button_delete_selected(self) -> None:
+    async def button_delete_selected(self) -> None:
         selection = self.query_one("#delete_version").value
         if selection == Select.NULL:
             return None
@@ -171,19 +200,20 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         shutil.rmtree(path)
         self.update_options()
         if selection == self.gets("active_version"):
-            self.query_one("#active_version").value = None
+            self.query_one("#active_version").value = Select.NULL
             self.puts("active_version")
             self.settings.save()
+        await self.update_input_vulkan_devices()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         id = event.control.id
         if id == "update-llamacpp":
             await self.button_update_llamacpp()
         elif id =="delete-llamacpp":
-            self.button_delete_selected()
+            await self.button_delete_selected()
         elif id == "apply-llamacpp-settings":
             if await self.validate_values_edit(["content_length"]):
-                self.button_apply_llamacpp_settings()
+                await self.button_apply_llamacpp_settings()
 
     async def on_input_changed(self, event: Input.Changed) -> None:
         if event.validation_result:
