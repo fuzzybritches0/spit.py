@@ -224,6 +224,11 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         if event.validation_result:
             await self.update_val_results_input(event.control.id, event.validation_result.failure_descriptions)
 
+    async def on_select_changed(self, event: Select.Changed) -> None:
+        if event.control.id == "active_version":
+            self.puts("active_version")
+            await self.update_input_vulkan_devices()
+
     async def on_focus(self, event: Focus) -> None:
         event.prevent_default()
         if self.focused_widget:
