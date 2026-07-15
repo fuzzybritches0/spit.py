@@ -31,7 +31,6 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
             "org": {"stype": "string", "empty": False, "desc": "Organisation"},
             "model": {"stype": "string", "empty": False, "desc": "Model"},
             "files": {"stype": "string", "empty": False, "desc": "Files"},
-            "downloaded_models": {"stype": "list"},
             "custom_models": {"stype": "list"}
         }
         self.settings = self.app.settings
@@ -84,8 +83,10 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
 
     def get_models(self) -> tuple:
         models = ()
-        for model in self.gets("downloaded_models"):
-            models += ((model, model),)
+        for model in os.listdir(self.path["models"]):
+            if os.path.isdir(self.path["models"] / model):
+                model = model.split("-")[1:]
+                models += ((model, model),)
         return models
 
     async def edit_manage_screen(self) -> None:
