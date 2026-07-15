@@ -6,17 +6,17 @@ import asyncio
 import platform
 from pathlib import Path
 
-async def get_vulkan_devices(llama_server: Path) -> str:
+async def get_vulkan_devices(llama_server: Path) -> list:
     llama_server = llama_server / "llama-server"
-    devices = ""
+    devices = []
     try:
         output = await run_get_output([str(llama_server), "--list-devices"])
         for line in output.split("\n"):
             if line.strip().startswith("Vulkan"):
-                devices += line.strip().split(":")[0] + ","
-        return devices[:-1]
+                devices.append(line.strip().split(":")[0].strip())
+        return devices
     except:
-        return ""
+        return []
 
 async def run_get_output(cmd: list) -> str:
     output = ""
