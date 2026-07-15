@@ -37,6 +37,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         }
         self.settings = self.app.settings
         self.path = self.app.settings.path
+        self.focused_widget = None
 
     def gets(self, setting: str) -> any:
         if setting in self.settings.llamacpp and self.settings.llamacpp[setting]:
@@ -221,9 +222,15 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
 
     async def on_focus(self, event: Focus) -> None:
         event.prevent_default()
-        self.children[2].focus()
+        if self.focused_widget:
+            self.focused_widget.focus()
+        else:
+            self.children[2].focus()
         self.ensure_is_highlighted()
         await self.update_input_llamacpp_version()
+
+    def on_descendant_focus(self) -> None:
+        self.focused_widget = self.app.focused
 
     def ensure_is_highlighted(self) -> None:
         side_panel = self.app.query_one("#side-panel")
