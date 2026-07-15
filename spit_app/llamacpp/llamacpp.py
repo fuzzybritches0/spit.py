@@ -200,7 +200,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.app.push_screen(progress_bar)
         self.work = self.run_worker(self.update_llamacpp(progress_bar, version))
 
-    async def button_delete_selected(self) -> None:
+    async def button_delete_llamacpp(self) -> None:
         selection = self.query_one("#delete_version").value
         if selection == Select.NULL:
             return None
@@ -218,7 +218,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         if id == "update-llamacpp":
             await self.button_update_llamacpp()
         elif id =="delete-llamacpp":
-            await self.button_delete_selected()
+            await self.button_delete_llamacpp()
         elif id == "apply-llamacpp-settings":
             if await self.validate_values_edit(["content_length"]):
                 await self.button_apply_llamacpp_settings()
