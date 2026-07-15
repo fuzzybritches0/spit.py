@@ -131,11 +131,13 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
     async def update_input_vulkan_devices(self) -> None:
         async with self.batch():
             self.query_one("#vulkan_devices").display = False
+            self.query_one("#label-vulkan_devices").display = False
             if "active_version" in self.settings.llamacpp and self.settings.llamacpp["active_version"]:
                 llamacpp = self.path["llamacpp"] / ("llama-" + self.settings.llamacpp["active_version"])
                 devices = await get_vulkan_devices(llamacpp)
                 if devices:
                     self.query_one("#vulkan_devices").display = True
+                    self.query_one("#label-vulkan_devices").display = True
                     self.query_one("#vulkan_devices").clear_options()
                     self.query_one("#vulkan_devices").add_options(self.add_devices(devices))
                 else:
