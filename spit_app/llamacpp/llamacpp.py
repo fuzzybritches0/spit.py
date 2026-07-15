@@ -10,7 +10,7 @@ from spit_app.modal_screens import ProgressBarScreen
 from spit_app.manage.validation import ValidationMixIn
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
-from textual.widgets import Label, Button, Select, Input, Switch, Rule, Markdown
+from textual.widgets import Label, Button, Select, Input, Rule
 from .models import MODELS
 
 class Llamacpp(VerticalScroll, ValidationMixIn):
