@@ -180,6 +180,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
 
     async def update_llamacpp_failed(self, lst: list) -> None:
         failed_version = self.query_one("#llamacpp_version").value
+        self.app.action_notify(f"Failed to download {failed_version}!")
         await self.update_input_llamacpp_version()
 
     def update_llamacpp_success(self, lst: list) -> None:
@@ -196,6 +197,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
                 os.remove(path)
             except:
                 pass
+        self.app.action_notify(f"Download finished!")
 
     def update_llamacpp(self, version: int) -> None:
         machine = platform.uname().machine
