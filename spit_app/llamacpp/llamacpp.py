@@ -56,7 +56,6 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
             if self.manage[setting]["stype"] == "list":
                 return []
 
-
     def puts(self, setting: str) -> None:
         if self.manage[setting]["stype"] == "select_list":
             value = self.query_one(f"#{setting}").selected
@@ -175,7 +174,6 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         await self.update_input_llamacpp_version()
 
     def update_llamacpp_success(self, lst: list) -> None:
-        self.app.applog("HERE")
         _, path = lst[0]
         try:
             tar = tarfile.open(path)
