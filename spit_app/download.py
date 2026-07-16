@@ -48,10 +48,16 @@ class Download:
         while self.pending:
             success = True
             sender, lst, callback = self.pending[0]
+            count = 1
+            total = len(lst)
             for url, path in lst:
+                if self.progress_active():
+                    file = str(path).split("/")[-1]
+                    self.progress_bar_screen.update_text(f"Downloading {count} of {total}:\n{file}")
                 if not await self.try_download(url, path):
                     success = False
                     break
+                count += 1
             if success:
                 sender.post_message(DownloadSuccess(lst, callback))
             else:
