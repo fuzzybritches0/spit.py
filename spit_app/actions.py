@@ -4,10 +4,20 @@ from .modal_screens import ConfirmScreen
 
 bindings = [
         ("ctrl+q", "exit_app"),
-        ("shift+escape", "side_panel", "S.Panel")
+        ("shift+escape", "side_panel", "S.Panel"),
+        ("ctrl+delete", "show_progress", "Progress")
 ]
 
 class ActionsMixIn:
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool|None:
+        if action == "show_progress":
+            if not self.download.working:
+                return False
+        return True
+
+    def action_show_progress(self) -> None:
+        self.download.show_progress()
+
     async def action_side_panel(self) -> None:
         side_panel = self.query_one("#side-panel")
         if not side_panel is self.focused:
