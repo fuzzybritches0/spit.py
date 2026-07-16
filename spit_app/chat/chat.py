@@ -10,6 +10,7 @@ from .chat_view import ChatView
 from .multimodal import load_image_base64, image_url
 from spit_app.modal_screens import ChooseImageFile
 from .message.message import Message
+from .textual_message import StreamCallback
 
 class Chat(Vertical):
     BINDINGS = [
@@ -100,9 +101,11 @@ class Chat(Vertical):
             else:
                 self.messages.append({"role": "user", "content": [image_url(image)]})
                 self.undo.append_undo("insert", self.messages[-1])
-                await self.chat_view.mount(Message(self, self.messages[-1]))
+                index = len(self.messages)-1
+                self.chat_view.post_message(StreamCallback(index, 1))
             self.write_chat_history()
-            await self.chat_view.children[-1].finish()
+            index = len(self.messages)-1
+            self.chat_view.post_message(StreamCallback(index, 0))
             self.chat_view.focus()
             self.chat_view.scroll_end(animate=False)
 
