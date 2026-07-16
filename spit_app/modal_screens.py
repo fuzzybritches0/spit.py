@@ -1,11 +1,18 @@
 import os
 from pathlib import Path
 from textual.app import ComposeResult
+from textual.message import Message
 from textual.widgets import (Markdown, Button, Header, Footer, DirectoryTree,
                              Input, Button, Label, Rule, ProgressBar)
 from textual.screen import ModalScreen
 from textual.containers import Vertical, Horizontal, Center
 from spit_app.manage.validation import ValidationMixIn
+
+class ProgressDismiss(Message):
+    ...
+
+class CancelWork(Message):
+    ...
 
 class Common(ModalScreen):
     BINDINGS = [("ctrl+q", "exit_app", "Quit")]
@@ -21,10 +28,10 @@ class Common(ModalScreen):
         yield Footer()
 
 class ProgressBarScreen(ModalScreen):
-    def __init__(self, manage) -> None:
+    def __init__(self, download) -> None:
         super().__init__()
         self.classes = "modal"
-        self.manage = manage
+        self.download = download
 
     def compose(self) -> ComposeResult:
         with Vertical(id="progress-bar-modal"):
@@ -44,8 +51,7 @@ class ProgressBarScreen(ModalScreen):
         self.query_one("#progress-bar").advance(advance)
 
     def on_button_pressed(self) -> None:
-        self.manage.work.cancel()
-        self.dismiss()
+        self.app.post_message(CancelWork())
 
 class LoadingScreen(ModalScreen):
     def __init__(self) -> None:
