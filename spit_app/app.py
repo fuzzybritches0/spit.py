@@ -10,6 +10,7 @@ from spit_app.actions import bindings
 from spit_app.handlers import HandlersMixIn
 from spit_app.tool_call import ToolCall
 from spit_app.side_panel import SidePanel
+from spit_app.download import Download
 from spit_app.modal_screens import ErrorScreen
 
 class SpitApp(ActionsMixIn, HandlersMixIn, App):
@@ -30,6 +31,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.settings.load()
         self.tool_call = ToolCall(self)
         self.confirm_exit = False
+        self.download = Download(self.run_worker, self.push_screen)
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
 
     async def watch_exception(self, exception: Exception) -> None:
