@@ -1,22 +1,19 @@
 import os
-import shutil
 import tarfile
 import asyncio
-import tarfile
-import inspect
 import platform
 from textual import work
-from textual.app import ComposeResult
-from textual.events import Focus
 from .helpers import get_latest_llamacpp_version, get_vulkan_devices
 from spit_app.manage.validation import ValidationMixIn
-from spit_app.textual_message import DownloadFiles, DownloadFailed, DownloadSuccess
+from .handlers import HandlersMixIn
+from .buttons import ButtonsMixIn
+from spit_app.textual_message import DownloadFiles
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
-from textual.widgets import Label, Button, Select, Input, Rule
+from textual.widgets import Label, Button, Select, Rule
 from .models import MODELS
 
-class Llamacpp(VerticalScroll, ValidationMixIn):
+class Llamacpp(HandlersMixIn, ButtonsMixIn, ValidationMixIn, VerticalScroll):
     def __init__(self) -> None:
         super().__init__()
         self.id = "manage-llamacpp"
@@ -115,12 +112,6 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
             await self.mount_all(await input_widget.setting(item))
         await self.mount(Button("Add", id="add-custom-model"))
 
-    async def on_mount(self) -> None:
-        await self.edit_manage_screen()
-        self.children[2].focus()
-        self.work_update_input_llamacpp_version()
-        await self.update_input_vulkan_devices()
-
     def add_devices(self, devices: list) -> tuple:
         tup = ()
         vulkan_devices = []
@@ -164,20 +155,6 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.query_one("#active_version").set_options(options)
         self.query_one("#delete_version").set_options(options)
 
-    async def on_download_failed(self, message: DownloadFailed) -> None:
-        callback = getattr(self, f"{message.callback}_failed")
-        if inspect.iscoroutinefunction(callback):
-            await callback(message.lst)
-        else:
-            callback(message.lst)
-
-    def on_download_success(self, message: DownloadSuccess) -> None:
-        callback = getattr(self, f"{message.callback}_success")
-        if inspect.iscoroutinefunction(callback):
-            await callback(message.lst)
-        else:
-            callback(message.lst)
-
     async def update_llamacpp_failed(self, lst: list) -> None:
         failed_version = self.query_one("#llamacpp_version").value
         self.app.action_notify(f"Failed to download {failed_version}!")
@@ -209,78 +186,6 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         url = f"https://github.com/ggml-org/llama.cpp/releases/download/b{version}/{file}"
         lst = [(url, self.path["llamacpp"] / file)]
         self.app.post_message(DownloadFiles(self, lst, "update_llamacpp"))
-
-    async def button_apply_llamacpp_settings(self) -> None:
-        self.puts("active_version")
-        self.puts("active_model")
-        self.puts("vulkan_devices")
-        self.puts("content_length")
-        self.puts("server_arguments")
-        self.settings.save()
-        self.app.action_notify("Changes applied!")
-        await self.update_input_vulkan_devices()
-
-    async def button_update_llamacpp(self) -> None:
-        version = self.query_one("#llamacpp_version").value
-        if os.path.isdir(self.path["llamacpp"] / f"llama-{version}"):
-            self.app.exception = Exception(f"Info: {version} already downloaded! To re-download, delete first!")
-            await self.update_input_llamacpp_version()
-            return None
-        if version.startswith("b"):
-            version = version[1:]
-        try:
-            version = int(version)
-        except:
-            version = None
-        if not version:
-            self.app.exception = Exception("Invalid version provided!")
-            await self.update_input_llamacpp_version()
-            return None
-        self.update_llamacpp(version)
-
-    async def button_delete_llamacpp(self) -> None:
-        selection = self.query_one("#delete_version").value
-        if selection == Select.NULL:
-            return None
-        path = self.path["llamacpp"] / f"llama-{selection}"
-        shutil.rmtree(path)
-        self.update_options()
-        if selection == self.gets("active_version"):
-            self.query_one("#active_version").value = Select.NULL
-            self.puts("active_version")
-            self.settings.save()
-        await self.update_input_vulkan_devices()
-
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        id = event.control.id
-        if id == "update-llamacpp":
-            await self.button_update_llamacpp()
-        elif id =="delete-llamacpp":
-            await self.button_delete_llamacpp()
-        elif id == "apply-llamacpp-settings":
-            if await self.validate_values_edit(["content_length"]):
-                await self.button_apply_llamacpp_settings()
-
-    async def on_input_changed(self, event: Input.Changed) -> None:
-        if event.validation_result:
-            await self.update_val_results_input(event.control.id, event.validation_result.failure_descriptions)
-
-    async def on_select_changed(self, event: Select.Changed) -> None:
-        if event.control.id == "active_version":
-            self.puts("active_version")
-            await self.update_input_vulkan_devices()
-
-    async def on_focus(self, event: Focus) -> None:
-        event.prevent_default()
-        if self.focused_widget:
-            self.focused_widget.focus()
-        else:
-            self.children[2].focus()
-        self.ensure_is_highlighted()
-        await self.update_input_llamacpp_version()
-
-    def on_descendant_focus(self) -> None:
-        self.focused_widget = self.app.focused
 
     def ensure_is_highlighted(self) -> None:
         side_panel = self.app.query_one("#side-panel")
