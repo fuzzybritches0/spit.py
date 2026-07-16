@@ -37,8 +37,9 @@ class ProgressBarScreen(ModalScreen):
         with Vertical(id="progress-bar-modal"):
             yield Label("", id="text")
             yield ProgressBar(id="progress-bar")
-            with Center():
-                yield Button("Cancel")
+            with Horizontal(classes="auto-height"):
+                yield Button("Dismiss", id="dismiss")
+                yield Button("Cancel", id="cancel")
         yield Footer()
 
     def update_text(self, text: str) -> None:
@@ -49,9 +50,17 @@ class ProgressBarScreen(ModalScreen):
 
     def update_progress(self, advance: int) -> None:
         self.query_one("#progress-bar").advance(advance)
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.control.id == "cancel":
+            self.download.progress_state_reset()
+            self.app.post_message(CancelWork())
+        elif event.control.id == "dismiss":
+            self.app.post_message(ProgressDismiss())
 
-    def on_button_pressed(self) -> None:
-        self.app.post_message(CancelWork())
+    def on_mount(self) -> None:
+        self.update_text(self.download.progress_state["text"])
+        self.update_total(self.download.progress_state["total"])
+        self.update_progress(self.download.progress_state["progress"])
 
 class LoadingScreen(ModalScreen):
     def __init__(self) -> None:
