@@ -180,7 +180,7 @@ Input {
 	background: $background 65%
 }
 #progress-bar-modal {
-	width: 40;
+	width: 60;
 	height: auto;
 	padding: 1 0 0 0;
 	background: $background-lighten-1;
