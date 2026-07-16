@@ -13,6 +13,23 @@ class Download:
         self.cancel = False
         self.pending = []
         self.progress_bar_screen = None
+        self.progress_state_reset()
+
+    def progress_state_reset(self) -> None:
+        self.progress_state = {"text": "Connecting...", "total": 0, "progress": 0}
+
+    def progress_update(self, key: str, value: str|int) -> None:
+        if self.progress_active():
+            if key == "text":
+                self.progress_bar_screen.update_text(value)
+            elif key == "total":
+                self.progress_bar_screen.update_total(value)
+            elif key == "progress":
+                self.progress_bar_screen.update_progress(value)
+        if key == "progress":
+            self.progress_state[key] += value
+        else:
+            self.progress_state[key] = value
 
     async def cancel_work(self) -> None:
         if self.working:
@@ -46,6 +63,7 @@ class Download:
     async def work_download(self) -> None:
         self.working = True
         while self.pending:
+            self.progress_state_reset()
             success = True
             sender, lst, callback = self.pending[0]
             count = 1
@@ -53,7 +71,7 @@ class Download:
             for url, path in lst:
                 if self.progress_active():
                     file = str(path).split("/")[-1]
-                    self.progress_bar_screen.update_text(f"Downloading {count} of {total}:\n{file}")
+                    self.progress_update("text", f"Downloading {count} of {total}:\n{file}")
                 if not await self.try_download(url, path):
                     success = False
                     break
@@ -76,8 +94,7 @@ class Download:
             headers = {
                 "Range": f"bytes={size}-",
             }
-        if self.progress_active():
-            self.progress_bar_screen.update_progress(size)
+        self.progress_update("total", size)
         async with httpx.AsyncClient(timeout=15) as client:
             async with client.stream("GET", url, follow_redirects=True, headers=headers) as resp:
                 if resp.status_code == 416:
@@ -89,19 +106,16 @@ class Download:
                 if "Content-Length" in resp.headers:
                     length = int(resp.headers["Content-Length"])
                     if length == size:
-                        if self.progress_active():
-                            self.progress_bar_screen.update_total(length)
+                        self.progress_update("total", length)
                         return True
                 if length > 0:
-                    if self.progress_active():
-                        self.progress_bar_screen.update_total(length)
+                    self.progress_update("total", length)
                 async for binary in resp.aiter_bytes():
                     if self.cancel:
                         self.cancel = False
                         self.working = False
                         return False
-                    if self.progress_active():
-                        self.progress_bar_screen.update_progress(len(binary))
+                    self.progress_update("progress", len(binary))
                     with open(path, "ab") as f:
                         f.write(binary)
         return True
