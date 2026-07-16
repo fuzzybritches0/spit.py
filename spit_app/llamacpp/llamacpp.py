@@ -2,12 +2,14 @@ import os
 import shutil
 import tarfile
 import asyncio
+import tarfile
+import platform
 from textual import work
 from textual.app import ComposeResult
 from textual.events import Focus
-from .helpers import download_llamacpp, get_latest_llamacpp_version, download_model, get_vulkan_devices
-from spit_app.modal_screens import ProgressBarScreen
+from .helpers import get_latest_llamacpp_version, get_vulkan_devices
 from spit_app.manage.validation import ValidationMixIn
+from spit_app.textual_message import DownloadFiles, DownloadFailed, DownloadSuccess
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
 from textual.widgets import Label, Button, Select, Input, Rule
@@ -20,7 +22,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.classes = "manage"
         self.manage = {
             "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
-            "active_model": {"stype": "select", "desc": "Active Model", "ameth": "get_models"},
+            "active_model": {"stype": "select", "desc": "Load Single Model", "ameth": "get_models"},
             "content_length": {"stype": "uinteger", "empty": False, "desc": "Content Length (0 = model default)"},
             "server_arguments": {"stype": "string", "desc": "Server Arguments", "empty": True},
             "vulkan_devices": {"stype": "select_list", "desc": "Use Vulkan devices", "options": []},
@@ -162,13 +164,42 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.query_one("#active_version").set_options(options)
         self.query_one("#delete_version").set_options(options)
 
-    async def update_llamacpp(self, progress_bar, version: str) -> None:
-        success = await download_llamacpp(progress_bar, self.path["llamacpp"], version, self.update_options)
-        if not success:
-            failed_version = self.query_one("#llamacpp_version").value
-            self.app.exception = Exception(f"Could not download {failed_version}!")
-            await self.update_input_llamacpp_version()
-        await self.update_input_vulkan_devices()
+    async def on_download_failed(self, message: DownloadFailed) -> None:
+        await getattr(self, f"{message.callback}_failed")(message.lst)
+
+    def on_download_success(self, message: DownloadSuccess) -> None:
+        getattr(self, f"{message.callback}_success")(message.lst)
+
+    async def update_llamacpp_failed(self, lst: list) -> None:
+        failed_version = self.query_one("#llamacpp_version").value
+        await self.update_input_llamacpp_version()
+
+    def update_llamacpp_success(self, lst: list) -> None:
+        self.app.applog("HERE")
+        _, path = lst[0]
+        try:
+            tar = tarfile.open(path)
+            tar.extractall(path=self.path["llamacpp"], filter="data")
+            tar.close()
+            self.update_options()
+        except Exception as exception:
+            self.app.exception = exception
+        finally:
+            try:
+                os.remove(path)
+            except:
+                pass
+
+    def update_llamacpp(self, version: int) -> None:
+        machine = platform.uname().machine
+        if machine == "x86_64":
+            machine = "x64"
+        elif machine == "aarch64":
+            machine = "amd64"
+        file = f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
+        url = f"https://github.com/ggml-org/llama.cpp/releases/download/b{version}/{file}"
+        lst = [(url, self.path["llamacpp"] / file)]
+        self.app.post_message(DownloadFiles(self, lst, "update_llamacpp"))
 
     async def button_apply_llamacpp_settings(self) -> None:
         self.puts("active_version")
@@ -196,9 +227,7 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
             self.app.exception = Exception("Invalid version provided!")
             await self.update_input_llamacpp_version()
             return None
-        progress_bar = ProgressBarScreen(self)
-        self.app.push_screen(progress_bar)
-        self.work = self.run_worker(self.update_llamacpp(progress_bar, version))
+        self.update_llamacpp(version)
 
     async def button_delete_llamacpp(self) -> None:
         selection = self.query_one("#delete_version").value
