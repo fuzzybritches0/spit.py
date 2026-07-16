@@ -74,7 +74,7 @@ class ChatView(ChatViewActionsMixIn, VerticalScroll, CallbackMixIn):
         if self.focused_widget:
             self.focused_widget.focus(scroll_visible=False)
 
-    async def on_worker_state_changed(self) -> None:
+    def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
 
     async def load(self) -> None:
