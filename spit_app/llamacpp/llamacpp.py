@@ -3,6 +3,7 @@ import shutil
 import tarfile
 import asyncio
 import tarfile
+import inspect
 import platform
 from textual import work
 from textual.app import ComposeResult
@@ -164,10 +165,18 @@ class Llamacpp(VerticalScroll, ValidationMixIn):
         self.query_one("#delete_version").set_options(options)
 
     async def on_download_failed(self, message: DownloadFailed) -> None:
-        await getattr(self, f"{message.callback}_failed")(message.lst)
+        callback = getattr(self, f"{message.callback}_failed")
+        if inspect.iscoroutinefunction(callback):
+            await callback(message.lst)
+        else:
+            callback(message.lst)
 
     def on_download_success(self, message: DownloadSuccess) -> None:
-        getattr(self, f"{message.callback}_success")(message.lst)
+        callback = getattr(self, f"{message.callback}_success")
+        if inspect.iscoroutinefunction(callback):
+            await callback(message.lst)
+        else:
+            callback(message.lst)
 
     async def update_llamacpp_failed(self, lst: list) -> None:
         failed_version = self.query_one("#llamacpp_version").value
