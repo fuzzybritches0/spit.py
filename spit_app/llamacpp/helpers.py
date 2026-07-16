@@ -1,9 +1,6 @@
-import os
 import time
 import httpx
-import tarfile
 import asyncio
-import platform
 from pathlib import Path
 
 async def get_vulkan_devices(llama_server: Path) -> list:
@@ -32,37 +29,6 @@ async def run(cmd: list):
     for line in stdout.decode("UTF-8", errors="replace").splitlines(keepends=True):
         yield line
 
-async def try_download(progress_bar, url: str, path: Path) -> bool:
-    headers = {}
-    size = 0
-    if os.path.exists(path):
-        size = os.path.getsize(path)
-    if size > 0:
-        headers = {
-            "Range": f"bytes={size}-",
-        }
-    progress_bar.update_progress(size)
-    async with httpx.AsyncClient(timeout=15) as client:
-        async with client.stream("GET", url, follow_redirects=True, headers=headers) as resp:
-            if resp.status_code == 200 or resp.status_code == 206:
-                pass
-            else:
-                return False
-            length = -1
-            downloaded = 0
-            if "Content-Length" in resp.headers:
-                length = int(resp.headers["Content-Length"])
-                if length == size:
-                    progress_bar.update_total(length)
-                    return True
-            if length > 0:
-                progress_bar.update_total(length)
-            async for binary in resp.aiter_bytes():
-                progress_bar.update_progress(len(binary))
-                with open(path, "ab") as f:
-                    f.write(binary)
-    return True
-
 async def get_latest_llamacpp_version(settings) -> int:
     if "latest" in settings.llamacpp and "latest_time" in settings.llamacpp:
         if time.time() < settings.llamacpp["latest_time"] + 3600:
@@ -86,37 +52,3 @@ async def get_latest_llamacpp_version(settings) -> int:
                             settings.save()
                         return version
     return -2
-
-async def download_llamacpp(progress_bar, path: Path, version: int, callback: callable) -> bool:
-    machine = platform.uname().machine
-    if machine == "x86_64":
-        machine = "x64"
-    elif machine == "aarch64":
-        machine = "amd64"
-    file = f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
-    url = f"https://github.com/ggml-org/llama.cpp/releases/download/b{version}/{file}"
-    progress_bar.update_text(f"downloading version b{version}...")
-    tar_path = path / file
-    if not await try_download(progress_bar, url, tar_path):
-        progress_bar.dismiss()
-        return False
-    tar = tarfile.open(tar_path)
-    tar.extractall(path=path, filter="data")
-    tar.close()
-    os.remove(tar_path)
-    callback()
-    progress_bar.dismiss()
-    return True
-
-async def download_model(progress_bar, path: Path, model: dict, callback: callable) -> bool:
-    org = model["org"]
-    model = model["model"]
-    files_count = len(model["files"])
-    count = 1
-    for file in model["files"]:
-        progress_bar.update_text(f"downloading {file} ({count}/{files_count})...")
-        url = f"https://huggingface.co/{org}/{model}/resolve/main/{file}?download=true"
-        if not await try_download(progress_bar, url, path / file):
-            return False
-        count += 1
-    return True
