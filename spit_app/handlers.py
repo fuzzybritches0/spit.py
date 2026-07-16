@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 import os
 from textual.events import AppFocus, AppBlur
+from .textual_message import DownloadFiles
 from spit_app.chat.chat import Chat
 
 class HandlersMixIn:
@@ -25,3 +26,15 @@ class HandlersMixIn:
 
     def on_app_blur(self, event: AppBlur) -> None:
         event.prevent_default()
+
+    def on_download_files(self, message: DownloadFiles) -> None:
+        self.download.download(message.sender, message.lst, message.callback)
+
+    def on_worker_state_changed(self) -> None:
+        self.refresh_bindings()
+
+    async def on_progress_dismiss(self) -> None:
+        await self.download.progress_dismiss()
+
+    async def on_cancel_work(self) -> None:
+        await self.download.cancel_work()
