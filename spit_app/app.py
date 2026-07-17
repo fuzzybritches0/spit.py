@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
+import string
+import secrets
 from textual.reactive import var
 from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal
@@ -61,6 +63,10 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
                 for child in loaded.children:
                     if hasattr(child, "method_update_options"):
                         await getattr(child, "method_update_options")()
+
+    def get_rand_seq(self, length: int) -> str:
+        chars = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(chars) for i in range(length))
 
     def write_json(self, path, content) -> bool:
         path = path.split("/")
