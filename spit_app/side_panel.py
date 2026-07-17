@@ -54,6 +54,11 @@ class SidePanel(OptionList):
         self.add_options(Options)
 
     async def option_selected(self, id: str) -> None:
+        if id == "quit":
+            for cont in self.app.query_one("#main").children:
+                if cont.display:
+                    cont.focus()
+                    return None
         ret = False
         for cont in self.app.query_one("#main").children:
             cont.display = False
