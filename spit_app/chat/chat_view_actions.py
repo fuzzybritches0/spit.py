@@ -86,11 +86,8 @@ class ChatViewActionsMixIn:
             if not "completion" in self.chat.model_capabilities:
                 return False
             if self.messages[-1]["role"] == "assistant":
-                if not "tool_calls" in self.messages[-1]:
-                    return False
-            if not self.messages[-1]["content"]:
-                return False
-            if not self.messages[-1]["content"][0]["text"]:
+                if "tool_calls" in self.messages[-1]:
+                    return True
                 return False
         elif action ==  "undo":
             if self.chat.undo.undo_index == -1:
