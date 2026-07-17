@@ -95,22 +95,17 @@ class Download:
             headers = {
                 "Range": f"bytes={size}-",
             }
-        self.progress_update("total", size)
         async with httpx.AsyncClient(timeout=15) as client:
             async with client.stream("GET", url, follow_redirects=True, headers=headers) as resp:
                 if resp.status_code == 416:
                     return True
                 if not resp.status_code == 200 and not resp.status_code == 206:
                     return False
-                length = -1
-                downloaded = 0
+                length = 0
                 if "Content-Length" in resp.headers:
                     length = int(resp.headers["Content-Length"])
-                    if length == size:
-                        self.progress_update("total", length)
-                        return True
-                if length > 0:
-                    self.progress_update("total", length)
+                self.progress_update("total", length+size)
+                self.progress_update("progress", size)
                 async for binary in resp.aiter_bytes():
                     if self.cancel:
                         self.cancel = False
