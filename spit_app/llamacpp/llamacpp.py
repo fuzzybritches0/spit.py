@@ -1,13 +1,11 @@
 import os
 import tarfile
 import asyncio
-import platform
 from textual import work
 from .helpers import get_latest_llamacpp_version, get_vulkan_devices
 from spit_app.manage.validation import ValidationMixIn
 from .handlers import HandlersMixIn
 from .buttons import ButtonsMixIn
-from spit_app.textual_message import DownloadFiles
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
 from textual.widgets import Label, Button, Select, Rule
@@ -175,17 +173,6 @@ class Llamacpp(HandlersMixIn, ButtonsMixIn, ValidationMixIn, VerticalScroll):
             except:
                 pass
         self.app.action_notify(f"Download finished!")
-
-    def update_llamacpp(self, version: int) -> None:
-        machine = platform.uname().machine
-        if machine == "x86_64":
-            machine = "x64"
-        elif machine == "aarch64":
-            machine = "amd64"
-        file = f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
-        url = f"https://github.com/ggml-org/llama.cpp/releases/download/b{version}/{file}"
-        lst = [(url, self.path["llamacpp"] / file)]
-        self.app.post_message(DownloadFiles(self, lst, "update_llamacpp"))
 
     def ensure_is_highlighted(self) -> None:
         side_panel = self.app.query_one("#side-panel")
