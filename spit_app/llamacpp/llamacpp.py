@@ -1,17 +1,17 @@
 import os
-import tarfile
 import asyncio
 from textual import work
 from .helpers import get_latest_llamacpp_version, get_vulkan_devices
 from spit_app.manage.validation import ValidationMixIn
 from .handlers import HandlersMixIn
 from .buttons import ButtonsMixIn
+from .callbacks import CallbacksMixIn
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
 from textual.widgets import Label, Button, Select, Rule
 from .models import MODELS
 
-class Llamacpp(HandlersMixIn, ButtonsMixIn, ValidationMixIn, VerticalScroll):
+class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, VerticalScroll):
     def __init__(self) -> None:
         super().__init__()
         self.id = "manage-llamacpp"
@@ -152,27 +152,6 @@ class Llamacpp(HandlersMixIn, ButtonsMixIn, ValidationMixIn, VerticalScroll):
         options = self.get_versions()
         self.query_one("#active_version").set_options(options)
         self.query_one("#delete_version").set_options(options)
-
-    async def update_llamacpp_failed(self, lst: list) -> None:
-        failed_version = self.query_one("#llamacpp_version").value
-        self.app.action_notify(f"Failed to download {failed_version}!")
-        await self.update_input_llamacpp_version()
-
-    def update_llamacpp_success(self, lst: list) -> None:
-        _, path = lst[0]
-        try:
-            tar = tarfile.open(path)
-            tar.extractall(path=self.path["llamacpp"], filter="data")
-            tar.close()
-            self.update_options()
-        except Exception as exception:
-            self.app.exception = exception
-        finally:
-            try:
-                os.remove(path)
-            except:
-                pass
-        self.app.action_notify(f"Download finished!")
 
     def ensure_is_highlighted(self) -> None:
         side_panel = self.app.query_one("#side-panel")
