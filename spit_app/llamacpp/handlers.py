@@ -26,13 +26,20 @@ class HandlersMixIn:
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         id = event.control.id
-        if id == "update-llamacpp":
-            await self.button_update_llamacpp()
-        elif id =="delete-llamacpp":
-            await self.button_delete_llamacpp()
-        elif id == "apply-llamacpp-settings":
+        if id == "apply-llamacpp-settings":
             if await self.validate_values_edit(["content_length"]):
                 await self.button_apply_llamacpp_settings()
+        elif id == "update-llamacpp":
+            await self.button_update_llamacpp()
+        elif id == "delete-llamacpp":
+            await self.button_delete_llamacpp()
+        elif id == "download-model":
+            self.button_download_model()
+        elif id == "delete-model":
+            self.button_delete-model()
+        elif id == "add-custom-model":
+            if await self.validate_values_edit(["name", "org", "model", "files"]):
+                self.button_add_custom_model()
 
     async def on_input_changed(self, event: Input.Changed) -> None:
         if event.validation_result:
