@@ -38,6 +38,7 @@ class Download:
                 await asyncio.sleep(.1)
             self.pending = []
         await self.progress_dismiss()
+        self.progress_state_reset()
 
     def progress_active(self) -> bool:
         if self.progress_bar_screen and self.progress_bar_screen.is_active:
