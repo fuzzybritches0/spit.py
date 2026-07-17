@@ -89,6 +89,10 @@ class ChatViewActionsMixIn:
                 if "tool_calls" in self.messages[-1]:
                     return True
                 return False
+            if ((not "content" in self.messages[-1] or not self.messages[-1]["content"] or
+                 not self.messages[-1]["content"][0]["text"]) and
+                 (not "tools" in self.messages[-1] or not self.messages[-1]["tools"])):
+                return False
         elif action ==  "undo":
             if self.chat.undo.undo_index == -1:
                 return False
