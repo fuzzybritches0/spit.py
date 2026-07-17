@@ -44,15 +44,12 @@ class ProgressBarScreen(ModalScreen):
 
     def update_text(self, text: str) -> None:
         self.query_one("#text").update(text)
-        self.download.progress_state["text"] = text
 
     def update_total(self, total: int) -> None:
         self.query_one("#progress-bar").update(total=total)
-        self.download.progress_state["total"] = total
 
     def update_progress(self, advance: int) -> None:
         self.query_one("#progress-bar").advance(advance)
-        self.download.progress_state["progress"] += advance
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.control.id == "cancel":
