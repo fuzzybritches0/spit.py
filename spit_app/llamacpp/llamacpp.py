@@ -18,13 +18,13 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         self.classes = "manage"
         self.manage = {
             "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
-            "active_model": {"stype": "select", "desc": "Load Single Model", "ameth": "get_models"},
+            "active_model": {"stype": "select", "desc": "Load Single Model", "ameth": "get_models_downloaded"},
             "content_length": {"stype": "uinteger", "empty": False, "desc": "Content Length (0 = model default)"},
             "server_arguments": {"stype": "string", "desc": "Server Arguments", "empty": True},
             "vulkan_devices": {"stype": "select_list", "desc": "Use Vulkan devices", "options": []},
             "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
             "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
-            "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_list"},
+            "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_select"},
             "name": {"stype": "string", "empty": False, "desc": "Model Identifier"},
             "org": {"stype": "string", "empty": False, "desc": "Organisation"},
             "model": {"stype": "string", "empty": False, "desc": "Model"},
@@ -69,21 +69,32 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
                 versions += ((version, version),)
         return versions
 
-    def get_models_list(self) -> tuple:
-        models = ()
-        for model in MODELS:
-            models += ((model["name"], model["name"]),)
+    def get_models_list(self) -> list:
+        models = MODELS
         if self.gets("custom_models"):
-            for model in self.gets("custom_models"):
-                models += ((model["name"], model["name"]),)
+            models += self.gets("custom_models")
         return models
 
-    def get_models(self) -> tuple:
+    def get_model(self, model_id: str) -> dict:
+        for model in self.get_models_list():
+            if model["id"] == model_id:
+                return model
+
+    def get_models_select(self) -> tuple:
+        models = ()
+        for model in MODELS:
+            models += ((model["name"], model["id"]),)
+        if self.gets("custom_models"):
+            for model in self.gets("custom_models"):
+                models += ((model["name"], model["id"]),)
+        return models
+
+    def get_models_downloaded(self) -> tuple:
         models = ()
         for model in os.listdir(self.path["models"]):
             if os.path.isdir(self.path["models"] / model):
-                model = model.split("-")[1:]
-                models += ((model, model),)
+                model = self.get_model(model)
+                models += ((model["name"], model["id"]),)
         return models
 
     async def edit_manage_screen(self) -> None:
