@@ -1,6 +1,4 @@
 import json
-import random
-import hashlib
 from .content.process.process import Process
 from .content.process.text_area_tool import TextAreaTool
 from .content.process.text_area_edit import TextAreaEdit
@@ -49,9 +47,7 @@ class ActionsMixIn:
         await process.mount(process.edit)
 
     async def action_add_tool(self) -> None:
-        hash_id = random.randint(1, 1000000000000)
-        hash_id = hashlib.md5(str(hash_id).encode())
-        hash_id = hash_id.hexdigest()
+        hash_id = self.app.get_rand_seq(32)
         name = self.chat.cs("tools")[0]
         function = {"id": hash_id, "type": "function", "function": {"name": name, "arguments": "{}"}}
         if not "tool_calls" in self.pr:
