@@ -53,3 +53,13 @@ class ButtonsMixIn:
             self.puts("active_version")
             self.settings.save()
         await self.update_input_vulkan_devices()
+
+    def button_download_model(self) -> None:
+        model = self.get_model(self.query_one("#download_model").value)
+        path = self.path["models"] / model["id"]
+        path.mkdir(parents=True, exist_ok=True)
+        lst = []
+        for file in model["files"]:
+            url = f"https://huggingface.co/{model['org']}/{model['model']}/resolve/main/{file}?download=true"
+            lst.append((url, path / file))
+        self.app.post_message(DownloadFiles(self, lst, "download_model"))
