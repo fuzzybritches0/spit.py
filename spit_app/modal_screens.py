@@ -12,7 +12,9 @@ class ProgressDismiss(Message):
     ...
 
 class CancelWork(Message):
-    ...
+    def __init__(self, clear: bool = False) -> None:
+        self.clear = clear
+        super().__init__()
 
 class Common(ModalScreen):
     BINDINGS = [("ctrl+q", "exit_app", "Quit")]
@@ -39,7 +41,8 @@ class ProgressBarScreen(Common, ModalScreen):
             yield ProgressBar(id="progress-bar")
             with Horizontal(classes="auto-height"):
                 yield Button("Dismiss", id="dismiss")
-                yield Button("Cancel", id="cancel")
+                yield Button("Stop", id="stop")
+                yield Button("Cancel/Clear", id="cancel")
         yield Footer()
 
     def update_text(self, text: str) -> None:
@@ -55,9 +58,10 @@ class ProgressBarScreen(Common, ModalScreen):
         self.query_one("#progress-bar").update(total=0, progress=0)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.control.id == "stop":
+            self.app.post_message(CancelWork(False))
         if event.control.id == "cancel":
-            self.download.progress_state_reset()
-            self.app.post_message(CancelWork())
+            self.app.post_message(CancelWork(True))
         elif event.control.id == "dismiss":
             self.app.post_message(ProgressDismiss())
 
