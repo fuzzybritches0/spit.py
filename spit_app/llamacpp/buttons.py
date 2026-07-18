@@ -63,3 +63,21 @@ class ButtonsMixIn:
             url = f"https://huggingface.co/{model['org']}/{model['model']}/resolve/main/{file}?download=true"
             lst.append((url, path / file))
         self.app.post_message(DownloadFiles(self, lst, "download_model"))
+
+    def button_delete_model(self) -> None:
+        deleted = False
+        model = self.get_model(self.query_one("#download_model").value)
+        path = self.path["models"] / model["id"]
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            deleted = True
+        if "custom_models" in self.settings.llamacpp:
+            count = 0
+            for _model in self.settings.llamacpp["custom_models"]:
+                if model["id"] == _model["id"]:
+                    del self.settings.llamacpp["custom_models"][count]
+                    deleted = True
+        if deleted:
+            self.app.action_notify(f"{model['name']} deleted!")
+        else:
+            self.app.action_notify(f"Nothing to delete!")
