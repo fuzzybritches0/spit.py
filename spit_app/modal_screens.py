@@ -51,6 +51,9 @@ class ProgressBarScreen(ModalScreen):
     def update_progress(self, advance: int) -> None:
         self.query_one("#progress-bar").advance(advance)
 
+    def reset(self) -> None:
+        self.query_one("#progress-bar").update(total=0, progress=0)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.control.id == "cancel":
             self.download.progress_state_reset()
