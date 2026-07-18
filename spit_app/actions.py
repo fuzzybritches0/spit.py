@@ -5,7 +5,8 @@ from .modal_screens import ConfirmScreen
 bindings = [
         ("ctrl+q", "exit_app"),
         ("shift+escape", "side_panel", "S.Panel"),
-        ("ctrl+delete", "show_progress", "Progress")
+        ("ctrl+delete", "show_progress", "Progress"),
+        ("ctrl+backspace", "continue_download", "Cont. Download")
 ]
 
 class ActionsMixIn:
@@ -13,7 +14,14 @@ class ActionsMixIn:
         if action == "show_progress":
             if not self.download.working:
                 return False
+        if action == "continue_download":
+            if not self.download.pending or self.download.working:
+                return False
         return True
+
+    def action_continue_download(self) -> None:
+        self.download.show_progress()
+        self.run_worker(self.download.work_download())
 
     def action_show_progress(self) -> None:
         self.download.show_progress()
