@@ -6,9 +6,11 @@ from spit_app.modal_screens import ProgressBarScreen
 from spit_app.textual_message import DownloadFailed, DownloadSuccess
 
 class Download:
-    def __init__(self, run_worker: callable, push_screen: callable) -> None:
-        self.run_worker = run_worker
-        self.push_screen = push_screen
+    def __init__(self, app) -> None:
+        self.app = app
+        self.run_worker = app.run_worker
+        self.push_screen = app.push_screen
+        self.settings = app.settings
         self.working = False
         self.cancel = False
         self.pending = []
