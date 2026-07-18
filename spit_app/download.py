@@ -21,7 +21,7 @@ class Download:
         self.progress_state = {"text": "Connecting...", "total": 0, "progress": 0}
 
     def progress_update(self, key: str, value: str|int) -> None:
-        if self.progress_active():
+        if self.progress_bar_screen:
             if key == "text":
                 self.progress_bar_screen.update_text(value)
             elif key == "total":
@@ -42,13 +42,8 @@ class Download:
         await self.progress_dismiss()
         self.progress_state_reset()
 
-    def progress_active(self) -> bool:
-        if self.progress_bar_screen and self.progress_bar_screen.is_active:
-            return True
-        return False
-
     async def progress_dismiss(self) -> None:
-        if self.progress_active():
+        if self.progress_bar_screen:
             await self.progress_bar_screen.dismiss()
             self.progress_bar_screen = None
 
@@ -58,7 +53,7 @@ class Download:
 
     def download(self, sender, lst: list, callback: str) -> None:
         self.pending.append((sender, lst, callback))
-        if not self.progress_active():
+        if not self.progress_bar_screen:
             self.show_progress()
         if not self.working:
             self.run_worker(self.work_download())
@@ -72,7 +67,7 @@ class Download:
             count = 1
             total = len(lst)
             for url, path in lst:
-                if self.progress_active():
+                if self.progress_bar_screen:
                     file = str(path).split("/")[-1]
                     self.progress_update("text", f"Downloading {count} of {total}:\n{file}")
                 if not await self.try_download(url, path):
