@@ -84,9 +84,8 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         models = ()
         for model in MODELS:
             models += ((model["name"], model["id"]),)
-        if self.gets("custom_models"):
-            for model in self.gets("custom_models"):
-                models += ((model["name"], model["id"]),)
+        for model in self.gets("custom_models"):
+            models += ((model["name"], model["id"]),)
         return models
 
     def get_models_downloaded(self) -> tuple:
