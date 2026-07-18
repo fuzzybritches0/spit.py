@@ -27,7 +27,7 @@ class Common(ModalScreen):
                 yield Button("OK")
         yield Footer()
 
-class ProgressBarScreen(ModalScreen):
+class ProgressBarScreen(Common, ModalScreen):
     def __init__(self, download) -> None:
         super().__init__()
         self.classes = "modal"
