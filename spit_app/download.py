@@ -88,6 +88,19 @@ class Download:
         self.working = False
         await self.progress_dismiss()
 
+    def check_size(self, path: Path, size: int) -> bool:
+        if not "downloads" in self.settings.llamacpp:
+            self.settings.llamacpp["downloads"] = []
+        for download in self.settings.llamacpp["downloads"]:
+            if download["path"] == str(path):
+                if size == download["size"]:
+                    return True
+                else:
+                    return False
+        self.settings.llamacpp["downloads"].append({"path": str(path), "size": size})
+        self.settings.save()
+        return True
+
     async def try_download(self, url: str, path: Path) -> bool:
         headers = {}
         size = 0
@@ -107,6 +120,11 @@ class Download:
                 if "Content-Length" in resp.headers:
                     length = int(resp.headers["Content-Length"])
                 self.progress_update("total", length+size)
+                if not self.check_size(path, length+size):
+                    file = str(path).split("/")[-1]
+                    e = f"Size of {file} changed on server! Please delete model and re-download!"
+                    self.exception = Exception(e)
+                    return False
                 self.progress_update("progress", size)
                 async for binary in resp.aiter_bytes():
                     if self.cancel:
