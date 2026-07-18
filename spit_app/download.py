@@ -19,6 +19,8 @@ class Download:
 
     def progress_state_reset(self) -> None:
         self.progress_state = {"text": "Connecting...", "total": 0, "progress": 0}
+        if self.progress_bar_screen:
+            self.progress_bar_screen.reset()
 
     def progress_update(self, key: str, value: str|int) -> None:
         if self.progress_bar_screen:
@@ -67,6 +69,7 @@ class Download:
             count = 1
             total = len(lst)
             for url, path in lst:
+                self.progress_state_reset()
                 if self.progress_bar_screen:
                     file = str(path).split("/")[-1]
                     self.progress_update("text", f"Downloading {count} of {total}:\n{file}")
