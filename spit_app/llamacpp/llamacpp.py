@@ -1,5 +1,6 @@
 import os
 import asyncio
+import platform
 from textual import work
 from .helpers import get_latest_llamacpp_version, get_vulkan_devices
 from spit_app.manage.validation import ValidationMixIn
@@ -79,6 +80,14 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
 
     def dels(self, setting: str, key: str|int) -> None:
         del self.settings.llamacpp[setting][key]
+
+    def get_llamacpp_file(self, version: int) -> str:
+        machine = platform.uname().machine
+        if machine == "x86_64":
+            machine = "x64"
+        elif machine == "aarch64":
+            machine = "amd64"
+        return f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
 
     def get_versions(self) -> tuple:
         versions = ()
