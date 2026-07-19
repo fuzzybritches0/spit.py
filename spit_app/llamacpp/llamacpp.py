@@ -97,6 +97,13 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
                 versions += ((version, version),)
         return versions
 
+    def del_downloads_size(self, file_list: list) -> None:
+        count = 0
+        for file in self.gets("downloads"):
+            if file["path"] in file_list:
+                self.dels("downloads", count)
+            count += 1
+
     def get_models_list(self) -> list:
         models = MODELS
         if self.gets("custom_models"):
