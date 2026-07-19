@@ -37,6 +37,7 @@ class Settings:
         settings["active_chat"] = self.active_chat
         settings["tool_settings"] = self.tool_settings
         settings["llamacpp"] = self.llamacpp
+        settings["downloads"] = {"pending": self.app.download.pending, "working": self.app.download.working}
         self.app.write_json("settingsf", settings)
         self.save_endpoints()
         self.save_models()
@@ -58,6 +59,7 @@ class Settings:
         self.models = {}
         self.tool_settings = {}
         self.llamacpp = {}
+        self.downloads = {}
         self.active_chat = None
         if self.path["settingsf"].exists():
             settings = self.app.read_json("settingsf")
@@ -69,6 +71,8 @@ class Settings:
                 self.tool_settings = settings["tool_settings"]
             if "llamacpp" in settings:
                 self.llamacpp = settings["llamacpp"]
+            if "downloads" in settings:
+                self.downloads = settings["downloads"]
         if self.path["endpointsf"].exists():
             self.endpoints = self.app.read_json("endpointsf")
         if self.path["modelsf"].exists():
