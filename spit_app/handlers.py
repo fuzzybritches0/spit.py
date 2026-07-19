@@ -35,7 +35,7 @@ class HandlersMixIn:
         event.prevent_default()
 
     def on_download_files(self, message: DownloadFiles) -> None:
-        self.download.download(message.sender, message.lst, message.callback)
+        self.download.download(message.sender_id, message.name, message.lst, message.callback)
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
