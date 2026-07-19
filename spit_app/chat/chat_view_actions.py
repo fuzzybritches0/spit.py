@@ -45,6 +45,9 @@ class ChatViewActionsMixIn:
 
     async def action_edit_off(self) -> None:
         await self.reset_message_edit()
+        if self.focused_message and "reasoning" in self.focused_message.pr:
+            if self.focused_widget is self.focused_message.pr["reasoning"].children[0]:
+                self.focused_message.focus()
         self.show_cots(False)
         self.chat.text_area.display = True
         self.is_edit = False
