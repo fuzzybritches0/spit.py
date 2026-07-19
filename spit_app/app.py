@@ -106,5 +106,5 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             count = 0
             for file in self.settings.llamacpp["downloads"]:
                 if file["path"] in file_list:
-                    self.dels("downloads", count)
+                    del self.settings.llamacpp["downloads"][count]
                 count += 1
