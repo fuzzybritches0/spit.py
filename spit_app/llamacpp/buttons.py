@@ -46,7 +46,7 @@ class ButtonsMixIn:
             self.query_one("#active_version").value = Select.NULL
             self.puts("active_version")
         file = self.get_llamacpp_file(int(selection[1:]))
-        self.del_downloads_size([str(self.path["llamacpp"] / file)])
+        self.app.del_downloads_size([str(self.path["llamacpp"] / file)])
         self.settings.save()
         await self.update_input_vulkan_devices()
 
@@ -78,7 +78,7 @@ class ButtonsMixIn:
             files = []
             for file in model_files:
                 files.append(str(self.path["models"] / model_id / file))
-            self.del_downloads_size(files)
+            self.app.del_downloads_size(files)
             self.app.action_notify(f"{model_name} deleted!")
             self.settings.save()
         else:

@@ -100,3 +100,11 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             else:
                 raise exception
         return json.loads(text)
+
+    def del_downloads_size(self, file_list: list) -> None:
+        if "downloads" in self.settings.llamacpp:
+            count = 0
+            for file in self.settings.llamacpp["downloads"]:
+                if file["path"] in file_list:
+                    self.dels("downloads", count)
+                count += 1
