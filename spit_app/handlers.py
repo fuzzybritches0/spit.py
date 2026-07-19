@@ -3,6 +3,7 @@ import os
 from textual.events import AppFocus, AppBlur
 from .textual_message import DownloadFiles
 from spit_app.chat.chat import Chat
+from .modal_screens import CancelWork
 
 class HandlersMixIn:
     async def on_theme_changed(self, old_value:str, new_value:str) -> None:
@@ -42,5 +43,5 @@ class HandlersMixIn:
     async def on_progress_dismiss(self) -> None:
         await self.download.progress_dismiss()
 
-    async def on_cancel_work(self) -> None:
-        await self.download.cancel_work()
+    async def on_cancel_work(self, message: CancelWork) -> None:
+        await self.download.cancel_work(message.clear)
