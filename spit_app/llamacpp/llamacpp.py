@@ -25,11 +25,12 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
             "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
             "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
             "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_select"},
-            "name": {"stype": "string", "empty": False, "desc": "Model Identifier"},
-            "org": {"stype": "string", "empty": False, "desc": "Organisation"},
-            "model": {"stype": "string", "empty": False, "desc": "Model"},
-            "files": {"stype": "string", "empty": False, "desc": "Files"},
-            "custom_models": {"stype": "list"}
+            "name": {"stype": "string", "empty": False, "desc": "Model Name"},
+            "org": {"stype": "string", "empty": False, "desc": "Organisation (huggingface.co)"},
+            "model": {"stype": "string", "empty": False, "desc": "Model Identifier (huggingface.co)"},
+            "files": {"stype": "string", "empty": False, "desc": "Files (.gguf)"},
+            "custom_models": {"stype": "dict"},
+            "downloads": {"stype": "select_list"}
         }
         self.settings = self.app.settings
         self.path = self.app.settings.path
