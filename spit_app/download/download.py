@@ -110,6 +110,7 @@ class Download:
                     if type(exception).__name__ in ("ReadTimeout", "ConnectTimeout"):
                         self.exception = exception
                         success = False
+                        self.cancel = True
                         break
                     else:
                         raise self.exception
@@ -166,6 +167,7 @@ class Download:
                 if not resp.status_code == 200 and not resp.status_code == 206:
                     await self.progress_dismiss()
                     self.exception = Exception(str(resp))
+                    self.cancel = True
                     return False
                 length = 0
                 if "Content-Length" in resp.headers:
@@ -178,6 +180,7 @@ class Download:
                     self.app.del_downloads_size([str(path)])
                     await self.progress_dismiss()
                     self.app.exception = Exception(e)
+                    self.cancel = True
                     return False
                 self.progress_update("progress", size)
                 async for binary in resp.aiter_bytes():
