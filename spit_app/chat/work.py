@@ -73,9 +73,8 @@ class Work:
                 self.busy = False
                 if self.exit_after_busy:
                     return None
-
+        count = len(self.messages)
         try:
-            count = len(self.messages)
             await self.endpoint.stream()
         except Exception as exception:
             if type(exception).__name__ in ("TimeoutError", "ReadTimeout", "ConnectError",
@@ -88,7 +87,6 @@ class Work:
                 return None
             else:
                 raise exception
-                return None
         self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages))
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
