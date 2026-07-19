@@ -173,7 +173,9 @@ class Download:
                 self.progress_update("total", length+size)
                 if not self.check_size(path, length+size):
                     file = str(path).split("/")[-1]
-                    e = f"Size of {file} changed on server! Please delete and re-download!"
+                    e = f"Size of {file} changed on server!"
+                    os.remove(path)
+                    self.app.del_downloads_size([str(path)])
                     await self.progress_dismiss()
                     self.app.exception = Exception(e)
                     return False
