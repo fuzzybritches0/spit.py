@@ -36,10 +36,14 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         self.path = self.app.settings.path
         self.focused_widget = None
 
-    def gets(self, setting: str) -> any:
+    def gets(self, setting: str, key: str|None = None) -> any:
         if setting in self.settings.llamacpp and self.settings.llamacpp[setting]:
+            if key and key in self.settings.llamacpp[setting]:
+                return self.settings.llamacpp[setting][key]
+            if key:
+                return None
             return self.settings.llamacpp[setting]
-        if not setting in self.settings.llamacpp or not self.settings.llamacpp[setting]:
+        else:
             if self.manage[setting]["stype"] == "select":
                 return None
             if self.manage[setting]["stype"] == "select_list":
@@ -50,17 +54,24 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
                 return "0"
             if self.manage[setting]["stype"] == "string":
                 return ""
-            if self.manage[setting]["stype"] == "list":
-                return []
+            if self.manage[setting]["stype"] == "dict":
+                return {}
 
-    def puts(self, setting: str) -> None:
-        if self.manage[setting]["stype"] == "select_list":
-            value = self.query_one(f"#{setting}").selected
-        else:
-            value = self.query_one(f"#{setting}").value
+    def puts(self, setting: str, value: any = "__NONE__", value2: any = "__NONE__") -> None:
+        if not value2 == "__NONE__":
+            self.settings.llamacpp[setting][value] = value2
+            return None
+        if value == "__NONE__":
+            if self.manage[setting]["stype"] == "select_list":
+                value = self.query_one(f"#{setting}").selected
+            else:
+                value = self.query_one(f"#{setting}").value
         if value == Select.NULL:
             value = None
         self.settings.llamacpp[setting] = value
+
+    def dels(self, setting: str, key: str|int) -> None:
+        del self.settings.llamacpp[setting][key]
 
     def get_versions(self) -> tuple:
         versions = ()
