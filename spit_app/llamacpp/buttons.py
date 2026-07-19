@@ -1,6 +1,5 @@
 import os
 import shutil
-import platform
 from textual.widgets import Select
 from spit_app.textual_message import DownloadFiles
 
@@ -31,15 +30,10 @@ class ButtonsMixIn:
             self.app.exception = Exception("Invalid version provided!")
             await self.update_input_llamacpp_version()
             return None
-        machine = platform.uname().machine
-        if machine == "x86_64":
-            machine = "x64"
-        elif machine == "aarch64":
-            machine = "amd64"
-        file = f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
+        file = self.get_llamacpp_file(version)
         url = f"https://github.com/ggml-org/llama.cpp/releases/download/b{version}/{file}"
-        lst = [(url, self.path["llamacpp"] / file)]
-        self.app.post_message(DownloadFiles(self, lst, "update_llamacpp"))
+        lst = [(url, str(self.path["llamacpp"] / file))]
+        self.app.post_message(DownloadFiles(self.id, f"b{version}", lst, "update_llamacpp"))
 
     async def button_delete_llamacpp(self) -> None:
         selection = self.query_one("#delete_version").value
@@ -47,37 +41,45 @@ class ButtonsMixIn:
             return None
         path = self.path["llamacpp"] / f"llama-{selection}"
         shutil.rmtree(path)
-        self.update_options()
+        await self.update_llamacpp_success()
         if selection == self.gets("active_version"):
             self.query_one("#active_version").value = Select.NULL
             self.puts("active_version")
-            self.settings.save()
+        file = self.get_llamacpp_file(int(selection[1:]))
+        self.del_downloads_size([str(self.path["llamacpp"] / file)])
+        self.settings.save()
         await self.update_input_vulkan_devices()
 
     def button_download_model(self) -> None:
-        model = self.get_model(self.query_one("#download_model").value)
-        path = self.path["models"] / model["id"]
+        model_id = self.query_one("#download_model").value
+        model = self.get_model(model_id)
+        path = self.path["models"] / model_id
         path.mkdir(parents=True, exist_ok=True)
         lst = []
         for file in model["files"]:
             url = f"https://huggingface.co/{model['org']}/{model['model']}/resolve/main/{file}?download=true"
-            lst.append((url, path / file))
-        self.app.post_message(DownloadFiles(self, lst, "download_model"))
+            lst.append((url, str(path / file)))
+        self.app.post_message(DownloadFiles(self.id, model["name"], lst, "download_model"))
 
     def button_delete_model(self) -> None:
         deleted = False
+        model_id = self.query_one("#download_model").value
         model = self.get_model(self.query_one("#download_model").value)
-        path = self.path["models"] / model["id"]
+        model_name = model["name"]
+        model_files = model["files"]
+        path = self.path["models"] / model_id
         if os.path.exists(path):
             shutil.rmtree(path)
             deleted = True
-        if "custom_models" in self.settings.llamacpp:
-            count = 0
-            for _model in self.settings.llamacpp["custom_models"]:
-                if model["id"] == _model["id"]:
-                    del self.settings.llamacpp["custom_models"][count]
-                    deleted = True
+        if self.gets("custom_models") and self.gets("custom_models", model_id):
+            self.dels("custom_models", model_id)
+            deleted = True
         if deleted:
-            self.app.action_notify(f"{model['name']} deleted!")
+            files = []
+            for file in model_files:
+                files.append(str(self.path["models"] / model_id / file))
+            self.del_downloads_size(files)
+            self.app.action_notify(f"{model_name} deleted!")
+            self.settings.save()
         else:
             self.app.action_notify(f"Nothing to delete!")
