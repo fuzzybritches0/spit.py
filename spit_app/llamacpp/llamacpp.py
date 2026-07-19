@@ -111,24 +111,26 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         return models
 
     def get_model(self, model_id: str) -> dict:
-        for model in self.get_models_list():
-            if model["id"] == model_id:
-                return model
+        models = self.get_models_list()
+        if model_id in models:
+            return models[model_id]
+        return {}
 
     def get_models_select(self) -> tuple:
         models = ()
-        for model in MODELS:
-            models += ((model["name"], model["id"]),)
-        for model in self.gets("custom_models"):
-            models += ((model["name"], model["id"]),)
+        for model_id in MODELS.keys():
+            models += ((MODELS[model_id]["name"], model_id),)
+        custom_models = self.gets("custom_models")
+        for model_id in custom_models.keys():
+            models += ((custom_models[model_id]["name"], model_id),)
         return models
 
     def get_models_downloaded(self) -> tuple:
         models = ()
-        for model in os.listdir(self.path["models"]):
-            if os.path.isdir(self.path["models"] / model):
-                model = self.get_model(model)
-                models += ((model["name"], model["id"]),)
+        for model_id in os.listdir(self.path["models"]):
+            if os.path.isdir(self.path["models"] / model_id):
+                model_name = self.get_model(model_id)["name"]
+                models += ((model_name, model_id),)
         return models
 
     async def edit_manage_screen(self) -> None:
