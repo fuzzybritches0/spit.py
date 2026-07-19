@@ -11,18 +11,20 @@ class HandlersMixIn:
         await self.update_input_vulkan_devices()
 
     async def on_download_failed(self, message: DownloadFailed) -> None:
-        callback = getattr(self, f"{message.callback}_failed")
-        if inspect.iscoroutinefunction(callback):
-            await callback(message.lst)
-        else:
-            callback(message.lst)
+        if hasattr(self, f"{message.callback}_failed"):
+            callback = getattr(self, f"{message.callback}_failed")
+            if inspect.iscoroutinefunction(callback):
+                await callback()
+            else:
+                callback()
 
     async def on_download_success(self, message: DownloadSuccess) -> None:
-        callback = getattr(self, f"{message.callback}_success")
-        if inspect.iscoroutinefunction(callback):
-            await callback(message.lst)
-        else:
-            callback(message.lst)
+        if hasattr(self, f"{message.callback}_success"):
+            callback = getattr(self, f"{message.callback}_success")
+            if inspect.iscoroutinefunction(callback):
+                await callback()
+            else:
+                callback()
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         id = event.control.id
