@@ -12,7 +12,7 @@ from spit_app.actions import bindings
 from spit_app.handlers import HandlersMixIn
 from spit_app.tool_call import ToolCall
 from spit_app.side_panel import SidePanel
-from spit_app.download import Download
+from spit_app.download.download import Download
 from spit_app.modal_screens import ErrorScreen
 
 class SpitApp(ActionsMixIn, HandlersMixIn, App):
