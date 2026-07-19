@@ -36,6 +36,13 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         self.path = self.app.settings.path
         self.focused_widget = None
 
+    def valid_setting_files(self, value: str) -> tuple:
+        for file in value.split(","):
+            file = file.strip()
+            if not file.endswith(".gguf"):
+                return (False, "Files must end in .gguf!")
+        return (True, None)
+
     def gets(self, setting: str, key: str|None = None) -> any:
         if setting in self.settings.llamacpp and self.settings.llamacpp[setting]:
             if key and key in self.settings.llamacpp[setting]:
