@@ -10,6 +10,12 @@ class HandlersMixIn:
         self.settings.save()
 
     async def on_ready(self) -> None:
+        if "pending" in self.settings.downloads and self.settings.downloads["pending"]:
+            self.download.pending = self.settings.downloads["pending"]
+            if self.settings.downloads["working"]:
+                self.run_worker(self.download.work_download())
+            self.settings.save()
+            self.refresh_bindings()
         if self.settings.active_chat:
             active = self.settings.active_chat
             filename = active + ".json"
