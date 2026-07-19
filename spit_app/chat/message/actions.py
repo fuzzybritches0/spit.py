@@ -6,6 +6,7 @@ from spit_app.chat.textual_message import RemoveMessage, RemoveProcess
 
 bindings = [
     ("c", "add_content", "+Cont."),
+    ("r", "add_reasoning", "+CoT"),
     ("t", "add_tool", "+Tool"),
     ("a", "add_message_next", "+Msg.↓"),
     ("ctrl+a", "add_message_prev", "+Msg.↑"),
@@ -41,6 +42,17 @@ class ActionsMixIn:
         index = len(self.message["content"])-1
         await self.pr["content"].mount(Process(self.chat, self, "content", index))
         process = self.pr["content"].children[-1]
+        process.edit = TextAreaEdit(process, True)
+        self.is_edit += 1
+        process.is_edit = True
+        await process.mount(process.edit)
+
+    async def action_add_reasoning(self) -> None:
+        if not "reasoning" in self.pr:
+            self.message["reasoning"] = ""
+            await self.maybe_mount_process("reasoning")
+        await self.pr["reasoning"].mount(Process(self.chat, self, "reasoning", 0))
+        process = self.pr["reasoning"].children[0]
         process.edit = TextAreaEdit(process, True)
         self.is_edit += 1
         process.is_edit = True
@@ -160,6 +172,11 @@ class ActionsMixIn:
                 return False
         elif action == "add_content":
             if not self.chat_view.is_edit:
+                return False
+        elif action == "add_reasoning":
+            if not self.chat_view.is_edit or not self.role == "assistant":
+                return False
+            if "reasoning" in self.pr and self.pr["reasoning"]:
                 return False
         elif action == "add_tool":
             if not self.role == "assistant" or not self.chat_view.is_edit:
