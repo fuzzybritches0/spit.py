@@ -177,7 +177,7 @@ class Download:
                     e = f"Size of {file} changed on server!"
                     os.remove(path)
                     self.app.del_downloads_size([str(path)])
-                    self.app.exception = Exception(e)
+                    self.exception = Exception(e)
                     self.cancel = True
                     return False
                 self.progress_update("progress", size)
