@@ -10,11 +10,11 @@ class PostDownloadMethods:
             tar.extractall(path=app.path["llamacpp"], filter="data")
             tar.close()
         except Exception as exception:
-                app.del_downloads_size([path])
-                version = path.split("/")[-1]
-                version = version.split("-")[1]
-                if os.path.isdir(app.path["llamacpp"] / f"llama-{version"):
-                    shutil.rmtree(app.path["llamacpp"] / f"llama-{version")
+            app.del_downloads_size([path])
+            version = path.split("/")[-1]
+            version = version.split("-")[1]
+            if os.path.isdir(app.path["llamacpp"] / f"llama-{version}"):
+                shutil.rmtree(app.path["llamacpp"] / f"llama-{version}")
             app.exception = exception
         finally:
             try:
