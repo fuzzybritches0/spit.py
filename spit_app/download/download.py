@@ -165,7 +165,6 @@ class Download:
                 if resp.status_code == 416:
                     return True
                 if not resp.status_code == 200 and not resp.status_code == 206:
-                    await self.progress_dismiss()
                     self.exception = Exception(str(resp))
                     self.cancel = True
                     return False
@@ -178,7 +177,6 @@ class Download:
                     e = f"Size of {file} changed on server!"
                     os.remove(path)
                     self.app.del_downloads_size([str(path)])
-                    await self.progress_dismiss()
                     self.app.exception = Exception(e)
                     self.cancel = True
                     return False
