@@ -52,6 +52,8 @@ class ButtonsMixIn:
 
     def button_download_model(self) -> None:
         model_id = self.query_one("#download_model").value
+        if model_id == Select.NULL:
+            return None
         model = self.get_model(model_id)
         path = self.path["models"] / model_id
         path.mkdir(parents=True, exist_ok=True)
@@ -64,6 +66,8 @@ class ButtonsMixIn:
     def button_delete_model(self) -> None:
         deleted = False
         model_id = self.query_one("#download_model").value
+        if model_id == Select.NULL:
+            return None
         model = self.get_model(self.query_one("#download_model").value)
         model_name = model["name"]
         model_files = model["files"]
