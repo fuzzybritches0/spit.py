@@ -32,7 +32,8 @@ class HandlersMixIn:
             if await self.validate_values_edit(["content_length"]):
                 await self.button_apply_llamacpp_settings()
         elif id == "update-llamacpp":
-            await self.button_update_llamacpp()
+            if await self.validate_values_edit(["llamacpp_version"]):
+                await self.button_update_llamacpp()
         elif id == "delete-llamacpp":
             await self.button_delete_llamacpp()
         elif id == "download-model":
