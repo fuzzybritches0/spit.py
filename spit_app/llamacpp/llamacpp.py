@@ -1,6 +1,7 @@
 import os
 import asyncio
 import platform
+from copy import deepcopy
 from textual import work
 from .helpers import get_latest_llamacpp_version, get_vulkan_devices
 from spit_app.manage.validation import ValidationMixIn
@@ -98,7 +99,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         return versions
 
     def get_models_list(self) -> list:
-        models = MODELS
+        models = deepcopy(MODELS)
         if self.gets("custom_models"):
             models += self.gets("custom_models")
         return models
