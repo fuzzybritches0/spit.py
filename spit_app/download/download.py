@@ -165,6 +165,8 @@ class Download:
                 if resp.status_code == 416:
                     return True
                 if not resp.status_code == 200 and not resp.status_code == 206:
+                    if resp.status_code >= 400:
+                        self.clear = True
                     self.exception = Exception(str(resp))
                     self.cancel = True
                     return False
