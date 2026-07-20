@@ -122,11 +122,8 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
 
     def get_models_select(self) -> tuple:
         models = ()
-        for model_id in MODELS.keys():
-            models += ((MODELS[model_id]["name"], model_id),)
-        custom_models = self.gets("custom_models")
-        for model_id in custom_models.keys():
-            models += ((custom_models[model_id]["name"], model_id),)
+        for model_id in self.get_models_list().keys():
+            models += ((self.get_model(model_id)["name"], model_id),)
         return models
 
     def get_models_downloaded(self) -> tuple:
