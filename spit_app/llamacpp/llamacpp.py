@@ -110,7 +110,8 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
     def get_models_list(self) -> list:
         models = deepcopy(MODELS)
         if self.gets("custom_models"):
-            models += self.gets("custom_models")
+            for model_id in self.gets("custom_models").keys():
+                models[model_id] = self.gets("custom_models", model_id)
         return models
 
     def get_model(self, model_id: str) -> dict:
