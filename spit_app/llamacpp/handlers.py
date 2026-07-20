@@ -39,10 +39,10 @@ class HandlersMixIn:
         elif id == "download-model":
             self.button_download_model()
         elif id == "delete-model":
-            self.button_delete_model()
+            await self.button_delete_model()
         elif id == "add-custom-model":
             if await self.validate_values_edit(["name", "org", "model", "files"]):
-                self.button_add_custom_model()
+                await self.button_add_custom_model()
 
     async def on_input_changed(self, event: Input.Changed) -> None:
         if event.validation_result:
