@@ -1,7 +1,5 @@
 import os
 import asyncio
-import platform
-from copy import deepcopy
 from textual import work
 from spit_app.manage.validation import ValidationMixIn
 from .handlers import HandlersMixIn
@@ -10,8 +8,7 @@ from .callbacks import CallbacksMixIn
 from .helpers import HelpersMixIn
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
-from textual.widgets import Label, Button, Select, Rule
-from .models import MODELS
+from textual.widgets import Label, Button, Rule
 
 class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, HelpersMixIn, VerticalScroll):
     def __init__(self) -> None:
