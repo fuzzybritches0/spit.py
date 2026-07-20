@@ -65,6 +65,15 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
             await self.mount_all(await input_widget.setting(item))
         await self.mount(Button("Add", id="add-custom-model"))
 
+    def valid_setting_server_port(self, value: str) -> tuple:
+        try:
+            int(value)
+        except:
+            return (False, "Not a valid port number!")
+        if int(value) <= 1000 or int(value) > 65536:
+            return (False, "Port number out of range!")
+        return(True, None)
+
     def valid_setting_name(self, value: str) -> tuple:
         for model_id in self.get_models_list().keys():
             if self.get_model(model_id)["name"] == value:
