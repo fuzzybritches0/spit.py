@@ -63,7 +63,7 @@ class ButtonsMixIn:
             lst.append((url, str(path / file)))
         self.app.post_message(DownloadFiles(self.id, model["name"], lst, "download_model"))
 
-    def button_delete_model(self) -> None:
+    async def button_delete_model(self) -> None:
         deleted = False
         model_id = self.query_one("#download_model").value
         if model_id == Select.NULL:
@@ -85,5 +85,6 @@ class ButtonsMixIn:
             self.app.del_downloads_size(files)
             self.app.action_notify(f"{model_name} deleted!")
             self.settings.save()
+            await self.download_model_success()
         else:
             self.app.action_notify(f"Nothing to delete!")
