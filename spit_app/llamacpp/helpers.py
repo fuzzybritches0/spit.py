@@ -17,6 +17,8 @@ class HelpersMixIn:
                 return None
             return self.settings.llamacpp[setting]
         else:
+            if "value" in self.manage[setting]:
+                return self.manage[setting]["value"]
             if self.manage[setting]["stype"] == "select":
                 return None
             if self.manage[setting]["stype"] == "select_list":
