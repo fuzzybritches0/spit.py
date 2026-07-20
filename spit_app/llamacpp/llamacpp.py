@@ -38,6 +38,12 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         self.path = self.app.settings.path
         self.focused_widget = None
 
+    def valid_setting_name(self, value: str) -> tuple:
+        for model_id in self.get_models_list().keys():
+            if self.get_model(model_id)["name"] == value:
+                return (False, "Model name must be unique!")
+        return (True, None)
+
     def valid_setting_llamacpp_version(self, value: str) -> tuple:
         if not value.startswith("b"):
             return (False, "Must start with b...")
