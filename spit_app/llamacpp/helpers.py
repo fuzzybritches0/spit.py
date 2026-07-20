@@ -1,9 +1,80 @@
+import os
 import time
 import httpx
 import asyncio
+import platform
 from pathlib import Path
+from copy import deepcopy
+from textual.widgets import Select
+from .models import MODELS
 
 class HelpersMixIn:
+    def gets(self, setting: str, key: str|None = None) -> any:
+        if setting in self.settings.llamacpp and self.settings.llamacpp[setting]:
+            if key and key in self.settings.llamacpp[setting]:
+                return self.settings.llamacpp[setting][key]
+            if key:
+                return None
+            return self.settings.llamacpp[setting]
+        else:
+            if self.manage[setting]["stype"] == "select":
+                return None
+            if self.manage[setting]["stype"] == "select_list":
+                return []
+            if self.manage[setting]["stype"] == "boolean":
+                return False
+            if self.manage[setting]["stype"] == "uinteger":
+                return "0"
+            if self.manage[setting]["stype"] == "string":
+                return ""
+            if self.manage[setting]["stype"] == "dict":
+                return {}
+
+    def puts(self, setting: str, value: any = "__NONE__", value2: any = "__NONE__") -> None:
+        if not value2 == "__NONE__":
+            self.settings.llamacpp[setting][value] = value2
+            return None
+        if value == "__NONE__":
+            if self.manage[setting]["stype"] == "select_list":
+                value = self.query_one(f"#{setting}").selected
+            else:
+                value = self.query_one(f"#{setting}").value
+        if value == Select.NULL:
+            value = None
+        self.settings.llamacpp[setting] = value
+
+    def dels(self, setting: str, key: str|int) -> None:
+        del self.settings.llamacpp[setting][key]
+
+    def get_llamacpp_file(self, version: int) -> str:
+        machine = platform.uname().machine
+        if machine == "x86_64":
+            machine = "x64"
+        elif machine == "aarch64":
+            machine = "amd64"
+        return f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
+
+    def get_versions(self) -> tuple:
+        versions = ()
+        for item in os.listdir(self.path["llamacpp"]):
+            if os.path.isdir(self.path["llamacpp"] / item):
+                version = item[6:]
+                versions += ((version, version),)
+        return versions
+
+    def get_models_list(self) -> list:
+        models = deepcopy(MODELS)
+        if self.gets("custom_models"):
+            for model_id in self.gets("custom_models").keys():
+                models[model_id] = self.gets("custom_models", model_id)
+        return models
+
+    def get_model(self, model_id: str) -> dict:
+        models = self.get_models_list()
+        if model_id in models:
+            return models[model_id]
+        return {}
+
     async def get_vulkan_devices(self, llama_server: Path) -> list:
         llama_server = llama_server / "llama-server"
         devices = []

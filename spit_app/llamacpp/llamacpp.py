@@ -38,108 +38,6 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         self.path = self.app.settings.path
         self.focused_widget = None
 
-    def valid_setting_name(self, value: str) -> tuple:
-        for model_id in self.get_models_list().keys():
-            if self.get_model(model_id)["name"] == value:
-                return (False, "Model name must be unique!")
-        return (True, None)
-
-    def valid_setting_llamacpp_version(self, value: str) -> tuple:
-        if not value.startswith("b"):
-            return (False, "Must start with b...")
-        try:
-            int(value[1:])
-        except:
-            return (False, "Must be a valid llama.cpp version!")
-        return (True, None)
-
-    def valid_setting_files(self, value: str) -> tuple:
-        for file in value.split(","):
-            file = file.strip()
-            if not file.endswith(".gguf"):
-                return (False, "Files must end in .gguf!")
-        return (True, None)
-
-    def gets(self, setting: str, key: str|None = None) -> any:
-        if setting in self.settings.llamacpp and self.settings.llamacpp[setting]:
-            if key and key in self.settings.llamacpp[setting]:
-                return self.settings.llamacpp[setting][key]
-            if key:
-                return None
-            return self.settings.llamacpp[setting]
-        else:
-            if self.manage[setting]["stype"] == "select":
-                return None
-            if self.manage[setting]["stype"] == "select_list":
-                return []
-            if self.manage[setting]["stype"] == "boolean":
-                return False
-            if self.manage[setting]["stype"] == "uinteger":
-                return "0"
-            if self.manage[setting]["stype"] == "string":
-                return ""
-            if self.manage[setting]["stype"] == "dict":
-                return {}
-
-    def puts(self, setting: str, value: any = "__NONE__", value2: any = "__NONE__") -> None:
-        if not value2 == "__NONE__":
-            self.settings.llamacpp[setting][value] = value2
-            return None
-        if value == "__NONE__":
-            if self.manage[setting]["stype"] == "select_list":
-                value = self.query_one(f"#{setting}").selected
-            else:
-                value = self.query_one(f"#{setting}").value
-        if value == Select.NULL:
-            value = None
-        self.settings.llamacpp[setting] = value
-
-    def dels(self, setting: str, key: str|int) -> None:
-        del self.settings.llamacpp[setting][key]
-
-    def get_llamacpp_file(self, version: int) -> str:
-        machine = platform.uname().machine
-        if machine == "x86_64":
-            machine = "x64"
-        elif machine == "aarch64":
-            machine = "amd64"
-        return f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
-
-    def get_versions(self) -> tuple:
-        versions = ()
-        for item in os.listdir(self.path["llamacpp"]):
-            if os.path.isdir(self.path["llamacpp"] / item):
-                version = item[6:]
-                versions += ((version, version),)
-        return versions
-
-    def get_models_list(self) -> list:
-        models = deepcopy(MODELS)
-        if self.gets("custom_models"):
-            for model_id in self.gets("custom_models").keys():
-                models[model_id] = self.gets("custom_models", model_id)
-        return models
-
-    def get_model(self, model_id: str) -> dict:
-        models = self.get_models_list()
-        if model_id in models:
-            return models[model_id]
-        return {}
-
-    def get_models_select(self) -> tuple:
-        models = ()
-        for model_id in self.get_models_list().keys():
-            models += ((self.get_model(model_id)["name"], model_id),)
-        return models
-
-    def get_models_downloaded(self) -> tuple:
-        models = ()
-        for model_id in os.listdir(self.path["models"]):
-            if os.path.isdir(self.path["models"] / model_id):
-                model_name = self.get_model(model_id)["name"]
-                models += ((model_name, model_id),)
-        return models
-
     async def edit_manage_screen(self) -> None:
         input_widget = InputWidget(self, self.manage, self.validators)
         await self.mount(Label("Manage llama.cpp server settings:\n"))
@@ -163,6 +61,42 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         for item in ["name", "org", "model", "files"]:
             await self.mount_all(await input_widget.setting(item))
         await self.mount(Button("Add", id="add-custom-model"))
+
+    def valid_setting_name(self, value: str) -> tuple:
+        for model_id in self.get_models_list().keys():
+            if self.get_model(model_id)["name"] == value:
+                return (False, "Model name must be unique!")
+        return (True, None)
+
+    def valid_setting_llamacpp_version(self, value: str) -> tuple:
+        if not value.startswith("b"):
+            return (False, "Must start with b...")
+        try:
+            int(value[1:])
+        except:
+            return (False, "Must be a valid llama.cpp version!")
+        return (True, None)
+
+    def valid_setting_files(self, value: str) -> tuple:
+        for file in value.split(","):
+            file = file.strip()
+            if not file.endswith(".gguf"):
+                return (False, "Files must end in .gguf!")
+        return (True, None)
+
+    def get_models_select(self) -> tuple:
+        models = ()
+        for model_id in self.get_models_list().keys():
+            models += ((self.get_model(model_id)["name"], model_id),)
+        return models
+
+    def get_models_downloaded(self) -> tuple:
+        models = ()
+        for model_id in os.listdir(self.path["models"]):
+            if os.path.isdir(self.path["models"] / model_id):
+                model_name = self.get_model(model_id)["name"]
+                models += ((model_name, model_id),)
+        return models
 
     def add_devices(self, devices: list) -> tuple:
         tup = ()
