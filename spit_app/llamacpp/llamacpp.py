@@ -38,6 +38,15 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
         self.path = self.app.settings.path
         self.focused_widget = None
 
+    def valid_setting_llamacpp_version(self, value: str) -> tuple:
+        if not value.startswith("b"):
+            return (False, "Must start with b...")
+        try:
+            int(value[1:])
+        except:
+            return (False, "Must be a valid llama.cpp version!")
+        return (True, None)
+
     def valid_setting_files(self, value: str) -> tuple:
         for file in value.split(","):
             file = file.strip()
