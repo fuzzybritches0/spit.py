@@ -9,6 +9,8 @@ class ButtonsMixIn:
         self.puts("active_model")
         self.puts("vulkan_devices")
         self.puts("content_length")
+        self.puts("server_port")
+        self.puts("use_jinja")
         self.puts("server_arguments")
         self.settings.save()
         self.app.action_notify("Changes applied!")
