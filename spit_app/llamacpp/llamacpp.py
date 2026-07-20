@@ -3,17 +3,17 @@ import asyncio
 import platform
 from copy import deepcopy
 from textual import work
-from .helpers import get_latest_llamacpp_version, get_vulkan_devices
 from spit_app.manage.validation import ValidationMixIn
 from .handlers import HandlersMixIn
 from .buttons import ButtonsMixIn
 from .callbacks import CallbacksMixIn
+from .helpers import HelpersMixIn
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Horizontal
 from textual.widgets import Label, Button, Select, Rule
 from .models import MODELS
 
-class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, VerticalScroll):
+class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, HelpersMixIn, VerticalScroll):
     def __init__(self) -> None:
         super().__init__()
         self.id = "manage-llamacpp"
@@ -179,7 +179,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
             self.query_one("#label-vulkan_devices").display = False
             if "active_version" in self.settings.llamacpp and self.settings.llamacpp["active_version"]:
                 llamacpp = self.path["llamacpp"] / ("llama-" + self.settings.llamacpp["active_version"])
-                devices = await get_vulkan_devices(llamacpp)
+                devices = await self.get_vulkan_devices(llamacpp)
                 if devices:
                     self.query_one("#vulkan_devices").display = True
                     self.query_one("#label-vulkan_devices").display = True
@@ -191,7 +191,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Ver
                 self.settings.save()
 
     async def update_input_llamacpp_version(self) -> None:
-        latest_version = await get_latest_llamacpp_version(self.settings)
+        latest_version = await self.get_latest_llamacpp_version()
         if latest_version <= 0:
             latest_version = 0
         self.query_one("#llamacpp_version").value = "b" + str(latest_version)
