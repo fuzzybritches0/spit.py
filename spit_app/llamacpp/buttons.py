@@ -88,3 +88,16 @@ class ButtonsMixIn:
             await self.download_model_success()
         else:
             self.app.action_notify(f"Nothing to delete!")
+
+    async def button_add_custom_model(self) -> None:
+        custom_model = {
+            "name": self.query_one("#name").value,
+            "org": self.query_one("#org").value,
+            "model": self.query_one("#model").value,
+            "files": self.query_one("#files").value,
+        }
+        if not "custom_models" in self.settings.llamacpp:
+            self.settings.llamacpp["custom_models"] = {}
+        self.puts("custom_models", self.app.get_rand_seq(32), custom_model)
+        self.settings.save()
+        await self.download_model_success()
