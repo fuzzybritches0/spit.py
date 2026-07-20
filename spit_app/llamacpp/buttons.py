@@ -101,3 +101,4 @@ class ButtonsMixIn:
         self.puts("custom_models", self.app.get_rand_seq(32), custom_model)
         self.settings.save()
         await self.download_model_success()
+        self.app.action_notify(f"Model data saved! You can now try downloading it above!")
