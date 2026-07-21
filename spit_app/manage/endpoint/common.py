@@ -22,4 +22,6 @@ class Common:
 
     async def remove_custom_setting(self, setting: str) -> None:
         del self.manage[setting]
-        await self.query_one(f"#val-{setting}").remove()
+        val = self.query_one_optional(f"#val-{setting}")
+        if val:
+            await self.query_one(f"#val-{setting}").remove()
