@@ -7,7 +7,7 @@ from .buttons import ButtonsMixIn
 from .callbacks import CallbacksMixIn
 from .helpers import HelpersMixIn
 from spit_app.manage.input_widget import InputWidget
-from textual.containers import VerticalScroll, Horizontal
+from textual.containers import VerticalScroll, Vertical, Horizontal
 from textual.widgets import Label, Button, Rule
 
 class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, HelpersMixIn, VerticalScroll):
@@ -48,6 +48,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         await self.mount(Button("Delete", id="delete-llamacpp"))
         await self.mount(Rule())
         await self.mount_all(await input_widget.setting("download_model"))
+        await self.mount(Vertical(id="server-settings"))
         horizontal = Horizontal(classes="auto-height")
         await self.mount(horizontal)
         await horizontal.mount(Button("Download", id="download-model"))
