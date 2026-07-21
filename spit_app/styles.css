@@ -147,10 +147,15 @@
 	height: auto
 }
 .manage:focus {
-	border: round $border
+	border: round $border;
 }
 .manage {
-	border: round $border-blurred
+	border: round $border-blurred;
+}
+#server-settings {
+	border: double $border;
+	height: auto;
+	display: none
 }
 .auto-height{
 	height: auto
