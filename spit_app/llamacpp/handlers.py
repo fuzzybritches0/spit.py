@@ -1,7 +1,8 @@
 import inspect
 from textual.events import Focus
 from spit_app.textual_message import DownloadFailed, DownloadSuccess
-from textual.widgets import Button, Select, Input
+from textual.widgets import Button, Select, Input, Label
+from .server_settings import ServerSettings
 
 class HandlersMixIn:
     async def on_mount(self) -> None:
@@ -52,6 +53,17 @@ class HandlersMixIn:
         if event.control.id == "active_version":
             self.puts("active_version")
             await self.update_input_vulkan_devices()
+        if event.control.id == "download_model":
+            server_settings = self.query_one("#server-settings")
+            if not self.query_one("#download_model").value == Select.NULL:
+                async with self.batch():
+                    server_settings.display = True
+                    await server_settings.remove_children()
+                    await server_settings.mount(Label("Server settings:\n"))
+                    await server_settings.mount(ServerSettings(self.query_one("#download_model").value))
+            else:
+                server_settings.display = False
+                await server_settings.remove_children()
 
     async def on_focus(self, event: Focus) -> None:
         event.prevent_default()
