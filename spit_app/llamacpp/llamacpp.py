@@ -18,10 +18,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         self.manage = {
             "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
             "active_model": {"stype": "select", "desc": "Load Single Model", "ameth": "get_models_downloaded"},
-            "content_length": {"stype": "uinteger", "empty": False, "desc": "Content Length (0 = model default)"},
             "server_port": {"stype": "uinteger", "empty": False, "desc": "Server Port", "value": "8080"},
-            "use_jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-            "server_arguments": {"stype": "string", "desc": "Server Arguments", "empty": True},
             "vulkan_devices": {"stype": "select_list", "desc": "Use Vulkan devices", "options": []},
             "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
             "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
@@ -40,8 +37,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
     async def edit_manage_screen(self) -> None:
         input_widget = InputWidget(self, self.manage, self.validators)
         await self.mount(Label("Manage llama.cpp server settings:\n"))
-        for item in ["active_version", "active_model", "content_length", "server_port", "use_jinja",
-                     "server_arguments", "vulkan_devices"]:
+        for item in ["active_version", "active_model", "server_port", "vulkan_devices"]:
             await self.mount_all(await input_widget.setting(item, self.gets(item)))
         await self.mount(Button("Apply", id="apply-llamacpp-settings"))
         await self.mount(Rule())

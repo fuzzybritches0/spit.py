@@ -29,7 +29,7 @@ class HandlersMixIn:
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         id = event.control.id
         if id == "apply-llamacpp-settings":
-            if await self.validate_values_edit(["content_length", "server_port"]):
+            if await self.validate_values_edit(["server_port"]):
                 await self.button_apply_llamacpp_settings()
         elif id == "update-llamacpp":
             if await self.validate_values_edit(["llamacpp_version"]):
