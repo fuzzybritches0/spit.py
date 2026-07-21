@@ -40,5 +40,6 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         if action == "save":
             self.app.action_notify(f"Settings saved!")
 
-    async def on_focus(self, event: Focus) -> None:
-        await self.app.query_one("#manage-llamacpp").on_focus(event)
+    def on_focus(self, event: Focus) -> None:
+        event.prevent_default()
+        self.app.query_one("#manage-llamacpp").focus()
