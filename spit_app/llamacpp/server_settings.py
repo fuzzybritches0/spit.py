@@ -43,3 +43,6 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
     def on_focus(self, event: Focus) -> None:
         event.prevent_default()
         self.app.query_one("#manage-llamacpp").focus()
+
+    def on_descendant_focus(self) -> None:
+        pass
