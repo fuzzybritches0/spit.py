@@ -73,20 +73,22 @@ class ButtonsMixIn:
         path = self.path["models"] / model_id
         if os.path.exists(path):
             shutil.rmtree(path)
-            deleted = True
-        if self.gets("custom_models") and self.gets("custom_models", model_id):
-            self.dels("custom_models", model_id)
-            deleted = True
-        if deleted:
             files = []
             for file in model_files:
                 files.append(str(self.path["models"] / model_id / file))
             self.app.del_downloads_size(files)
-            self.app.action_notify(f"{model_name} deleted!")
             self.settings.save()
             await self.download_model_success()
-        else:
-            self.app.action_notify(f"Nothing to delete!")
+            self.app.action_notify(f"{model_name} files deleted!")
+        if self.gets("custom_models") and self.gets("custom_models", model_id):
+            self.dels("custom_models", model_id)
+            self.settings.save()
+            self.app.action_notify(f"Entry for custom model {model_name} deleted!")
+        if self.gets("server_settings") and self.gets("server_settings", model_id):
+            self.dels("server_settings", model_id)
+            self.query_one("#download_model").value = Select.NULL
+            self.settings.save()
+            self.app.action_notify(f"Server settings for {model_name} deleted!")
 
     async def button_add_custom_model(self) -> None:
         custom_model = {
