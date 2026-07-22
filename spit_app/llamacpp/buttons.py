@@ -6,7 +6,7 @@ from spit_app.textual_message import DownloadFiles
 class ButtonsMixIn:
     async def button_apply_llamacpp_settings(self) -> None:
         self.puts("active_version")
-        self.puts("active_model")
+        self.puts("active_models")
         self.puts("vulkan_devices")
         self.puts("server_port")
         self.settings.save()
