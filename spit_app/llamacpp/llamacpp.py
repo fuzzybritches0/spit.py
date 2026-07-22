@@ -107,11 +107,11 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
     def models_select_list(self) -> tuple:
         models = ()
         for model in self.get_models_downloaded():
-            for n, i in model:
-                if i in self.gets("active_models"):
-                    models += ((n, i, True),)
-                else:
-                    models += ((n, i, False),)
+            n, i = model
+            if i in self.gets("active_models"):
+                models += ((n, i, True),)
+            else:
+                models += ((n, i, False),)
         return models
 
     def add_devices(self, devices: list) -> tuple:
@@ -127,8 +127,8 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         models = self.models_select_list()
         active_models = self.query_one("#active_models")
         if models:
-            active_models.display = False
-            self.query_one("#label-active_models").display = False
+            active_models.display = True
+            self.query_one("#label-active_models").display = True
             active_models.clear_options()
             active_models.add_options(models)
         else:
