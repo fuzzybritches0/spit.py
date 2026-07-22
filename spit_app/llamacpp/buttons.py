@@ -48,6 +48,7 @@ class ButtonsMixIn:
         self.app.del_downloads_size([str(self.path["llamacpp"] / file)])
         self.settings.save()
         await self.update_input_vulkan_devices()
+        self.app.action_notify(f"Llama.cpp version {selection} deleted!")
 
     def button_download_model(self) -> None:
         model_id = self.query_one("#download_model").value
