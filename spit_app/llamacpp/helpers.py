@@ -45,8 +45,11 @@ class HelpersMixIn:
             value = None
         self.settings.llamacpp[setting] = value
 
-    def dels(self, setting: str, key: str|int) -> None:
-        del self.settings.llamacpp[setting][key]
+    def dels(self, setting: str, key: str|int|None = None) -> None:
+        if key:
+            del self.settings.llamacpp[setting][key]
+        else:
+            del self.settings.llamacpp[setting]
 
     def get_llamacpp_file(self, version: int) -> str:
         machine = platform.uname().machine
