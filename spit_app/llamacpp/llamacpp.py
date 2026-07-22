@@ -115,20 +115,23 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
 
     async def update_input_vulkan_devices(self) -> None:
         async with self.batch():
-            self.query_one("#vulkan_devices").display = False
-            self.query_one("#label-vulkan_devices").display = False
-            if "active_version" in self.settings.llamacpp and self.settings.llamacpp["active_version"]:
-                llamacpp = self.path["llamacpp"] / ("llama-" + self.settings.llamacpp["active_version"])
+            llamacpp = self.query_one("#active_version").value
+            vulkan_devices = self.query_one("#vulkan_devices")
+            if llamacpp == Select.NULL:
+                devices = []
+            else:
                 devices = await self.get_vulkan_devices(llamacpp)
-                if devices:
-                    self.query_one("#vulkan_devices").display = True
-                    self.query_one("#label-vulkan_devices").display = True
-                    self.query_one("#vulkan_devices").clear_options()
-                    self.query_one("#vulkan_devices").add_options(self.add_devices(devices))
-                else:
-                    if "vulkan_devices" in self.settings.llamacpp:
-                        del self.settings.llamacpp["vulkan_devices"]
-                self.settings.save()
+            if devices:
+                vulkan_devices.display = True
+                self.query_one("#label-vulkan_devices").display = True
+                vulkan_devices.clear_options()
+                vulkan_devices.add_options(self.add_devices(devices))
+            else:
+                vulkan_devices.display = False
+                self.query_one("#label-vulkan_devices").display = False
+                if self.gets("vulkan_devices"):
+                    self.dels("vulkan_devices")
+        self.settings.save()
 
     async def update_input_llamacpp_version(self) -> None:
         latest_version = await self.get_latest_llamacpp_version()
