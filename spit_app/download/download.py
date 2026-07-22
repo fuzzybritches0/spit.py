@@ -99,9 +99,8 @@ class Download:
             total = len(lst)
             for url, path in lst:
                 self.progress_state_reset()
-                if self.progress_is_active():
-                    file = str(path).split("/")[-1]
-                    self.progress_update("text", f"Downloading {count} of {total}:\n{file}")
+                file = str(path).split("/")[-1]
+                self.progress_update("text", f"Downloading {count} of {total}:\n{file}")
                 try:
                     if not await self.try_download(url, path):
                         success = False
