@@ -8,7 +8,7 @@ from .callbacks import CallbacksMixIn
 from .helpers import HelpersMixIn
 from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Vertical, Horizontal
-from textual.widgets import Label, Button, Rule
+from textual.widgets import Label, Button, Rule, Select
 
 class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, HelpersMixIn, VerticalScroll):
     def __init__(self) -> None:
