@@ -74,6 +74,14 @@ class HelpersMixIn:
                 models[model_id] = self.gets("custom_models", model_id)
         return models
 
+    def get_models_downloaded(self) -> tuple:
+        models = ()
+        for model_id in os.listdir(self.path["models"]):
+            if os.path.isdir(self.path["models"] / model_id):
+                model_name = self.get_model(model_id)["name"]
+                models += ((model_name, model_id),)
+        return models
+
     def get_model(self, model_id: str) -> dict:
         models = self.get_models_list()
         if model_id in models:

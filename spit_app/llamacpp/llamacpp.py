@@ -96,14 +96,6 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
             models += ((self.get_model(model_id)["name"], model_id),)
         return models
 
-    def get_models_downloaded(self) -> tuple:
-        models = ()
-        for model_id in os.listdir(self.path["models"]):
-            if os.path.isdir(self.path["models"] / model_id):
-                model_name = self.get_model(model_id)["name"]
-                models += ((model_name, model_id),)
-        return models
-
     def models_select_list(self) -> tuple:
         models = ()
         for model in self.get_models_downloaded():
