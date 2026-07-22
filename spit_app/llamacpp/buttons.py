@@ -83,6 +83,7 @@ class ButtonsMixIn:
         if self.gets("custom_models") and self.gets("custom_models", model_id):
             self.dels("custom_models", model_id)
             self.settings.save()
+            await self.download_model_success()
             self.app.action_notify(f"Entry for custom model {model_name} deleted!")
         if self.gets("server_settings") and self.gets("server_settings", model_id):
             self.dels("server_settings", model_id)

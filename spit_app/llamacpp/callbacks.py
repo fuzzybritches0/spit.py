@@ -7,5 +7,5 @@ class CallbacksMixIn:
         await self.update_input_llamacpp_version()
 
     async def download_model_success(self) -> None:
-        await self.query_one("#active_model").method_update_options()
+        self.update_models_select_list()
         await self.query_one("#download_model").method_update_options()

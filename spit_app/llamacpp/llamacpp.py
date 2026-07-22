@@ -104,6 +104,16 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
                 models += ((model_name, model_id),)
         return models
 
+    def models_select_list(self) -> tuple:
+        models = ()
+        for model in self.get_models_downloaded():
+            for n, i in model:
+                if i in self.gets("active_models"):
+                    models += ((n, i, True),)
+                else:
+                    models += ((n, i, False),)
+        return models
+
     def add_devices(self, devices: list) -> tuple:
         tup = ()
         vulkan_devices = []
@@ -112,6 +122,18 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         for device in devices:
             tup += ((device, device, device in vulkan_devices),)
         return tup
+
+    def update_models_select_list(self) -> None:
+        models = self.models_select_list()
+        active_models = self.query_one("#active_models")
+        if models:
+            active_models.display = False
+            self.query_one("#label-active_models").display = False
+            active_models.clear_options()
+            active_models.add_options(models)
+        else:
+            active_models.display = False
+            self.query_one("#label-active_models").display = False
 
     async def update_input_vulkan_devices(self) -> None:
         async with self.batch():

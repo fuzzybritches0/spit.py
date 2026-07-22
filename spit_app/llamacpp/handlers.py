@@ -10,6 +10,7 @@ class HandlersMixIn:
         self.children[2].focus()
         self.work_update_input_llamacpp_version()
         await self.update_input_vulkan_devices()
+        self.update_models_select_list()
 
     async def on_download_failed(self, message: DownloadFailed) -> None:
         if hasattr(self, f"{message.callback}_failed"):
