@@ -41,7 +41,7 @@ class ChatTextArea(TextArea):
         if action == "submit":
             if self.cs("model") == "none":
                 return False
-            if not "completion" in self.chat.model_capabilities:
+            if not self.chat.has_cap("text"):
                 return False
             if self.chat.is_working() or self.chat_view.is_edit:
                 return False

@@ -29,8 +29,7 @@ class Work:
                                          tools_descs, self.chat_view.callback)
 
     def req_mm_image(self, tool: dict) -> bool:
-        if (self.app.tool_call.tools[tool]["requires_multimodal_image"] and
-            not "multimodal" in self.chat.model_capabilities):
+        if self.app.tool_call.tools[tool]["requires_multimodal_image"] and not self.chat.has_cap("image"):
             return False
         return True
 

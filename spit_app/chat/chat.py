@@ -124,8 +124,7 @@ class Chat(Vertical):
         if action == "abort":
             return self.is_working()
         elif action == "add_image":
-            if (not "multimodal" in self.model_capabilities or self.is_working() or
-                not self.messages or self.messages[-1]["role"] == "assistant"):
+            if (not self.has_cap("image") or self.is_working()):
                 return False
         return True
 

@@ -86,7 +86,7 @@ class ChatViewActionsMixIn:
                 return False
             if self.cs("model") == "none" or not self.messages:
                 return False
-            if not "completion" in self.chat.model_capabilities:
+            if not self.chat.has_cap("text"):
                 return False
             if self.messages[-1]["role"] == "assistant":
                 if "tool_calls" in self.messages[-1]:
