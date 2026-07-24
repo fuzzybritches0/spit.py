@@ -1,6 +1,7 @@
 import os
 import time
 import httpx
+import signal
 import asyncio
 import platform
 from pathlib import Path
@@ -123,13 +124,32 @@ class HelpersMixIn:
             output += line
         return output
     
-    async def run(self, cmd: list):
+    async def run(self, cmd: list, attr: str|None = None):
         proc = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.STDOUT,
-                                                    start_new_session=True)
-        stdout, _ = await proc.communicate()
-        for line in stdout.decode("UTF-8", errors="replace").splitlines(keepends=True):
-            yield line
+                    stderr=asyncio.subprocess.STDOUT, start_new_session=True)
+        if attr:
+            setattr(self, attr, proc)
+        while True:
+            line_bytes = await proc.stdout.readline()
+            if not line_bytes:
+                break
+            yield line_bytes.decode("UTF-8", errors="replace")
+        #stdout, _ = await proc.communicate()
+        #for line in stdout.decode("UTF-8", errors="replace").splitlines(keepends=True):
+        #    yield line
+        return_code = await proc.wait()
+        if not return_code == 0:
+            self.app.exception = Exception(f"Process failed with exit code: {return_code}!")
+        proc = None
+
+    def stop(self, proc) -> None:
+        if not proc:
+            return None
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except:
+            pass
+        proc = None
     
     async def get_latest_llamacpp_version(self) -> int:
         if "latest" in self.settings.llamacpp and "latest_time" in self.settings.llamacpp:
