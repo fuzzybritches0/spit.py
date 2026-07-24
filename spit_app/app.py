@@ -14,6 +14,7 @@ from spit_app.tool_call import ToolCall
 from spit_app.side_panel import SidePanel
 from spit_app.download.download import Download
 from spit_app.modal_screens import ErrorScreen
+from spit_app.llamacpp.server import Server
 
 class SpitApp(ActionsMixIn, HandlersMixIn, App):
     NAME = "spit.py"
@@ -35,6 +36,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.confirm_exit = False
         self.download = Download(self)
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
+        self.server = Server(self)
 
     async def watch_exception(self, exception: Exception) -> None:
         await self.push_screen(ErrorScreen(exception))
@@ -111,21 +113,23 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
 
     def endpoint_list_tuple(self) -> tuple:
         tup = ()
-        if self.server.is_running:
+        if self.server.is_running():
             tup += (("Spit.py Local Server", "0"),)
+        else:
+            tup += (("None", "0"),)
         for key in self.settings.endpoints.keys():
             tup += ((self.settings.endpoints[key]["name"]["value"], key),)
         return tup
 
     def endpoint_list(self) -> dict:
         endpoints = {}
-        if self.server.is_running:
+        if self.server.is_running():
             endpoints["0"] = self.server.endpoint
         for endpoint in self.settings.endpoints.keys():
             endpoints[endpoint] = self.settings.endpoints[endpoint]
         return endpoints
 
     def get_endpoint(self, id: str) -> dict:
-        if self.server.is_running and id == "0":
+        if self.server.is_running() and id == "0":
             return self.server.endpoint
         return self.settings.endpoints[id]
