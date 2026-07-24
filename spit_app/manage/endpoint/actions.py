@@ -4,12 +4,6 @@ from textual.widgets import Select
 from ..input_widget import InputWidget
 
 class ActionsMixIn:
-    async def action_delete(self) -> None:
-        if self.managed is self.settings.endpoints and len(self.managed) == 1:
-            await self.app.push_screen(InfoScreen("At least one endpoint must remain!"))
-        else:
-            super().action_delete()
-
     async def action_add_setting(self) -> None:
         if await self.validate_add_setting():
             input_widget = InputWidget(self, self.manage, self.validators)
