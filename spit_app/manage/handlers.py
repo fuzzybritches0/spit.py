@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0
 import inspect
+from textual.events import DescendantFocus
 from textual.widgets import OptionList, Button, Input, TextArea
 from .validation import fid
 
 class HandlersMixIn:
-    def on_focus(self) -> None:
+    def focus(self) -> None:
         if self.children:
             if self.focused_el:
-                self.focused_el.focus(scroll_visible=False)
+                self.focused_el.focus()
             elif self.children[0].id == "option-list":
                 self.children[0].focus()
             elif len(self.children) > 0:
@@ -20,14 +21,18 @@ class HandlersMixIn:
         index = side_panel.get_option_index(self.id)
         side_panel.highlighted = index
 
-    def on_descendant_focus(self) -> None:
-        self.focused_el = self.app.focused
+    def on_descendant_focus(self, event: DescendantFocus) -> None:
+        self.focused_el = event.widget
 
     async def on_mount(self) -> None:
         if self.new_manage and hasattr(self, "manage"):
             await self.edit_manage_screen()
         else:
             await self.select_main_screen()
+        if self.children[0].id == "option-list":
+            self.focused_el = self.children[0]
+        elif len(self.children) > 0:
+            self.focused_el = self.children[1]
 
     async def on_extra_options(self, id) -> bool:
         return False
