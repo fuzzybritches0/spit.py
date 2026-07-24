@@ -15,7 +15,12 @@ class HelpersMixIn:
                 return self.settings.llamacpp[setting][key]
             if key:
                 return None
-            return self.settings.llamacpp[setting]
+            ret = self.settings.llamacpp[setting]
+            if "integer" in self.manage[setting]["stype"]:
+                return int(ret)
+            if "float" in self.manage[setting]["stype"]:
+                return float()
+            return ret
         else:
             if "value" in self.manage[setting]:
                 return self.manage[setting]["value"]
@@ -25,12 +30,20 @@ class HelpersMixIn:
                 return []
             if self.manage[setting]["stype"] == "boolean":
                 return False
-            if self.manage[setting]["stype"] == "uinteger":
-                return "0"
+            if "integer" in self.manage[setting]["stype"]:
+                return 0
+            if "float" in self.manage[setting]["stype"]:
+                return 0.0
             if self.manage[setting]["stype"] == "string":
                 return ""
             if self.manage[setting]["stype"] == "dict":
                 return {}
+
+    def inpgets(self, setting: str) -> any:
+        if "integer" in self.manage[setting]["stype"] or "float" in self.manage[setting]["stype"]:
+            return str(self.gets(setting))
+        else:
+            return self.gets(setting)
 
     def puts(self, setting: str, value: any = "__NONE__", value2: any = "__NONE__") -> None:
         if not value2 == "__NONE__":
@@ -43,6 +56,10 @@ class HelpersMixIn:
                 value = self.query_one(f"#{setting}").value
         if value == Select.NULL:
             value = None
+        if "integer" in self.manage[setting]["stype"]:
+            value = int(value)
+        elif "float" in self.manage[setting]["stype"]:
+            value = float(value)
         self.settings.llamacpp[setting] = value
 
     def dels(self, setting: str, key: str|int|None = None) -> None:
