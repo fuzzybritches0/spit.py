@@ -108,3 +108,24 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
                 if file["path"] in file_list:
                     del self.settings.llamacpp["downloads"][count]
                 count += 1
+
+    def endpoint_list_tuple(self) -> tuple:
+        tup = ()
+        if self.server.is_running:
+            tup += (("Spit.py Local Server", "0"),)
+        for key in self.settings.endpoints.keys():
+            tup += ((self.settings.endpoints[key]["name"]["value"], key),)
+        return tup
+
+    def endpoint_list(self) -> dict:
+        endpoints = {}
+        if self.server.is_running:
+            endpoints["0"] = self.server.endpoint
+        for endpoint in self.settings.endpoints.keys():
+            endpoints[endpoint] = self.settings.endpoints[endpoint]
+        return endpoints
+
+    def get_endpoint(self, id: str) -> dict:
+        if self.server.is_running and id == "0":
+            return self.server.endpoint
+        return self.settings.endpoints[id]
