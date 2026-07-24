@@ -116,7 +116,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         if self.server.is_running():
             tup += (("Spit.py Local Server", "0"),)
         else:
-            tup += (("None", "0"),)
+            tup += (("None", "1"),)
         for key in self.settings.endpoints.keys():
             tup += ((self.settings.endpoints[key]["name"]["value"], key),)
         return tup
