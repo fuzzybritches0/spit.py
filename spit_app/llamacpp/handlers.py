@@ -1,5 +1,5 @@
 import inspect
-from textual.events import Focus
+from textual.events import DescendantFocus
 from spit_app.textual_message import DownloadFailed, DownloadSuccess
 from textual.widgets import Button, Select, Input, Label
 from .server_settings import ServerSettings
@@ -52,7 +52,6 @@ class HandlersMixIn:
 
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.control.id == "active_version":
-            self.puts("active_version")
             await self.update_input_vulkan_devices()
         if event.control.id == "download_model":
             server_settings = self.query_one("#server-settings")
@@ -66,8 +65,7 @@ class HandlersMixIn:
                 server_settings.display = False
                 await server_settings.remove_children()
 
-    async def on_focus(self, event: Focus) -> None:
-        event.prevent_default()
+    async def focus(self) -> None:
         if self.focused_widget:
             self.focused_widget.focus()
         else:
@@ -75,5 +73,5 @@ class HandlersMixIn:
         self.ensure_is_highlighted()
         await self.update_input_llamacpp_version()
 
-    def on_descendant_focus(self) -> None:
-        self.focused_widget = self.app.focused
+    def on_descendant_focus(self, event: DescendantFocus) -> None:
+        self.focused_widget = event.widget
