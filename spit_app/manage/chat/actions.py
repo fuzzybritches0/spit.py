@@ -1,6 +1,7 @@
 from spit_app.chat.chat import Chat
 from spit_app.modal_screens import InfoScreen 
 from textual.widgets.option_list import Option
+from spit_app.info import INFO_NO_ENDPOINT
 
 class ActionsMixIn:
     async def action_archive(self) -> None:
@@ -44,7 +45,7 @@ class ActionsMixIn:
 
     async def on_extra_options(self, id) -> bool:
         if id == "select-new-manage" and not self.app.endpoint_list():
-            await self.app.push_screen(InfoScreen("No endpoints set! Please set up an endpoint first"))
+            await self.app.push_screen(InfoScreen(INFO_NO_ENDPOINT))
             return True
         if id == "select-archive":
             self.cur_dir = "chats_archive"
