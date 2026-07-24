@@ -7,7 +7,7 @@ from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
 from .validation import ValidationMixIn
 
-class Manage(VerticalScroll, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn):
+class Manage(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, VerticalScroll):
     def __init__(self, id: str, new_manage: bool = False) -> None:
         super().__init__()
         if new_manage:
