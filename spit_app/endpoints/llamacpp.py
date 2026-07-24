@@ -5,14 +5,23 @@ from copy import deepcopy
 
 async def get_models(endpoint: dict) -> list:
     api_endpoint = endpoint["endpoint_url"]["value"] + "/models"
+    headers = {}
+    if "key" in endpoint and endpoint["key"]["value"]:
+        headers["Authorization"] = f"Bearer {endpoint['key']['value']}"
     try:
         async with httpx.AsyncClient(timeout=3) as client:
-            response = await client.get(api_endpoint)
+            response = await client.get(api_endpoint, headers=headers)
     except:
         return []
     if response.status_code == 200:
         try:
-            return json.loads(response.text)["models"]
+            jsonresp = json.loads(response.text)
+            if "models" in jsonresp:
+                return jsonresp["models"]
+            elif "data" in jsonresp:
+                return jsonresp["data"]
+            else:
+                return []
         except:
             return []
     return []
