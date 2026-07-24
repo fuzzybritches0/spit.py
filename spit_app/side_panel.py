@@ -11,6 +11,7 @@ from spit_app.llamacpp.llamacpp import Llamacpp as ManageLlamacpp
 from spit_app.modal_screens import InfoScreen 
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
+from spit_app.info import INFO_NO_ENDPOINT
 
 class SidePanel(OptionList):
     def __init__(self) -> None:
@@ -53,12 +54,21 @@ class SidePanel(OptionList):
         self.clear_options()
         self.add_options(Options)
 
+    def return_focus(self) -> None:
+        for cont in self.app.query_one("#main").children:
+            if cont.display:
+                cont.focus()
+                return None
+
     async def option_selected(self, id: str) -> None:
         if id == "quit":
-            for cont in self.app.query_one("#main").children:
-                if cont.display:
-                    cont.focus()
-                    return None
+            self.app.action_exit_app()
+            self.return_focus()
+            return None
+        elif id == "new-chat" and not self.app.endpoint_list():
+            self.return_focus()
+            self.app.push_screen(InfoScreen(INFO_NO_ENDPOINT))
+            return None
         ret = False
         for cont in self.app.query_one("#main").children:
             cont.display = False
@@ -72,10 +82,7 @@ class SidePanel(OptionList):
             await self.app.query_one("#main").mount(Chat(id))
             await self.app.query_one("#main").query_one(f"#{id}").chat_view.load()
         elif id == "new-chat":
-            if self.app.endpoint_list():
-                await self.app.query_one("#main").mount(ManageChats(True))
-            else:
-                await self.app.push_screen(InfoScreen("No endpoints set! Please set up an endpoint first"))
+            await self.app.query_one("#main").mount(ManageChats(True))
         elif id == "manage-chat":
             await self.app.query_one("#main").mount(ManageChats())
         elif id == "manage-endpoint":
@@ -90,8 +97,6 @@ class SidePanel(OptionList):
             await self.app.query_one("#main").mount(ManageLlamacpp())
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
-        if event.option.id == "quit":
-            self.app.action_exit_app()
         await self.option_selected(event.option.id)
 
     def on_mount(self) -> None:
