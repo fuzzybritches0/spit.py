@@ -173,7 +173,8 @@ class HelpersMixIn:
             yield line_bytes.decode("UTF-8", errors="replace")
         return_code = await proc.wait()
         if not return_code == 0:
-            self.app.exception = Exception(f"Process failed with exit code: {return_code}!")
+            process = cmd[0].split("/")[-1]
+            self.exception = Exception(f"Process {process} failed with exit code: {return_code}!")
         proc = None
 
     def stop(self, proc) -> None:
