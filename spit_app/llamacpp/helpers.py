@@ -70,6 +70,21 @@ class HelpersMixIn:
         else:
             del self.settings.llamacpp[setting]
 
+    def settings_changed(self, settings: list) -> bool:
+        for setting in settings:
+            if self.manage[setting]["stype"] == "select_list":
+                if not self.gets(setting) == self.query_one(f"#{setting}").selected:
+                    gets = self.gets(setting)
+                    query = self.query_one(f"#{setting}").selected
+                    return True
+            elif self.manage[setting]["stype"] == "boolean":
+                if not self.gets(setting) == self.query_one(f"#{setting}").value:
+                    return True
+            else:
+                if not str(self.gets(setting)) == self.query_one(f"#{setting}").value:
+                    return True
+        return False
+
     def get_llamacpp_file(self, version: int) -> str:
         machine = platform.uname().machine
         if machine == "x86_64":
