@@ -7,6 +7,9 @@ class ButtonsMixIn:
     async def button_apply_llamacpp_settings(self) -> None:
         self.puts("active_version")
         self.puts("active_models")
+        self.puts("server_port")
+        self.puts("timeout")
+        self.puts("cache_prompt")
         self.puts("vulkan_devices")
         self.puts("server_port")
         self.settings.save()

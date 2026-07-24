@@ -10,26 +10,30 @@ from spit_app.manage.input_widget import InputWidget
 from textual.containers import VerticalScroll, Vertical, Horizontal
 from textual.widgets import Label, Button, Rule, Select
 
+MANAGE = {
+    "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
+    "active_models": {"stype": "select_list", "desc": "Select active Models", "options": []},
+    "server_port": {"stype": "uinteger", "empty": False, "desc": "Server Port", "value": "8080"},
+    "timeout": {"stype": "uinteger", "empty": False, "desc": "Server Timeout (0: no timeout)", "value": 0},
+    "cache_prompt": {"stype": "boolean", "desc": "Cache Prompt", "value": True},
+    "vulkan_devices": {"stype": "select_list", "desc": "Use Vulkan devices", "options": []},
+    "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
+    "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
+    "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_select"},
+    "name": {"stype": "string", "empty": False, "desc": "Model Name"},
+    "org": {"stype": "string", "empty": False, "desc": "Organisation (huggingface.co)"},
+    "model": {"stype": "string", "empty": False, "desc": "Model Identifier (huggingface.co)"},
+    "files": {"stype": "string", "empty": False, "desc": "Files (.gguf)"},
+    "custom_models": {"stype": "dict"},
+    "downloads": {"stype": "select_list"}
+}
+
 class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, HelpersMixIn, VerticalScroll):
     def __init__(self) -> None:
         super().__init__()
         self.id = "manage-llamacpp"
         self.classes = "manage"
-        self.manage = {
-            "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
-            "active_models": {"stype": "select_list", "desc": "Select active Models", "options": []},
-            "server_port": {"stype": "uinteger", "empty": False, "desc": "Server Port", "value": "8080"},
-            "vulkan_devices": {"stype": "select_list", "desc": "Use Vulkan devices", "options": []},
-            "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
-            "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
-            "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_select"},
-            "name": {"stype": "string", "empty": False, "desc": "Model Name"},
-            "org": {"stype": "string", "empty": False, "desc": "Organisation (huggingface.co)"},
-            "model": {"stype": "string", "empty": False, "desc": "Model Identifier (huggingface.co)"},
-            "files": {"stype": "string", "empty": False, "desc": "Files (.gguf)"},
-            "custom_models": {"stype": "dict"},
-            "downloads": {"stype": "select_list"}
-        }
+        self.manage = MANAGE
         self.settings = self.app.settings
         self.path = self.app.settings.path
         self.focused_widget = None
@@ -37,8 +41,9 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
     async def edit_manage_screen(self) -> None:
         input_widget = InputWidget(self, self.manage, self.validators)
         await self.mount(Label("Manage llama.cpp server settings:\n"))
-        for item in ["active_version", "active_models", "server_port", "vulkan_devices"]:
-            await self.mount_all(await input_widget.setting(item, self.gets(item)))
+        for item in ["active_version", "active_models", "server_port", "timeout", "cache_prompt",
+            "vulkan_devices"]:
+            await self.mount_all(await input_widget.setting(item, self.inpgets(item)))
         await self.mount(Button("Apply", id="apply-llamacpp-settings"))
         await self.mount(Rule())
         await self.mount(Label("Manage llama.cpp server installations:\n"))
