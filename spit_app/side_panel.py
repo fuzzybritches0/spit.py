@@ -72,7 +72,7 @@ class SidePanel(OptionList):
             await self.app.query_one("#main").mount(Chat(id))
             await self.app.query_one("#main").query_one(f"#{id}").chat_view.load()
         elif id == "new-chat":
-            if self.settings.endpoints:
+            if self.app.endpoint_list():
                 await self.app.query_one("#main").mount(ManageChats(True))
             else:
                 await self.app.push_screen(InfoScreen("No endpoints set! Please set up an endpoint first"))
