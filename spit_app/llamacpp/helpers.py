@@ -134,9 +134,6 @@ class HelpersMixIn:
             if not line_bytes:
                 break
             yield line_bytes.decode("UTF-8", errors="replace")
-        #stdout, _ = await proc.communicate()
-        #for line in stdout.decode("UTF-8", errors="replace").splitlines(keepends=True):
-        #    yield line
         return_code = await proc.wait()
         if not return_code == 0:
             self.app.exception = Exception(f"Process failed with exit code: {return_code}!")
