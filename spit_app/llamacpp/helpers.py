@@ -93,12 +93,17 @@ class HelpersMixIn:
             machine = "amd64"
         return f"llama-b{version}-bin-ubuntu-vulkan-{machine}.tar.gz"
 
-    def get_versions(self) -> tuple:
-        versions = ()
+    def get_versions_list(self) -> list:
+        versions = []
         for item in os.listdir(self.path["llamacpp"]):
             if os.path.isdir(self.path["llamacpp"] / item):
-                version = item[6:]
-                versions += ((version, version),)
+                versions += [item[6:]]
+        return versions
+
+    def get_versions(self) -> tuple:
+        versions = ()
+        for version in self.get_versions_list():
+            versions += ((version, version),)
         return versions
 
     def get_models_list(self) -> list:
