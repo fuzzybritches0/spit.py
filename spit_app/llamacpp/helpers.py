@@ -20,8 +20,9 @@ class HelpersMixIn:
             if "integer" in self.manage[setting]["stype"]:
                 return int(ret)
             if "float" in self.manage[setting]["stype"]:
-                return float()
+                return float(ret)
             return ret
+
         else:
             if "value" in self.manage[setting]:
                 return self.manage[setting]["value"]
