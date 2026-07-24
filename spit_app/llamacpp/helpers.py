@@ -184,7 +184,6 @@ class HelpersMixIn:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
         except:
             pass
-        proc = None
     
     async def get_latest_llamacpp_version(self) -> int:
         if "latest" in self.settings.llamacpp and "latest_time" in self.settings.llamacpp:
