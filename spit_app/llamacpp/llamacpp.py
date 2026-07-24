@@ -35,6 +35,9 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         self.classes = "manage"
         self.manage = MANAGE
         self.settings = self.app.settings
+        self.exception = self.app.exception
+        self.server = self.app.server
+        self.run_worker = self.app.run_worker
         self.path = self.app.settings.path
         self.focused_widget = None
 
@@ -74,7 +77,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         return(True, None)
 
     def valid_setting_name(self, value: str) -> tuple:
-        for model_id in self.get_models_list().keys():
+        for model_id in self.get_models_dict().keys():
             if self.get_model(model_id)["name"] == value:
                 return (False, "Model name must be unique!")
         return (True, None)
@@ -97,7 +100,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
 
     def get_models_select(self) -> tuple:
         models = ()
-        for model_id in self.get_models_list().keys():
+        for model_id in self.get_models_dict().keys():
             models += ((self.get_model(model_id)["name"], model_id),)
         return models
 
