@@ -11,6 +11,9 @@ class HandlersMixIn:
         self.settings.save()
 
     async def on_ready(self) -> None:
+        if self.settings.llamacpp["active_version"] and self.settings.llamacpp["active_models"]:
+            self.run_worker(self.server.start_server())
+            self.action_notify("Llama.cpp Server started!")
         if "pending" in self.settings.downloads and self.settings.downloads["pending"]:
             self.download.pending = self.settings.downloads["pending"]
             if self.settings.downloads["working"]:
