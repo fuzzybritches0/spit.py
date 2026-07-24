@@ -5,16 +5,29 @@ from spit_app.textual_message import DownloadFiles
 
 class ButtonsMixIn:
     async def button_apply_llamacpp_settings(self) -> None:
-        self.puts("active_version")
-        self.puts("active_models")
-        self.puts("server_port")
-        self.puts("timeout")
-        self.puts("cache_prompt")
-        self.puts("vulkan_devices")
-        self.puts("server_port")
-        self.settings.save()
-        self.app.action_notify("Changes applied!")
-        await self.update_input_vulkan_devices()
+        changed_server = self.settings_changed(["active_version", "active_models", "server_port",
+            "vulkan_devices", "server_port"])
+        changed_settings = self.settings_changed(["active_version", "active_models", "server_port", "timeout",
+            "cache_prompt", "vulkan_devices", "server_port"])
+        if changed_settings:
+            self.puts("active_version")
+            self.puts("active_models")
+            self.puts("server_port")
+            self.puts("timeout")
+            self.puts("cache_prompt")
+            self.puts("vulkan_devices")
+            self.puts("server_port")
+            self.settings.save()
+            self.app.action_notify("Changes applied!")
+            await self.update_input_vulkan_devices()
+        if changed_server:
+            if (not self.gets("active_version") or not self.gets("active_models")) and self.server.is_running():
+                self.server.stop_server()
+                self.app.action_notify("Llama.cpp Server stopped!")
+                return None
+            self.server.stop_server()
+            self.run_worker(self.server.start_server())
+            self.app.action_notify("Llama.cpp Server restarted!")
 
     async def button_update_llamacpp(self) -> None:
         version = self.query_one("#llamacpp_version").value
