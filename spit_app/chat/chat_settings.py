@@ -72,9 +72,9 @@ class ChatSettings(Horizontal):
         count = 0
         while True:
             capabilities = self.chat.model_capabilities
-            if not self.cs("endpoint") in self.settings.endpoints:
+            if not self.cs("endpoint") in self.app.endpoint_list():
                 return None
-            endpoint = self.settings.endpoints[self.cs("endpoint")]
+            endpoint = self.app.get_endpoint(self.cs("endpoint"))
             self.models = await get_models(endpoint)
             if self.models:
                 options = get_models_tuple(self.models)
@@ -103,7 +103,7 @@ class ChatSettings(Horizontal):
 
     def get_options(self) -> list:
         options = []
-        options.append(self.endpoint_options())
+        options.append(self.app.endpoint_list_tuple())
         options.append(self.model_settings_options())
         return options
 
@@ -120,12 +120,6 @@ class ChatSettings(Horizontal):
     def on_descendant_blur(self) -> None:
         if not self.has_focus_within:
             self.disallowed_focus()
-
-    def endpoint_options(self) -> None:
-        tup = ()
-        for key in self.settings.endpoints.keys():
-            tup += ((self.settings.endpoints[key]["name"]["value"], key),)
-        return tup
 
     def model_settings_options(self) -> None:
         tup = ()
