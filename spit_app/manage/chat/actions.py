@@ -43,7 +43,7 @@ class ActionsMixIn:
         return True
 
     async def on_extra_options(self, id) -> bool:
-        if id == "select-new-manage" and not self.settings.endpoints:
+        if id == "select-new-manage" and not self.app.endpoint_list():
             await self.app.push_screen(InfoScreen("No endpoints set! Please set up an endpoint first"))
             return True
         if id == "select-archive":

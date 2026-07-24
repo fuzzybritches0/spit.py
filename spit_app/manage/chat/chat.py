@@ -40,6 +40,7 @@ class Chat(ActionsMixIn, Manage):
         super().__init__("chat", new_chat)
         self.managed = None
         self.cur_dir = "chats"
+        self.endpoint_list = self.app.endpoint_list_tuple
 
     def valid_setting_sandbox(self, value: str) -> tuple:
         return self.is_valid_setting(value)
@@ -137,13 +138,7 @@ class Chat(ActionsMixIn, Manage):
         if event.control.id == "endpoint":
             self.work_model_list()
 
-    def endpoint_list(self, default: bool = False) -> tuple:
-        tup = ()
-        for key in self.settings.endpoints.keys():
-            tup += ((self.settings.endpoints[key]["name"]["value"], key),)
-        return tup
-
-    def model_list(self, default: bool = False) -> tuple:
+    def model_list(self) -> tuple:
         return (("None", "none"),)
 
     @work(exclusive=True, exit_on_error=False)
@@ -151,7 +146,7 @@ class Chat(ActionsMixIn, Manage):
         count = 0
         while True:
             endpoint = self.query_one("#endpoint").value
-            models = await get_models(self.settings.endpoints[endpoint])
+            models = await get_models(self.app.get_endpoint(endpoint))
             options = get_models_tuple(models)
             self.query_one("#model").set_options(options)
             if models:
