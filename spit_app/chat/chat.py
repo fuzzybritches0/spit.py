@@ -36,6 +36,17 @@ class Chat(Vertical):
         self.chat_settings = ChatSettings(self)
         self.undo = Undo(self)
 
+    def has_cap(self, cap: str) -> bool:
+        if cap == "text":
+            if "text" in self.model_capabilities or "completion" in self.model_capabilities:
+                return True
+        elif cap == "image":
+            if "image" in self.model_capabilities or "multimodal" in self.model_capabilities:
+                return True
+        elif cap == "audio":
+            if "audio" in self.model_capabilities or "multimodal" in self.model_capabilities:
+                return True
+
     def message_index(self, element: dict) -> int:
         count = 0
         for message in self.messages:
