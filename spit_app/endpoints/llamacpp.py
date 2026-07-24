@@ -164,7 +164,8 @@ class LlamaCppEndpoint:
         self.maybe_callback(1)
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream("POST", self.api_endpoint, headers=headers, json=payload) as resp:
-                if resp.status_code != 200:
+                if not resp.status_code == 200:
+                    await resp.aread()
                     raise RuntimeError(f"Endpoint returned {resp.status_code}: {resp.text}")
                 async for raw_line in resp.aiter_lines():
                     if not raw_line or not raw_line.startswith("data:"):
