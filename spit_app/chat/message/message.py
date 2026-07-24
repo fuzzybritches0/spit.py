@@ -102,6 +102,7 @@ class Message(ActionsMixIn, VerticalScroll):
 
     def on_focus(self) -> None:
         self.chat_view.focused_message = self
+        self.chat_view.focused_widget = self
 
     def on_descendant_focus(self) -> None:
-        self.chat_view.focused_message = self
+        self.chat_view.focused_widget = self
