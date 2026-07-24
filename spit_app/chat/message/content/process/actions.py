@@ -30,10 +30,12 @@ class ActionsMixIn:
         await self.edit.cancel()
 
     async def action_remove(self) -> None:
-        if type(self.message.message[self.scontent]) is str:
-            self.message.post_message(RemoveProcess(self.scontent))
-        else:
-            self.message.post_message(RemoveProcess(self.scontent, self.count))
+        if not self.message.is_removing and not self.is_removing:
+            self.is_removing = True
+            if type(self.message.message[self.scontent]) is str:
+                self.message.post_message(RemoveProcess(self.scontent))
+            else:
+                self.message.post_message(RemoveProcess(self.scontent, self.count))
 
     async def action_edit(self) -> None:
         self.message.is_edit += 1
@@ -56,12 +58,14 @@ class ActionsMixIn:
         await self.edit.mount(False, False)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if self.chat.is_working() or self.message.is_removing:
+        if self.chat.is_working() or self.message.is_removing or self.is_removing:
             return False
         if action == "copy":
+            if self.is_edit:
+                return False
             if type(self.message.message[self.scontent]) is str and not self.message.message[self.scontent]:
                 return False
-            elif type(self.message.message[self.scontent]) is dict:
+            if type(self.message.message[self.scontent]) is dict:
                 _type = self.message.message[self.scontent][self.count]["type"]
                 if not self.message.message[self.scontent][self.count][_type]:
                     return False

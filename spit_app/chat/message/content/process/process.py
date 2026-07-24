@@ -16,6 +16,7 @@ class Process(ActionsMixIn, VerticalScroll):
         self.message = message
         self.scontent = scontent
         self.count = count
+        self.is_removing = False
         self.init()
 
     def init(self) -> None:
