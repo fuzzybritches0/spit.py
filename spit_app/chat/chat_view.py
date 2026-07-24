@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.events import Focus
+from textual.events import DescendantFocus
 from textual.containers import VerticalScroll
 from .textual_message import RemoveMessage
 from .message.message import Message
@@ -46,13 +46,11 @@ class ChatView(ChatViewActionsMixIn, VerticalScroll, CallbackMixIn):
             self.focus()
         self.is_removing = False
 
-    def on_descendant_focus(self) -> None:
-        if self.chat.display:
-            self.chat.text_area.was_focused = False
-            self.focused_widget = self.app.focused
+    def on_descendant_focus(self, event: DescendantFocus) -> None:
+        self.chat.text_area.was_focused = False
+        self.focused_widget = event.widget
 
-    def on_focus(self, event: Focus|None) -> None:
-        event.prevent_default()
+    def focus(self) -> None:
         self.focus_message()
 
     def set_active(self) -> None:
@@ -89,3 +87,6 @@ class ChatView(ChatViewActionsMixIn, VerticalScroll, CallbackMixIn):
         else:
             self.chat.text_area.focus()
         self.set_active()
+        if self.children:
+            self.focused_widget = self.children[-1]
+            self.focused_message = self.children[-1]
