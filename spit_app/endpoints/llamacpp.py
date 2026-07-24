@@ -47,6 +47,8 @@ def get_model_capabilities(models: list, _model: str) -> list:
         if model[name] == _model:
             if "capabilities" in model:
                 return model["capabilities"]
+            elif "architecture" in model and "input_modalities" in model["architecture"]:
+                return model["architecture"]["input_modalities"]
     return []
 
 def dot2obj(data: dict, dotpath: str, value: str|int|float|bool) -> None:
