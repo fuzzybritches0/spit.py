@@ -97,7 +97,7 @@ class ToolCall:
         if not name in chat.cs("tools") or not name in self.tools.keys():
             return self.end_call(messages, f"ERROR: tool {name} not available!")
         if (self.app.tool_call.tools[name]["requires_multimodal_image"] and
-            not "multimodal" in chat.model_capabilities):
+            not chat.has_cap("image")):
             return self.end_call(messages, f"ERROR: tool {name} requires multimodal capabilities!")
         missing = self.required_arguments(name, arguments)
         if missing:
