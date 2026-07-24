@@ -16,7 +16,7 @@ class Work:
         self.busy = False
         self.exit_after_busy = False
         prompt = self.prompt()
-        endpoint = self.settings.endpoints[self.cs("endpoint")]
+        endpoint = self.app.get_endpoint(self.cs("endpoint"))
         model_settings = {}
         if self.cs("model_settings"):
             model_settings = self.settings.models[self.cs("model_settings")]
