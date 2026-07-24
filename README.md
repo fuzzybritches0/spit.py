@@ -5,18 +5,26 @@
 Although this is still work in progress, it should work and keep you productive.
 
 
+## Supported platforms:
+
+- Linux only
+
+
 ## What works:
 
 - Managing multiple chats
 - Managing multiple endpoints
+- Managing models
+- Managing downloaded llama.cpp versions with optional Vulkan hardware acceleration
 - Managing multiple LLM settings
 - Managing multiple system prompts
 - Tool calling
+- Multimodal (images)
 - Using `/v1/chat/completions` endpoints
 - Markdown parsing
 - LaTex math formula rendering (only tested in Kitty Terminal Emulator (no ssh) and Foot Terminal Emulator (ssh too))
 - Long replies (no TUI freeze, fully async)
-- Chat with images
+- Full editing capabilities of chat history inside the chat view
 - probably more ...
 
 
@@ -83,9 +91,9 @@ python3 ~/spit.py/main.py
 
 Don't forget to run `chmod u+x ~/bin/spit.py` after you've saved the file. Then it will be as simple as typing `spit.py` to start the app.
 
-The minimum settings to use the app, is to setup an endpoint. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum required. Then choose 'Create New Chat' to start a new chat.
+To get started, go to 'Manage Llamacpp', download a llama.cpp version, and a model of your choice. Then go to 'Create New Chat' and create a new chat.
 
-If you haven't set up an endpoint, yet, head over to https://github.com/ggml-org/llama.cpp/, and find out how it's done. If you use any other provider or software with an OAI '/v1/chat/completions' compatible endpoint, I cannot guarantee that it will work, since I've only tested the llama.cpp endpoint. But it says it is compatible.
+You can also use other endpoints. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum required.
 
 
 ## Version requirements
