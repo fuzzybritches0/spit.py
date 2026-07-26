@@ -52,6 +52,27 @@ class Server(HelpersMixIn):
             self.preset = ""
         self.preset += f"{line}\n"
 
+    def compose_model_server_settings(self, model_id: str) -> None:
+        settings = self.gets("server_settings", model_id)
+        for setting in settings.keys():
+            stype = settings[setting]["stype"]
+            value = settings[setting]["value"]
+            if stype == "select_list":
+                slist = ""
+                for items in value:
+                    slist += f"{item},"
+                slist = slist[0:-1]
+                self.conc(f"{setting} = {slist}")
+            elif stype == "boolean":
+                if value:
+                    value = "true"
+                else:
+                    value = "false"
+                self.conc(f"{setting} = {value}")
+            else:
+                value = str(value)
+                self.conc(f"{setting} = {value}")
+
     def compose_preset(self) -> None:
         self.conc("version = 1", True)
         for model_id in self.gets("active_models"):
@@ -79,6 +100,7 @@ class Server(HelpersMixIn):
             if mmproj:
                 mmproj_file = str(self.path["models"] / model_id / mmproj)
                 self.conc(f"mmproj = {mmproj_file}")
+            self.compose_model_server_settings(model_id)
 
     def write_preset(self) -> None:
         self.compose_preset()
