@@ -26,8 +26,9 @@ class ButtonsMixIn:
                 self.app.action_notify("Llama.cpp Server stopped!")
                 return None
             self.server.stop_server()
-            self.run_worker(self.server.start_server())
-            self.app.action_notify("Llama.cpp Server restarted!")
+            if self.gets("active_version") and self.gets("active_models"):
+                self.run_worker(self.server.start_server())
+                self.app.action_notify("Llama.cpp Server restarted!")
 
     async def button_update_llamacpp(self) -> None:
         version = self.query_one("#llamacpp_version").value
