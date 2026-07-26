@@ -114,6 +114,8 @@ class HelpersMixIn:
         return models
 
     def model_is_downloaded(self, model_id: str) -> bool:
+        if not "downloads" in self.settings.llamacpp:
+            return False
         files = self.get_model(model_id)["files"]
         count = 0
         for file in files:
