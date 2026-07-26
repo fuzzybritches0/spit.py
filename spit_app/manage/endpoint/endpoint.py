@@ -1,4 +1,4 @@
-from .common import Common
+from .common import Common, bindings, buttons
 from .actions import ActionsMixIn
 from .handlers import HandlersMixIn
 from .screens import ScreensMixIn
@@ -6,6 +6,8 @@ from .validation import ValidationMixIn
 from spit_app.manage.manage import Manage
 
 class Endpoints(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Manage):
+    BINDINGS = bindings
+    BUTTONS = buttons
     NEW = {
             "name": {"stype": "string", "empty": False, "desc": "Name"},
             "endpoint_url": { "stype": "url", "empty": False, "desc": "Endpoint URL",
