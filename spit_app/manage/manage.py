@@ -38,7 +38,7 @@ class Manage(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertica
 
     def store_values(self) -> None:
         for setting in self.manage.keys():
-            id = setting.replace(".", "-")
+            id = self.rid(setting)
             if self.manage[setting]["stype"] == "text":
                 newvalue = self.query_one(f"#{id}").text
             elif self.manage[setting]["stype"] == "select_list":
