@@ -2,7 +2,6 @@
 import inspect
 from textual.events import DescendantFocus
 from textual.widgets import OptionList, Button, Input, TextArea
-from .validation import fid
 
 class HandlersMixIn:
     def focus(self) -> None:

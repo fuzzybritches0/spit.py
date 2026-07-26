@@ -2,12 +2,6 @@
 import string
 from textual.validation import Validator, ValidationResult
 
-def fid(id: str) -> str:
-    return id.replace("-", ".")
-
-def rid(id: str) -> str:
-    return id.replace(".", "-")
-
 class Function(Validator):
     def __init__(self, function: callable) -> None:
         self.function = function
@@ -21,6 +15,17 @@ class Function(Validator):
             return self.failure(failure)
 
 class ValidationMixIn:
+    def fid(self, id: str) -> str:
+        fid = id.replace("-", ".")
+        if fid in self.manage:
+            return fid
+        return id
+
+    def rid(self, id: str) -> str:
+        if id in self.manage:
+            return id.replace(".", "-")
+        return id
+
     def validators(self, id: str, stype: str) -> list:
         setting = fid(id)
         Validators = []

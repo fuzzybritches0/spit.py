@@ -1,6 +1,5 @@
 import inspect
 from textual.widgets import OptionList, Input, TextArea, Switch, Label, Select, SelectionList, Markdown
-from .validation import rid
 
 class SelectMethod(Select):
     def __init__(self, *args, **kwargs):
