@@ -1,4 +1,4 @@
-from spit_app.manage.endpoint.common import Common
+from spit_app.manage.endpoint.common import Common, bindings, buttons
 from spit_app.manage.endpoint.actions import ActionsMixIn
 from spit_app.manage.endpoint.handlers import HandlersMixIn
 from spit_app.manage.endpoint.screens import ScreensMixIn
@@ -13,6 +13,9 @@ class ModelSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validatio
             "min_p": { "stype": "float", "desc": "MIN-P" },
             "top_k": { "stype": "float", "desc": "TOP-K" }
     }
+
+    BINDINGS = bindings + [("ctrl+s", "reset", "Reset")]
+    BUTTONS = buttons + (("reset", "Reset"),)
 
     def __init__(self) -> None:
         super().__init__("model-settings")
