@@ -37,5 +37,6 @@ class ScreensMixIn:
 
     async def edit_manage(self) -> None:
         input_widget = InputWidget(self, self.manage, self.validators)
-        for setting in self.manage.keys():
-            await self.mount_all(await input_widget.setting(setting), before="#save-delete-cancel")
+        async with self.batch():
+            for setting in self.manage.keys():
+                await self.mount_all(await input_widget.setting(setting), before="#save-delete-cancel")
