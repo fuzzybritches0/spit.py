@@ -30,3 +30,14 @@ MODELS = {
         "files": ["gemma-4-31B_q4_0-it.gguf", "gemma-4-31B-it-mmproj.gguf"]
     }
 }
+
+MODELS_SETTINGS = {
+    "1777914370-480791": {
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "Gemma-4"},
+        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
+        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
+        "top_k": {"stype": "float", "desc": "TOP-K", "value": 64.0},
+        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
+        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.1}
+    }
+}
