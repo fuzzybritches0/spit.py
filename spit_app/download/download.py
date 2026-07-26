@@ -150,6 +150,14 @@ class Download:
         self.settings.save()
         return True
 
+    def maybe_append_size(self, path: Path, size: int) -> None:
+        if not "downloads" in self.settings.llamacpp:
+            self.settings.llamacpp["downloads"] = []
+        for download in self.settings.llamacpp["downloads"]:
+            if download["path"] == str(path):
+                return None
+        self.settings.llamacpp["downloads"].append({"path": str(path), "size": size})
+
     async def try_download(self, url: str, path: Path) -> bool:
         headers = {}
         size = 0
@@ -162,6 +170,7 @@ class Download:
         async with httpx.AsyncClient(timeout=15) as client:
             async with client.stream("GET", url, follow_redirects=True, headers=headers) as resp:
                 if resp.status_code == 416:
+                    self.maybe_append_size(path, size)
                     return True
                 if not resp.status_code == 200 and not resp.status_code == 206:
                     if resp.status_code >= 400:
