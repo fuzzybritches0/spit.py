@@ -55,7 +55,8 @@ class Settings:
             if model_id in MODELS_SETTINGS:
                 model = deepcopy(models[model_id])
                 for setting in models[model_id].keys():
-                    if models[model_id][setting]["value"] == MODELS_SETTINGS[model_id][setting]["value"]:
+                    if (setting in MODELS_SETTINGS[model_id] and
+                        models[model_id][setting]["value"] == MODELS_SETTINGS[model_id][setting]["value"]):
                         del model[setting]
                 if not model:
                     deletes += [model_id]
