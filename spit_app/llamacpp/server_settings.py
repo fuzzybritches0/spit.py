@@ -18,9 +18,9 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         ("save", "Save Settings"),
     )
     NEW = {
-            "content_length": {"stype": "uinteger", "empty": False,
-                "desc": "Content Length (0 = model default)", "value": "0"},
-            "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
+            "ctx-size": {"stype": "uinteger", "empty": False,
+                "desc": "Size of Prompt Context (0 = model default)", "value": "0"},
+            "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True}
     }
 
     def __init__(self, model_id) -> None:
