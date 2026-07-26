@@ -112,7 +112,7 @@ class Download:
                         self.cancel = True
                         break
                     else:
-                        raise self.exception
+                        raise exception
                 count += 1
             if success:
                 del self.pending[0]
