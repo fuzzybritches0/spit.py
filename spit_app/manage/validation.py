@@ -16,15 +16,10 @@ class Function(Validator):
 
 class ValidationMixIn:
     def fid(self, id: str) -> str:
-        fid = id.replace("-", ".")
-        if fid in self.manage:
-            return fid
-        return id
+        return id.replace("----", ".")
 
     def rid(self, id: str) -> str:
-        if id in self.manage:
-            return id.replace(".", "-")
-        return id
+        return id.replace(".", "----")
 
     def validators(self, id: str, stype: str) -> list:
         setting = self.fid(id)
@@ -100,6 +95,8 @@ class ValidationMixIn:
                 return (False, "Must not start or end with `-`!")
             if value.startswith(".") or value.endswith("."):
                 return (False, "Must not start or end with `.`!")
+            if "----" in value:
+                return (False, "Must not contain `----`!")
             return (True, None)
         else:
             return (True, None)
