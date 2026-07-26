@@ -19,5 +19,3 @@ class ModelSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validatio
 
     def __init__(self) -> None:
         super().__init__("model-settings")
-        self.managed = self.app.settings.models
-        self.save_managed = self.app.settings.save_models
