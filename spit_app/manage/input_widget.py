@@ -69,7 +69,6 @@ class InputWidget:
             return "string"
 
     async def setting(self, setting: str, svalue: any = "__NONE__") -> list:
-        id = rid(setting)
         value, stype, desc = self.get_setting(setting)
         if not svalue == "__NONE__":
             value = svalue
@@ -77,8 +76,8 @@ class InputWidget:
         method = self.get_method(setting)
         if method:
             tup = await self.get_method_options(setting, method)
-        ret = [Label(f"{desc}: ({stype})", id="label-" + id)]
-        return ret + getattr(self, self.get_widget(stype))(id, value, stype, method, tup)
+        ret = [Label(f"{desc}: ({stype})", id="label-" + self.methods.rid(setting))]
+        return ret + getattr(self, self.get_widget(stype))(self.methods.rid(setting), value, stype, method, tup)
 
     def select(self, id: str, value: str, stype: str, method: callable, tup: tuple) -> list:
         if not value or not value in (i for n, i in tup):

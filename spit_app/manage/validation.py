@@ -27,7 +27,7 @@ class ValidationMixIn:
         return id
 
     def validators(self, id: str, stype: str) -> list:
-        setting = fid(id)
+        setting = self.fid(id)
         Validators = []
         if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
             Validators.append(Function(self.is_not_empty))
@@ -129,7 +129,7 @@ class ValidationMixIn:
             settings = self.manage.keys()
         for setting in settings:
             stype = self.manage[setting]["stype"]
-            id = rid(setting)
+            id = self.rid(setting)
             if not stype == "boolean" and not stype.startswith("select") and not stype == "text":
                 inp = self.query_one(f"#{id}")
                 validation_result = inp.validate(inp.value)
@@ -148,7 +148,8 @@ class ValidationMixIn:
             content += f"- {failure}\n"
         await self.query_one(f"#val-{id}").update(content)
 
-    async def update_val_results_text(self, id: str, setting: str, text: str) -> bool:
+    async def update_val_results_text(self, id: str, text: str) -> bool:
+        setting = self.fid(id)
         val = True
         content = ""
         if "empty" in self.manage[setting] and not self.manage[setting]["empty"]:
