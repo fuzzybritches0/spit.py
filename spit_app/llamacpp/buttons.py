@@ -22,13 +22,11 @@ class ButtonsMixIn:
             await self.update_input_vulkan_devices()
         if changed_server:
             if (not self.gets("active_version") or not self.gets("active_models")) and self.server.is_running():
-                self.server.stop_server()
-                self.app.action_notify("Llama.cpp Server stopped!")
+                await self.server.stop()
                 return None
-            self.server.stop_server()
+            await self.server.stop()
             if self.gets("active_version") and self.gets("active_models"):
-                self.run_worker(self.server.start_server())
-                self.app.action_notify("Llama.cpp Server restarted!")
+                self.server.start()
 
     async def button_update_llamacpp(self) -> None:
         version = self.query_one("#llamacpp_version").value
