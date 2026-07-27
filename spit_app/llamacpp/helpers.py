@@ -168,24 +168,19 @@ class HelpersMixIn:
                     stderr=asyncio.subprocess.STDOUT, start_new_session=True)
         if attr:
             setattr(self, attr, proc)
-        while True:
-            line_bytes = await proc.stdout.readline()
-            if not line_bytes:
-                break
-            yield line_bytes.decode("UTF-8", errors="replace")
-        return_code = await proc.wait()
-        if not return_code == 0:
-            process = cmd[0].split("/")[-1]
-            self.exception = Exception(f"Process {process} failed with exit code: {return_code}!")
-        proc = None
+        async for data in proc.stdout:
+            yield data.decode("UTF-8", errors="replace")
 
-    def stop(self, proc) -> None:
+    async def terminate(self, proc) -> None:
         if not proc:
             return None
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-        except:
-            pass
+        if not proc.returncode == None:
+            proc = None
+            return None
+        else:
+            proc.terminate()
+            await proc.wait()
+            proc = None
     
     async def get_latest_llamacpp_version(self) -> int:
         if "latest" in self.settings.llamacpp and "latest_time" in self.settings.llamacpp:
