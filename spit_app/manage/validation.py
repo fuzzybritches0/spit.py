@@ -134,7 +134,7 @@ class ValidationMixIn:
                     await self.update_val_results_input(id, validation_result.failure_descriptions)
                     valid = False
             elif stype == "text":
-                val = await self.update_val_results_text(id, setting, self.query_one(f"#{id}").text)
+                val = await self.update_val_results_text(id, self.query_one(f"#{id}").text)
                 if not val:
                     valid = False
         return valid
