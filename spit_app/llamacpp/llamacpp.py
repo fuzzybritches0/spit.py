@@ -35,7 +35,6 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         self.classes = "manage"
         self.manage = MANAGE
         self.settings = self.app.settings
-        self.exception = self.app.exception
         self.server = self.app.server
         self.run_worker = self.app.run_worker
         self.path = self.app.settings.path

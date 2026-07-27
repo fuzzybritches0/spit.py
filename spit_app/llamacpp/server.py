@@ -7,9 +7,8 @@ class Server(HelpersMixIn):
         self.manage = MANAGE
         self.settings = app.settings
         self.path = app.path
-        self.exception = app.exception
         self.api_key = app.get_rand_seq(32)
-        self.applog = app.applog
+        self.app = app
         self.preset = ""
         self.log = ""
         self.server = None
@@ -107,7 +106,19 @@ class Server(HelpersMixIn):
         with open(self.path["models"] / "models.ini", "w") as file:
             file.write(self.preset)
 
-    async def start_server(self) -> None:
+    def server_errors(self) -> None:
+        errors = ""
+        for line in self.log.split("\n"):
+            words = line.split(" ")
+            if len(words) > 1:
+                if words[1] == "E":
+                    errors += f"{' '.join(words[3:])}\n"
+        return errors
+
+    def start(self) -> None:
+        self.app.run_worker(self.start_work())
+
+    async def start_work(self) -> None:
         if not self.gets("active_version") or not self.gets("active_models"):
             return None
         llamacpp = self.path["llamacpp"] / ("llama-" + self.gets("active_version")) / "llama-server"
@@ -119,9 +130,20 @@ class Server(HelpersMixIn):
         self.write_preset()
         cmd = [str(llamacpp)]
         cmd += self.compose_server_arguments()
+        self.app.action_notify(f"Starting Llama.cpp Server Version {self.gets('active_version')}...")
         async for line in self.run(cmd, "server"):
             self.log += line
-
-    def stop_server(self) -> None:
-        self.stop(self.server)
+        self.app.action_notify(f"Stopped Llama.cpp Server Version {self.gets('active_version')}.")
+        if not self.server:
+            return None
+        if not self.server.returncode == 0:
+            server_errors = self.server_errors()
+            self.app.exception= Exception(server_errors)
         self.server = None
+        self.log = ""
+
+    async def stop(self) -> None:
+        self.log = ""
+        if self.server:
+            await self.terminate(self.server)
+            self.server = None
