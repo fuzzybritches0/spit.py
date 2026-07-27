@@ -32,13 +32,18 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         if not model_id in self.app.settings.llamacpp["server_settings"]:
             self.app.settings.llamacpp["server_settings"][model_id] = deepcopy(self.NEW)
         self.new_manage = True
-        self.manage = self.app.settings.llamacpp["server_settings"][model_id]
+        self.manage = deepcopy(self.app.settings.llamacpp["server_settings"][model_id])
+        self.old_manage = deepcopy(self.app.settings.llamacpp["server_settings"][model_id])
         self.managed = self.app.settings.llamacpp["server_settings"]
         self.save_managed = self.app.settings.save
 
     async def after_action(self, action: str) -> None:
         if action == "save":
-            self.app.action_notify(f"Settings saved!")
+            if not self.manage == self.old_manage:
+                self.app.action_notify(f"Settings saved!")
+                await self.app.server.stop()
+                self.app.server.start()
+                self.old_manage = deepcopy(self.manage)
 
     def on_focus(self, event: Focus) -> None:
         event.prevent_default()
