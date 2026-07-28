@@ -1,4 +1,5 @@
 import json
+import asyncio
 from textual.containers import VerticalScroll
 from .actions import ActionsMixIn, bindings
 from .containers.part import Part
@@ -56,13 +57,13 @@ class Process(ActionsMixIn, VerticalScroll):
         await self.target.stream.stop()
         self.pos = pos
 
-    def get_content(self, content: str|dict) -> str|None:
+    async def get_content(self, content: str|dict) -> str|None:
         if type(content) is str:
             return content
         elif type(content) is dict and self.scontent == "tool_calls":
             if not self.tc:
                 self.tc = ToolCall(content)
-            self.tc.format_tool_call()
+            await asyncio.to_thread(self.tc.format_tool_call)
             return self.tc.formatted_tool_call
         return None
 
@@ -71,11 +72,11 @@ class Process(ActionsMixIn, VerticalScroll):
             return None
         if not self.target:
             await self.mount(Part())
-        await self.finish_content(self.get_content(content))
+        await self.finish_content(await self.get_content(content))
         self.target = None
         self.finished = True
 
     async def process(self, content: str|dict) -> None:
         if not self.target:
             await self.mount(Part())
-        await self.process_content(self.get_content(content))
+        await self.process_content(await self.get_content(content))
