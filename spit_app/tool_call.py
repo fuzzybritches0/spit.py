@@ -74,7 +74,7 @@ class ToolCall:
                 if self.tools[name]["stream_tool_response"]:
                     self.maybe_callback(2)
 
-    def call(self, messages: list, tool_call: dict, chat_id: str, callback: callable = None) -> None:
+    async def call(self, messages: list, tool_call: dict, chat_id: str, callback: callable = None) -> None:
         self.callback = callback
         chat = self.app.query_one("#main").query_one(f"#{chat_id}")
         chat_view = chat.chat_view
@@ -105,15 +105,15 @@ class ToolCall:
         try:
             if "call" in self.tools[name]:
                 if inspect.iscoroutinefunction(self.tools[name]["call"]):
-                    ret = asyncio.run(self.tools[name]["call"](self.app, arguments, chat_id))
+                    ret = await self.tools[name]["call"](self.app, arguments, chat_id)
                     if ret:
                         messages[-1]["content"][0]["text"] += ret
                 elif inspect.isfunction(self.tools[name]["call"]):
-                    ret = self.tools[name]["call"](self.app, arguments, chat_id)
+                    ret = await asyncio.to_thread(self.tools[name]["call"], self.app, arguments, chat_id)
                     if ret:
                         messages[-1]["content"][0]["text"] += ret
             elif "call_async_generator" in self.tools[name]:
-                asyncio.run(self.call_async_generator(messages, chat_id, name, arguments))
+                await self.call_async_generator(messages, chat_id, name, arguments)
             else:
                 messages[-1]["content"][0]["text"] = f"ERROR: no function for {name} defined!"
         except Exception as exception:
