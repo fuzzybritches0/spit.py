@@ -30,6 +30,9 @@ class Run:
         self.script = script
         self.sandbox = sandbox
         self.timeout = timeout
+        self.timeout_reached = False
+        self.terminated = False
+        self.chat = app.query_one("#main").query_one(f"#{chat_id}")
 
     def bwrap_args(self, user: str) -> list:
         nobind = ["dev", "proc", "boot", "home"]
@@ -37,6 +40,7 @@ class Run:
         for d in os.listdir("/"):
             if not d in nobind:
                 args += ["--bind", f"/{d}", f"/{d}"]
+        args += ["--die-with-parent"]
         args += ["--setenv", "PIP_BREAK_SYSTEM_PACKAGES", "True"]
         args += ["--setenv", "PIP_USER", "True"]
         args += ["--chdir", f"/home/{user}"]
@@ -58,6 +62,7 @@ class Run:
             cmd_args = self.bwrap_args(user) + [f"/home/{user}/.sandbox_env.sh"] + self.cmd
         else:
             cmd_args = [SANDBOX_ENV] + self.cmd
+        yield "Running process...\n\n"
         proc = await asyncio.create_subprocess_exec(*cmd_args,
                         stdin=asyncio.subprocess.PIPE,
                         stdout=asyncio.subprocess.PIPE,
@@ -66,23 +71,13 @@ class Run:
         proc.stdin.write(self.script.encode())
         await proc.stdin.drain()
         proc.stdin.close()
-        if self.timeout > 0:
-            try:
-                stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=self.timeout)
-                for line in stdout.decode("UTF-8", errors="replace").splitlines(keepends=True):
-                    yield line
-            except:
-                try:
-                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                yield "\nERROR: Terminated! Execution exceeded timeout limit!"
-                return
+        self.chat.watchdog(proc, self)
+        async for data in proc.stdout:
+            yield data.decode("UTF-8", errors="replace")
+        if proc.returncode < 0:
+            if self.timeout_reached:
+                yield "\nProcess was terminated due to timeout limit!"
+            elif self.terminated:
+                yield "\nProcess was terminated by user!"
         else:
-            while True:
-                line_bytes = await proc.stdout.readline()
-                if not line_bytes:
-                    break
-                yield line_bytes.decode("UTF-8", errors="replace")
-        return_code = await proc.wait()
-        yield f"\nProcess exited with code {return_code}."
+            yield f"\nProcess exited with code {proc.returncode}."
