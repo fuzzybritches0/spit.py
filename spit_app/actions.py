@@ -52,6 +52,9 @@ class ActionsMixIn:
             self.settings.save()
             await self.download.cancel_work()
             for cont in self.query_one("#main").children:
+                if cont.id.startswith("chat-"):
+                    if cont.is_working():
+                        await cont.action_abort()
                 await cont.remove()
             self.exit()
         self.confirm_exit = False
