@@ -36,6 +36,31 @@ class Chat(Vertical):
         self.chat_settings = ChatSettings(self)
         self.undo = Undo(self)
 
+    @work
+    async def watchdog(self, proc, caller) -> None:
+        self.app.applog(proc.pid)
+        if caller.timeout:
+            for count in range(caller.timeout*10):
+                await asyncio.sleep(.1)
+                if not proc.returncode == None:
+                    return None
+                if self._work.exit_after_busy:
+                    caller.terminated = True
+                    proc.kill()
+                    return None
+            caller.timeout_reached = True
+            proc.kill()
+        else:
+            while True:
+                self.app.applog(">>")
+                await asyncio.sleep(.1)
+                if not proc.returncode == None:
+                    return None
+                if self._work.exit_after_busy:
+                    caller.terminated = True
+                    proc.kill()
+                    return None
+
     def has_cap(self, cap: str) -> bool:
         if cap == "text":
             if "text" in self.model_capabilities or "completion" in self.model_capabilities:
