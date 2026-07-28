@@ -81,7 +81,7 @@ class Server(HelpersMixIn):
             draft = None
             mmproj = None
             for file in model_config["files"]:
-                if "draft" in file and not draft:
+                if ("draft" in file or "mtp" in file) and not draft:
                     draft = file
                 elif "mmproj" in file and not mmproj:
                     mmproj = file
