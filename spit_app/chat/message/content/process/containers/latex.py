@@ -1,5 +1,6 @@
 import cairosvg
 import ziamath
+import asyncio
 from PIL import Image as PILImage
 from io import BytesIO
 from textual_image.widget import Image
@@ -11,10 +12,10 @@ class LaTeX(VerticalScroll):
         ("y", "copy_to_clipboard", "Copy LaTeX")
     ]
 
-    def __init__(self, message: dict, latex, latex_fence_start, latex_fence_end) -> None:
+    def __init__(self, role: str, latex, latex_fence_start, latex_fence_end) -> None:
         super().__init__()
         self.app.refresh_bindings()
-        self.message = message
+        self.role = role
         self.latex = latex
         escaped = ""
         if latex_fence_start == "[" or latex_fence_start == "(":
@@ -27,14 +28,14 @@ class LaTeX(VerticalScroll):
         self.app.copy_to_clipboard(self.latex_fence_start + self.latex + self.latex_fence_end)
 
     async def on_mount(self) -> None:
-        self.classes = "code-listing-" + self.message["role"]
+        self.classes = "code-listing-" + self.role
         color = self.styles.color.css
         background = self.styles.background.css
-        latex_png = self.latex_png(self.latex, color, background)
+        latex_png = await asyncio.to_thread(self.latex_png, self.latex, color, background)
         if latex_png:
             await self.mount(latex_png)
         else:
-            self.mount(Markdown("```\n" + self.latex_fence_start + self.latex +
+            await self.mount(Markdown("```\n" + self.latex_fence_start + self.latex +
                                  self.latex_fence_end + "\n```"))
 
     def latex_png(self, latex_str: str, color: str, background: str) -> None | Image:
