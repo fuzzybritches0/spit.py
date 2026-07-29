@@ -40,9 +40,9 @@ async def latex_end(self, buffer: str, pattern: str, exp_latex_fence: str, is_di
         if  not sequence.strip() == "..." and not sequence.strip() == "…" and not sequence.strip() == "and":
             await self.process.target.stream.stop()
             await self.process.target.update(complete(self)[:self.seqstart-len(pattern)-escaped])
-            self.part = ""
             await self.process.mount(LaTeX(self.process.message.role, sequence, exp_latex_fence, pattern))
             await self.process.mount(Part())
+            self.part = ""
             self.skip_add_part = len(pattern)+escaped
         self.latex = False
         self.seqstart = -1
@@ -108,15 +108,15 @@ async def code_block_start_end(self, pattern: str) -> None:
 async def code_block_start(self, pattern: str) -> None:
     await self.process.target.stream.write(self.part)
     await self.process.target.stream.stop()
-    self.part = pattern
     await self.process.mount(Code())
+    self.part = pattern
 
 async def code_block_end(self, pattern: str) -> None:
     await self.process.target.stream.write(self.part+pattern)
     await self.process.target.stream.stop()
-    self.part = ""
     await self.process.target.update_code()
     await self.process.mount(Part())
+    self.part = ""
 
 def code_listing(self, pattern: str) -> None:
     if not self.codeblock:
