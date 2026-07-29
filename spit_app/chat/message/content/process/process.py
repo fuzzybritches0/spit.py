@@ -62,8 +62,7 @@ class Process(ActionsMixIn, VerticalScroll):
         elif type(content) is dict and self.scontent == "tool_calls":
             if not self.tc:
                 self.tc = ToolCall(content)
-            self.tc.format_tool_call()
-            return self.tc.formatted_tool_call
+            return self.tc.tool_call_arguments()
         return None
 
     async def finish(self, content: str|dict) -> None:

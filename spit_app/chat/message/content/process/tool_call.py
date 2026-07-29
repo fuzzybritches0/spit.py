@@ -11,9 +11,9 @@ class ToolCall:
         self.value = False
         self.json = []
 
-    def tool_call_arguments(self, arguments: str) -> None:
+    def tool_call_arguments(self) -> None:
+        arguments = self.tool_call["arguments"]
         ret = ""
-        pos = self.pos
         for pos in range(self.pos, len(arguments)):
             char = arguments[pos:pos+1]
             if (char == "{" or char == "[") and not self.value and not self.key:
@@ -37,10 +37,8 @@ class ToolCall:
                     self.skip = True
                     if self.key:
                         ret += "`"
-                    elif self.value:
-                        self.value = False
                     else:
-                        self.value = True
+                        self.value = not self.value
                 elif char == "`" and self.key:
                     self.mark +=1
                 elif char == ":" and self.mark % 2 == 0 and self.key:
@@ -54,14 +52,16 @@ class ToolCall:
                     self.key = True
                     ret += "\n~~~~\n"
             self.last_char = char
-            if self.skip:
-                self.skip = False
-                continue
-            ret+=char
-        self.pos = pos+1
+            if not self.skip:
+                ret+=char
+            self.skip = False
+        self.pos = len(arguments)
         self.formatted_tool_call += ret
-        
-    def format_tool_call(self) -> None:
-        self.tool_call_arguments(self.tool_call["arguments"])
-        self.formatted_tool_call = self.formatted_tool_call.replace(r'\"', '"')
-        self.formatted_tool_call = self.formatted_tool_call.replace("\\n", "\n")
+        return self.escaped()
+
+    def escaped(self) -> str:
+        ret = self.formatted_tool_call.rstrip("\\")
+        ret = ret.replace(r'\"', '"')
+        ret = ret.replace("\\n", "\n")
+        ret = ret.replace("\\t", "\t")
+        return ret.replace("\\\\", "\\")
