@@ -108,11 +108,15 @@ class ButtonsMixIn:
             self.app.action_notify(f"Server settings for {model_name} deleted!")
 
     async def button_add_custom_model(self) -> None:
+        _files = self.query_one("#files").value
+        files = []
+        for file in _files.split(","):
+            files.append(file.strip())
         custom_model = {
             "name": self.query_one("#name").value,
             "org": self.query_one("#org").value,
             "model": self.query_one("#model").value,
-            "files": self.query_one("#files").value,
+            "files": files,
         }
         if not "custom_models" in self.settings.llamacpp:
             self.settings.llamacpp["custom_models"] = {}
