@@ -152,6 +152,9 @@ class Chat(Vertical):
         elif action == "add_image":
             if (not self.has_cap("image") or self.is_working()):
                 return False
+        elif action == "change_focus":
+            if self.chat_view.is_edit:
+                return False
         return True
 
     def focus(self) -> None:
