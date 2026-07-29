@@ -5,7 +5,7 @@ from .text_area_tool import TextAreaTool
 from spit_app.chat.textual_message import RemoveProcess
 
 bindings = [
-    ("c", "copy", "Copy"),
+    ("y", "copy", "Copy"),
     ("e", "edit", "Edit"),
     ("x", "remove", "Rem."),
     ("ctrl+enter", "save", "Save"),
