@@ -28,10 +28,58 @@ MODELS = {
         "org": "google",
         "model": "gemma-4-31B-it-qat-q4_0-gguf",
         "files": ["gemma-4-31B_q4_0-it.gguf", "gemma-4-31B-it-mmproj.gguf"]
+    },
+    "sdfapi8ajdaSD3eFD3094jfkjfaDSF34": {
+        "name": "Qwen3.6-35B-A3B-Q4_K_M",
+        "org": "ggml-org",
+        "model": "Qwen3.6-35B-A3B-GGUF",
+        "files": ["Qwen3.6-35B-A3B-Q4_K_M.gguf", "mmproj-Qwen3.6-35B-A3B-Q8_0.gguf"]
     }
 }
 
 MODELS_SETTINGS = {
+    "1773183358-994727": {
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-think"},
+        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
+        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
+        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
+        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
+        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 1.5},
+        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
+        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
+        "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking", "value": True}
+    },
+    "1773183764-9087174": {
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-think-code"},
+        "temperature": {"stype": "float", "desc": "Temperature", "value": 0.6},
+        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
+        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
+        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
+        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 0.0},
+        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
+        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
+        "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking", "value": True}
+    },
+    "1773184075-9674506": {
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-general"},
+        "temperature": {"stype": "float", "desc": "Temperature", "value": 0.7},
+        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.8},
+        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
+        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
+        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 1.5},
+        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
+        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": False}
+    },
+    "1773184225-5030684": {
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-reason"},
+        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
+        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
+        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
+        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
+        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 1.5},
+        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
+        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": False}
+    },
     "1777914370-480791": {
         "name": {"stype": "string", "empty": False, "desc": "Name", "value": "Gemma-4"},
         "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
