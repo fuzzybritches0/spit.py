@@ -19,8 +19,8 @@ patterns = [
 ]
 
 class PatternProcessing():
-    def __init__(self, content) -> None:
-        self.content = content
+    def __init__(self, process) -> None:
+        self.process = process
         self.escaped = False
         self.codelisting = False
         self.codelisting_fence = ""
