@@ -5,15 +5,46 @@ from textual.containers import Vertical
 from .tool_call import ToolCall
 from spit_app.chat.textual_message import RemoveProcess
 
+def valid(stype: str, text: str) -> bool:
+    if stype == "integer":
+        try:
+            int(text)
+        except:
+            return False
+    elif stype == "float":
+        try:
+            float(text)
+        except:
+            return False
+    elif stype == "boolean":
+        if not text.lower() == "true" and not text.lower() == "false":
+            return False
+    return True
+
+def ret_stype(stype: str, text: str) -> any:
+    if not text:
+        return None
+    if stype == "integer":
+        return int(text)
+    if stype == "float":
+        return float(text)
+    if stype == "boolean":
+        if text.lower() == "true":
+            return True
+        else:
+            return False
+    return text
+
 class TextArea(_TextArea):
-    def __init__(self, id: str, required: bool = False) -> None:
+    def __init__(self, id: str, required: bool, stype: str) -> None:
         super().__init__()
         self.id = id
         self.required = required
+        self.stype = stype
         self._background = self.styles.background
 
-    def on_text_area_changed(self) -> None:
-        if not self.text and self.required:
+    def on_text_area_changed(self, event: _TextArea.Changed) -> None:
+        if (self.required and not self.text) or (self.text and not valid(self.stype, self.text)):
             self.styles.background = "red"
         else:
             self.styles.background = self._background
@@ -65,15 +96,16 @@ class TextAreaTool():
             await self.process.mount(Label("\n[bold $accent-lighten-1]arguments:\n"))
             async with self.process.batch():
                 for prop in self.properties.keys():
+                    stype = self.properties[prop]["type"]
                     value = ""
                     await self.process.mount(Label(f"{prop}:"))
                     if prop in self.arguments:
                         value = self.arguments[prop]
                     if prop in self.required:
-                        await self.process.mount(TextArea(prop, True))
+                        await self.process.mount(TextArea(prop, True, stype))
                     else:
-                        await self.process.mount(TextArea(prop))
-                    self.process.children[-1].text = value
+                        await self.process.mount(TextArea(prop, False, stype))
+                    self.process.children[-1].text = str(value)
                     self.process.children[-1].styles.height = "auto"
             self.process.children[4].focus()
 
@@ -101,9 +133,12 @@ class TextAreaTool():
         for prop in self.properties.keys():
             text = self.process.query_one(f"#{prop}").text
             required = self.process.query_one(f"#{prop}").required
+            stype = self.properties[prop]["type"]
             if required and not text:
                 return False
-            arguments[prop] = text
+            if text and not valid(stype, text):
+                return False
+            arguments[prop] = ret_stype(stype, text)
         save_arguments = {}
         for prop in arguments:
             if prop in self.properties.keys() and arguments[prop]:
@@ -134,5 +169,4 @@ class TextAreaTool():
         async with self.process.batch():
             await self.process.reset()
             tc = ToolCall(self.tool["function"])
-            tc.format_tool_call()
-            await self.process.finish(tc.formatted_tool_call)
+            await self.process.finish(tc.tool_call_arguments())
