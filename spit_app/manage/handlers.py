@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0
 import inspect
-from textual.events import DescendantFocus
+from textual.events import Focus, DescendantFocus
 from textual.widgets import OptionList, Button, Input, TextArea
 
 class HandlersMixIn:
-    def focus(self) -> None:
+    def on_focus(self, event: Focus) -> None:
+        event.prevent_default()
         if self.children:
             if self.focused_el:
                 self.focused_el.focus()
