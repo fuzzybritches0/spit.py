@@ -8,7 +8,7 @@ DESC = {
     "type": "function",
     "function": {
         "name": NAME,
-        "description": "Find files matching patterns in directories.",
+        "description": "Find files and directories by name.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -18,7 +18,7 @@ DESC = {
                 },
                 "pattern": {
                     "type": "string",
-                    "description": "Glob pattern to match (e.g., '*.py', '*.txt'). Default: '*'"
+                    "description": "Glob pattern to match (e.g., '*.py', '*.txt', '*sub*'). Default: '*'"
                 },
                 "recursive": {
                     "type": "boolean",
@@ -34,7 +34,7 @@ DESC = {
     }
 }
 
-PROMPT = "Use this function to find files matching patterns in directories."
+PROMPT = "Use this function to find files and directories by their names using glob patterns."
 SANDBOX = True
 
 SETTINGS = {
