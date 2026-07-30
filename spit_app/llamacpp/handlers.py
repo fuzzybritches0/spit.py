@@ -1,5 +1,5 @@
 import inspect
-from textual.events import DescendantFocus
+from textual.events import Focus, DescendantFocus
 from spit_app.textual_message import DownloadFailed, DownloadSuccess
 from textual.widgets import Button, Select, Input, Label
 from .server_settings import ServerSettings
@@ -65,7 +65,8 @@ class HandlersMixIn:
                 server_settings.display = False
                 await server_settings.remove_children()
 
-    async def focus(self) -> None:
+    async def on_focus(self, event: Focus) -> None:
+        event.prevent_default()
         if self.focused_widget:
             self.focused_widget.focus()
         else:
