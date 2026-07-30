@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 import asyncio
-from textual import events, work
+from textual import work
+from textual.events import Focus
 from textual.containers import Horizontal
 from textual.widgets import Label, Select
 from spit_app.endpoints.llamacpp import get_models, get_model_capabilities, get_models_tuple
@@ -33,7 +34,8 @@ class ChatSettings(Horizontal):
                 self.cs("model_settings", event.value)
         self.chat.write_chat_history()
 
-    def focus(self) -> None:
+    def on_focus(self, event: Focus) -> None:
+        event.prevent_default()
         self.children[self.selects[0]].focus()
 
     def allowed_focus(self) -> None:
