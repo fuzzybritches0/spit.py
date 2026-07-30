@@ -64,27 +64,25 @@ class ToolCall:
         return self.unescaped()
 
     def unescaped(self) -> str:
-        newlines = self.formatted_tool_call.rstrip(r"\\")
+        newlines = self.formatted_tool_call[self.unesc_pos:].rstrip(r"\\")
+        self.unesc_pos += len(newlines)
         newlines = newlines.replace(r"\n", "\n")
         newlines = newlines.replace(r"\t", "\t")
         newlines = newlines.replace(r"\\\\", "\\")
         newlines = newlines.replace(r'\"', '"')
-        ret = ""
-        for pos in range(self.unesc_pos, len(newlines)):
+        for pos in range(0, len(newlines)):
             char = newlines[pos:pos+1]
             if self.unesc_last_char == "\\" and char == "\n":
                 self.unesc_skip = True
-                ret = ret[:-1] + r"\n"
+                self.unesc_tool_call = self.unesc_tool_call[:-1] + r"\n"
             if self.unesc_last_char == "\\" and char == "\t":
                 self.unesc_skip = True
-                ret = ret[:-1] + r"\t"
+                self.unesc_tool_call = self.unesc_tool_call[:-1] + r"\t"
             if self.unesc_last_char == "\\" and char == "\\":
                 self.unesc_skip = True
-                ret = ret[:-1] + r"\\"
+                self.unesc_tool_call = self.unesc_tool_call[:-1] + r"\\"
             if not self.unesc_skip:
-                ret += char
+                self.unesc_tool_call += char
             self.unesc_skip = False
             self.unesc_last_char = char
-        self.unesc_tool_call += ret
-        self.unesc_pos = len(newlines)
         return self.unesc_tool_call
