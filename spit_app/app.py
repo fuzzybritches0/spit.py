@@ -76,7 +76,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
             file = self.path[path[0]] / path[1]
         else:
             file = self.path[path[0]]
-        jcont = json.dumps(content)
+        jcont = json.dumps(content, indent=4)
         try:
             file.write_text(jcont)
         except Exception as exception:
