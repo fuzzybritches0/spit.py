@@ -2,7 +2,7 @@ import json
 from .content.process.process import Process
 from .content.process.text_area_tool import TextAreaTool
 from .content.process.text_area_edit import TextAreaEdit
-from spit_app.chat.textual_message import RemoveMessage, RemoveProcess
+from spit_app.chat.textual_message import RemoveMessage, RemoveProcess, ResetProcess
 
 bindings = [
     ("c", "add_content", "+Cont."),
@@ -205,3 +205,23 @@ class ActionsMixIn:
         del self.pr[message.scontent]
         del self.message[message.scontent]
         self.chat.write_chat_history()
+
+    async def on_reset_process(self, message: ResetProcess) -> None:
+        if not message.text is None:
+            if not message.index is None:
+                async with self.pr[message.scontent].children[message.index].batch():
+                    await self.pr[message.scontent].children[message.index].reset()
+                    await self.pr[message.scontent].children[message.index].finish(message.text)
+            else:
+                async with self.pr[message.scontent].children[0].batch():
+                    await self.pr[message.scontent].children[0].reset()
+                    await self.pr[message.scontent].children[0].finish(message.text)
+        else:
+            if not message.index is None:
+                await self.pr[message.scontent].children[message.index].remove()
+                del self.message[message.scontent][message.index]
+            else:
+                await self.pr[message.scontent].remove()
+                del self.pr[message.scontent]
+                del self.message[message.scontent]
+        self.app.refresh_bindings()
