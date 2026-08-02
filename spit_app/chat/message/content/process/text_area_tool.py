@@ -3,7 +3,7 @@ from copy import deepcopy
 from textual.widgets import TextArea as _TextArea, Label, Select
 from textual.containers import Vertical
 from .tool_call import ToolCall
-from spit_app.chat.textual_message import RemoveProcess
+from spit_app.chat.textual_message import ResetProcess
 
 def valid(stype: str, text: str) -> bool:
     if stype == "integer":
@@ -164,9 +164,8 @@ class TextAreaTool():
         self.message.is_edit -= 1
         self.process.is_edit = False
         if self.new:
-            self.message.post_message(RemoveProcess(self.process.scontent, self.process.count))
-            return None
-        async with self.process.batch():
-            await self.process.reset()
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, None))
+        else:
             tc = ToolCall(self.tool["function"])
-            await self.process.finish(tc.tool_call_arguments())
+            text = tc.tool_call_arguments()
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, text))
