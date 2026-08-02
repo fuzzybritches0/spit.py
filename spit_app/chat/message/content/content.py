@@ -12,20 +12,20 @@ class Content(Vertical):
         self.display = display
 
     async def mount_parts(self, content: str|list) -> None:
-        if type(content) is str:
+        if type(content) is str and content:
             if not self.children:
                 await self.mount(Process(self.chat, self.message, self.scontent, 0))
         else:
             for part in range(len(self.children), len(content)):
                 _type = content[part]["type"]
-                if _type == "text" or _type == "function":
+                if (_type == "text" or _type == "function") and self.message.message[self.scontent][part][_type]:
                     await self.mount(Process(self.chat, self.message, self.scontent, part))
                 elif _type == "image_url":
                     await self.mount(Image())
 
     async def process(self, content: str|list) -> None:
         await self.mount_parts(content)
-        if type(content) is str:
+        if type(content) is str and content:
             await self.children[0].process(content)
         else:
             count = 0
@@ -37,7 +37,7 @@ class Content(Vertical):
 
     async def finish(self, content: str|list) -> None:
         await self.mount_parts(content)
-        if type(content) is str:
+        if type(content) is str and content:
             await self.children[0].finish(content)
         else:
             count = 0
