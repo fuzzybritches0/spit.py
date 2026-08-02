@@ -14,7 +14,7 @@ class Content(Vertical):
     async def mount_parts(self, content: str|list) -> None:
         if type(content) is str and content:
             if not self.children:
-                await self.mount(Process(self.chat, self.message, self.scontent, 0))
+                await self.mount(Process(self.chat, self.message, self.scontent, None))
         else:
             for part in range(len(self.children), len(content)):
                 _type = content[part]["type"]
