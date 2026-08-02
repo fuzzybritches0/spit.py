@@ -203,7 +203,8 @@ class ActionsMixIn:
                 return None
         await self.pr[message.scontent].remove()
         del self.pr[message.scontent]
-        del self.message[message.scontent]
+        if not message.scontent == "content":
+            del self.message[message.scontent]
         self.chat.write_chat_history()
 
     async def on_reset_process(self, message: ResetProcess) -> None:
@@ -220,6 +221,8 @@ class ActionsMixIn:
             if not message.index is None:
                 await self.pr[message.scontent].children[message.index].remove()
                 del self.message[message.scontent][message.index]
+                if not self.message[message.scontent] and not message.scontent == "content":
+                    del self.message[message.scontent]
             else:
                 await self.pr[message.scontent].remove()
                 del self.pr[message.scontent]
