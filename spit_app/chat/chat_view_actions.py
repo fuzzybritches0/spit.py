@@ -11,7 +11,7 @@ bindings = [
     ("ctrl+down", "next_message", "Next"),
     ("ctrl+enter", "continue", "Cont."),
     ("u", "undo", "Undo"),
-    ("r", "redo", "Redo"),
+    ("U", "redo", "Redo"),
     ("a", "add", "+Msg."),
     ("ctrl+e", "edit_on", "Edit On"),
     ("ctrl+e", "edit_off", "Edit Off")
