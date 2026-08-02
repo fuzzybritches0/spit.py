@@ -38,7 +38,6 @@ class Chat(Vertical):
 
     @work
     async def watchdog(self, proc, caller) -> None:
-        self.app.applog(proc.pid)
         if caller.timeout:
             for count in range(caller.timeout*10):
                 await asyncio.sleep(.1)
@@ -52,7 +51,6 @@ class Chat(Vertical):
             proc.kill()
         else:
             while True:
-                self.app.applog(">>")
                 await asyncio.sleep(.1)
                 if not proc.returncode == None:
                     return None
