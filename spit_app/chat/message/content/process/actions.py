@@ -32,10 +32,7 @@ class ActionsMixIn:
     async def action_remove(self) -> None:
         if not self.message.is_removing and not self.is_removing:
             self.is_removing = True
-            if type(self.message.message[self.scontent]) is str:
-                self.message.post_message(RemoveProcess(self.scontent))
-            else:
-                self.message.post_message(RemoveProcess(self.scontent, self.count))
+            self.message.post_message(RemoveProcess(self.scontent, self.count))
 
     async def action_edit(self) -> None:
         self.message.is_edit += 1
