@@ -179,7 +179,7 @@ class ActionsMixIn:
             if "reasoning" in self.pr and self.pr["reasoning"]:
                 return False
         elif action == "add_tool":
-            if not self.role == "assistant" or not self.chat_view.is_edit:
+            if not self.role == "assistant" or not self.chat_view.is_edit or not self.chat.cs("tools"):
                 return False
         elif action == "add_message_next":
             if not self.chat_view.is_edit:
