@@ -34,9 +34,9 @@ class ActionsMixIn:
 
     async def action_add_content(self) -> None:
         content = {"type": "text", "text": ""}
-        if not "content" in self.pr:
+        await self.maybe_mount_process("content")
+        if not "content" in self.message:
             self.message["content"] = [content]
-            await self.maybe_mount_process("content")
         else:
             self.message["content"].append(content)
         index = len(self.message["content"])-1
@@ -48,9 +48,9 @@ class ActionsMixIn:
         await process.mount(process.edit)
 
     async def action_add_reasoning(self) -> None:
-        if not "reasoning" in self.pr:
+        await self.maybe_mount_process("reasoning")
+        if not "reasoning" in self.message:
             self.message["reasoning"] = ""
-            await self.maybe_mount_process("reasoning")
         await self.pr["reasoning"].mount(Process(self.chat, self, "reasoning", 0))
         process = self.pr["reasoning"].children[0]
         process.edit = TextAreaEdit(process, True)
@@ -61,10 +61,10 @@ class ActionsMixIn:
     async def action_add_tool(self) -> None:
         hash_id = self.app.get_rand_seq(32)
         name = self.chat.cs("tools")[0]
+        await self.maybe_mount_process("tool_calls")
         function = {"id": hash_id, "type": "function", "function": {"name": name, "arguments": "{}"}}
-        if not "tool_calls" in self.pr:
+        if not "tool_calls" in self.message:
             self.message["tool_calls"] = [function]
-            await self.maybe_mount_process("tool_calls")
         else:
             self.message["tool_calls"].append(function)
         index = len(self.message["tool_calls"])-1
