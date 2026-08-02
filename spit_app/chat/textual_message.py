@@ -16,3 +16,10 @@ class RemoveProcess(Message):
         self.index = index
         self.scontent = scontent
         super().__init__()
+
+class ResetProcess(Message):
+    def __init__(self, scontent: str, index: int|None, text: str|None) -> None:
+        self.index = index
+        self.scontent = scontent
+        self.text = text
+        super().__init__()
