@@ -31,6 +31,13 @@ def nameid(model: dict) -> str:
         return "name"
     return "id"
 
+def get_models_list(models: list) -> list:
+    options = []
+    for model in models:
+        name = nameid(model)
+        options += [model[name]]
+    return options
+
 def get_models_tuple(models: list) -> tuple:
     options = ()
     for model in models:
