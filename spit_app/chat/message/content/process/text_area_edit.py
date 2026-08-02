@@ -1,5 +1,5 @@
 from textual.widgets import TextArea
-from spit_app.chat.textual_message import RemoveProcess
+from spit_app.chat.textual_message import ResetProcess
 
 class TextAreaEdit(TextArea):
     def __init__(self, process, new: bool = False):
@@ -47,8 +47,6 @@ class TextAreaEdit(TextArea):
         self.message.is_edit -= 1
         self.process.is_edit = False
         if self.new:
-            self.message.post_message(RemoveProcess(self.process.scontent, self.process.count))
-            return None
-        async with self.process.batch():
-            await self.process.reset()
-            await self.process.finish(self.save_text)
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, None))
+        else:
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, self.save_text))
