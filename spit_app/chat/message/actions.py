@@ -51,7 +51,7 @@ class ActionsMixIn:
         await self.maybe_mount_process("reasoning")
         if not "reasoning" in self.message:
             self.message["reasoning"] = ""
-        await self.pr["reasoning"].mount(Process(self.chat, self, "reasoning", 0))
+        await self.pr["reasoning"].mount(Process(self.chat, self, "reasoning", None))
         process = self.pr["reasoning"].children[0]
         process.edit = TextAreaEdit(process, True)
         self.is_edit += 1
@@ -195,7 +195,7 @@ class ActionsMixIn:
     async def on_remove_process(self, message: RemoveProcess) -> None:
         index = self.chat.message_index(self.message)
         self.chat.undo.append_undo("change", self.message, index)
-        if message.index:
+        if not message.index is None:
             await self.pr[message.scontent].children[message.index].remove()
             del self.message[message.scontent][message.index]
             if self.message[message.scontent]:
