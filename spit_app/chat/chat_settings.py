@@ -4,7 +4,7 @@ from textual import work
 from textual.events import Focus
 from textual.containers import Horizontal
 from textual.widgets import Label, Select
-from spit_app.endpoints.llamacpp import get_models, get_model_capabilities, get_models_tuple
+from spit_app.endpoints.llamacpp import get_models, get_model_capabilities, get_models_tuple, get_models_list
 
 class ChatSettings(Horizontal):
     BINDINGS = [("ctrl+s", "leave_settings", "Leave settings")]
@@ -81,16 +81,15 @@ class ChatSettings(Horizontal):
             if self.models:
                 options = get_models_tuple(self.models)
                 self.children[3].set_options(options)
-                self.children[3].value = self.set_value(options, self.cs("model"), False)
-                self.cs("model", self.children[3].selection)
+                if self.cs("model") in get_models_list(self.models):
+                    self.children[3].value = self.cs("model")
+                self.cs("model", self.children[3].value)
+                self.chat.write_chat_history()
                 self.chat.model_capabilities = get_model_capabilities(self.models, self.cs("model"))
                 if not capabilities == self.chat.model_capabilities:
                     self.chat.refresh_bindings()
                 return None
             else:
-                if not self.cs("model") == self.children[3].selection:
-                    self.cs("model", self.children[3].selection)
-                    self.chat.refresh_bindings
                 count += 1
                 if count > 60:
                     return None
