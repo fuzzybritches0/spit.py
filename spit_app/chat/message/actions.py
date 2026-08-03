@@ -193,16 +193,20 @@ class ActionsMixIn:
     async def on_remove_process(self, message: RemoveProcess) -> None:
         index = self.chat.message_index(self.message)
         self.chat.undo.append_undo("change", self.message, index)
-        if not message.index is None:
-            await self.pr[message.scontent].children[message.index].remove()
+        await self.pr[message.scontent].children[message.index].remove()
+        if type(self.message[message.scontent]) is list:
             del self.message[message.scontent][message.index]
             if self.message[message.scontent]:
                 self.chat.write_chat_history()
                 return None
-        await self.pr[message.scontent].remove()
-        del self.pr[message.scontent]
-        if not message.scontent == "content":
+            await self.pr[message.scontent].remove()
+            del self.pr[message.scontent]
+            if not message.scontent == "content":
+                del self.message[message.scontent]
+        else:
             del self.message[message.scontent]
+            await self.pr[message.scontent].remove()
+            del self.pr[message.scontent]
         self.chat.write_chat_history()
 
     async def on_reset_process(self, message: ResetProcess) -> None:
