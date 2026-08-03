@@ -17,12 +17,12 @@ class HelpersMixIn:
             if key:
                 return None
             ret = self.settings.llamacpp[setting]
-            if "integer" in self.manage[setting]["stype"]:
-                return int(ret)
-            if "float" in self.manage[setting]["stype"]:
-                return float(ret)
+            if setting in self.manage:
+                if "integer" in self.manage[setting]["stype"]:
+                    return int(ret)
+                if "float" in self.manage[setting]["stype"]:
+                    return float(ret)
             return ret
-
         else:
             if "value" in self.manage[setting]:
                 return self.manage[setting]["value"]
