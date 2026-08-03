@@ -39,8 +39,7 @@ class ActionsMixIn:
             self.message["content"] = [content]
         else:
             self.message["content"].append(content)
-        index = len(self.message["content"])-1
-        await self.pr["content"].mount(Process(self.chat, self, "content", index))
+        await self.pr["content"].mount(Process(self.chat, self, "content"))
         process = self.pr["content"].children[-1]
         process.edit = TextAreaEdit(process, True)
         self.is_edit += 1
@@ -51,7 +50,7 @@ class ActionsMixIn:
         await self.maybe_mount_process("reasoning")
         if not "reasoning" in self.message:
             self.message["reasoning"] = ""
-        await self.pr["reasoning"].mount(Process(self.chat, self, "reasoning", None))
+        await self.pr["reasoning"].mount(Process(self.chat, self, "reasoning"))
         process = self.pr["reasoning"].children[0]
         process.edit = TextAreaEdit(process, True)
         self.is_edit += 1
@@ -67,8 +66,7 @@ class ActionsMixIn:
             self.message["tool_calls"] = [function]
         else:
             self.message["tool_calls"].append(function)
-        index = len(self.message["tool_calls"])-1
-        await self.pr["tool_calls"].mount(Process(self.chat, self, "tool_calls", index))
+        await self.pr["tool_calls"].mount(Process(self.chat, self, "tool_calls"))
         process = self.pr["tool_calls"].children[-1]
         process.edit = TextAreaTool(process, True)
         self.is_edit += 1
