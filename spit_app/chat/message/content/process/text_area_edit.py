@@ -11,7 +11,7 @@ class TextAreaEdit(TextArea):
         if type(self.message.message[self.process.scontent]) is str:
             self.text = self.message.message[self.process.scontent]
         else:
-            self.text = self.message.message[self.process.scontent][self.process.count]["text"]
+            self.text = self.message.message[self.process.scontent][self.process.index]["text"]
         self.old_text = self.text
         self.save_text = self.text
         self.styles.height = "auto"
@@ -36,7 +36,7 @@ class TextAreaEdit(TextArea):
             if type(self.message.message[self.process.scontent]) is str:
                 self.message.message[self.process.scontent] = self.text
             else:
-                self.message.message[self.process.scontent][self.process.count]["text"] = self.text
+                self.message.message[self.process.scontent][self.process.index]["text"] = self.text
             self.chat.write_chat_history()
             self.save_text = self.text
         else:
@@ -47,6 +47,6 @@ class TextAreaEdit(TextArea):
         self.message.is_edit -= 1
         self.process.is_edit = False
         if self.new:
-            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, None))
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.index, None))
         else:
-            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, self.save_text))
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.index, self.save_text))
