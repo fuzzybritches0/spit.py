@@ -59,7 +59,7 @@ class TextAreaTool():
         self.tool_change = None
 
     def init(self) -> None:
-        self.tool = deepcopy(self.message.message["tool_calls"][self.process.count])
+        self.tool = deepcopy(self.message.message["tool_calls"][self.process.index])
         if self.tool_change:
             self.tool["function"]["name"] = self.tool_change
         self.ori_tool = deepcopy(self.tool)
@@ -125,7 +125,7 @@ class TextAreaTool():
             if self.tool:
                 index = self.chat.message_index(self.message.message)
                 self.chat.undo.append_undo("change", self.message.message, index)
-                self.message.message["tool_calls"][self.process.count] = self.tool
+                self.message.message["tool_calls"][self.process.index] = self.tool
         return True
 
     def save_known(self) -> bool:
@@ -146,7 +146,7 @@ class TextAreaTool():
         self.tool["function"]["arguments"] = json.dumps(save_arguments)
         index = self.chat.message_index(self.message.message)
         self.chat.undo.append_undo("change", self.message.message, index)
-        self.message.message["tool_calls"][self.process.count] = self.tool
+        self.message.message["tool_calls"][self.process.index] = self.tool
         return True
 
     async def save(self) -> None:
@@ -164,8 +164,8 @@ class TextAreaTool():
         self.message.is_edit -= 1
         self.process.is_edit = False
         if self.new:
-            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, None))
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.index, None))
         else:
             tc = ToolCall(self.tool["function"])
             text = tc.tool_call_arguments()
-            self.message.post_message(ResetProcess(self.process.scontent, self.process.count, text))
+            self.message.post_message(ResetProcess(self.process.scontent, self.process.index, text))
