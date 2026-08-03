@@ -8,16 +8,21 @@ from .tool_call import ToolCall
 class Process(ActionsMixIn, VerticalScroll):
     BINDINGS = bindings
 
-    def __init__(self, chat, message, scontent: str, count: int) -> None:
+    def __init__(self, chat, message, scontent: str) -> None:
         super().__init__()
         self.classes = "message-content-process"
         self.chat = chat
         self.chat_view = self.chat.chat_view
         self.message = message
         self.scontent = scontent
-        self.count = count
         self.is_removing = False
         self.init()
+
+    @property
+    def index(self) -> int:
+        for count in range(0, len(self.parent.children)):
+            if self is self.parent.children[count]:
+                return count
 
     def init(self) -> None:
         self.pp = PatternProcessing(self)
