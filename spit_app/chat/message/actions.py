@@ -211,21 +211,13 @@ class ActionsMixIn:
 
     async def on_reset_process(self, message: ResetProcess) -> None:
         if not message.text is None:
-            if not message.index is None:
-                async with self.pr[message.scontent].children[message.index].batch():
-                    await self.pr[message.scontent].children[message.index].reset()
-                    await self.pr[message.scontent].children[message.index].finish(message.text)
-            else:
-                async with self.pr[message.scontent].children[0].batch():
-                    await self.pr[message.scontent].children[0].reset()
-                    await self.pr[message.scontent].children[0].finish(message.text)
+            async with self.pr[message.scontent].children[message.index].batch():
+                await self.pr[message.scontent].children[message.index].reset()
+                await self.pr[message.scontent].children[message.index].finish(message.text)
         else:
-            if not message.index is None:
-                await self.pr[message.scontent].children[message.index].remove()
-                del self.message[message.scontent][message.index]
-                if not self.message[message.scontent] and not message.scontent == "content":
-                    del self.message[message.scontent]
-            else:
+            await self.pr[message.scontent].children[message.index].remove()
+            del self.message[message.scontent][message.index]
+            if not self.message[message.scontent] and not message.scontent == "content":
                 await self.pr[message.scontent].remove()
                 del self.pr[message.scontent]
                 del self.message[message.scontent]
