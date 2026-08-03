@@ -17,11 +17,11 @@ class ActionsMixIn:
         if type(self.message.message[self.scontent]) is str:
             self.app.copy_to_clipboard(self.message.message[self.scontent])
         else:
-            _type = self.message.message[self.scontent][self.count]["type"]
+            _type = self.message.message[self.scontent][self.index]["type"]
             if _type == "function":
-                self.app.copy_to_clipboard(json.dumps(self.message.message[self.scontent][self.count][_type]))
+                self.app.copy_to_clipboard(json.dumps(self.message.message[self.scontent][self.index][_type]))
             else:
-                self.app.copy_to_clipboard(self.message.message[self.scontent][self.count][_type])
+                self.app.copy_to_clipboard(self.message.message[self.scontent][self.index][_type])
 
     async def action_save(self) -> None:
         await self.edit.save()
@@ -32,7 +32,7 @@ class ActionsMixIn:
     async def action_remove(self) -> None:
         if not self.message.is_removing and not self.is_removing:
             self.is_removing = True
-            self.message.post_message(RemoveProcess(self.scontent, self.count))
+            self.message.post_message(RemoveProcess(self.scontent, self.index))
 
     async def action_edit(self) -> None:
         self.message.is_edit += 1
@@ -63,8 +63,8 @@ class ActionsMixIn:
             if type(self.message.message[self.scontent]) is str and not self.message.message[self.scontent]:
                 return False
             if type(self.message.message[self.scontent]) is dict:
-                _type = self.message.message[self.scontent][self.count]["type"]
-                if not self.message.message[self.scontent][self.count][_type]:
+                _type = self.message.message[self.scontent][self.index]["type"]
+                if not self.message.message[self.scontent][self.index][_type]:
                     return False
         if action == "edit" or action == "remove":
             if self.is_edit or not self.chat_view.is_edit:
