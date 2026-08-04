@@ -36,7 +36,8 @@ class ScreensMixIn:
                  ("String", "string"),
                  ("Text", "text"),
                  ("Select", "select"),
-                 ("Select (no default)", "select_no_default")
+                 ("Select (no default)", "select_no_default"),
+                 ("Select List", "select_list")
         ]
         await self.mount(Label("Add custom setting:"))
         await self.mount(Select(types, id="custom-setting-select-add", allow_blank=False))
