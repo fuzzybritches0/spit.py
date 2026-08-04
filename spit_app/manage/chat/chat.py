@@ -42,6 +42,14 @@ class Chat(ActionsMixIn, Manage):
         self.cur_dir = "chats"
         self.endpoint_list = self.app.endpoint_list_tuple
 
+    def remove_prompt_cache(self) -> None:
+        path = self.path["prompt_cache"] / f"chat-{self.uuid}"
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except Exception as exception:
+                self.app.exception = exception
+
     def valid_setting_sandbox(self, value: str) -> tuple:
         return self.is_valid_setting(value)
 
@@ -89,6 +97,7 @@ class Chat(ActionsMixIn, Manage):
             self.app.query_one("#side-panel").option_list()
             if self.app.query_one("#side-panel").highlighted:
                 self.app.query_one("#side-panel").highlighted-=1
+        self.remove_prompt_cache()
         return True
 
     def load(self, uuid: str) -> None:
