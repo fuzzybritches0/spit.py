@@ -84,7 +84,8 @@ class ChatViewActionsMixIn:
         if action == "continue":
             if self.is_edit:
                 return False
-            if self.cs("model") == "none" or not self.messages:
+            if (self.cs("model") == "none" or not self.messages or
+                self.cs("endpoint") == 1 or self.cs("endpoint") == "none"):
                 return False
             if not self.chat.has_cap("text"):
                 return False
