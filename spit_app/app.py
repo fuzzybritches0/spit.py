@@ -114,7 +114,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
     def endpoint_list_tuple(self) -> tuple:
         tup = ()
         if self.server.is_running():
-            tup += (("Spit.py Local Server", "0"),)
+            tup += ((self.server.name, "0"),)
         else:
             tup += (("None", "1"),)
         for key in self.settings.endpoints.keys():
