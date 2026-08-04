@@ -32,6 +32,8 @@ class Settings:
         self.path["llamacpp"].mkdir(parents=True, exist_ok=True)
         self.path["models"] = self.path["data"] / "models"
         self.path["models"].mkdir(parents=True, exist_ok=True)
+        self.path["prompt_cache"] = self.path["data"] / "prompt_cache"
+        self.path["prompt_cache"].mkdir(parents=True, exist_ok=True)
 
     def save(self) -> None:
         settings = {}
