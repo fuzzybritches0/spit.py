@@ -48,7 +48,7 @@ class ActionsMixIn:
             return None
         self.confirm_exit = True
         if await self.push_screen_wait(ConfirmScreen()):
-            await self.server.stop()
+            await self.server.stop_kill()
             self.settings.save()
             await self.download.cancel_work()
             for cont in self.query_one("#main").children:
