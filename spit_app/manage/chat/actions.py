@@ -46,7 +46,6 @@ class ActionsMixIn:
     async def on_extra_options(self, id) -> bool:
         if id == "select-new-manage" and not self.app.endpoint_list():
             await self.app.push_screen(InfoScreen(INFO_NO_ENDPOINT))
-            return True
         if id == "select-archive":
             self.cur_dir = "chats_archive"
             await super().after_action("")
