@@ -39,7 +39,7 @@ class ChatTextArea(TextArea):
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "submit":
-            if self.cs("model") == "none":
+            if self.cs("model") == "none" or self.cs("endpoint") == 1 or self.cs("endpoint") == "none":
                 return False
             if not self.chat.has_cap("text"):
                 return False
