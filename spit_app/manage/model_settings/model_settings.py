@@ -24,6 +24,13 @@ class ModelSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validatio
         self.managed = self.settings.models
         self.save_managed = self.settings.save_models
 
+    def custom_options(self) -> list:
+        options = []
+        for setting in self.manage.keys():
+            if not setting == "name":
+                options.append((setting, setting))
+        return options
+
     async def action_reset(self) -> None:
         del self.settings.models[self.uuid]
         self.settings.save_models()
