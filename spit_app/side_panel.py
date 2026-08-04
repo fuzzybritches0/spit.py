@@ -68,7 +68,6 @@ class SidePanel(OptionList):
         elif id == "new-chat" and not self.app.endpoint_list():
             self.return_focus()
             self.app.push_screen(InfoScreen(INFO_NO_ENDPOINT))
-            return None
         ret = False
         for cont in self.app.query_one("#main").children:
             cont.display = False
