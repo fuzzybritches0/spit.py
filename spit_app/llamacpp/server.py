@@ -144,3 +144,9 @@ class Server(HelpersMixIn):
         if self.server:
             await self.terminate(self.server)
             self.server = None
+
+    async def stop_kill(self) -> None:
+        self.log = ""
+        if self.server:
+            await self.kill(self.server)
+            self.server = None
