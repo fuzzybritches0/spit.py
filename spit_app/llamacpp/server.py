@@ -57,10 +57,7 @@ class Server(HelpersMixIn):
             stype = settings[setting]["stype"]
             value = settings[setting]["value"]
             if stype == "select_list":
-                slist = ""
-                for items in value:
-                    slist += f"{item},"
-                slist = slist[0:-1]
+                slist = ",".join(value)
                 self.conc(f"{setting} = {slist}")
             elif stype == "boolean":
                 if value:
