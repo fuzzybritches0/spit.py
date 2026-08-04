@@ -12,7 +12,7 @@ class Server(HelpersMixIn):
         self.preset = ""
         self.log = ""
         self.server = None
-        self.compose_endpoint_settings
+        self.compose_endpoint_settings()
 
     def is_running(self) -> bool:
         if self.server:
