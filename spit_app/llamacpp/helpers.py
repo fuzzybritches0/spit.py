@@ -185,6 +185,17 @@ class HelpersMixIn:
             await proc.wait()
             proc = None
     
+    async def kill(self, proc) -> None:
+        if not proc:
+            return None
+        if not proc.returncode == None:
+            proc = None
+            return None
+        else:
+            proc.kill()
+            await proc.wait()
+            proc = None
+
     async def get_latest_llamacpp_version(self) -> int:
         if "latest" in self.settings.llamacpp and "latest_time" in self.settings.llamacpp:
             if time.time() < self.settings.llamacpp["latest_time"] + 3600:
