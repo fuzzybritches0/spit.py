@@ -37,6 +37,12 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.managed = self.app.settings.llamacpp["server_settings"]
         self.save_managed = self.app.settings.save
 
+    def custom_options(self) -> list:
+        options = []
+        for setting in self.manage.keys():
+            options.append((setting, setting))
+        return options
+
     async def after_action(self, action: str) -> None:
         if action == "save":
             if not self.manage == self.old_manage:
