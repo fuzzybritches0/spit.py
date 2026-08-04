@@ -1,4 +1,5 @@
 # SPDX-Liicense-Identifier: GPL-2.0
+import os
 import asyncio
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 from .textual_message import RemoveMessage
@@ -12,6 +13,7 @@ class Work:
         self.cs = chat.cs
         self.app = chat.app
         self.settings = chat.app.settings
+        self.path = chat.app.path
         self.messages = chat.messages
         self.busy = False
         self.exit_after_busy = False
@@ -62,6 +64,19 @@ class Work:
             prompt =  "# INSTRUCTIONS\n\n" + chat_prompt + "\n\n" + prompt
         return prompt
 
+    async def maybe_restore_cache(self) -> None:
+        if self.cs("endpoint") == "0" and self.app.server.is_running():
+            if self.app.server.current_cache_id == self.chat.id:
+                return None
+            if os.path.isfile(self.path["prompt_cache"] / self.chat.id):
+                self.app.action_notify("Restoring prompt cache...")
+                await self.app.server.cache_action(self.chat.id, "restore")
+            self.app.server.current_cache_id = self.chat.id
+
+    async def maybe_save_cache(self) -> None:
+        if self.cs("endpoint") == "0" and self.app.server.is_running():
+            await self.app.server.cache_action(self.chat.id, "save")
+
     async def work_stream(self) -> None:
         if "tool_calls" in self.messages[-1]:
             for tool_call in self.messages[-1]["tool_calls"]:
@@ -73,7 +88,9 @@ class Work:
                     return None
         count = len(self.messages)
         try:
+            await self.maybe_restore_cache()
             await self.endpoint.stream()
+            await self.maybe_save_cache()
         except Exception as exception:
             if type(exception).__name__ in ("TimeoutError", "ReadTimeout", "ConnectError",
                                             "RuntimeError", "ConnectTimeout",
