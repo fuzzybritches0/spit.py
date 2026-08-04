@@ -95,7 +95,7 @@ class LlamaCppEndpoint:
                     dot2obj(payload, setting, value)
                 else:
                     if value or value is False:
-                        if settings["stype"] == "select_list":
+                        if settings[setting]["stype"] == "select_list":
                             payload[setting] = ",".join(value)
                         else:
                             payload[setting] = value
