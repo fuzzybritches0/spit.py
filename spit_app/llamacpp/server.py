@@ -24,11 +24,11 @@ class Server(HelpersMixIn):
         timeout = self.gets("timeout")
         cache_prompt = self.gets("cache_prompt")
         self.endpoint = {
-            "endpoint_url": {"value": f"http://127.0.0.1:{port}/v1"},
-            "key": {"value": self.api_key},
-            "timeout": {"value": timeout},
-            "reasoning_key": {"value": "reasoning_content"},
-            "cache_pompt": {"value": cache_prompt}
+            "endpoint_url": {"value": f"http://127.0.0.1:{port}/v1", "stype": "string"},
+            "key": {"value": self.api_key, "stype": "string"},
+            "timeout": {"value": timeout, "stype": "uinteger"},
+            "reasoning_key": {"value": "reasoning_content", "stype": "string"},
+            "cache_prompt": {"value": cache_prompt, "stype": "boolean"}
         }
 
     def compose_server_arguments(self) -> list:
