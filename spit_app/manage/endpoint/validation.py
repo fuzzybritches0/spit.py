@@ -2,14 +2,13 @@
 
 class ValidationMixIn:
     def valid_setting_name(self, value: str) -> tuple:
-        valid = True
         if value:
-            for manage in self.managed.keys():
-                if not manage == self.uuid and self.managed[manage]["name"]["value"].strip() == value.strip():
-                    valid = False
-                    break
-        if not valid:
-            return (False, "Must be unique!")
+            if value == self.app.server.name:
+                return (False, "Must be unique!")
+            for manage in self.app.endpoint_list():
+                endpoint = self.app.get_endpoint(manage)
+                if not manage == self.uuid and endpoint["name"]["value"].strip() == value.strip():
+                    return (False, "Must be unique!")
         return (True, None)
 
     def is_unique_custom(self, value: str) -> tuple:
@@ -17,10 +16,7 @@ class ValidationMixIn:
         if value:
             for name in self.manage.keys():
                 if name.strip() == value.strip():
-                    valid = False
-                    break
-        if not valid:
-            return (False, "Must be unique!")
+                    return (False, "Must be unique!")
         return (True, None)
 
     async def validate_add_setting(self) -> bool:
