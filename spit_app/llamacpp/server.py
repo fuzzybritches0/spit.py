@@ -1,4 +1,5 @@
 import os
+import httpx
 from .helpers import HelpersMixIn
 from .llamacpp import MANAGE
 
@@ -12,31 +13,44 @@ class Server(HelpersMixIn):
         self.preset = ""
         self.log = ""
         self.server = None
-        self.compose_endpoint_settings()
+        self.current_cache_id = None
+        self.name = "Spit.py Local Server"
+
+    async def cache_action(self, cache_id: str, action: str) -> bool:
+        model = self.app.query_one("#main").query_one(f"#{cache_id}").cs("model")
+        endpoint = f"http://127.0.0.1:{self.gets('server_port')}/slots/0?action={action}"
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
+        json = {"filename": f"{cache_id}", "model": model}
+        try:
+            async with httpx.AsyncClient(timeout=720) as client:
+                response = await client.post(endpoint, headers=headers, json=json)
+        except:
+            return False
+        if response.status_code == 200:
+            return True
+        return False
 
     def is_running(self) -> bool:
         if self.server:
             return True
         return False
 
-    def compose_endpoint_settings(self) -> None:
-        port = self.gets("server_port")
-        timeout = self.gets("timeout")
-        cache_prompt = self.gets("cache_prompt")
-        self.name = "Spit.py Local Server"
-        self.endpoint = {
+    @property
+    def endpoint(self) -> None:
+        return {
             "name": { "value": self.name, "stype": "string"},
-            "endpoint_url": {"value": f"http://127.0.0.1:{port}/v1", "stype": "string"},
+            "endpoint_url": {"value": f"http://127.0.0.1:{self.gets('server_port')}/v1", "stype": "string"},
             "key": {"value": self.api_key, "stype": "string"},
-            "timeout": {"value": timeout, "stype": "uinteger"},
+            "timeout": {"value": self.gets("timeout"), "stype": "uinteger"},
             "reasoning_key": {"value": "reasoning_content", "stype": "string"},
-            "cache_prompt": {"value": cache_prompt, "stype": "boolean"}
+            "cache_prompt": {"value": self.gets("cache_prompt"), "stype": "boolean"}
         }
 
     def compose_server_arguments(self) -> list:
         arguments = ["--models-preset", str(self.path["models"] / "models.ini"), "--no-ui",
             "--no-ui-mcp-proxy", "--host", "127.0.0.1", "--port", str(self.gets("server_port")),
-            "--api-key", self.api_key]
+            "--api-key", self.api_key, "--slot-save-path", str(self.path["prompt_cache"]),
+            "--slots", "--parallel", "1", "--offline"]
         devices = ""
         if self.gets("vulkan_devices"):
             for device in self.gets("vulkan_devices"):
@@ -125,7 +139,6 @@ class Server(HelpersMixIn):
             self.puts("active_version", None)
             self.settings.save()
             return None
-        self.compose_endpoint_settings()
         self.write_preset()
         cmd = [str(llamacpp)]
         cmd += self.compose_server_arguments()
