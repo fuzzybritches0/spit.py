@@ -12,7 +12,7 @@ class Server(HelpersMixIn):
         self.preset = ""
         self.log = ""
         self.server = None
-        self.endpoint = None
+        self.compose_endpoint_settings
 
     def is_running(self) -> bool:
         if self.server:
@@ -23,7 +23,9 @@ class Server(HelpersMixIn):
         port = self.gets("server_port")
         timeout = self.gets("timeout")
         cache_prompt = self.gets("cache_prompt")
+        self.name = "Spit.py Local Server"
         self.endpoint = {
+            "name": { "value": self.name, "stype": "string"},
             "endpoint_url": {"value": f"http://127.0.0.1:{port}/v1", "stype": "string"},
             "key": {"value": self.api_key, "stype": "string"},
             "timeout": {"value": timeout, "stype": "uinteger"},
