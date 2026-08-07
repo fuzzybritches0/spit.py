@@ -5,18 +5,16 @@ from spit_app.textual_message import DownloadFiles
 
 class ButtonsMixIn:
     async def button_apply_llamacpp_settings(self) -> None:
-        changed_server = self.settings_changed(["active_version", "active_models", "server_port",
-            "vulkan_devices", "server_port"])
+        changed_server = self.settings_changed(["active_version", "active_models", "server_port"])
         changed_settings = self.settings_changed(["active_version", "active_models", "server_port", "timeout",
-            "cache_prompt", "vulkan_devices", "server_port"])
+            "save_cache_prompt", "keep_models_loaded"])
         if changed_settings:
             self.puts("active_version")
             self.puts("active_models")
             self.puts("server_port")
             self.puts("timeout")
-            self.puts("cache_prompt")
-            self.puts("vulkan_devices")
-            self.puts("server_port")
+            self.puts("save_cache_prompt")
+            self.puts("keep_models_loaded")
             self.settings.save()
             self.app.action_notify("Changes applied!")
             await self.update_input_vulkan_devices()
