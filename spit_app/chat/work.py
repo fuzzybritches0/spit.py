@@ -2,6 +2,7 @@
 import os
 import asyncio
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
+from spit_app.modal_screens import LoadProgressBarScreen
 from .textual_message import RemoveMessage
 
 TOOL_PROMPT = "# FUNCTION CALLING INSTRUCTIONS\n\nAll of your function calls are rendered in human-readable form for the user to inspect. The user is also informed about the function call results and can see the tool response message. DO NOT REPEAT THEM!\n\n"
@@ -64,8 +65,38 @@ class Work:
             prompt =  "# INSTRUCTIONS\n\n" + chat_prompt + "\n\n" + prompt
         return prompt
 
-    async def maybe_restore_cache(self) -> None:
+    def local_server_active(self) -> bool:
         if self.cs("endpoint") == "0" and self.app.server.is_running():
+            return True
+        return False
+
+    async def maybe_load_model(self) -> None:
+        if self.local_server_active():
+            if self.cs("model") in self.app.server.active_models:
+                return None
+            if self.app.server.active_models and not self.app.server.gets("keep_models_loaded"):
+                for model in self.app.server.active_models:
+                    self.app.action_notify(f"Unloading {model}...")
+                    await self.app.server.model_action(model, "unload")
+            model = self.cs("model")
+            await self.app.server.model_action(model, "load")
+            self.app.load_progress_bar_screen = LoadProgressBarScreen()
+            self.app.push_screen(self.app.load_progress_bar_screen)
+            self.app.load_progress_bar_screen.update_text(f"Loading {model}...")
+            self.app.load_progress_bar_screen.update_total(100)
+            while True:
+                if model in self.app.server.active_models:
+                    break
+                if self.app.load_progress_bar_screen:
+                    self.app.load_progress_bar_screen.update_progress(self.app.server.model_load_progress)
+                else:
+                    return None
+                await asyncio.sleep(1)
+            await self.app.load_progress_bar_screen.dismiss()
+            self.app.load_progress_bar_screen = None
+
+    async def maybe_restore_cache(self) -> None:
+        if self.local_server_active() and self.app.server.gets("save_cache_prompt"):
             if self.app.server.current_cache_id == self.chat.id:
                 return None
             if os.path.isfile(self.path["prompt_cache"] / self.chat.id):
@@ -74,7 +105,7 @@ class Work:
             self.app.server.current_cache_id = self.chat.id
 
     async def maybe_save_cache(self) -> None:
-        if self.cs("endpoint") == "0" and self.app.server.is_running():
+        if self.local_server_active() and self.app.server.gets("save_cache_prompt"):
             await self.app.server.cache_action(self.chat.id, "save")
 
     async def work_stream(self) -> None:
@@ -87,10 +118,10 @@ class Work:
                 if self.exit_after_busy:
                     return None
         count = len(self.messages)
+        await self.maybe_load_model()
+        await self.maybe_restore_cache()
         try:
-            await self.maybe_restore_cache()
             await self.endpoint.stream()
-            await self.maybe_save_cache()
         except Exception as exception:
             if type(exception).__name__ in ("TimeoutError", "ReadTimeout", "ConnectError",
                                             "RuntimeError", "ConnectTimeout",
@@ -102,6 +133,7 @@ class Work:
                 return None
             else:
                 raise exception
+        await self.maybe_save_cache()
         self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages))
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
