@@ -11,7 +11,7 @@ from .models import MODELS
 
 class HelpersMixIn:
     def gets(self, setting: str, key: str|None = None) -> any:
-        if setting in self.settings.llamacpp and self.settings.llamacpp[setting]:
+        if setting in self.settings.llamacpp:
             if key and key in self.settings.llamacpp[setting]:
                 return self.settings.llamacpp[setting][key]
             if key:
