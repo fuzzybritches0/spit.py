@@ -13,8 +13,28 @@ class Server(HelpersMixIn):
         self.preset = ""
         self.log = ""
         self.server = None
+        self.active_models = []
         self.current_cache_id = None
         self.name = "Spit.py Local Server"
+
+    async def model_action(self, model: str, action: str) -> bool:
+        endpoint = f"http://127.0.0.1:{self.gets('server_port')}/models/{action}"
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
+        json = {"model": f"{model}"}
+        try:
+            async with httpx.AsyncClient(timeout=720) as client:
+                response = await client.post(endpoint, headers=headers, json=json)
+        except:
+            return False
+        if response.status_code == 200:
+            if action == "unload":
+                del self.active_models[self.active_models.index(model)]
+            return True
+        else:
+            if action == "load" and self.app.load_progress_bar_screen:
+                await self.app.load_progress_bar_screen.dismiss()
+            self.app.exception = Exception(response.text)
+        return False
 
     async def cache_action(self, cache_id: str, action: str) -> bool:
         model = self.app.query_one("#main").query_one(f"#{cache_id}").cs("model")
