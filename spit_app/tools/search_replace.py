@@ -48,11 +48,14 @@ DESC = {
 }
 
 PROMPT = "Use this function to find and replace text in files (with preview)."
+PROMPT_INST = "Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
 SANDBOX = True
+MAX_SECONDS = 0
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" },
-    "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)" }
+    "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)" },
+    "timeout": { "value": MAX_SECONDS, "stype": "uinteger", "empty": False, "desc": "Timeout (0 = no timeout)"},
 }
 
 EXEC = {
@@ -75,6 +78,6 @@ max_replacements = {arguments.get('max_replacements', 0)}
 """
     script = args + EXEC["script"]
     run = Run(app, chat_id, EXEC["interpreter"], script,
-              SETTINGS["sandbox"]["value"], 0)
+              SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
     async for line in run.run():
         yield line
