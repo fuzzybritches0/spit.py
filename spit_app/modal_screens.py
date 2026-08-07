@@ -11,6 +11,9 @@ from spit_app.manage.validation import ValidationMixIn
 class ProgressDismiss(Message):
     ...
 
+class ErrorDismiss(Message):
+    ...
+
 class CancelWork(Message):
     def __init__(self, clear: bool = False) -> None:
         self.clear = clear
@@ -24,7 +27,7 @@ class Common(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id=f"{self.mtype}-modal"):
-            yield Markdown(self.text)
+            yield Markdown(self.text, id="common-text")
             with Center():
                 yield Button("OK")
         yield Footer()
@@ -86,9 +89,16 @@ class ErrorScreen(Common):
         self.classes = "modal"
         self.mtype = "error"
         self.text = f"# ERROR:\n\n- `{type(exception).__name__}` {exception}"
+        self.exceptions = [str(exception).strip()]
 
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss()
+    async def append_exception(self, exception: Exception) -> None:
+        if not str(exception).strip() in self.exceptions:
+            self.exceptions.append(str(exception).strip())
+            text = f"\n\n# ERROR:\n\n- `{type(exception).__name__}` {exception}"
+            await self.query_one("#common-text").append(text)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.app.post_message(ErrorDismiss())
 
 class InfoScreen(Common):
     def __init__(self, info: str) -> None:
