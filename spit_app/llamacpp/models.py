@@ -142,7 +142,8 @@ MODELS_SETTINGS = {
         "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
         "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
         "top_k": {"stype": "float", "desc": "TOP-K", "value": 64.0},
+        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.1},
         "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
-        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.1}
+        "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking", "value": True}
     }
 }
