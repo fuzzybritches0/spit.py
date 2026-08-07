@@ -8,6 +8,7 @@ from pathlib import Path
 from copy import deepcopy
 from textual.widgets import Select
 from .models import MODELS
+from .server_settings import NEW as NEW_SERVER_SETTINGS
 
 class HelpersMixIn:
     def gets(self, setting: str, key: str|None = None) -> any:
@@ -159,7 +160,13 @@ class HelpersMixIn:
             return devices
         except:
             return []
-    
+
+    def get_server_settings(self, model_id) -> dict:
+        if not model_id in self.settings.server_settings:
+            return deepcopy(NEW_SERVER_SETTINGS)
+        else:
+            return self.settings.server_settings[model_id]
+
     async def run_get_output(self, cmd: list) -> str:
         output = ""
         async for line in self.run(cmd):
