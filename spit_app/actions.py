@@ -55,6 +55,5 @@ class ActionsMixIn:
                 if cont.id.startswith("chat-"):
                     if cont.is_working():
                         await cont.action_abort()
-                await cont.remove()
             self.exit()
         self.confirm_exit = False
