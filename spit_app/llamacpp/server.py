@@ -72,23 +72,13 @@ class Server(HelpersMixIn):
             "key": {"value": self.api_key, "stype": "string"},
             "timeout": {"value": self.gets("timeout"), "stype": "uinteger"},
             "reasoning_key": {"value": "reasoning_content", "stype": "string"},
-            "cache_prompt": {"value": self.gets("cache_prompt"), "stype": "boolean"}
         }
 
     def compose_server_arguments(self) -> list:
         arguments = ["--models-preset", str(self.path["models"] / "models.ini"), "--no-ui",
             "--no-ui-mcp-proxy", "--host", "127.0.0.1", "--port", str(self.gets("server_port")),
             "--api-key", self.api_key, "--slot-save-path", str(self.path["prompt_cache"]),
-            "--slots", "--parallel", "1", "--offline"]
-        devices = ""
-        if self.gets("vulkan_devices"):
-            for device in self.gets("vulkan_devices"):
-                devices += f"{device},"
-        if devices:
-            devices = devices[0:-1]
-            arguments += ["--device", devices]
-        else:
-            arguments += ["--device", "none"]
+            "--slots", "--parallel", "1", "--offline", "--no-models-autoload"]
         return arguments
 
     def conc(self, line: str, clear: bool = False) -> None:
