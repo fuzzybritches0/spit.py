@@ -23,6 +23,7 @@ class ModelSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validatio
         super().__init__("model-settings")
         self.managed = self.settings.models
         self.save_managed = self.settings.save_models
+        self.load_managed = self.settings.load_models
 
     def custom_options(self) -> list:
         options = []
@@ -32,9 +33,9 @@ class ModelSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validatio
         return options
 
     async def action_reset(self) -> None:
-        del self.settings.models[self.uuid]
-        self.settings.save_models()
-        self.settings.load_models()
+        del self.managed[self.uuid]
+        self.save_managed()
+        self.load_managed()
         self.managed = self.settings.models
         self.manage = deepcopy(self.managed[self.uuid])
         await self.remove_children()
