@@ -1,4 +1,5 @@
 import os
+import json
 import httpx
 from .helpers import HelpersMixIn
 from .llamacpp import MANAGE
@@ -14,6 +15,7 @@ class Server(HelpersMixIn):
         self.log = ""
         self.server = None
         self.active_models = []
+        self.model_load_progress = 0
         self.current_cache_id = None
         self.name = "Spit.py Local Server"
 
@@ -147,6 +149,27 @@ class Server(HelpersMixIn):
                 if words[1] == "E":
                     errors += f"{' '.join(words[3:])}\n"
         return errors
+
+    def model_loading_progress(self, line) -> None:
+        mark = "cmd_child_to_router:state:"
+        line = line.split(" ", 1)[-1]
+        if not line.startswith(mark):
+            return None
+        line = line[len(mark)-1:][1:-1]
+        try:
+            state = json.loads(line)
+        except:
+            return None
+        if "state" in state and "payload" in state:
+            if state["state"] == "ready" and "id" in state["payload"]:
+                self.active_models.append(state["payload"]["id"])
+                self.model_load_progress = 0
+            elif (state["state"] == "loading" and "stages" in state["payload"]
+                  and "value" in state["payload"] and "current" in state["payload"]):
+                stages = state["payload"]["stages"]
+                value = round(state["payload"]["value"] * 100) / len(stages)
+                current = stages.index(state["payload"]["current"])
+                self.model_load_progress = round((100 / len(stages) * current) + value)
 
     def start(self) -> None:
         self.app.run_worker(self.start_work())
