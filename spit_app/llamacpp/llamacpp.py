@@ -13,10 +13,10 @@ from textual.widgets import Label, Button, Rule, Select
 MANAGE = {
     "active_version": {"stype": "select", "desc": "Active Version", "ameth": "get_versions"},
     "active_models": {"stype": "select_list", "desc": "Select active Models", "options": []},
-    "server_port": {"stype": "uinteger", "empty": False, "desc": "Server Port", "value": "8080"},
+    "server_port": {"stype": "uinteger", "empty": False, "desc": "Server Port", "value": "9931"},
     "timeout": {"stype": "uinteger", "empty": False, "desc": "Server Timeout (0: no timeout)", "value": 0},
-    "cache_prompt": {"stype": "boolean", "desc": "Cache Prompt", "value": True},
-    "vulkan_devices": {"stype": "select_list", "desc": "Use Vulkan devices", "options": []},
+    "save_cache_prompt": {"stype": "boolean", "desc": "Save and restore Prompt Cache from file", "value": False},
+    "keep_models_loaded": {"stype": "boolean", "desc": "Keep Models loaded", "value": False},
     "llamacpp_version":{"stype": "string", "empty": False, "desc": "Llama.cpp Version"},
     "delete_version": {"stype": "select", "desc": "Version", "ameth": "get_versions"},
     "download_model": {"stype": "select", "desc": "Manage Models", "ameth": "get_models_select"},
@@ -43,8 +43,8 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
     async def edit_manage_screen(self) -> None:
         input_widget = InputWidget(self, self.manage, self.validators)
         await self.mount(Label("Manage llama.cpp server settings:\n"))
-        for item in ["active_version", "active_models", "server_port", "timeout", "cache_prompt",
-            "vulkan_devices"]:
+        for item in ["active_version", "active_models", "server_port", "timeout",
+                     "save_cache_prompt", "keep_models_loaded"]:
             await self.mount_all(await input_widget.setting(item, self.inpgets(item)))
         await self.mount(Button("Apply", id="apply-llamacpp-settings"))
         await self.mount(Rule())
