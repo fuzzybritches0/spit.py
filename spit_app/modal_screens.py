@@ -32,6 +32,29 @@ class Common(ModalScreen):
                 yield Button("OK")
         yield Footer()
 
+class LoadProgressBarScreen(Common, ModalScreen):
+    def __init__(self) -> None:
+        super().__init__()
+        self.classes = "modal"
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="progress-bar-modal"):
+            yield Label("", id="text")
+            yield ProgressBar(id="progress-bar")
+        yield Footer()
+
+    def update_text(self, text: str) -> None:
+        self.query_one("#text").update(text)
+
+    def update_total(self, total: int) -> None:
+        self.query_one("#progress-bar").update(total=total)
+
+    def update_progress(self, progress: int) -> None:
+        self.query_one("#progress-bar").update(progress=progress)
+
+    def reset(self) -> None:
+        self.query_one("#progress-bar").update(total=0, progress=0)
+
 class ProgressBarScreen(Common, ModalScreen):
     def __init__(self, download) -> None:
         super().__init__()
