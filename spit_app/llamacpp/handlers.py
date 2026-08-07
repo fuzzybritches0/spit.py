@@ -9,7 +9,6 @@ class HandlersMixIn:
         await self.edit_manage_screen()
         self.children[2].focus()
         self.work_update_input_llamacpp_version()
-        await self.update_input_vulkan_devices()
         self.update_models_select_list()
 
     async def on_download_failed(self, message: DownloadFailed) -> None:
@@ -54,13 +53,14 @@ class HandlersMixIn:
         if event.control.id == "active_version":
             await self.update_input_vulkan_devices()
         if event.control.id == "download_model":
-            server_settings = self.query_one("#server-settings")
             if not self.query_one("#download_model").value == Select.NULL:
+                server_settings = self.query_one("#server-settings")
                 async with self.batch():
                     server_settings.display = True
                     await server_settings.remove_children()
                     await server_settings.mount(Label("Server settings:\n"))
                     await server_settings.mount(ServerSettings(self.query_one("#download_model").value))
+                    await self.update_input_vulkan_devices()
             else:
                 server_settings.display = False
                 await server_settings.remove_children()
