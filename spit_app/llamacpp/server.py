@@ -55,6 +55,8 @@ class Server(HelpersMixIn):
             return False
         if response.status_code == 200:
             return True
+        else:
+            self.app.exception = Exception(response.text)
         return False
 
     def is_running(self) -> bool:
