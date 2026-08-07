@@ -2,7 +2,7 @@
 from platformdirs import user_config_dir, user_data_dir
 from pathlib import Path
 from copy import deepcopy
-from .llamacpp.models import MODELS_SETTINGS
+from .llamacpp.models import MODELS_SETTINGS, MODELS_SERVER_SETTINGS
 
 class Settings:
     def __init__(self, app) -> None:
@@ -18,7 +18,10 @@ class Settings:
         self.path["data"].mkdir(parents=True, exist_ok=True)
         self.path["promptsf"] = self.path["data"] / "prompts.json"
         self.path["modelsf"] = self.path["data"] / "models.json"
+        self.path["modelsf"] = self.path["data"] / "models.json"
+        self.path["serversf"] = self.path["data"] / "servers.json"
         self.path["endpointsf"] = self.path["data"] / "endpoints.json"
+        self.path["serversf"] = self.path["data"] / "server_settings.json"
         self.path["settings"] = Path(user_config_dir(self.app.NAME, self.app.COPYRIGHT))
         self.path["settings"].mkdir(parents=True, exist_ok=True)
         self.path["settingsf"] = self.path["settings"] / "settings.json"
@@ -45,46 +48,62 @@ class Settings:
         self.app.write_json("settingsf", settings)
         self.save_endpoints()
         self.save_models()
+        self.save_server_settings()
         self.save_prompts()
 
     def save_endpoints(self) -> None:
         self.app.write_json("endpointsf", self.endpoints)
 
+    def save_server_settings(self) -> None:
+        self.save_configs(self.server_settings, MODELS_SERVER_SETTINGS, "serversf")
+
     def save_models(self) -> None:
-        models = deepcopy(self.models)
+        self.save_configs(self.models, MODELS_SETTINGS, "modelsf")
+
+    def save_configs(self, in_configs: dict, builtins: dict, file: str) -> None:
+        configs = deepcopy(in_configs)
         deletes = []
-        for model_id in models.keys():
-            if model_id in MODELS_SETTINGS:
-                model = deepcopy(models[model_id])
-                for setting in models[model_id].keys():
-                    if (setting in MODELS_SETTINGS[model_id] and
-                        models[model_id][setting]["value"] == MODELS_SETTINGS[model_id][setting]["value"]):
-                        del model[setting]
-                if not model:
-                    deletes += [model_id]
+        for config_id in configs.keys():
+            if config_id in builtins:
+                config = deepcopy(configs[config_id])
+                for setting in configs[config_id].keys():
+                    if (setting in builtins[config_id] and
+                        configs[config_id][setting]["value"] == builtins[config_id][setting]["value"]):
+                        del config[setting]
+                if not config:
+                    deletes += [config_id]
                 else:
-                    models[model_id] = model
+                    configs[config_id] = config
         if deletes:
             for delete in deletes:
-                del models[delete]
-        self.app.write_json("modelsf", models)
+                del configs[delete]
+        self.app.write_json(file, configs)
+
+    def load_server_settings(self) -> None:
+        self.load_configs("server_settings", MODELS_SERVER_SETTINGS, "serversf")
 
     def load_models(self) -> None:
-        if self.path["modelsf"].exists():
-            self.models = self.app.read_json("modelsf")
+        self.load_configs("models", MODELS_SETTINGS, "modelsf")
+
+    def load_configs(self, configs: dict, builtins: dict, file: str) -> None:
+        if self.path[file].exists():
+            in_configs = self.app.read_json(file)
+        else:
+            in_configs = {}
         names = []
-        for model_id in self.models.keys():
-            if "name" in self.models[model_id]:
-                names += [self.models[model_id]["name"]["value"]]
-        for model_id in MODELS_SETTINGS.keys():
-            if not MODELS_SETTINGS[model_id]["name"]["value"] in names:
-                if not model_id in self.models:
-                    self.models[model_id] = deepcopy(MODELS_SETTINGS[model_id])
+        for config_id in in_configs.keys():
+            if "name" in in_configs[config_id]:
+                names += [in_configs[config_id]["name"]["value"]]
+        for config_id in builtins.keys():
+            if not names or not builtins[config_id]["name"]["value"] in names:
+                if not config_id in in_configs:
+                    in_configs[config_id] = deepcopy(builtins[config_id])
                 else:
-                    model = deepcopy(MODELS_SETTINGS[model_id])
-                    for setting in self.models[model_id].keys():
-                        model[setting] = self.models[model_id][setting]
-                    self.models[model_id] = deepcopy(model)
+                    config = deepcopy(builtins[config_id])
+                    for setting in in_configs[config_id].keys():
+                        config[setting] = in_configs[config_id][setting]
+                    in_configs[config_id] = deepcopy(config)
+        setattr(self, configs, in_configs)
 
     def save_prompts(self) -> None:
         self.app.write_json("promptsf", self.prompts)
@@ -94,6 +113,7 @@ class Settings:
         self.endpoints = {}
         self.prompts = {}
         self.models = {}
+        self.server_settings = {}
         self.tool_settings = {}
         self.llamacpp = {}
         self.downloads = {}
@@ -113,5 +133,6 @@ class Settings:
         if self.path["endpointsf"].exists():
             self.endpoints = self.app.read_json("endpointsf")
         self.load_models()
+        self.load_server_settings()
         if self.path["promptsf"].exists():
             self.prompts = self.app.read_json("promptsf")
