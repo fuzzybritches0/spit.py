@@ -37,9 +37,13 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.download = Download(self)
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
         self.error_screen = None
+        self.load_progress_bar_screen = None
         self.server = Server(self)
 
     async def watch_exception(self, exception: Exception) -> None:
+        if self.load_progress_bar_screen:
+            await self.load_progress_bar_screen.dismiss()
+            self.load_progress_bar_screen = None
         if self.error_screen:
             await self.error_screen.append_exception(exception)
         else:
