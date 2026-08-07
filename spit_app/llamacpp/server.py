@@ -4,6 +4,10 @@ import httpx
 from .helpers import HelpersMixIn
 from .llamacpp import MANAGE
 
+IGNORE_ERRORS = [
+    "operator(): http client error: Connection handling canceled"
+]
+
 class Server(HelpersMixIn):
     def __init__(self, app) -> None:
         self.manage = MANAGE
@@ -18,6 +22,7 @@ class Server(HelpersMixIn):
         self.model_load_progress = 0
         self.current_cache_id = None
         self.name = "Spit.py Local Server"
+        self.ignore_errors = IGNORE_ERRORS
 
     async def model_action(self, model: str, action: str) -> bool:
         endpoint = f"http://127.0.0.1:{self.gets('server_port')}/models/{action}"
@@ -141,14 +146,13 @@ class Server(HelpersMixIn):
         with open(self.path["models"] / "models.ini", "w") as file:
             file.write(self.preset)
 
-    def server_errors(self) -> None:
-        errors = ""
-        for line in self.log.split("\n"):
-            words = line.split(" ")
-            if len(words) > 1:
-                if words[1] == "E":
-                    errors += f"{' '.join(words[3:])}\n"
-        return errors
+    def server_error(self, line) -> None:
+        words = line.split(" ")
+        if len(words) > 2:
+            if words[1] == "E" or words[2] == "E":
+                error = " ".join(words[3:]).strip()
+                if not error in self.ignore_errors:
+                    self.app.exception= Exception(error)
 
     def model_loading_progress(self, line) -> None:
         mark = "cmd_child_to_router:state:"
@@ -187,13 +191,10 @@ class Server(HelpersMixIn):
         cmd += self.compose_server_arguments()
         self.app.action_notify(f"Starting Llama.cpp Server Version {self.gets('active_version')}...")
         async for line in self.run(cmd, "server"):
+            self.model_loading_progress(line)
+            self.server_error(line)
             self.log += line
         self.app.action_notify(f"Stopped Llama.cpp Server Version {self.gets('active_version')}.")
-        if not self.server:
-            return None
-        if not self.server.returncode == 0:
-            server_errors = self.server_errors()
-            self.app.exception= Exception(server_errors)
         self.server = None
         self.log = ""
 
