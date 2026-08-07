@@ -19,10 +19,8 @@ class ButtonsMixIn:
             self.app.action_notify("Changes applied!")
             await self.update_input_vulkan_devices()
         if changed_server:
-            if (not self.gets("active_version") or not self.gets("active_models")) and self.server.is_running():
+            if self.server.is_running():
                 await self.server.stop()
-                return None
-            await self.server.stop()
             if self.gets("active_version") and self.gets("active_models"):
                 self.server.start()
 
