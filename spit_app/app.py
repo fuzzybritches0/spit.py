@@ -36,10 +36,15 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.confirm_exit = False
         self.download = Download(self)
         self.watch(self.app, "theme", self.on_theme_changed, init=False)
+        self.error_screen = None
         self.server = Server(self)
 
     async def watch_exception(self, exception: Exception) -> None:
-        await self.push_screen(ErrorScreen(exception))
+        if self.error_screen:
+            await self.error_screen.append_exception(exception)
+        else:
+            self.error_screen = ErrorScreen(exception)
+            await self.push_screen(self.error_screen)
 
     def applog(self, text: str) -> None:
         with open("./log.txt", "a") as file:
