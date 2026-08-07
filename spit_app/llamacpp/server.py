@@ -87,13 +87,16 @@ class Server(HelpersMixIn):
         self.preset += f"{line}\n"
 
     def compose_model_server_settings(self, model_id: str) -> None:
-        settings = self.gets("server_settings", model_id)
+        settings = self.get_server_settings(model_id)
         for setting in settings.keys():
             stype = settings[setting]["stype"]
             value = settings[setting]["value"]
             if stype == "select_list":
-                slist = ",".join(value)
-                self.conc(f"{setting} = {slist}")
+                if not value:
+                    self.conc(f"{setting} = none")
+                else:
+                    slist = ",".join(value)
+                    self.conc(f"{setting} = {slist}")
             elif stype == "boolean":
                 if value:
                     value = "true"
@@ -108,7 +111,6 @@ class Server(HelpersMixIn):
         self.conc("version = 1", True)
         for model_id in self.gets("active_models"):
             model_config = self.get_model(model_id)
-            model_setting = self.gets("server_settings", model_id)
             model = None
             draft = None
             mmproj = None
