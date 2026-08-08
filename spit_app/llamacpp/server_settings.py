@@ -44,13 +44,18 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         return options
 
     async def action_reset(self) -> None:
-        del self.managed[self.uuid]
-        self.save_managed()
-        self.load_managed()
-        self.managed = self.settings.server_settings
-        self.manage = deepcopy(self.managed[self.uuid])
-        await self.remove_children()
-        await self.edit_manage_screen()
+        if not self.manage == MODELS_SERVER_SETTINGS[self.uuid]:
+            del self.managed[self.uuid]
+            self.save_managed()
+            self.load_managed()
+            self.managed = self.settings.server_settings
+            self.manage = deepcopy(self.managed[self.uuid])
+            await self.remove_children()
+            await self.edit_manage_screen()
+            await self.after_action_save()
+        else:
+            await self.remove_children()
+            await self.edit_manage_screen()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool|None:
         if action == "reset":
@@ -58,13 +63,16 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
                 return False
         return True
 
+    async def after_action_save(self) -> None:
+        self.app.action_notify(f"Settings saved!")
+        await self.app.server.stop()
+        self.app.server.start()
+        self.old_manage = deepcopy(self.manage)
+
     async def after_action(self, action: str) -> None:
         if action == "save":
             if not self.manage == self.old_manage:
-                self.app.action_notify(f"Settings saved!")
-                await self.app.server.stop()
-                self.app.server.start()
-                self.old_manage = deepcopy(self.manage)
+                await self.after_action_save()
 
     def on_focus(self, event: Focus) -> None:
         event.prevent_default()
