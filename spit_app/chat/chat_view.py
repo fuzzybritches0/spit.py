@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
-from textual.events import Focus, DescendantFocus
+from textual.events import Focus
 from textual.containers import VerticalScroll
 from .textual_message import RemoveMessage
 from .message.message import Message
@@ -7,7 +7,7 @@ from ..modal_screens import LoadingScreen
 from .callback import CallbackMixIn
 from .chat_view_actions import ChatViewActionsMixIn, bindings
 
-class ChatView(ChatViewActionsMixIn, VerticalScroll, CallbackMixIn):
+class ChatView(ChatViewActionsMixIn, CallbackMixIn, VerticalScroll):
     BLANK = True
     BINDINGS = bindings
 
@@ -21,7 +21,6 @@ class ChatView(ChatViewActionsMixIn, VerticalScroll, CallbackMixIn):
         self.focused_message = None
         self.is_edit = False
         self.is_removing = False
-        self.is_loading = True
         self.id = "chat-view"
 
     async def mount_message(self, index: int) -> None:
@@ -47,34 +46,32 @@ class ChatView(ChatViewActionsMixIn, VerticalScroll, CallbackMixIn):
             self.focus()
         self.is_removing = False
 
-    def on_descendant_focus(self, event: DescendantFocus) -> None:
-        self.chat.text_area.was_focused = False
-        self.focused_widget = event.widget
-
     def on_focus(self, event: Focus) -> None:
         event.prevent_default()
-        if self.is_loading:
-            return None
-        self.focus_message()
+        self.enter()
+
+    def enter(self) -> None:
+        self.ensure_is_highlighted()
+        self.chat.text_area.was_focused = False
+        self.focus_this()
+        self.set_active()
+
+    def focus_this(self) -> None:
+        if self.children:
+            if self.focused_widget:
+                self.focused_widget.focus(scroll_visible=False)
+            else:
+                self.children[-1].focus(scroll_visible=False)
 
     def set_active(self) -> None:
         self.chat.settings.active_chat = self.chat.id
         self.chat.settings.save()
-        self.ensure_is_highlighted()
-        if self.children:
-            self.children[-1].focus(scroll_visible=False)
-            self.chat.text_area.was_focused = False
 
     def ensure_is_highlighted(self) -> None:
         side_panel = self.app.query_one("#side-panel")
         side_panel.can_focus = False
         index = side_panel.get_option_index(self.chat.id)
         side_panel.highlighted = index
-
-    def focus_message(self) -> None:
-        self.ensure_is_highlighted()
-        if self.focused_widget:
-            self.focused_widget.focus(scroll_visible=False)
 
     def on_worker_state_changed(self) -> None:
         self.refresh_bindings()
@@ -88,7 +85,3 @@ class ChatView(ChatViewActionsMixIn, VerticalScroll, CallbackMixIn):
                     await self.mount(Message(self.chat, message))
                     await self.children[-1].finish()
             loading_screen.dismiss()
-        else:
-            self.chat.text_area.focus()
-        self.set_active()
-        self.is_loading = False
