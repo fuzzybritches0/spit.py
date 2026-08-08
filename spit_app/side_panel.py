@@ -8,7 +8,7 @@ from spit_app.manage.model_settings.model_settings import ModelSettings as Manag
 from spit_app.manage.prompt.prompt import Prompts as ManagePrompts
 from spit_app.manage.tool_settings.tool_settings import ToolSettings as ManageToolSettings
 from spit_app.llamacpp.llamacpp import Llamacpp as ManageLlamacpp
-from spit_app.modal_screens import InfoScreen 
+from spit_app.modal_screens import InfoScreen
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 from spit_app.info import INFO_NO_ENDPOINT
@@ -60,6 +60,14 @@ class SidePanel(OptionList):
                 cont.focus()
                 return None
 
+    def set_active(self, cont, mode: bool) -> None:
+        cont.can_focus = mode
+        cont.can_focus_children = mode
+        cont.display = mode
+        if mode:
+            cont.focus()
+            self.can_focus = False
+
     async def option_selected(self, id: str) -> None:
         if id == "quit":
             self.app.action_exit_app()
@@ -70,16 +78,16 @@ class SidePanel(OptionList):
             self.app.push_screen(InfoScreen(INFO_NO_ENDPOINT))
         ret = False
         for cont in self.app.query_one("#main").children:
-            cont.display = False
+            self.set_active(cont, False)
             if cont.id == id:
-                cont.display = True
-                cont.focus()
+                self.set_active(cont, True)
                 ret = True
         if ret:
             return None
-        if id.startswith("chat"):
+        if id.startswith("chat-"):
             await self.app.query_one("#main").mount(Chat(id))
             await self.app.query_one("#main").query_one(f"#{id}").chat_view.load()
+            self.app.query_one("#main").query_one(f"#{id}").focus()
         elif id == "new-chat":
             await self.app.query_one("#main").mount(ManageChats(True))
         elif id == "manage-chat":
@@ -97,6 +105,18 @@ class SidePanel(OptionList):
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         await self.option_selected(event.option.id)
+
+    def on_enter(self) -> None:
+        self.can_focus = True
+        self.focus()
+
+    def on_leave(self) -> None:
+        self.can_focus = False
+        self.return_focus()
+
+    def on_blur(self) -> None:
+        self.can_focus = False
+        self.return_focus()
 
     def on_mount(self) -> None:
         self.option_list()
