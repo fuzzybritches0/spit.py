@@ -6,20 +6,11 @@ from spit_app.manage.endpoint.handlers import HandlersMixIn
 from spit_app.manage.endpoint.screens import ScreensMixIn
 from spit_app.manage.endpoint.validation import ValidationMixIn
 from spit_app.manage.manage import Manage
-from spit_app.llamacpp.models import MODELS_SERVER_SETTINGS
+from spit_app.llamacpp.models import NEW_MODELS_SERVER_SETTINGS, MODELS_SERVER_SETTINGS
 from copy import deepcopy
 
-NEW = {
-    "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
-    "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
-    "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-    "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
-    "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": False},
-    "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
-    "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
-}
-
 class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Manage):
+    NEW = NEW_MODELS_SERVER_SETTINGS
     BINDINGS = [
         ("ctrl+enter", "save", "Save"),
         ("ctrl+i", "remove_setting", "Remove Setting"),
@@ -37,7 +28,7 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.uuid = model_id
         self.managed = self.settings.server_settings
         if not self.uuid in self.managed:
-            self.manage = deepcopy(NEW)
+            self.manage = deepcopy(self.NEW)
         else:
             self.manage = deepcopy(self.managed[self.uuid])
         self.new_manage = True
@@ -48,7 +39,7 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
     def custom_options(self) -> list:
         options = []
         for setting in self.manage.keys():
-            if not setting in NEW:
+            if not setting in self.NEW:
                 options.append((setting, setting))
         return options
 

@@ -37,6 +37,17 @@ MODELS = {
     }
 }
 
+
+NEW_MODELS_SERVER_SETTINGS = {
+    "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+    "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
+    "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
+    "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
+    "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": False},
+    "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
+    "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
+}
+
 MODELS_SERVER_SETTINGS = {
     "oq4LVj9KYJmczNlVkOH0paBrfI21NjAj": {
         "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
