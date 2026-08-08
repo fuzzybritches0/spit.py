@@ -1,3 +1,4 @@
+from textual.events import DescendantFocus
 from textual.widgets import Markdown
 from textual.containers import VerticalScroll
 from .content.content import Content
@@ -104,5 +105,5 @@ class Message(ActionsMixIn, VerticalScroll):
         self.chat_view.focused_message = self
         self.chat_view.focused_widget = self
 
-    def on_descendant_focus(self) -> None:
-        self.chat_view.focused_widget = self
+    def on_descendant_focus(self, event: DescendantFocus) -> None:
+        self.chat_view.focused_widget = event.widget
