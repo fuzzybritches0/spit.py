@@ -26,6 +26,7 @@ class HandlersMixIn:
             if os.path.exists(self.path["chats"] / filename):
                 await self.app.query_one("#main").mount(Chat(active))
                 await self.app.query_one("#main").query_one(f"#{active}").chat_view.load()
+                self.app.query_one("#main").query_one(f"#{active}").focus()
                 return None
         self.settings.active_chat = None
         self.settings.save()
