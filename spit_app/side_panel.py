@@ -61,8 +61,6 @@ class SidePanel(OptionList):
                 return None
 
     def set_active(self, cont, mode: bool) -> None:
-        cont.can_focus = mode
-        cont.can_focus_children = mode
         cont.display = mode
         if mode:
             cont.focus()
@@ -105,18 +103,6 @@ class SidePanel(OptionList):
 
     async def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         await self.option_selected(event.option.id)
-
-    def on_enter(self) -> None:
-        self.can_focus = True
-        self.focus()
-
-    def on_leave(self) -> None:
-        self.can_focus = False
-        self.return_focus()
-
-    def on_blur(self) -> None:
-        self.can_focus = False
-        self.return_focus()
 
     def on_mount(self) -> None:
         self.option_list()
