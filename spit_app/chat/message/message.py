@@ -101,10 +101,13 @@ class Message(ActionsMixIn, VerticalScroll):
         await self.mount(self.status)
         await self.status.update("Processing...")
 
+    def set_focused_message(self) -> None:
+        self.chat_view.focused_message = self
+        self.chat_view.focused_widget = self
+
     def on_focus(self) -> None:
         if self.chat.display:
-            self.chat_view.focused_message = self
-            self.chat_view.focused_widget = self
+            self.set_focused_message()
 
     def on_descendant_focus(self, event: DescendantFocus) -> None:
         if self.chat.display:

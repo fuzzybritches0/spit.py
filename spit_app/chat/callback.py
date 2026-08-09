@@ -12,7 +12,10 @@ class CallbackMixIn:
 
     async def message_start(self, index: int) -> None:
         await self.mount(Message(self.chat, self.messages[index]))
-        self.children[index].focus(scroll_visible=False)
+        if self.chat.display:
+            self.children[index].focus(scroll_visible=False)
+        else:
+            self.children[index].set_focused_message()
 
     async def message_process(self, index: int) -> None:
         await self.children[index].process()
