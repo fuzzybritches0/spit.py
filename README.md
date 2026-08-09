@@ -31,7 +31,7 @@ Although this is still work in progress, it should work and keep you productive.
 ## What's next:
 
 - More advanced agent capabilities
-- GUI alternative
+- GUI/TUI alternative to Textual
 - Audio
 
 
