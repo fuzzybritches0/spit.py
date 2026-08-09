@@ -7,7 +7,7 @@ class CallbackMixIn:
 
     async def message_finish(self, index: int) -> None:
         self.chat.write_chat_history()
-        self.chat.undo.append_undo("insert", self.chat.messages[index], len(self.messages))
+        self.chat.undo.append_undo("insert", self.chat.messages[index], index)
         await self.children[index].finish()
 
     async def message_start(self, index: int) -> None:

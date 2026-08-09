@@ -113,7 +113,6 @@ class Work:
             for tool_call in self.messages[-1]["tool_calls"]:
                 self.busy = True
                 await self.app.tool_call.call(self.messages, tool_call, self.chat.id, self.chat_view.callback)
-                self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages)-1)
                 self.busy = False
                 if self.exit_after_busy:
                     return None
@@ -134,6 +133,5 @@ class Work:
             else:
                 raise exception
         await self.maybe_save_cache()
-        self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages))
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
