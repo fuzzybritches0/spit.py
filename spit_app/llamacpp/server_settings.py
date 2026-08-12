@@ -36,13 +36,6 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         self.save_managed = self.settings.save_server_settings
         self.load_managed = self.settings.load_server_settings
 
-    def custom_options(self) -> list:
-        options = []
-        for setting in self.manage.keys():
-            if not setting in self.NEW:
-                options.append((setting, setting))
-        return options
-
     async def action_reset(self) -> None:
         if not self.manage == MODELS_SERVER_SETTINGS[self.uuid]:
             del self.managed[self.uuid]
