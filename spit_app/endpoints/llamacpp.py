@@ -89,12 +89,13 @@ class LlamaCppEndpoint:
     def construct_payload(self, payload: dict, settings: dict) -> None:
         for setting in settings.keys():
             value = settings[setting]["value"]
-            if (not setting == "name" and not setting == "endpoint_url" and
-                not setting == "key" and not setting == "reasoning_key"):
+            if not setting in ["name", "endpoint_url", "key", "reasoning_key", "save_cache_prompt", "parallel"]:
                 if "." in setting and (value or value is False):
                     dot2obj(payload, setting, value)
                 else:
-                    if value or value is False:
+                    if value or value is False or value == 0:
+                        if setting == "parallel" and value == 0:
+                            value = "auto"
                         if settings[setting]["stype"] == "select_list":
                             payload[setting] = ",".join(value)
                         else:
