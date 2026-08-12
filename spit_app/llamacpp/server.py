@@ -5,6 +5,7 @@ import asyncio
 from .helpers import HelpersMixIn
 from .llamacpp import MANAGE
 from spit_app.modal_screens import LoadProgressBarScreen
+from spit_app.endpoints.manage_cache import ManageCache
 
 IGNORE_ERRORS = [
     "operator(): http client error: Connection handling canceled"
@@ -42,22 +43,6 @@ class Server(HelpersMixIn):
         else:
             if action == "load" and self.app.load_progress_bar_screen:
                 await self.app.load_progress_bar_screen.dismiss()
-            self.app.exception = Exception(response.text)
-        return False
-
-    async def cache_action(self, cache_id: str, action: str) -> bool:
-        model = self.app.query_one("#main").query_one(f"#{cache_id}").cs("model")
-        endpoint = f"http://127.0.0.1:{self.gets('server_port')}/slots/0?action={action}"
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
-        json = {"filename": f"{cache_id}", "model": model}
-        try:
-            async with httpx.AsyncClient(timeout=720) as client:
-                response = await client.post(endpoint, headers=headers, json=json)
-        except:
-            return False
-        if response.status_code == 200:
-            return True
-        else:
             self.app.exception = Exception(response.text)
         return False
 
