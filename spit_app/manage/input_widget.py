@@ -38,10 +38,7 @@ class InputWidget:
             value = self.manage[setting]["value"]
         stype = self.manage[setting]["stype"]
         desc = self.manage[setting]["desc"]
-        if stype == "boolean":
-            return value, stype, desc
-        else:
-            return str(value), stype, desc
+        return value, stype, desc
 
     def get_method(self, setting: str) -> callable:
         if "ameth" in self.manage[setting]:
@@ -104,8 +101,16 @@ class InputWidget:
         return [Switch(id=id, value=value)]
 
     def text(self, id: str, value: str, stype: str, method: callable, tup: tuple) -> list:
+        if value is None:
+            value = ""
+        else:
+            value = str(value)
         return [TextArea(value, id=id, classes="text-area"), Markdown(id=f"val-{id}")]
 
     def string(self, id: str, value: str, stype: str, method: callable, tup: tuple) -> list:
+        if value is None:
+            value = ""
+        else:
+            value = str(value)
         validators = self.validators(id, stype)
         return [Input(validators=validators, id=id, value=value), Markdown(id=f"val-{id}")]
