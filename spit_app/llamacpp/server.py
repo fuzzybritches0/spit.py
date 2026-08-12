@@ -77,6 +77,8 @@ class Server(HelpersMixIn):
         for setting in settings.keys():
             stype = settings[setting]["stype"]
             value = settings[setting]["value"]
+            if value == None:
+                continue
             if setting == "parallel" and value == 0:
                 value = "auto"
             if stype == "select_list":
