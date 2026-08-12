@@ -154,8 +154,13 @@ class HelpersMixIn:
         try:
             output = await self.run_get_output([str(llama_server), "--list-devices"])
             for line in output.split("\n"):
-                if line.strip().startswith("Vulkan"):
-                    devices.append(line.strip().split(":")[0].strip())
+                if line.strip() == "Available devices:":
+                    continue
+                if not line.strip():
+                    continue
+                if line.strip() == "(none)":
+                    return []
+                devices.append(line.strip().split(":")[0].strip())
             return devices
         except:
             return []
