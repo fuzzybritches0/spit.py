@@ -69,7 +69,7 @@ class Server(HelpersMixIn):
         arguments = ["--models-preset", str(self.path["models"] / "models.ini"), "--no-ui",
             "--no-ui-mcp-proxy", "--host", "127.0.0.1", "--port", str(self.gets("server_port")),
             "--api-key", self.api_key, "--slot-save-path", str(self.path["prompt_cache"]),
-            "--slots", "--parallel", "1", "--offline", "--no-models-autoload"]
+            "--slots", "--offline", "--no-models-autoload"]
         return arguments
 
     def conc(self, line: str) -> None:
@@ -80,6 +80,8 @@ class Server(HelpersMixIn):
         for setting in settings.keys():
             stype = settings[setting]["stype"]
             value = settings[setting]["value"]
+            if setting == "parallel" and value == 0:
+                value = "auto"
             if stype == "select_list":
                 if not value:
                     self.conc(f"{setting} = none")
