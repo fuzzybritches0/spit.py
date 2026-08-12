@@ -148,7 +148,7 @@ class HelpersMixIn:
             return models[model_id]
         return {}
 
-    async def get_vulkan_devices(self, llama_version: str) -> list:
+    async def get_devices(self, llama_version: str) -> list:
         llama_server = self.path["llamacpp"] / ("llama-" + llama_version) / "llama-server"
         devices = []
         try:

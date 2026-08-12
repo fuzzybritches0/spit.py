@@ -17,7 +17,7 @@ class ButtonsMixIn:
             self.puts("keep_models_loaded")
             self.settings.save()
             self.app.action_notify("Changes applied!")
-            await self.update_input_vulkan_devices()
+            await self.update_input_devices()
         if changed_server:
             if self.server.is_running():
                 await self.server.stop()
@@ -58,7 +58,7 @@ class ButtonsMixIn:
         file = self.get_llamacpp_file(int(selection[1:]))
         self.app.del_downloads_size([str(self.path["llamacpp"] / file)])
         self.settings.save()
-        await self.update_input_vulkan_devices()
+        await self.update_input_devices()
         self.app.action_notify(f"Llama.cpp version {selection} deleted!")
 
     def button_download_model(self) -> None:

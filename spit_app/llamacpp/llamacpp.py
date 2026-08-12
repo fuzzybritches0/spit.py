@@ -127,36 +127,36 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
 
     def add_devices(self, devices: list) -> tuple:
         tup = ()
-        vulkan_devices = []
+        _devices = []
         model_id = self.query_one("#download_model").value
         model_settings = self.get_server_settings(model_id)
         if "device" in model_settings:
-            vulkan_devices = model_settings["device"]["value"]
+            _devices = model_settings["device"]["value"]
         for device in devices:
-            tup += ((device, device, device in vulkan_devices),)
+            tup += ((device, device, device in _devices),)
         return tup
 
-    async def update_input_vulkan_devices(self) -> None:
+    async def update_input_devices(self) -> None:
         server_settings = self.query_one("#server-settings")
         if not server_settings.display:
             return None
         async with self.batch():
             llamacpp = self.query_one("#active_version").value
-            vulkan_devices = server_settings.query_one("#device")
-            label_vulkan_devices = server_settings.query_one("#label-device")
+            devices_id = server_settings.query_one("#device")
+            label_devices = server_settings.query_one("#label-device")
             if llamacpp == Select.NULL:
                 devices = []
             else:
-                devices = await self.get_vulkan_devices(llamacpp)
+                devices = await self.get_devices(llamacpp)
             if devices:
-                vulkan_devices.display = True
-                label_vulkan_devices.display = True
-                vulkan_devices.clear_options()
-                vulkan_devices.add_options(self.add_devices(devices))
+                devices_id.display = True
+                label_devices.display = True
+                devices_id.clear_options()
+                devices_id.add_options(self.add_devices(devices))
             else:
-                vulkan_devices.clear_options()
-                vulkan_devices.display = False
-                label_vulkan_devices.display = False
+                devices_id.clear_options()
+                devices_id.display = False
+                label_devices.display = False
 
     async def update_input_llamacpp_version(self) -> None:
         latest_version = await self.get_latest_llamacpp_version()

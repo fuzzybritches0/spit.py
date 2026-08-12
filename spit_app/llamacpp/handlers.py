@@ -51,7 +51,7 @@ class HandlersMixIn:
 
     async def on_select_changed(self, event: Select.Changed) -> None:
         if event.control.id == "active_version":
-            await self.update_input_vulkan_devices()
+            await self.update_input_devices()
         if event.control.id == "download_model":
             if not self.query_one("#download_model").value == Select.NULL:
                 server_settings = self.query_one("#server-settings")
@@ -60,7 +60,7 @@ class HandlersMixIn:
                     await server_settings.remove_children()
                     await server_settings.mount(Label("Server settings:\n"))
                     await server_settings.mount(ServerSettings(self.query_one("#download_model").value))
-                    await self.update_input_vulkan_devices()
+                    await self.update_input_devices()
             else:
                 server_settings.display = False
                 await server_settings.remove_children()
