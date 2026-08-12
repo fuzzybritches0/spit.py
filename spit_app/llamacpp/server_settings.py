@@ -56,6 +56,7 @@ class ServerSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validati
         else:
             await self.remove_children()
             await self.edit_manage_screen()
+        await self.parent.parent.update_input_devices()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool|None:
         if action == "reset":
