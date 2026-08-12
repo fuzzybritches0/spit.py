@@ -16,16 +16,20 @@ class Server(HelpersMixIn):
         self.manage = MANAGE
         self.settings = app.settings
         self.path = app.path
-        self.api_key = app.get_rand_seq(32)
         self.app = app
+        self.name = "Spit.py Local Server"
+        self.ignore_errors = IGNORE_ERRORS
+        self.init()
+
+    def init(self) -> None:
+        self.api_key = self.app.get_rand_seq(32)
+        address = f"http://127.0.0.1:{self.gets('server_port')}"
+        self.manage_cache = ManageCache(self.app, self.get_server_settings, address, self.api_key)
         self.preset = ""
         self.log = ""
         self.server = None
         self.active_models = []
         self.model_load_progress = 0
-        self.current_cache_id = None
-        self.name = "Spit.py Local Server"
-        self.ignore_errors = IGNORE_ERRORS
 
     async def model_action(self, model: str, action: str) -> bool:
         endpoint = f"http://127.0.0.1:{self.gets('server_port')}/models/{action}"
@@ -68,9 +72,7 @@ class Server(HelpersMixIn):
             "--slots", "--parallel", "1", "--offline", "--no-models-autoload"]
         return arguments
 
-    def conc(self, line: str, clear: bool = False) -> None:
-        if clear:
-            self.preset = ""
+    def conc(self, line: str) -> None:
         self.preset += f"{line}\n"
 
     def compose_model_server_settings(self, model_id: str) -> None:
@@ -95,7 +97,7 @@ class Server(HelpersMixIn):
                 self.conc(f"{setting} = {value}")
 
     def compose_preset(self) -> None:
-        self.conc("version = 1", True)
+        self.conc("version = 1")
         for model_id in self.gets("active_models"):
             model_config = self.get_model(model_id)
             model = None
@@ -199,17 +201,15 @@ class Server(HelpersMixIn):
             self.server_error(line)
             self.log += line
         self.app.action_notify(f"Stopped Llama.cpp Server Version {self.gets('active_version')}.")
-        self.server = None
-        self.log = ""
+        self.init()
 
     async def stop(self) -> None:
-        self.log = ""
         if self.server:
             await self.terminate(self.server)
-            self.server = None
+            self.init()
 
     async def stop_kill(self) -> None:
-        self.log = ""
         if self.server:
             await self.kill(self.server)
             self.server = None
+            self.init()
