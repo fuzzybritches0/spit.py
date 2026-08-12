@@ -1,8 +1,10 @@
 import os
 import json
 import httpx
+import asyncio
 from .helpers import HelpersMixIn
 from .llamacpp import MANAGE
+from spit_app.modal_screens import LoadProgressBarScreen
 
 IGNORE_ERRORS = [
     "operator(): http client error: Connection handling canceled"
@@ -168,6 +170,29 @@ class Server(HelpersMixIn):
                 value = round(state["payload"]["value"] * 100) / len(stages)
                 current = stages.index(state["payload"]["current"])
                 self.model_load_progress = round((100 / len(stages) * current) + value)
+
+    async def load_model(self, load_model: str) -> None:
+        if load_model in self.active_models:
+            return None
+        if self.active_models and not self.gets("keep_models_loaded"):
+            for model in self.active_models:
+                self.app.action_notify(f"Unloading {model}...")
+                await self.model_action(model, "unload")
+        await self.model_action(load_model, "load")
+        self.app.load_progress_bar_screen = LoadProgressBarScreen()
+        self.app.push_screen(self.app.load_progress_bar_screen)
+        self.app.load_progress_bar_screen.update_text(f"Loading {load_model}...")
+        self.app.load_progress_bar_screen.update_total(100)
+        while True:
+            if load_model in self.active_models:
+                break
+            if self.app.load_progress_bar_screen:
+                self.app.load_progress_bar_screen.update_progress(self.model_load_progress)
+            else:
+                return None
+            await asyncio.sleep(1)
+        await self.app.load_progress_bar_screen.dismiss()
+        self.app.load_progress_bar_screen = None
 
     def start(self) -> None:
         self.app.run_worker(self.start_work())
