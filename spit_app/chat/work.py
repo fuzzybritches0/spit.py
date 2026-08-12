@@ -1,7 +1,9 @@
 # SPDX-Liicense-Identifier: GPL-2.0
 import os
+from copy import deepcopy
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
 from .textual_message import RemoveMessage
+from spit_app.endpoints.manage_cache import ManageCache
 
 TOOL_PROMPT = "# FUNCTION CALLING INSTRUCTIONS\n\nAll of your function calls are rendered in human-readable form for the user to inspect. The user is also informed about the function call results and can see the tool response message. DO NOT REPEAT THEM!\n\n"
 
@@ -17,7 +19,7 @@ class Work:
         self.busy = False
         self.exit_after_busy = False
         prompt = self.prompt()
-        endpoint = self.app.get_endpoint(self.cs("endpoint"))
+        endpoint = deepcopy(self.app.get_endpoint(self.cs("endpoint")))
         self.slot = -2
         model_settings = {}
         if self.cs("model_settings"):
@@ -27,6 +29,15 @@ class Work:
             tool = self.app.tool_call.tools[_tool]
             if tool["desc"]["function"]["name"] in self.cs("tools") and self.req_mm_image(_tool):
                 tools_descs.append(tool["desc"])
+        if self.local_server_active():
+            address = f"http://127.0.0.1:{self.app.server.gets('server_port')}"
+            api_key = self.app.server.api_key
+            self.server_settings = self.app.server.get_server_settings(self.cs("model"))
+        else:
+            address = endpoint["endpoint_url"][:-2]
+            api_key = endpoint["key"]
+            self.server_settings = endpoint
+        self.manage_cache = ManageCache(self.app, self.server_settings, address, api_key)
         self.endpoint = LlamaCppEndpoint(self.messages, endpoint, self.cs("model"), model_settings, prompt,
                                          tools_descs, self.chat_view.callback)
 
@@ -73,14 +84,21 @@ class Work:
         if self.local_server_active():
             await self.app.server.load_model(self.cs("model"))
 
+    def save_cache_prompt(self) -> bool:
+        if "save_cache_prompt" in self.server_settings:
+            return self.server_settings["save_cache_prompt"]
+        elif self.local_server_active():
+            return self.app.server.gets("save_cache_prompt")
+        return False
+
     async def before_work(self) -> None:
-        if self.local_server_active() and self.app.server.gets("save_cache_prompt"):
-            self.slot = await self.app.server.manage_cache.get_slot(self.cs("model"), self.chat.id)
+        if self.save_cache_prompt():
+            self.slot = await self.manage_cache.get_slot(self.cs("model"), self.chat.id)
             self.endpoint.endpoint["slot_id"] = {"stype": "uinteger", "value": self.slot}
 
     async def after_work(self) -> None:
-        if self.local_server_active() and self.app.server.gets("save_cache_prompt"):
-            await self.app.server.manage_cache.return_slot(self.cs("model"), self.chat.id, self.slot)
+        if self.save_cache_prompt():
+            await self.manage_cache.return_slot(self.cs("model"), self.chat.id, self.slot)
 
     async def work_stream(self) -> None:
         if "tool_calls" in self.messages[-1]:
