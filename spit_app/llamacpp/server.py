@@ -5,7 +5,6 @@ import asyncio
 from .helpers import HelpersMixIn
 from .llamacpp import MANAGE
 from spit_app.modal_screens import LoadProgressBarScreen
-from spit_app.endpoints.manage_cache import ManageCache
 
 IGNORE_ERRORS = [
     "operator(): http client error: Connection handling canceled"
@@ -23,8 +22,6 @@ class Server(HelpersMixIn):
 
     def init(self) -> None:
         self.api_key = self.app.get_rand_seq(32)
-        address = f"http://127.0.0.1:{self.gets('server_port')}"
-        self.manage_cache = ManageCache(self.app, self.get_server_settings, address, self.api_key)
         self.preset = ""
         self.log = ""
         self.server = None
