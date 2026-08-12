@@ -40,6 +40,8 @@ MODELS = {
 
 NEW_MODELS_SERVER_SETTINGS = {
     "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+    "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
+    "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
     "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
     "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
     "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
@@ -51,6 +53,8 @@ NEW_MODELS_SERVER_SETTINGS = {
 MODELS_SERVER_SETTINGS = {
     "oq4LVj9KYJmczNlVkOH0paBrfI21NjAj": {
         "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
+        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
         "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
         "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
         "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
@@ -60,6 +64,8 @@ MODELS_SERVER_SETTINGS = {
     },
     "YkCx4J7XuBMW3T2gVTuYc2Amj9aon5H6": {
         "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
+        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
         "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
         "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
         "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
@@ -69,6 +75,8 @@ MODELS_SERVER_SETTINGS = {
     },
     "DGbza622FFHxzwY75n1DB1PW3hkPa7zN": {
         "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
+        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
         "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
         "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
         "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
@@ -78,6 +86,8 @@ MODELS_SERVER_SETTINGS = {
     },
     "J8S1Wpe3mCcB8DFeg1b7ZA3jCZTERrZS": {
         "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
+        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
         "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
         "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
         "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
@@ -87,6 +97,8 @@ MODELS_SERVER_SETTINGS = {
     },
     "zslSpCORNddn8CPeBr2zYsRJ9RFZdzRz": {
         "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
+        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
         "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
         "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
         "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
@@ -96,6 +108,8 @@ MODELS_SERVER_SETTINGS = {
     },
     "sdfapi8ajdaSD3eFD3094jfkjfaDSF34": {
         "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
+        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
+        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
         "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
         "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
         "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
