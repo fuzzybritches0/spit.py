@@ -45,18 +45,19 @@ class Manage(ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMixIn, Vertica
                 newvalue = self.query_one(f"#{id}").selected
             else:
                 newvalue = self.query_one(f"#{id}").value
-            if newvalue == Select.NULL:
-                newvalue = ""
+            if newvalue == Select.NULL or newvalue == "" or (not newvalue and not newvalue == False):
+                newvalue = None
             self.store_value(setting, newvalue)
 
     def store_value(self, setting: str, value: str|bool|list) -> None:
         stype = self.manage[setting]["stype"]
-        if (stype == "float" or stype == "ufloat") and value:
+        if (stype == "float" or stype == "ufloat") and (value or value == 0):
             value = float(value)
-        elif (stype == "integer" or stype == "uinteger") and value:
+        elif (stype == "integer" or stype == "uinteger") and (value or value == 0):
             value = int(value)
         elif not stype == "boolean" and not stype.startswith("select"):
-            value = value.strip()
+            if value:
+                value = value.strip()
         self.manage[setting]["value"] = value
 
     def save(self) -> None:
