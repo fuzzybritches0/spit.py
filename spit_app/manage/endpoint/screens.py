@@ -45,11 +45,7 @@ class ScreensMixIn:
     def custom_options(self) -> list:
         options = []
         for setting in self.manage.keys():
-            if (not setting == "name" and
-                not setting == "endpoint_url" and
-                not setting == "key" and
-                not setting == "reasoning_key" and
-                not setting == "timeout"):
+            if not setting in self.NEW:
                 options.append((setting, setting))
         return options
 
