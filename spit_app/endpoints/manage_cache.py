@@ -49,11 +49,8 @@ class ManageCache:
         self.slots[model_id][slot] = (chat_id, False)
 
     async def get_slot(self, model_id: str, chat_id: str) -> int:
-        if type(self.server_settings) is dict:
-            parallel = self.server_settings[model_id]["parallel"]["value"]
-        else:
-            parallel = self.server_settings(model_id)["parallel"]["value"]
-        if parallel == 0:
+        parallel = self.server_settings["parallel"]["value"]
+        if parallel == 0 or parallel == None:
             return await self.get_slot_unlimited(model_id, chat_id)
         else:
             return await self.get_slot_limited(parallel, model_id, chat_id)
