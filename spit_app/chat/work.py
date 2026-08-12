@@ -1,8 +1,6 @@
 # SPDX-Liicense-Identifier: GPL-2.0
 import os
-import asyncio
 from spit_app.endpoints.llamacpp import LlamaCppEndpoint
-from spit_app.modal_screens import LoadProgressBarScreen
 from .textual_message import RemoveMessage
 
 TOOL_PROMPT = "# FUNCTION CALLING INSTRUCTIONS\n\nAll of your function calls are rendered in human-readable form for the user to inspect. The user is also informed about the function call results and can see the tool response message. DO NOT REPEAT THEM!\n\n"
@@ -20,6 +18,7 @@ class Work:
         self.exit_after_busy = False
         prompt = self.prompt()
         endpoint = self.app.get_endpoint(self.cs("endpoint"))
+        self.slot = -2
         model_settings = {}
         if self.cs("model_settings"):
             model_settings = self.settings.models[self.cs("model_settings")]
@@ -72,41 +71,16 @@ class Work:
 
     async def maybe_load_model(self) -> None:
         if self.local_server_active():
-            if self.cs("model") in self.app.server.active_models:
-                return None
-            if self.app.server.active_models and not self.app.server.gets("keep_models_loaded"):
-                for model in self.app.server.active_models:
-                    self.app.action_notify(f"Unloading {model}...")
-                    await self.app.server.model_action(model, "unload")
-            model = self.cs("model")
-            await self.app.server.model_action(model, "load")
-            self.app.load_progress_bar_screen = LoadProgressBarScreen()
-            self.app.push_screen(self.app.load_progress_bar_screen)
-            self.app.load_progress_bar_screen.update_text(f"Loading {model}...")
-            self.app.load_progress_bar_screen.update_total(100)
-            while True:
-                if model in self.app.server.active_models:
-                    break
-                if self.app.load_progress_bar_screen:
-                    self.app.load_progress_bar_screen.update_progress(self.app.server.model_load_progress)
-                else:
-                    return None
-                await asyncio.sleep(1)
-            await self.app.load_progress_bar_screen.dismiss()
-            self.app.load_progress_bar_screen = None
+            await self.app.server.load_model(self.cs("model"))
 
-    async def maybe_restore_cache(self) -> None:
+    async def before_work(self) -> None:
         if self.local_server_active() and self.app.server.gets("save_cache_prompt"):
-            if self.app.server.current_cache_id == self.chat.id:
-                return None
-            if os.path.isfile(self.path["prompt_cache"] / self.chat.id):
-                self.app.action_notify("Restoring prompt cache...")
-                await self.app.server.cache_action(self.chat.id, "restore")
-            self.app.server.current_cache_id = self.chat.id
+            self.slot = await self.app.server.manage_cache.get_slot(self.cs("model"), self.chat.id)
+            self.endpoint.endpoint["slot_id"] = {"stype": "uinteger", "value": self.slot}
 
-    async def maybe_save_cache(self) -> None:
+    async def after_work(self) -> None:
         if self.local_server_active() and self.app.server.gets("save_cache_prompt"):
-            await self.app.server.cache_action(self.chat.id, "save")
+            await self.app.server.manage_cache.return_slot(self.cs("model"), self.chat.id, self.slot)
 
     async def work_stream(self) -> None:
         if "tool_calls" in self.messages[-1]:
@@ -118,8 +92,10 @@ class Work:
                     return None
         count = len(self.messages)
         await self.maybe_load_model()
-        await self.maybe_restore_cache()
+        await self.before_work()
         try:
+            if self.endpoint == -1:
+                self.app.exception = Exception("No free slot for inference available! Please try again later!")
             await self.endpoint.stream()
         except Exception as exception:
             if type(exception).__name__ in ("TimeoutError", "ReadTimeout", "ConnectError",
@@ -132,6 +108,6 @@ class Work:
                 return None
             else:
                 raise exception
-        await self.maybe_save_cache()
+        await self.after_work()
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
