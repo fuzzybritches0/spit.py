@@ -37,7 +37,7 @@ class Work:
             address = endpoint["endpoint_url"]["value"][:-3]
             api_key = endpoint["key"]
             self.server_settings = endpoint
-        self.manage_cache = ManageCache(self.app, self.server_settings, address, api_key)
+        self.manage_cache = ManageCache(self.app, self.cs("endpoint"), self.server_settings, address, api_key)
         self.endpoint = LlamaCppEndpoint(self.messages, endpoint, self.cs("model"), model_settings, prompt,
                                          tools_descs, self.chat_view.callback)
 
