@@ -9,9 +9,13 @@ class CallbackMixIn:
         self.chat.write_chat_history()
         self.chat.undo.append_undo("insert", self.chat.messages[index], index)
         await self.children[index].finish()
+        self.focus_message(index)
 
     async def message_start(self, index: int) -> None:
         await self.mount(Message(self.chat, self.messages[index]))
+        self.focus_message(index)
+
+    def focus_message(self, index: int) -> None:
         if self.chat.display:
             self.children[index].focus(scroll_visible=False)
         else:
