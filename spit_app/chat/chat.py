@@ -156,7 +156,7 @@ class Chat(Vertical):
 
     def focus(self) -> None:
         self.chat_settings.update_selects()
-        if self.text_area.was_focused:
+        if self.text_area.was_focused or not self.messages:
             self.text_area.focus()
         else:
             self.chat_view.focus()
