@@ -7,7 +7,9 @@ from .llamacpp import MANAGE
 from spit_app.modal_screens import LoadProgressBarScreen
 
 IGNORE_ERRORS = [
-    "operator(): http client error: Connection handling canceled"
+    "operator(): http client error: Connection handling canceled",
+    "error loading sequence state file",
+    "Unable to restore slot, no available space in KV cache or invalid slot save file"
 ]
 
 class Server(HelpersMixIn):
@@ -17,7 +19,6 @@ class Server(HelpersMixIn):
         self.path = app.path
         self.app = app
         self.name = "Spit.py Local Server"
-        self.ignore_errors = IGNORE_ERRORS
         self.init()
 
     def init(self) -> None:
@@ -134,9 +135,13 @@ class Server(HelpersMixIn):
         words = line.split(" ")
         if len(words) > 2:
             if words[1] == "E" or words[2] == "E":
-                error = " ".join(words[3:]).strip()
-                if not error in self.ignore_errors:
-                    self.app.exception= Exception(error)
+                ignore = False
+                for ignore_error in IGNORE_ERRORS:
+                    if ignore_error in line:
+                        ignore = True
+                        break
+                if not ignore:
+                    self.app.exception= Exception(line.strip())
 
     def model_loading_progress(self, line) -> None:
         mark = "cmd_child_to_router:state:"
