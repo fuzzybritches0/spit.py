@@ -1,12 +1,14 @@
 import httpx
 
 class ManageCache:
-    def __init__(self, app, server_settings: any, address: str, api_key: str|None = None):
+    def __init__(self, app, endpoint_id, server_settings: any, address: str, api_key: str|None = None):
         self.app = app
         self.server_settings = server_settings
         self.address = address
         self.api_key = api_key
-        self.slots = {}
+        if not endpoint_id in self.app.slots:
+            self.app.slots[endpoint_id] = {}
+        self.slots = self.app.slots[endpoint_id]
 
     async def cache_action(self, slot: int, cache_id: str, model: str, action: str) -> bool:
         endpoint = f"{self.address}/slots/{slot}?action={action}"

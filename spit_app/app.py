@@ -39,6 +39,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.error_screen = None
         self.load_progress_bar_screen = None
         self.server = Server(self)
+        self.slots = {}
 
     async def watch_exception(self, exception: Exception) -> None:
         if self.load_progress_bar_screen:
