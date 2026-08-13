@@ -21,7 +21,7 @@ class ActionsMixIn:
                 await self.app.maybe_reload("manage-chat")
             self.app.query_one("#side-panel").option_list()
             await self.app.query_one("#main").mount(Chat(f"chat-{self.uuid}"))
-            await self.app.query_one("#main").query_one(f"#chat-{self.uuid}").chat_view.load()
+            self.app.query_one("#main").query_one(f"#chat-{self.uuid}").focus()
         else:
             await super().after_action(action)
 
