@@ -34,7 +34,7 @@ class Work:
             api_key = self.app.server.api_key
             self.server_settings = self.app.server.get_server_settings(self.cs("model"))
         else:
-            address = endpoint["endpoint_url"][:-2]
+            address = endpoint["endpoint_url"]["value"][:-3]
             api_key = endpoint["key"]
             self.server_settings = endpoint
         self.manage_cache = ManageCache(self.app, self.server_settings, address, api_key)
