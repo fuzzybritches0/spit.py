@@ -86,7 +86,7 @@ class Work:
 
     def save_cache_prompt(self) -> bool:
         if "save_cache_prompt" in self.server_settings:
-            return self.server_settings["save_cache_prompt"]
+            return self.server_settings["save_cache_prompt"]["value"]
         elif self.local_server_active():
             return self.app.server.gets("save_cache_prompt")
         return False
