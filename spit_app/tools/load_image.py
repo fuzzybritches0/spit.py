@@ -29,7 +29,7 @@ SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
 
-def call(app, arguments: dict, chat_id) -> str|None:
+def call(app, arguments: dict, chat_id) -> str:
     sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").csettings["sandbox"]["value"]
     sandbox_path = app.settings.path["sandbox"] / sandbox_home
     url = arguments["url"]
