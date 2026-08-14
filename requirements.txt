@@ -9,3 +9,4 @@ textual_image
 playwright
 bs4
 ddgs
+libtmux
