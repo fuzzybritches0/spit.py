@@ -40,6 +40,7 @@ class SpitApp(ActionsMixIn, HandlersMixIn, App):
         self.load_progress_bar_screen = None
         self.server = Server(self)
         self.slots = {}
+        self.tmux = {}
 
     async def watch_exception(self, exception: Exception) -> None:
         if self.load_progress_bar_screen:
