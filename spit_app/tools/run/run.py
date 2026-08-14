@@ -21,6 +21,10 @@ def get_script(tool, common: str = "") -> str:
         return common + f.read()
 
 class Run:
+    def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0) -> None:
+        self.tmux = app.tmux
+        self.chat_id = chat_id
+        self.get_rand_seq = app.get_rand_seq
         sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").cs("sandbox")
         self.sandbox_path = app.settings.path["sandbox"] / sandbox_home
         self.sandbox_path.mkdir(parents=True, exist_ok=True)
