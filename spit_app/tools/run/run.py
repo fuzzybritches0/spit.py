@@ -4,6 +4,7 @@ import shutil
 import getpass
 import asyncio
 import signal
+import libtmux
 from pathlib import Path
 
 SANDBOX_ENV = "/".join(__file__.split("/")[:-1]) + "/sandbox_env.sh"
@@ -53,9 +54,76 @@ class Run:
         args += ["--bind", self.sandbox_path, f"/home/{user}"]
         args += ["--bind", self.sandbox_tmp, f"/tmp"]
         args += ["--bind", SANDBOX_ENV, f"/home/{user}/.sandbox_env.sh"]
-        args += ["--unshare-all", "--share-net", "--proc", "/proc",
-                 "--dev", "/dev", "--new-session"]
+        args += ["--unshare-all", "--share-net", "--proc", "/proc", "--dev", "/dev"]
         return args
+
+    def term_new(self) -> str:
+        user = getpass.getuser()
+        if self.sandbox and not shutil.which("bwrap"):
+            return "ERROR: `bwrap` not found! Give user instructions to install `bubblewrap`!"
+        if not shutil.which("bash"):
+            return "ERROR: `bash` not found!"
+        if self.sandbox:
+            cmd_args = self.bwrap_args(user) + ["bash"]
+        else:
+            cmd_args = [SANDBOX_ENV] + ["bash"]
+        cmd_args = " ".join(cmd_args)
+        if not self.chat_id in self.tmux:
+            self.tmux[self.chat_id] = {}
+            self.tmux[self.chat_id]["server"] = libtmux.Server()
+            self.tmux[self.chat_id]["session"] = self.tmux[self.chat_id]["server"].new_session()
+            self.tmux[self.chat_id]["window"] = self.tmux[self.chat_id]["session"].new_window(attach=True)
+            self.tmux[self.chat_id]["panes"] = {}
+        window = self.tmux[self.chat_id]["window"]
+        panes = self.tmux[self.chat_id]["panes"]
+        idx = self.get_rand_seq(8)
+        panes[idx] = window.split(attach=True, shell=cmd_args, percentage=100)
+        return f"Terminal session created. Access token: {idx}"
+
+    def term_send_keys(self, idx: str, keys: str, enter: bool, literal: bool) -> str:
+        panes = self.tmux[self.chat_id]["panes"]
+        if not idx in panes:
+            return f"ERROR: {idx} does not exist!"
+        if panes[idx].pane_dead == "1":
+            del panes[idx]
+            return f"{idx} is dead!"
+        panes[idx].send_keys(keys, enter=enter, literal=literal)
+        return "OK"
+
+    def term_screen(self, idx: str) -> str:
+        panes = self.tmux[self.chat_id]["panes"]
+        if not idx in panes:
+            return f"ERROR: {idx} does not exist!"
+        pane = panes[idx]
+        if pane.pane_dead == "1":
+            del panes[idx]
+            return f"{idx} is dead!"
+        _output = pane.capture_pane(preserve_trailing=True, join_wrapped=True)
+        x = int(pane.display_message('#{cursor_x}', get_text=True)[0])
+        y = int(pane.display_message('#{cursor_y}', get_text=True)[0])
+        output = ""
+        count_y = 0
+        for line in _output:
+            if count_y == y:
+                output += line[0:x] + "█"
+                if len(line)-1 >= x+1:
+                    output += line[x+1:]
+                output += "\n"
+            else:
+                output += line + "\n"
+            count_y += 1
+        return "```text\n" + output + "\n```"
+
+    def term_kill(self, idx: str) -> str:
+        panes = self.tmux[self.chat_id]["panes"]
+        if not idx in panes:
+            return f"ERROR: {idx} does not exist!"
+        if panes[idx].pane_dead == "1":
+            del panes[idx]
+            return f"{idx} already dead!"
+        panes[idx].kill()
+        del panes[idx]
+        return f"Killed {idx}"
 
     async def run(self):
         user = getpass.getuser()
