@@ -30,6 +30,8 @@ class Run:
         self.sandbox_path.mkdir(parents=True, exist_ok=True)
         self.sandbox_tmp = app.settings.path["sandbox_tmp"] / sandbox_home
         self.sandbox_tmp.mkdir(parents=True, exist_ok=True)
+        self.sandbox_path = str(self.sandbox_path)
+        self.sandbox_tmp = str(self.sandbox_tmp)
         self.cmd = [cmd]
         self.script = script
         self.sandbox = sandbox
