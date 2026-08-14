@@ -53,6 +53,8 @@ class ActionsMixIn:
             await self.download.cancel_work()
             for cont in self.query_one("#main").children:
                 if cont.id.startswith("chat-"):
+                    if cont.id in self.tmux:
+                        self.tmux[cont.id]["server"].kill()
                     if cont.is_working():
                         await cont.action_abort()
             self.exit()
