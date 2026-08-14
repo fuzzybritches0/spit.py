@@ -21,11 +21,11 @@ def get_script(tool, common: str = "") -> str:
         return common + f.read()
 
 class Run:
-    def __init__(self, app, chat_id: str, cmd: str, script: str,
-                 sandbox: bool = True, timeout: int = 0):
         sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").cs("sandbox")
         self.sandbox_path = app.settings.path["sandbox"] / sandbox_home
         self.sandbox_path.mkdir(parents=True, exist_ok=True)
+        self.sandbox_tmp = app.settings.path["sandbox_tmp"] / sandbox_home
+        self.sandbox_tmp.mkdir(parents=True, exist_ok=True)
         self.cmd = [cmd]
         self.script = script
         self.sandbox = sandbox
@@ -35,7 +35,7 @@ class Run:
         self.chat = app.query_one("#main").query_one(f"#{chat_id}")
 
     def bwrap_args(self, user: str) -> list:
-        nobind = ["dev", "proc", "boot", "home"]
+        nobind = ["dev", "proc", "boot", "home", "tmp"]
         args = ["bwrap"]
         for d in os.listdir("/"):
             if not d in nobind:
@@ -45,6 +45,7 @@ class Run:
         args += ["--setenv", "PIP_USER", "True"]
         args += ["--chdir", f"/home/{user}"]
         args += ["--bind", self.sandbox_path, f"/home/{user}"]
+        args += ["--bind", self.sandbox_tmp, f"/tmp"]
         args += ["--bind", SANDBOX_ENV, f"/home/{user}/.sandbox_env.sh"]
         args += ["--unshare-all", "--share-net", "--proc", "/proc",
                  "--dev", "/dev", "--new-session"]
