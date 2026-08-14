@@ -14,6 +14,8 @@ class Settings:
         self.path["custom_tools"].mkdir(parents=True, exist_ok=True)
         self.path["sandbox"] = self.path["app_home"] / "sandbox"
         self.path["sandbox"].mkdir(parents=True, exist_ok=True)
+        self.path["sandbox_tmp"] = self.path["app_home"] / "sandbox_tmp"
+        self.path["sandbox_tmp"].mkdir(parents=True, exist_ok=True)
         self.path["data"] = Path(user_data_dir(self.app.NAME, self.app.COPYRIGHT))
         self.path["data"].mkdir(parents=True, exist_ok=True)
         self.path["promptsf"] = self.path["data"] / "prompts.json"
