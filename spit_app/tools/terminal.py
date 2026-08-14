@@ -1,6 +1,5 @@
 import time
 from spit_app.tools.run.run import Run
-from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
 
@@ -64,7 +63,6 @@ SETTINGS = {
 }
 
 def call(app, arguments: dict, chat_id) -> str:
-    load_user_settings(app, NAME, SETTINGS)
     run = Run(app, chat_id, "", "", True, 0)
     if not "action" in arguments or not arguments["action"]:
         return "ERROR: No action!"
