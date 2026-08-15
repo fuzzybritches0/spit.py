@@ -53,6 +53,9 @@ class ToolCall:
         load_tools(self.tools, str(app.settings.path["custom_tools"]))
 
     def required_arguments(self, name: str, arguments: dict) -> None|str:
+        if (not "required" in self.tools[name]["desc"]["function"]["parameters"] or
+            not self.tools[name]["desc"]["function"]["parameters"]["required"]):
+            return None
         for argument in self.tools[name]["desc"]["function"]["parameters"]["required"]:
             if not argument in arguments:
                 return f"ERROR: missing argument: {argument}! Function call failed!"
