@@ -119,8 +119,6 @@ class Run:
             x = int(pane.display_message('#{cursor_x}', get_text=True)[0])
             y = int(pane.display_message('#{cursor_y}', get_text=True)[0])
         except:
-            x = 0
-            y = 0
             panes[idx] = None
             return f"INFO: Session {idx} died."
         output = ""
