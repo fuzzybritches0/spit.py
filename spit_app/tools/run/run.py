@@ -21,11 +21,15 @@ def get_script(tool, common: str = "") -> str:
     with open(script_path, "r") as f:
         return common + f.read()
 
+KEYS = ["Up", "Down", "Left", "Right", "Space", "Tab", "Delete", "End", "Enter", "Escape", "F1", "F2", "F3",
+        "F4", "F5", "F6", "F7", "F8", "F9", "F10" , "F11", "F12", "Home", "Insert", "PageDown", "PageUp"]
+MODS = ["C-", "S-", "M-"]
+
+
 class Run:
     def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0) -> None:
         self.tmux = app.tmux
         self.chat_id = chat_id
-        self.get_rand_seq = app.get_rand_seq
         sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").cs("sandbox")
         self.sandbox_path = app.settings.path["sandbox"] / sandbox_home
         self.sandbox_path.mkdir(parents=True, exist_ok=True)
@@ -76,31 +80,49 @@ class Run:
             self.tmux[self.chat_id]["panes"] = {}
         window = self.tmux[self.chat_id]["window"]
         panes = self.tmux[self.chat_id]["panes"]
-        idx = self.get_rand_seq(8)
+        count = 0
+        while True:
+            if not count in panes:
+                idx = count
+                break
+            count += 1
         panes[idx] = window.split(attach=True, shell=cmd_args, percentage=100)
-        return f"Terminal session created. Access token: {idx}"
+        return idx
 
-    def term_send_keys(self, idx: str, keys: str, enter: bool, literal: bool) -> str:
+    def term_send_keys(self, idx: int, keys: str, literal: bool) -> str|None:
         panes = self.tmux[self.chat_id]["panes"]
-        if not idx in panes:
-            return f"ERROR: {idx} does not exist!"
-        if panes[idx].pane_dead == "1":
-            del panes[idx]
-            return f"{idx} is dead!"
-        panes[idx].send_keys(keys, enter=enter, literal=literal)
-        return "OK"
+        try:
+            panes[idx].send_keys(keys, enter=False, literal=literal)
+        except:
+            panes[idx] = None
+            return f"INFO: Session {idx} died."
 
-    def term_screen(self, idx: str) -> str:
+    def term_input(self, idx: int, inp: list) -> str|None:
+        if inp in KEYS:
+            return self.term_send_keys(idx, inp, False)
+        if not inp[:2] in MODS:
+            return self.term_send_keys(idx, inp, True)
+        _inp = inp
+        for key in KEYS:
+            _inp.replace(key, "")
+        for mod in MODS:
+            _inp.replace(mod, "")
+        if len(_inp) <= 1:
+            return self.term_send_keys(idx, inp, False)
+        return self.term_send_keys(idx, inp, True)
+
+    def term_screen(self, idx: int) -> str:
         panes = self.tmux[self.chat_id]["panes"]
-        if not idx in panes:
-            return f"ERROR: {idx} does not exist!"
         pane = panes[idx]
-        if pane.pane_dead == "1":
-            del panes[idx]
-            return f"{idx} is dead!"
         _output = pane.capture_pane(preserve_trailing=True, join_wrapped=True)
-        x = int(pane.display_message('#{cursor_x}', get_text=True)[0])
-        y = int(pane.display_message('#{cursor_y}', get_text=True)[0])
+        try:
+            x = int(pane.display_message('#{cursor_x}', get_text=True)[0])
+            y = int(pane.display_message('#{cursor_y}', get_text=True)[0])
+        except:
+            x = 0
+            y = 0
+            panes[idx] = None
+            return f"INFO: Session {idx} died."
         output = ""
         count_y = 0
         for line in _output:
@@ -112,18 +134,7 @@ class Run:
             else:
                 output += line + "\n"
             count_y += 1
-        return "```text\n" + output + "\n```"
-
-    def term_kill(self, idx: str) -> str:
-        panes = self.tmux[self.chat_id]["panes"]
-        if not idx in panes:
-            return f"ERROR: {idx} does not exist!"
-        if panes[idx].pane_dead == "1":
-            del panes[idx]
-            return f"{idx} already dead!"
-        panes[idx].kill()
-        del panes[idx]
-        return f"Killed {idx}"
+        return f"Session: {idx}\n\n```text\n{output}\n```"
 
     async def run(self):
         user = getpass.getuser()
