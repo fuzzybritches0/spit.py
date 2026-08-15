@@ -71,7 +71,9 @@ class TextAreaTool():
             self.unknown_tool = False
             self.known_tool = self.process.app.tool_call.tools[tool_name]
             self.properties = self.known_tool["desc"]["function"]["parameters"]["properties"]
-            self.required = self.known_tool["desc"]["function"]["parameters"]["required"]
+            self.required = {}
+            if "required" in self.known_tool["desc"]["function"]["parameters"]:
+                self.required = self.known_tool["desc"]["function"]["parameters"]["required"]
 
     async def select_tool(self) -> None:
         tools = ()
