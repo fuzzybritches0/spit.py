@@ -31,11 +31,10 @@ class ToolCall:
                 del self.json[-1]
                 if len(self.json) == 1 and self.mark % 2 == 1:
                     ret += f"{char}\n~~~~\n"
-                    self.skip = True
+                    self.key = True
                     self.mark += 1
-                elif len(self.json) == 0:
-                    self.skip = True
-            if len(self.json) == 1:
+                self.skip = True
+            elif len(self.json) == 1:
                 if char == '"' and not self.last_char == "\\":
                     self.mark += 1
                     self.skip = True
@@ -51,10 +50,13 @@ class ToolCall:
                     ret += "\n~~~~\n"
                 elif char == " " and not self.value and not self.key:
                     self.skip = True
-                elif char == "," and self.mark % 2 == 0 and not self.key:
-                    self.skip = True
-                    self.key = True
-                    ret += "\n~~~~\n"
+                elif char == "," and self.mark % 2 == 0:
+                    if not self.key:
+                        self.skip = True
+                        self.key = True
+                        ret += "\n~~~~\n"
+                    else:
+                        self.skip = True
             self.last_char = char
             if not self.skip:
                 ret+=char
