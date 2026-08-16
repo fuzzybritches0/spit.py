@@ -34,9 +34,20 @@ MODELS = {
         "org": "ggml-org",
         "model": "Qwen3.6-35B-A3B-GGUF",
         "files": ["Qwen3.6-35B-A3B-Q4_K_M.gguf", "mmproj-Qwen3.6-35B-A3B-Q8_0.gguf"]
+    },
+    "px5sdJJ3Casdfksfjosdf3GsfSSsdfsd": {
+        "name": "Qwen3.8-27B",
+        "org": "unsloth",
+        "model": "Qwen3.8-27B-GGUF",
+        "files": ["Qwen3.8-27B-UD-Q4_K_XL.gguf", "mmproj-F16.gguf"]
+    },
+    "feT7f0Ba3fkl56GLcxtshmqG13fDDkju": {
+        "name": "Muse-Glimmer-30B",
+        "org": "meta-models",
+        "model": "Muse-Glimmer-30B-GGUF",
+        "files": ["Muse-Glimmer-30B-KQuant-Dynamic-Q4_K_XL.gguf", "mmproj-Muse-Glimmer-30B-Q4_K_M.gguf"]
     }
 }
-
 
 NEW_MODELS_SERVER_SETTINGS = {
     "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
@@ -120,19 +131,8 @@ MODELS_SERVER_SETTINGS = {
 }
 
 MODELS_SETTINGS = {
-    "1773183358-994727": {
-        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-think"},
-        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
-        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
-        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
-        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
-        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 1.5},
-        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
-        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
-        "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking", "value": True}
-    },
     "1773183764-9087174": {
-        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-think-code"},
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6"},
         "temperature": {"stype": "float", "desc": "Temperature", "value": 0.6},
         "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
         "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
@@ -142,26 +142,6 @@ MODELS_SETTINGS = {
         "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
         "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking", "value": True}
     },
-    "1773184075-9674506": {
-        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-general"},
-        "temperature": {"stype": "float", "desc": "Temperature", "value": 0.7},
-        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.8},
-        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
-        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
-        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 1.5},
-        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
-        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": False}
-    },
-    "1773184225-5030684": {
-        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.6-reason"},
-        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
-        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
-        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
-        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
-        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 1.5},
-        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
-        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": False}
-    },
     "1777914370-480791": {
         "name": {"stype": "string", "empty": False, "desc": "Name", "value": "Gemma-4"},
         "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
@@ -170,5 +150,27 @@ MODELS_SETTINGS = {
         "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.1},
         "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
         "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking", "value": True}
+    },
+    "1778183764-9085432": {
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.8"},
+        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
+        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
+        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
+        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
+        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 0.0},
+        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
+        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
+        "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking",
+            "value": True},
+        "chat_template_kwargs.reasoning_effort": {"stype": "select_no_default", "desc": "Reasoning Effort",
+            "value": "medium", "options": ["low", "medium", "xhigh"]},
+    },
+    "1779183334-9089754": {
+        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "muse-glimmer"},
+        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
+        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
+        "top_k": {"stype": "float", "desc": "TOP-K", "value": 64.0},
+        "chat_template_kwargs.reasoning_strength": {"stype": "select_no_default", "desc": "Thinking Strength",
+            "value": "high", "options": ["low", "medium", "high", "xhigh"]}
     }
 }
