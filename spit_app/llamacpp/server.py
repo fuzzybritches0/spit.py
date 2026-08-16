@@ -9,7 +9,7 @@ from spit_app.modal_screens import LoadProgressBarScreen
 IGNORE_ERRORS = [
     "operator(): http client error: Connection handling canceled",
     "error loading sequence state file",
-    "Unable to restore slot, no available space in KV cache or invalid slot save file"
+    "Unable to restore slot: No available space in KV cache or invalid slot save file"
 ]
 
 class Server(HelpersMixIn):
