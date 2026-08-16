@@ -44,7 +44,7 @@ SETTINGS = {
 
 def call(app, arguments: dict, chat_id) -> str:
     run = Run(app, chat_id, "", "", True, 0)
-    if not "id" in arguments or not arguments["id"]:
+    if not "id" in arguments:
         idx = run.term_new()
     else:
         idx = arguments["id"]
