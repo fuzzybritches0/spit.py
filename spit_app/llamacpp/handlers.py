@@ -53,8 +53,8 @@ class HandlersMixIn:
         if event.control.id == "active_version":
             await self.update_input_devices()
         if event.control.id == "download_model":
+            server_settings = self.query_one("#server-settings")
             if not self.query_one("#download_model").value == Select.NULL:
-                server_settings = self.query_one("#server-settings")
                 async with self.batch():
                     server_settings.display = True
                     await server_settings.remove_children()
