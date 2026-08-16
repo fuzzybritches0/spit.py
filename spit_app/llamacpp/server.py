@@ -78,11 +78,9 @@ class Server(HelpersMixIn):
         for setting in settings.keys():
             stype = settings[setting]["stype"]
             value = settings[setting]["value"]
-            if value == None:
-                continue
             if setting == "parallel" and value == 0:
                 value = "auto"
-            if stype == "select_list":
+            elif stype == "select_list":
                 if not value:
                     self.conc(f"{setting} = none")
                 else:
@@ -94,6 +92,8 @@ class Server(HelpersMixIn):
                 else:
                     value = "false"
                 self.conc(f"{setting} = {value}")
+            elif value == None:
+                continue
             else:
                 value = str(value)
                 self.conc(f"{setting} = {value}")
