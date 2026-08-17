@@ -68,8 +68,6 @@ class Message(ActionsMixIn, VerticalScroll):
                 await self.pr[proc].finish(update)
 
     async def process(self) -> None:
-        if not self.has_focus and not self.has_focus_within:
-            return None
         await self.update_status()
         self.get_current_process()
         await self.maybe_mount_process(self.current_process)
