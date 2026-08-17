@@ -130,7 +130,7 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
         _devices = []
         model_id = self.query_one("#download_model").value
         model_settings = self.get_server_settings(model_id)
-        if "device" in model_settings:
+        if "device" in model_settings and model_settings["device"]["value"]:
             _devices = model_settings["device"]["value"]
         for device in devices:
             tup += ((device, device, device in _devices),)
