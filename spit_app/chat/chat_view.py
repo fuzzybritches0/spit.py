@@ -31,7 +31,8 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, VerticalScroll):
 
     async def on_remove_message(self, message: RemoveMessage) -> None:
         self.chat.undo.append_undo("remove", self.messages[message.index], message.index)
-        await self.children[message.index].remove()
+        async with self.children[message.index].lock:
+            await self.children[message.index].remove()
         del self.messages[message.index]
         self.chat.write_chat_history()
         if self.messages:
