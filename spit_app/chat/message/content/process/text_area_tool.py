@@ -64,16 +64,21 @@ class TextAreaTool():
             self.tool["function"]["name"] = self.tool_change
         self.ori_tool = deepcopy(self.tool)
         self.old_tool = json.dumps(self.tool)
-        self.arguments =  json.loads(self.tool["function"]["arguments"])
+        self.arguments = {}
+        if "arguments" in self.tool["function"]:
+            self.arguments =  json.loads(self.tool["function"]["arguments"])
         tool_name = self.tool["function"]["name"]
         self.unknown_tool = True
         if tool_name in self.process.app.tool_call.tools:
             self.unknown_tool = False
             self.known_tool = self.process.app.tool_call.tools[tool_name]
-            self.properties = self.known_tool["desc"]["function"]["parameters"]["properties"]
+            self.properties = {}
             self.required = {}
-            if "required" in self.known_tool["desc"]["function"]["parameters"]:
-                self.required = self.known_tool["desc"]["function"]["parameters"]["required"]
+            if ("parameters" in self.known_tool["desc"]["function"] and
+                "properties" in self.known_tool["desc"]["function"]["parameters"]):
+                self.properties = self.known_tool["desc"]["function"]["parameters"]["properties"]
+                if "required" in self.known_tool["desc"]["function"]["parameters"]:
+                    self.required = self.known_tool["desc"]["function"]["parameters"]["required"]
 
     async def select_tool(self) -> None:
         tools = ()
@@ -109,7 +114,8 @@ class TextAreaTool():
                         await self.process.mount(TextArea(prop, False, stype))
                     self.process.children[-1].text = str(value)
                     self.process.children[-1].styles.height = "auto"
-            self.process.children[4].focus()
+            if len(self.process.children) > 4:
+                self.process.children[4].focus()
 
     def save_unknown(self) -> bool:
         text = self.process.children[0].text
@@ -145,7 +151,8 @@ class TextAreaTool():
         for prop in arguments:
             if prop in self.properties.keys() and arguments[prop]:
                 save_arguments[prop] = arguments[prop]
-        self.tool["function"]["arguments"] = json.dumps(save_arguments)
+        if save_arguments:
+            self.tool["function"]["arguments"] = json.dumps(save_arguments)
         index = self.chat.message_index(self.message.message)
         self.chat.undo.append_undo("change", self.message.message, index)
         self.message.message["tool_calls"][self.process.index] = self.tool
