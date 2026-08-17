@@ -53,6 +53,8 @@ class ToolCall:
         load_tools(self.tools, str(app.settings.path["custom_tools"]))
 
     def required_arguments(self, name: str, arguments: dict) -> None|str:
+        if not "parameters" in self.tools[name]["desc"]["function"]:
+            return None
         if (not "required" in self.tools[name]["desc"]["function"]["parameters"] or
             not self.tools[name]["desc"]["function"]["parameters"]["required"]):
             return None
@@ -86,15 +88,17 @@ class ToolCall:
             "name": name, "content": [{"type": "text", "text": ""}]})
         self.message_index = len(messages) - 1
         self.maybe_callback(1)
-        try:
-            arguments = json.loads(tool_call["function"]["arguments"])
-        except Exception as exception:
-            args = tool_call["function"]["arguments"]
-            exc = f"{type(exception).__name__}: {exception}"
-            message = f"Received tool call `{name}` with invalid JSON:\n\n~~~~\n{args}\n~~~~\n"
-            tool_call["function"]["arguments"] = "{\"noop\":\"noop\"}"
-            tool_call["function"]["name"] = "noop"
-            return self.end_call(messages, exc + "\n\n" + message)
+        arguments = {}
+        if "arguments" in tool_call["function"]:
+            try:
+                arguments = json.loads(tool_call["function"]["arguments"])
+            except Exception as exception:
+                args = tool_call["function"]["arguments"]
+                exc = f"{type(exception).__name__}: {exception}"
+                message = f"Received tool call `{name}` with invalid JSON:\n\n~~~~\n{args}\n~~~~\n"
+                tool_call["function"]["arguments"] = "{\"noop\":\"noop\"}"
+                tool_call["function"]["name"] = "noop"
+                return self.end_call(messages, exc + "\n\n" + message)
         if name == "noop":
             return self.end_call(messages, f"INFO: Offending tool call replaced by NOOP!")
         if not name in chat.cs("tools") or not name in self.tools.keys():
