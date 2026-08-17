@@ -111,7 +111,8 @@ class Chat(Vertical):
             self._work.exit_after_busy = True
             return None
         self.work.cancel()
-        await self.chat_view.children[-1].remove()
+        async with self.chat_view.children[-1].lock:
+            await self.chat_view.children[-1].remove()
         del self.chat_view.messages[-1]
         self.refresh_bindings()
 
