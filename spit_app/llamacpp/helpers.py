@@ -23,23 +23,25 @@ class HelpersMixIn:
                 if "float" in self.manage[setting]["stype"]:
                     return float(ret)
             return ret
-        else:
+        if setting in self.manage:
             if "value" in self.manage[setting]:
                 return self.manage[setting]["value"]
-            if self.manage[setting]["stype"] == "select":
-                return None
-            if self.manage[setting]["stype"] == "select_list":
-                return []
-            if self.manage[setting]["stype"] == "boolean":
-                return False
-            if "integer" in self.manage[setting]["stype"]:
-                return 0
-            if "float" in self.manage[setting]["stype"]:
-                return 0.0
-            if self.manage[setting]["stype"] == "string":
-                return ""
-            if self.manage[setting]["stype"] == "dict":
-                return {}
+            if "stype" in self.manage[setting]:
+                if self.manage[setting]["stype"] == "select":
+                    return None
+                if self.manage[setting]["stype"] == "select_list":
+                    return []
+                if self.manage[setting]["stype"] == "boolean":
+                    return False
+                if "integer" in self.manage[setting]["stype"]:
+                    return 0
+                if "float" in self.manage[setting]["stype"]:
+                    return 0.0
+                if self.manage[setting]["stype"] == "string":
+                    return ""
+                if self.manage[setting]["stype"] == "dict":
+                    return {}
+        return None
 
     def inpgets(self, setting: str) -> any:
         if "integer" in self.manage[setting]["stype"] or "float" in self.manage[setting]["stype"]:
