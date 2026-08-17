@@ -35,12 +35,6 @@ MODELS = {
         "model": "Qwen3.6-35B-A3B-GGUF",
         "files": ["Qwen3.6-35B-A3B-Q4_K_M.gguf", "mmproj-Qwen3.6-35B-A3B-Q8_0.gguf"]
     },
-    "px5sdJJ3Casdfksfjosdf3GsfSSsdfsd": {
-        "name": "Qwen3.8-27B",
-        "org": "unsloth",
-        "model": "Qwen3.8-27B-GGUF",
-        "files": ["Qwen3.8-27B-UD-Q4_K_XL.gguf", "mmproj-F16.gguf"]
-    },
     "feT7f0Ba3fkl56GLcxtshmqG13fDDkju": {
         "name": "Muse-Glimmer-30B",
         "org": "meta-models",
@@ -61,74 +55,7 @@ NEW_MODELS_SERVER_SETTINGS = {
     "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
 }
 
-MODELS_SERVER_SETTINGS = {
-    "oq4LVj9KYJmczNlVkOH0paBrfI21NjAj": {
-        "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
-        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
-        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
-        "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
-        "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-        "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
-        "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": True},
-        "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
-        "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
-    },
-    "YkCx4J7XuBMW3T2gVTuYc2Amj9aon5H6": {
-        "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
-        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
-        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
-        "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
-        "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-        "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
-        "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": True},
-        "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
-        "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
-    },
-    "DGbza622FFHxzwY75n1DB1PW3hkPa7zN": {
-        "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
-        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
-        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
-        "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
-        "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-        "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
-        "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": True},
-        "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
-        "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
-    },
-    "J8S1Wpe3mCcB8DFeg1b7ZA3jCZTERrZS": {
-        "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
-        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
-        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
-        "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
-        "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-        "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
-        "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": True},
-        "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
-        "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
-    },
-    "zslSpCORNddn8CPeBr2zYsRJ9RFZdzRz": {
-        "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
-        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
-        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
-        "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
-        "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-        "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
-        "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": True},
-        "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
-        "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
-    },
-    "sdfapi8ajdaSD3eFD3094jfkjfaDSF34": {
-        "device": {"stype": "select_list", "desc": "Use Vulkan devices", "options": [], "value": []},
-        "parallel": {"stype": "uinteger", "desc": "Parallel Inference Threads (0 = auto/default)", "value": 1},
-        "kv-unified": {"stype": "boolean", "desc": "Divide single KV Cache amongst Threads", "value": False},
-        "ctx-size": {"stype": "uinteger", "empty": False, "desc": "Prompt Size (0 = default)", "value": 0},
-        "jinja": {"stype": "boolean", "desc": "Use Model Chat Template", "value": True},
-        "mmproj-offload": {"stype": "boolean", "desc": "Multimodal Projector GPU Offloading", "value": True},
-        "swa-full": {"stype": "boolean", "desc": "Use full-size SWA cache", "value": True},
-        "cache-prompt": {"stype": "boolean", "desc": "Cache Prompt (default: True)", "value": True},
-        "cache-reuse": {"stype": "uinteger", "desc": "Min chunk size to reuse (default: 0)", "value": 256}
-    }
-}
+MODELS_SERVER_SETTINGS = {}
 
 MODELS_SETTINGS = {
     "1773183764-9087174": {
@@ -150,20 +77,6 @@ MODELS_SETTINGS = {
         "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.1},
         "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
         "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking", "value": True}
-    },
-    "1778183764-9085432": {
-        "name": {"stype": "string", "empty": False, "desc": "Name", "value": "qwen3.8"},
-        "temperature": {"stype": "float", "desc": "Temperature", "value": 1.0},
-        "top_p": {"stype": "float", "desc": "TOP-P", "value": 0.95},
-        "min_p": {"stype": "float", "desc": "MIN-P", "value": 0.0},
-        "top_k": {"stype": "float", "desc": "TOP-K", "value": 20.0},
-        "presence_penalty": {"stype": "float", "desc": "Presence Penalty", "value": 0.0},
-        "repetition_penalty": {"stype": "float", "desc": "Repetition Penalty", "value": 1.0},
-        "chat_template_kwargs.enable_thinking": {"stype": "boolean", "desc": "Enable Thinking", "value": True},
-        "chat_template_kwargs.preserve_thinking": {"stype": "boolean", "desc": "Preserve Thinking",
-            "value": True},
-        "chat_template_kwargs.reasoning_effort": {"stype": "select_no_default", "desc": "Reasoning Effort",
-            "value": "medium", "options": ["low", "medium", "xhigh"]},
     },
     "1779183334-9089754": {
         "name": {"stype": "string", "empty": False, "desc": "Name", "value": "muse-glimmer"},
