@@ -21,14 +21,16 @@ def get_script(tool, common: str = "") -> str:
     with open(script_path, "r") as f:
         return common + f.read()
 
-KEYS = ["Up", "Down", "Left", "Right", "Space", "Tab", "Delete", "End", "Enter", "Escape", "F1", "F2", "F3",
-        "F4", "F5", "F6", "F7", "F8", "F9", "F10" , "F11", "F12", "Home", "Insert", "PageDown", "PageUp"]
+KEYS = ["Up", "Down", "Left", "Right", "Space", "Tab", "Delete", "End", "Enter", "Escape", "Esc", "F1",
+        "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10" , "F11", "F12", "Home", "Insert", "PageDown",
+        "PgDn", "PgUp", "PageUp"]
 MODS = ["C-", "S-", "M-"]
 
 
 class Run:
     def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0) -> None:
         self.tmux = app.tmux
+        self.output = ""
         self.chat_id = chat_id
         sandbox_home = app.query_one("#main").query_one(f"#{chat_id}").cs("sandbox")
         self.sandbox_path = app.settings.path["sandbox"] / sandbox_home
@@ -61,7 +63,7 @@ class Run:
         args += ["--unshare-all", "--share-net", "--proc", "/proc", "--dev", "/dev"]
         return args
 
-    def term_new(self) -> str:
+    def term_new(self, name: str) -> None|str:
         user = getpass.getuser()
         if self.sandbox and not shutil.which("bwrap"):
             return "ERROR: `bwrap` not found! Give user instructions to install `bubblewrap`!"
@@ -76,52 +78,57 @@ class Run:
             self.tmux[self.chat_id] = {}
             self.tmux[self.chat_id]["server"] = libtmux.Server()
             self.tmux[self.chat_id]["session"] = self.tmux[self.chat_id]["server"].new_session()
-            self.tmux[self.chat_id]["window"] = self.tmux[self.chat_id]["session"].new_window(attach=True)
-            self.tmux[self.chat_id]["panes"] = {}
-        window = self.tmux[self.chat_id]["window"]
-        panes = self.tmux[self.chat_id]["panes"]
-        count = 0
-        while True:
-            if not count in panes:
-                idx = count
-                break
-            count += 1
-        panes[idx] = window.split(attach=True, shell=cmd_args, percentage=100)
-        return idx
+            self.tmux[self.chat_id]["windows"] = {}
+        windows = self.tmux[self.chat_id]["windows"]
+        windows[name] = self.tmux[self.chat_id]["session"].new_window(attach=True, window_shell=cmd_args)
 
-    def term_send_keys(self, idx: int, keys: str, literal: bool) -> str|None:
-        panes = self.tmux[self.chat_id]["panes"]
-        try:
-            panes[idx].send_keys(keys, enter=False, literal=literal)
-        except:
-            panes[idx] = None
-            return f"INFO: Session {idx} died."
+    def pane_active(self, name: str) -> bool:
+        if not name in self.tmux[self.chat_id]["windows"]:
+            return False
+        self.tmux[self.chat_id]["session"].refresh()
+        if self.tmux[self.chat_id]["windows"][name] in self.tmux[self.chat_id]["session"].windows:
+            return True
+        else:
+            del self.tmux[self.chat_id]["windows"][name]
+            return False
 
-    def term_input(self, idx: int, inp: list) -> str|None:
+    def term_send_keys(self, name: str, keys: str, literal: bool) -> bool:
+        if not self.pane_active(name):
+            return False
+        self.term_screen(name)
+        self.tmux[self.chat_id]["windows"][name].panes[0].send_keys(keys, enter=False, literal=literal)
+        return True
+
+    def term_input(self, name: str, inp: list) -> str|None:
         if inp in KEYS:
-            return self.term_send_keys(idx, inp, False)
+            if inp == "Esc":
+                return self.term_send_keys(name, "Escape", False)
+            return self.term_send_keys(name, inp, False)
         if not inp[:2] in MODS:
-            return self.term_send_keys(idx, inp, True)
+            return self.term_send_keys(name, inp, True)
+        if "Esc" in inp and not "Escape" in inp:
+            inp = inp.replace("Esc", "Escape")
         _inp = inp
         for key in KEYS:
             _inp.replace(key, "")
         for mod in MODS:
             _inp.replace(mod, "")
         if len(_inp) <= 1:
-            return self.term_send_keys(idx, inp, False)
-        return self.term_send_keys(idx, inp, True)
+            return self.term_send_keys(name, inp, False)
+        return self.term_send_keys(name, inp, True)
 
-    def term_screen(self, idx: int) -> str:
-        panes = self.tmux[self.chat_id]["panes"]
-        pane = panes[idx]
+    def term_screen(self, name: str) -> str:
+        if not self.pane_active(name):
+            return f"{self.output}\n\nINFO: Session dead."
+        pane = self.tmux[self.chat_id]["windows"][name].panes[0]
         _output = pane.capture_pane(preserve_trailing=True, join_wrapped=True)
         try:
             x = int(pane.display_message('#{cursor_x}', get_text=True)[0])
             y = int(pane.display_message('#{cursor_y}', get_text=True)[0])
         except:
-            panes[idx] = None
-            return f"INFO: Session {idx} died."
-        output = ""
+            del self.tmux[self.chat_id]["windows"][name]
+            return f"{self.output}\n\nINFO: Session dead."
+        output = f"Session: {name}\n\n```text\n"
         count_y = 0
         for line in _output:
             if count_y == y:
@@ -132,7 +139,8 @@ class Run:
             else:
                 output += line + "\n"
             count_y += 1
-        return f"Session: {idx}\n\n```text\n{output}\n```"
+        self.output = output + "\n```"
+        return self.output
 
     async def run(self):
         user = getpass.getuser()
