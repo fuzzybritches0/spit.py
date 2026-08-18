@@ -1,4 +1,5 @@
 import os
+import time
 import httpx
 import asyncio
 import inspect
@@ -19,6 +20,7 @@ class Download:
         self.exception = None
         self.pending = []
         self.progress_bar_screen = None
+        self.last_time = 0
         self.progress_state_reset()
 
     def progress_is_active(self) -> bool:
@@ -38,7 +40,9 @@ class Download:
             elif key == "total":
                 self.progress_bar_screen.update_total(value)
             elif key == "progress":
-                self.progress_bar_screen.update_progress(value)
+                if self.last_time + 15 < time.time():
+                    self.progress_bar_screen.update_progress(self.progress_state[key])
+                    self.last_time = time.time()
         if key == "progress":
             self.progress_state[key] += value
         else:
