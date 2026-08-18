@@ -77,8 +77,8 @@ class ProgressBarScreen(Common, ModalScreen):
     def update_total(self, total: int) -> None:
         self.query_one("#progress-bar").update(total=total)
 
-    def update_progress(self, advance: int) -> None:
-        self.query_one("#progress-bar").advance(advance)
+    def update_progress(self, progress: int) -> None:
+        self.query_one("#progress-bar").update(progress=progress)
 
     def reset(self) -> None:
         self.query_one("#progress-bar").update(total=0, progress=0)
