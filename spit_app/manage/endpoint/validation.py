@@ -12,7 +12,6 @@ class ValidationMixIn:
         return (True, None)
 
     def is_unique_custom(self, value: str) -> tuple:
-        valid = True
         if value:
             for name in self.manage.keys():
                 if name.strip() == value.strip():
