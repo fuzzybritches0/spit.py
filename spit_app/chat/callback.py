@@ -20,9 +20,8 @@ class CallbackMixIn:
     async def message_start(self, index: int) -> None:
         await self.mount(Message(self.chat, self.messages[index]))
         if self.is_present(index):
-            async with self.children[index].lock:
-                await self.children[index].wait_for_refresh()
-                self.focus_message(index)
+            await self.children[index].wait_for_refresh()
+            self.focus_message(index)
 
     def focus_message(self, index: int) -> None:
         if self.chat.display:
