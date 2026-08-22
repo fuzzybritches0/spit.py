@@ -77,13 +77,11 @@ class ChatViewActionsMixIn:
         self.children[0].focus()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if self.chat.is_working():
-            return False
         if action == "continue":
-            if self.is_edit:
+            if self.is_edit or self.chat.is_working():
                 return False
-            if (self.cs("model") == "none" or not self.messages or
-                self.cs("endpoint") == 1 or self.cs("endpoint") == "none"):
+            if (self.cs("model") == "none" or not self.messages or self.cs("endpoint") == 1 or
+                self.cs("endpoint") == "none"):
                 return False
             if not self.chat.has_cap("text"):
                 return False
@@ -96,20 +94,20 @@ class ChatViewActionsMixIn:
                  (not "tools" in self.messages[-1] or not self.messages[-1]["tools"])):
                 return False
         elif action ==  "undo":
-            if self.chat.undo.undo_index == -1:
+            if self.chat.undo.undo_index == -1 or self.chat.is_working():
                 return False
         elif action ==  "redo":
-            if self.chat.undo.undo_index == len(self.chat.undo.undo_list)-1:
+            if self.chat.undo.undo_index == len(self.chat.undo.undo_list)-1 or self.chat.is_working():
                 return False
             if len(self.chat.undo.undo_list) == 0:
                 return False
         elif action == "edit_on":
-            if self.is_edit:
+            if self.is_edit or self.chat.is_working():
                 return False
         elif action == "edit_off":
-            if not self.is_edit:
+            if not self.is_edit or self.chat.is_working():
                 return False
         elif action == "add":
-            if not self.is_edit or self.messages:
+            if not self.is_edit or self.messages or self.chat.is_working():
                 return False
         return True
