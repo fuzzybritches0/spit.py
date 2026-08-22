@@ -54,13 +54,12 @@ class ChatViewActionsMixIn:
 
     def action_previous_message(self) -> None:
         index = self.chat.message_index(self.focused_message.message) - 1
-        if index >= 0:
+        if not index < 0:
             self.children[index].focus()
 
     def action_next_message(self) -> None:
         index = self.chat.message_index(self.focused_message.message) + 1
-        last_index = len(self.messages) - 1
-        if index <= last_index:
+        if index > 0 and index < len(self.messages):
             self.children[index].focus()
 
     async def action_undo(self) -> None:
