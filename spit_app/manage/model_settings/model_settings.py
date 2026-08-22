@@ -53,3 +53,11 @@ class ModelSettings(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, Validatio
         if not action == "cancel" and not action == "save" and self.new_manage:
             return False
         return True
+
+    def valid_setting_name(self, value: str) -> tuple:
+        if value:
+            for manage_id in self.managed.keys():
+                manage = self.managed[manage_id]
+                if not manage_id == self.uuid and manage["name"]["value"].strip() == value.strip():
+                    return (False, "Must be unique!")
+        return (True, None)
