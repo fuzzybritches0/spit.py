@@ -30,8 +30,6 @@ class ChatTextArea(TextArea):
             await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         self.chat.write_chat_history()
         await self.chat_view.children[-1].finish()
-        await self.chat_view.children[-1].wait_for_refresh()
-        self.chat_view.children[-1].focus(scroll_visible=False)
         self.chat_view.scroll_end(animate=False, immediate=True)
         self.text = ""
         self.chat._work = Work(self.chat)
