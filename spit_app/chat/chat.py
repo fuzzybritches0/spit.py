@@ -76,6 +76,7 @@ class Chat(Vertical):
             if message is element:
                 return count
             count += 1
+        return -1
 
     def cs(self, key: str, value: any = "__NONE__") -> str|None:
         if not value == "__NONE__":
