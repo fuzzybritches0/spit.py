@@ -27,7 +27,7 @@ class CallbackMixIn:
         if self.chat.display:
             self.children[index].focus(scroll_visible=False)
         else:
-            self.children[index].set_focused_message()
+            self.children[index].on_focus()
 
     async def message_process(self, index: int) -> None:
         if self.is_present(index):
