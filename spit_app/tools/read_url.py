@@ -27,6 +27,8 @@ DESC = {
     }
 }
 
+OUTPUT_TYPE_HINT = "html"
+
 CACHE_TTL = 0
 TIMEOUT = 30_000
 
@@ -448,4 +450,4 @@ async def call(app, arguments: dict, chat_id: str) -> str|None:
     content = extract_text(html)
     if not content:
         return "ERROR: No readable content found on this page."
-    return "~~~~html\n" + content + "\n~~~~"
+    return content
