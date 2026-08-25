@@ -8,29 +8,29 @@ DESC = {
     "type": "function",
     "function": {
         "name": NAME,
-        "description": "Search file contents for regex patterns. Returns matching lines with context.",
+        "description": "Search file contents for regex patterns.",
         "parameters": {
             "type": "object",
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "Directory path or file to search in"
+                    "description": "Directory to search"
                 },
                 "pattern": {
                     "type": "string",
-                    "description": "Regex pattern to search for"
+                    "description": "Regex pattern to search"
                 },
                 "file_pattern": {
                     "type": "string",
-                    "description": "File name pattern to filter (e.g., '*.py'). Default: '*'"
+                    "description": "File name filter (e.g., '*.py'). Default: '*'"
                 },
                 "recursive": {
                     "type": "boolean",
-                    "description": "Search subdirectories. Default: False"
+                    "description": "Search subdirectories. Default: True"
                 },
                 "context": {
                     "type": "integer",
-                    "description": "Lines of context before/after match. Default: 0"
+                    "description": "Lines before/after match. Default: 0"
                 },
                 "max_results": {
                     "type": "integer",
