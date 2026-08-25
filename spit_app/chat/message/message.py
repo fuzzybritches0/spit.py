@@ -18,81 +18,81 @@ class Message(ActionsMixIn, VerticalScroll):
         self.role = self.message["role"]
         self.border_title = self.role
         self.classes = "message-container-" + self.role
-        self.pr = {}
-        self.processes = ["reasoning", "content", "tool_calls"]
-        self.current_process = None
-        self.finish_process = None
+        self.cnt = {}
+        self.contents = ["reasoning", "content", "tool_calls"]
+        self.current_content = None
+        self.finish_content = None
         self.is_removing = False
         self.is_edit = 0
 
     async def update_status(self) -> None:
-        if not self.current_process:
+        if not self.current_content:
             return None
-        if self.current_process == "reasoning":
+        if self.current_content == "reasoning":
             status = "Thinking..."
         else:
             status = ""
         if not self.status.source == status:
             await self.status.update(status)
 
-    def get_update(self, process: str) -> tuple:
-        if process in self.message and self.message[process]:
-            return process, self.message[process]
+    def get_update(self, content: str) -> tuple:
+        if content in self.message and self.message[content]:
+            return content, self.message[content]
         else:
             return None, None
 
-    def is_message_type(self, process: str) -> bool:
-        if not self.message[process]:
+    def is_message_type(self, content: str) -> bool:
+        if not self.message[content]:
             return False
-        _type = self.message[process][0]["type"]
-        if self.message[process][0][_type]:
+        _type = self.message[content][0]["type"]
+        if self.message[content][0][_type]:
             return True
         return False
 
-    def get_current_process(self) -> None:
-        old_process = self.current_process
-        for process in self.processes:
-            if process in self.message:
-                if ((type(self.message[process]) is str and self.message[process]) or
-                    self.is_message_type(process)):
-                    self.current_process = process
-        if not old_process == self.current_process:
-            self.finish_process = old_process
+    def get_current_content(self) -> None:
+        old_content = self.current_content
+        for content in self.contents:
+            if content in self.message:
+                if ((type(self.message[content]) is str and self.message[content]) or
+                    self.is_message_type(content)):
+                    self.current_content = content
+        if not old_content == self.current_content:
+            self.finish_content = old_content
 
     async def finish(self) -> None:
         await self.status.update("")
-        for process in self.processes:
-            proc, update = self.get_update(process)
-            if proc:
-                await self.maybe_mount_process(proc)
-                await self.pr[proc].finish(update)
+        for content in self.contents:
+            cont, update = self.get_update(content)
+            if cont:
+                await self.maybe_mount_content(cont)
+                await self.cnt[cont].finish(update)
 
     async def process(self) -> None:
         await self.update_status()
-        self.get_current_process()
-        await self.maybe_mount_process(self.current_process)
-        if self.finish_process:
-            proc, update = self.get_update(self.finish_process)
-            await self.pr[proc].finish(update)
-            self.finish_process = None
-        proc, update = self.get_update(self.current_process)
-        await self.pr[proc].process(update)
+        self.get_current_content()
+        await self.maybe_mount_content(self.current_content)
+        if self.finish_content:
+            cont, update = self.get_update(self.finish_content)
+            await self.cnt[cont].finish(update)
+            self.finish_content = None
+        cont, update = self.get_update(self.current_content)
+        await self.cnt[cont].process(update)
 
     async def reset(self) -> None:
-        for process in self.pr.keys():
-            await self.pr[process].remove()
-        self.current_process = None
-        self.finish_process = None
-        self.pr = {}
+        for content in self.cnt.keys():
+            await self.cnt[content].remove()
+        self.current_content = None
+        self.finish_content = None
+        self.cnt = {}
         self.is_edit = 0
 
-    async def maybe_mount_process(self, process: str) -> None:
-        if not process in self.pr:
+    async def maybe_mount_content(self, content: str) -> None:
+        if not content in self.cnt:
             display = True
-            if process == "reasoning" and not self.chat_view.is_edit:
+            if content == "reasoning" and not self.chat_view.is_edit:
                 display = False
-            self.pr[process] = Content(self.chat, self, process, display)
-            await self.mount(self.pr[process])
+            self.cnt[content] = Content(self.chat, self, content, display)
+            await self.mount(self.cnt[content])
 
     async def on_mount(self) -> None:
         self.status = Markdown()
