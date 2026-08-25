@@ -32,6 +32,10 @@ def load_tools(tools: dict, file_path: str) -> None:
                 tools[name]["call"] = getattr(module, "call")
             else:
                 tools[name]["call_async_generator"] = getattr(module, "call_async_generator")
+            if hasattr(module, "OUTPUT_TYPE_HINT"):
+                tools[name]["output_type_hint"] = getattr(module, "OUTPUT_TYPE_HINT")
+            else:
+                tools[name]["output_type_hint"] = None
             if hasattr(module, "PROMPT_INST"):
                 tools[name]["prompt_inst"] = getattr(module, "PROMPT_INST")
             if hasattr(module, "Validators"):
