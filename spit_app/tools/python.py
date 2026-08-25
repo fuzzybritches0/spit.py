@@ -31,6 +31,8 @@ DESC = {
     }
 }
 
+OUTPUT_TYPE_HINT = "text"
+
 MAX_SECONDS = 30
 MAX_MEMORY_MB = 100
 MODULES = "math, random, json, re, datetime, time, itertools, functools, operator, collections, heapq, bisect, enum, typing, string, numbers, pprint, copy, uuid, base64, binascii, csv, struct, textwrap, urllib.parse"
@@ -188,7 +190,6 @@ async def call_async_generator(app, arguments: dict, chat_id):
 
     timeout = SETTINGS["timeout"]["value"]
     start = loop.time()
-    yield "```\n"
     while True:
         if timeout == 0:
             remaining = 1000
@@ -207,7 +208,6 @@ async def call_async_generator(app, arguments: dict, chat_id):
             break
 
         yield msg["data"]
-    yield "\n```"
     if proc.is_alive():
         proc.terminate()
         proc.join()
