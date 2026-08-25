@@ -9,7 +9,7 @@ DESC = {
     "type": "function",
     "function": {
         "name": NAME,
-        "description": "Find and replace text in files (with preview).",
+        "description": "Find and replace text in a file.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -33,10 +33,6 @@ DESC = {
                     "type": "integer",
                     "description": "Limit replacements. Default: 0 (all)"
                 },
-                "preview": {
-                    "type": "boolean",
-                    "description": "Show matches before replacing. Default: True"
-                },
                 "dry_run": {
                     "type": "boolean",
                     "description": "Only show preview. Implies preview=True. Default=False"
@@ -47,7 +43,7 @@ DESC = {
     }
 }
 
-PROMPT = "Use this function to find and replace text in files (with preview)."
+PROMPT = "Use this function to find and replace text in a file."
 PROMPT_INST = "Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
 SANDBOX = True
 MAX_SECONDS = 0
@@ -72,7 +68,6 @@ path = "{arguments['path']}"
 find = {find}
 replace = {replace}
 use_regex = {arguments.get('use_regex', False)}
-preview = {arguments.get('preview', True)}
 dry_run = {arguments.get('dry_run', False)}
 max_replacements = {arguments.get('max_replacements', 0)}
 """
