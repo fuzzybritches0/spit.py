@@ -6,11 +6,11 @@ DESC = {
     "type": "function",
     "function": {
         "name": NAME,
-        "description": "List all terminal sessions and their statuses."
+        "description": "List live terminal sessions."
     }
 }
 
-PROMPT = "Use this function to list all active and dead terminal sessions."
+PROMPT = "Use this function to list all currently live terminal sessions. Call it before creating a new session to avoid accidentally interacting with a live session instead. Check if sessions are still alive before interacting with them - especially sessions you have not interacted with for a longer period of time. Sessions might also disappear due to system failure or user actions."
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
