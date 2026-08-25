@@ -46,11 +46,14 @@ DESC = {
 OUTPUT_TYPE_HINT = "text"
 
 PROMPT = "Use this function to search file contents for regex patterns."
+PROMPT_INST = "Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
 SANDBOX = True
+MAX_SECONDS = 0
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" },
-    "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)" }
+    "sandbox": { "value": SANDBOX, "stype": "boolean", "desc": "Run in sandbox (DANGER: Do not deactivate!)" },
+    "timeout": { "value": MAX_SECONDS, "stype": "uinteger", "empty": False, "desc": "Timeout (0 = no timeout)"},
 }
 
 EXEC = {
