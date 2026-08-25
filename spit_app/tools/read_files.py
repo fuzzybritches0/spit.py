@@ -20,6 +20,10 @@ DESC = {
                 "encoding": {
                     "type": "string",
                     "description": "File encoding. Default: 'utf-8'"
+                },
+                "show_line_numbers": {
+                    "type": "boolean",
+                    "description": "Prefix each line with a 1-based line number (cat -n style). Default: False"
                 }
             },
             "required": ["path"]
@@ -27,8 +31,9 @@ DESC = {
     }
 }
 
-PROMPT = "Use this function to read the content of one or more text files."
 OUTPUT_TYPE_HINT = "text"
+
+PROMPT = "Use this function to read the content of one or more text files. Set show_line_numbers=true to prefix each line with a 1-based line number (useful when targeting lines by number, e.g. insert_line/delete_lines)."
 SANDBOX = True
 
 SETTINGS = {
@@ -50,6 +55,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
     script = f"""
 path = {path}
 encoding = "{encoding}"
+show_line_numbers = {arguments.get('show_line_numbers', False)}
 """ + EXEC["script"]
     run = Run(app, chat_id, EXEC["interpreter"], script,
               SETTINGS["sandbox"]["value"], 0)
