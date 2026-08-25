@@ -28,6 +28,7 @@ DESC = {
 }
 
 PROMPT = "Use this function to read the content of one or more text files."
+OUTPUT_TYPE_HINT = "text"
 SANDBOX = True
 
 SETTINGS = {
