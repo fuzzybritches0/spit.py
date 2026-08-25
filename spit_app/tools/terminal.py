@@ -1,6 +1,6 @@
 import time
 import json
-from spit_app.tools.run.run import Run
+from spit_app.tools.run.terminal import Terminal
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -62,26 +62,26 @@ SETTINGS = {
 
 def call(app, arguments: dict, chat_id) -> str:
     load_user_settings(app, NAME, SETTINGS)
-    run = Run(app, chat_id, "", "", SETTINGS["sandbox"]["value"], 0)
+    terminal = Terminal(app, chat_id, SETTINGS["sandbox"]["value"])
     if not "name" in arguments or not arguments["name"]:
         return "ERROR: No session 'name' provided!"
     name = arguments["name"]
     if not chat_id in app.tmux or not name in app.tmux[chat_id]["windows"]:
-        run.term_new(name)
+        terminal.term_new(name)
     windows = app.tmux[chat_id]["windows"]
     if "input" in arguments and arguments["input"]:
         if not type(arguments["input"]) is list:
             return "ERROR: expected array for argument 'input'!"
         count = 0
         for inp in arguments["input"]:
-            if not run.term_input(name, inp):
+            if not terminal.term_input(name, inp):
                 if not count == len(arguments["input"])-1:
-                    return f"{run.output}\n\nWARNING: unconsumed input: `{arguments['input'][count:]}`!"
-                return f"{run.output}"
+                    return f"{terminal.output}\n\nWARNING: unconsumed input: `{arguments['input'][count:]}`!"
+                return f"{terminal.output}"
             count +=1
     delay = 1
     if "delay" in arguments and arguments["delay"]:
         if type(arguments["delay"]) is int:
                 dealy = arguments["delay"]
     time.sleep(delay)
-    return run.term_screen(name)
+    return terminal.term_screen(name)
