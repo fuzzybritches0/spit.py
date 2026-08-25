@@ -1,6 +1,15 @@
 import sys
 import os
 
+def format_content(content):
+    if not show_line_numbers:
+        return content
+    lines = content.splitlines()
+    if not lines:
+        return content
+    width = len(str(len(lines)))
+    return "\n".join(f"{n:>{width}}\t{line}" for n, line in enumerate(lines, 1))
+
 try:
     results = {}
     for p in path:
@@ -10,6 +19,7 @@ try:
                 results[p] = {
                     "success": True,
                     "content": content,
+                    "display": format_content(content),
                     "size": len(content),
                     "error": None
                 }
@@ -25,9 +35,9 @@ try:
         if result["success"]:
             print(f"File: `{path[0]}`")
             print(f"Size: `{result['size']} bytes`")
-            print("\n~~~~")
-            print(result["content"])
-            print("~~~~\n")
+            print("")
+            print(result["display"])
+            print("")
         else:
             print(f"ERROR: `{result['error']}`")
             sys.exit(1)
@@ -38,12 +48,12 @@ try:
             print(f"File: `{p}`")
             if result["success"]:
                 print(f"Size: `{result['size']} bytes`")
-                print("\n~~~~")
-                print(result["content"])
-                print("~~~~\n")
+                print("")
+                print(result["display"])
+                print("")
             else:
-                print(f"\nERROR: `{result['error']}`")
-        print(f"\nTotal: {len(path)} file(s) processed, {sum(1 for r in results.values() if r['success'])} successful")
+                print(f"ERROR: `{result['error']}`")
+        print(f"Total: {len(path)} file(s) processed, {sum(1 for r in results.values() if r['success'])} successful")
 except Exception as exception:
     print(f"ERROR: `{type(exception).__name__}`: `{exception}`")
     sys.exit(1)
