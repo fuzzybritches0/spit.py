@@ -34,6 +34,8 @@ DESC = {
     }
 }
 
+OUTPUT_TYPE_HINT = "text"
+
 PROMPT = "Use this function to find files and directories by their names using glob patterns."
 SANDBOX = True
 
