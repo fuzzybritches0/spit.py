@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0
 import libtmux
-from .common import Common
+from .common import CommonMixIn
 
 KEYS = ["Up", "Down", "Left", "Right", "Space", "Tab", "Delete", "End", "Enter", "Escape", "Esc", "F1",
         "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10" , "F11", "F12", "Home", "Insert", "PageDown",
         "PgDn", "PgUp", "PageUp"]
 MODS = ["C-", "S-", "M-"]
 
-class Terminal(Common):
+class Terminal(CommonMixIn):
     def __init__(self, app, chat_id: str, sandbox: bool = True) -> None:
         super().__init__(app, sandbox, chat_id)
         self.tmux = app.tmux
