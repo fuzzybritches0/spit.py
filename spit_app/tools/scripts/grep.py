@@ -1,66 +1,79 @@
 import sys
-import os
 import re
 from pathlib import Path
-import fnmatch
 
 try:
     path = Path(path)
     if not path.exists():
         print(f"ERROR: Path does not exist: `{path}`")
         sys.exit(1)
-    try:
-        regex = re.compile(pattern, re.IGNORECASE)
-    except re.error as e:
-        print(f"ERROR: Invalid regex pattern: `{e}`")
+    if not path.is_file() and not path.is_dir():
+        print(f"ERROR: Path is neither a file nor a directory: `{path}`")
         sys.exit(1)
-    results = []
-    total_matches = 0
+    try:
+        regex = re.compile(pattern)
+    except re.error as err:
+        print(f"ERROR: Invalid regular expression `{pattern}`: `{err}`")
+        sys.exit(1)
     if path.is_file():
-        file_iterator = [path]
+        files = [path]
     elif recursive:
-        file_iterator = path.rglob(file_pattern)
+        files = sorted(p for p in path.rglob(file_pattern) if p.is_file())
     else:
-        file_iterator = path.glob(file_pattern)
-    for file_path in file_iterator:
-        if len(results) >= max_results:
+        files = sorted(p for p in path.glob(file_pattern) if p.is_file())
+    total_matches = 0
+    truncated = False
+    skipped = 0
+    output = []
+    for f in files:
+        if total_matches >= max_results:
+            truncated = True
             break
-        if not file_path.is_file():
-            continue
         try:
-            content = file_path.read_text(encoding='utf-8', errors='replace')
-            lines = content.split('\n')
-            for line_num, line in enumerate(lines, 1):
-                if regex.search(line):
-                    if len(results) >= max_results:
-                        break
-                    start = max(0, line_num - 1 - context)
-                    end = min(len(lines), line_num + context)
-                    match_info = {
-                        'file': str(file_path),
-                        'line': line_num,
-                        'text': line.strip(),
-                        'context': lines[start:end]
-                    }
-                    results.append(match_info)
-                    total_matches += 1
-                    break
-        except Exception as e:
+            lines = f.read_text(encoding='utf-8').splitlines()
+        except (UnicodeDecodeError, OSError):
+            skipped += 1
             continue
-    if not results:
-        print(f"No matches found for pattern: `{pattern}`")
+        match_lines = [i for i, line in enumerate(lines, 1)
+                       if regex.search(line)]
+        if not match_lines:
+            continue
+        match_set = set(match_lines)
+        ranges = []
+        if context > 0:
+            for ln in match_lines:
+                start = max(1, ln - context)
+                end = min(len(lines), ln + context)
+                if ranges and start <= ranges[-1][1] + 1:
+                    ranges[-1] = (ranges[-1][0], max(ranges[-1][1], end))
+                else:
+                    ranges.append((start, end))
+        else:
+            ranges = [(ln, ln) for ln in match_lines]
+        for start, end in ranges:
+            for ln in range(start, end + 1):
+                text = lines[ln - 1]
+                if ln in match_set:
+                    total_matches += 1
+                    output.append(f"{f}:{ln}: {text}")
+                    if total_matches >= max_results:
+                        truncated = True
+                        break
+                else:
+                    output.append(f"{f}-{ln}-{text}")
+            if truncated:
+                break
+    if total_matches == 0:
+        print(f"No matches found for `{pattern}` in `{path}`.")
     else:
-        print(f"Found {total_matches} match(es) in {len(set(r['file'] for r in results))} file(s):")
-        print("\n~~~~")
-        for result in results:
-            print(f"{result['file']}:{result['line']}: {result['text']}")
-            if context > 0:
-                for i, ctx_line in enumerate(result['context']):
-                    line_num = max(0, result['line'] - 1 - context) + i
-                    if line_num != result['line'] - 1:
-                        print(f"  {line_num}: {ctx_line}")
-            print()
-        print("~~~~\n")
+        print(f"Found {total_matches} match(es) for `{pattern}` in `{path}`:")
+        print("")
+        for line in output:
+            print(line)
+        if truncated:
+            print(f"Results truncated at {max_results} match(es).")
+        if skipped:
+            print(f"Skipped {skipped} binary/unreadable file(s).")
 except Exception as exception:
     print(f"ERROR: `{type(exception).__name__}`: `{exception}`")
     sys.exit(1)
