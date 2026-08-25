@@ -9,7 +9,7 @@ DESC = {
     "type": "function",
     "function": {
         "name": NAME,
-        "description": "Control interactive terminal sessions. Run interactive CLI and TUI applications.",
+        "description": "Control persistent interactive terminal sessions with a 24x80 characters window.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -19,23 +19,39 @@ DESC = {
                 },
                 "input": {
                     "type": "array",
-                    "description": "Send any string-of-characters or keys to a terminal session."
+                    "description": "An array of string-of-characters and/or key names to send to the terminal."
                 },
                 "delay": {
                     "type": "integer",
-                    "description": "Delay before capturing the terminal screen (seconds). Default: 1"
+                    "description": "Seconds to wait before capturing the screen after sending input. Default: 1"
                 }
-            }
+            },
+            "required": ["name"]
         }
     }
 }
 
+OUTPUT_TYPE_HINT = "text"
+
 SANDBOX = True
 PROMPT = """
-The 'input' argument expects an array of string-of-characters and/or keys that will be send to the terminal session. The following keys are understood: Up, Down, Left, Right, Space, Tab, Delete, End, Enter, Escape/Esc, F1 ... F12, Home, Insert, PageDown/PgDn, PageUp/PgUp. To use key combinations, prefix them with 'C-' (Ctrl), 'S-' (Shift), 'M-' (Alt). Examples: ["echo \"Hello World!\"", "Enter"], ["vim test.txt", "Enter"], ["iHello test.txt file!", "Escape", ":wq", "Enter"]
-Every screen capture is prepended with its 'name' so you know which output belongs to which session.
-Only providing the 'name', a capture of the screen will be returned.
-Quit all applications and end all sessions with ["exit", "Enter"] if you no longer need them!
+The 'input' argument expects an array of string-of-characters and/or keys that will be send to the terminal session.
+
+Supported keys: Up, Down, Left, Right, Space, Tab, Delete, End, Enter, Escape/Esc, F1-F12, Home, Insert, PageDown/PgDn, PageUp/PgUp. For key combinations use prefixes: 'C-' (Ctrl), 'S-' (Shift), 'M-' (Alt).
+
+Examples:
+- Use an editor: ["vim test.txt", "Enter", "iHello test.txt file!", "Escape", ":wq", "Enter"]
+- Start a background process: ["npm run dev > dev.log 2>&1 &", "Enter"]
+- Send a signal ["C-c"]
+
+Key limitations to keep in mind:
+- The terminal is 24x80 characters with no scroll-back. Each screen capture shows only the 24 lines.
+- When a session dies while not interacting with it, no output can be recovered. Use redirects.
+- Providing only the 'name' gives you a snapshot of the current terminal screen.
+- The "Enter" key is never implied. Always use it explicitly. This is a real terminal.
+- End all processes and close the session with ["exit", "Enter"] if you no longer need it.
+
+For one-shot, short-lived actions use dedicated file and command tools.
 """
 
 
