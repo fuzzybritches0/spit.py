@@ -19,7 +19,7 @@ DESC = {
     }
 }
 
-PROMPT = "To help the user manage their chat conversations, use this function to set a short description of what this chat conversation is about. This is the function you always call first, before any other tool call, but after you have determined the topic of the conversation. Update the description over the course of the conversation as needed. Examples to consider: 'Copy Python Objects', 'Paris, Vienna Weather', 'Creative Writing: Love Poem', 'Solving Quadratics: Factoring'"
+PROMPT = "To help the user manage their chat conversations, use this function to set a short description of what this chat conversation is about. Use this function throughout the chat conversion to keep the chat description up-to-date. Examples: 'Copy Python Objects', 'Paris Weather' ... then later in the conversation update to 'Paris, Vienna Weather, 'Creative Writing: Love Poem', 'Solving Quadratics' ... then later in the conversation update to 'Solving Quadratics: Factoring'"
 
 SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
