@@ -23,6 +23,8 @@ DESC = {
     }
 }
 
+OUTPUT_TYPE_HINT = "text"
+
 SANDBOX = True
 MAX_SECONDS = 0
 PROMPT = "Use this function to run Shell commands and receive their output."
@@ -44,7 +46,5 @@ async def call_async_generator(app, arguments: dict, chat_id):
     run = Run(app, chat_id, "bash", arguments["command"] +
               "; EXIT_CODE=${?}; declare > ~/.sandbox_env; export -p >> ~/.sandbox_env; exit ${EXIT_CODE}",
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
-    yield "~~~~\n"
     async for line in run.run():
         yield line
-    yield "\n~~~~"
