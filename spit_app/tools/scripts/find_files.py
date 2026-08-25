@@ -16,7 +16,6 @@ try:
         iterator = path.rglob(pattern)
     else:
         iterator = path.glob(pattern)
-    print("```")
     for item in iterator:
         if len(results) > max_results:
             break
@@ -27,7 +26,6 @@ try:
     print(f"Found {len(results)} file(s):")
     for result in results:
         print(f"  {result}")
-    print("```")
 except Exception as exception:
     print(f"ERROR: `{type(exception).__name__}`: `{exception}`")
     sys.exit(1)
