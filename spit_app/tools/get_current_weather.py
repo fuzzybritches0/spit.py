@@ -21,6 +21,8 @@ DESC = {
     }
 } 
 
+OUTPUT_TYPE_HINT = "json"
+
 PROMPT = "Use this function if the user asks you for the weather in some location."
 
 SETTINGS = {
@@ -31,4 +33,4 @@ async def call(app, arguments: dict, chat_id) -> str|None:
     url = f"https://wttr.in/{arguments['location']}?format=j2"
     async with httpx.AsyncClient(timeout=30) as client:
         result = await client.get(url)
-    return "```json\n" + result.text + "\n```"
+    return result.text
