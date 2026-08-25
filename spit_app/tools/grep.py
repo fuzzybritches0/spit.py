@@ -42,6 +42,8 @@ DESC = {
     }
 }
 
+OUTPUT_TYPE_HINT = "text"
+
 PROMPT = "Use this function to search file contents for regex patterns."
 SANDBOX = True
 
