@@ -29,6 +29,8 @@ DESC = {
     }
 }
 
+OUTPUT_TYPE_HINT = "text"
+
 SANDBOX = True
 MAX_SECONDS = 0
 ALLOWED = "bash, python3, perl"
@@ -54,7 +56,5 @@ async def call_async_generator(app, arguments: dict, chat_id):
         return
     run = Run(app, chat_id, interpreter, arguments["script"],
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
-    yield "~~~~\n"
     async for line in run.run():
         yield line
-    yield "\n~~~~"
