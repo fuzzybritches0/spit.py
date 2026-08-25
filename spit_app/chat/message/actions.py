@@ -17,13 +17,13 @@ bindings = [
 
 class ActionsMixIn:
     def action_show_cot(self) -> None:
-        self.pr["reasoning"].display = True
+        self.cnt["reasoning"].display = True
         self.app.refresh_bindings()
 
     def action_hide_cot(self) -> None:
         if self.children[1].children[0].has_focus:
             self.focus(scroll_visible=False)
-        self.pr["reasoning"].display = False
+        self.cnt["reasoning"].display = False
         self.app.refresh_bindings()
 
     def action_remove(self) -> None:
@@ -39,8 +39,8 @@ class ActionsMixIn:
             self.message["content"] = [content]
         else:
             self.message["content"].append(content)
-        await self.pr["content"].mount(Process(self.chat, self, "content"))
-        process = self.pr["content"].children[-1]
+        await self.cnt["content"].mount(Process(self.chat, self, "content"))
+        process = self.cnt["content"].children[-1]
         process.edit = TextAreaEdit(process, True)
         self.is_edit += 1
         process.is_edit = True
@@ -50,8 +50,8 @@ class ActionsMixIn:
         await self.maybe_mount_process("reasoning")
         if not "reasoning" in self.message:
             self.message["reasoning"] = ""
-        await self.pr["reasoning"].mount(Process(self.chat, self, "reasoning"))
-        process = self.pr["reasoning"].children[0]
+        await self.cnt["reasoning"].mount(Process(self.chat, self, "reasoning"))
+        process = self.cnt["reasoning"].children[0]
         process.edit = TextAreaEdit(process, True)
         self.is_edit += 1
         process.is_edit = True
@@ -66,8 +66,8 @@ class ActionsMixIn:
             self.message["tool_calls"] = [function]
         else:
             self.message["tool_calls"].append(function)
-        await self.pr["tool_calls"].mount(Process(self.chat, self, "tool_calls"))
-        process = self.pr["tool_calls"].children[-1]
+        await self.cnt["tool_calls"].mount(Process(self.chat, self, "tool_calls"))
+        process = self.cnt["tool_calls"].children[-1]
         process.edit = TextAreaTool(process, True)
         self.is_edit += 1
         process.is_edit = True
@@ -154,16 +154,16 @@ class ActionsMixIn:
         if action == "show_cot":
             if self.chat_view.is_edit:
                 return False
-            if not "reasoning" in self.pr:
+            if not "reasoning" in self.cnt:
                 return False
-            if self.pr["reasoning"].display:
+            if self.cnt["reasoning"].display:
                 return False
         elif action == "hide_cot":
             if self.chat_view.is_edit:
                 return False
-            if not "reasoning" in self.pr:
+            if not "reasoning" in self.cnt:
                 return False
-            if not self.pr["reasoning"].display:
+            if not self.cnt["reasoning"].display:
                 return False
         elif action == "remove":
             if self.chat.is_working() or self.is_edit or not self.chat_view.is_edit:
@@ -174,7 +174,7 @@ class ActionsMixIn:
         elif action == "add_reasoning":
             if not self.chat_view.is_edit or not self.role == "assistant":
                 return False
-            if "reasoning" in self.pr and self.pr["reasoning"]:
+            if "reasoning" in self.cnt and self.cnt["reasoning"]:
                 return False
         elif action == "add_tool":
             if not self.role == "assistant" or not self.chat_view.is_edit or not self.chat.cs("tools"):
@@ -193,32 +193,32 @@ class ActionsMixIn:
     async def on_remove_process(self, message: RemoveProcess) -> None:
         index = self.chat.message_index(self.message)
         self.chat.undo.append_undo("change", self.message, index)
-        await self.pr[message.scontent].children[message.index].remove()
+        await self.cnt[message.scontent].children[message.index].remove()
         if type(self.message[message.scontent]) is list:
             del self.message[message.scontent][message.index]
             if self.message[message.scontent]:
                 self.chat.write_chat_history()
                 return None
-            await self.pr[message.scontent].remove()
-            del self.pr[message.scontent]
+            await self.cnt[message.scontent].remove()
+            del self.cnt[message.scontent]
             if not message.scontent == "content":
                 del self.message[message.scontent]
         else:
             del self.message[message.scontent]
-            await self.pr[message.scontent].remove()
-            del self.pr[message.scontent]
+            await self.cnt[message.scontent].remove()
+            del self.cnt[message.scontent]
         self.chat.write_chat_history()
 
     async def on_reset_process(self, message: ResetProcess) -> None:
         if not message.text is None:
-            async with self.pr[message.scontent].children[message.index].batch():
-                await self.pr[message.scontent].children[message.index].reset()
-                await self.pr[message.scontent].children[message.index].finish(message.text)
+            async with self.cnt[message.scontent].children[message.index].batch():
+                await self.cnt[message.scontent].children[message.index].reset()
+                await self.cnt[message.scontent].children[message.index].finish(message.text)
         else:
-            await self.pr[message.scontent].children[message.index].remove()
+            await self.cnt[message.scontent].children[message.index].remove()
             del self.message[message.scontent][message.index]
             if not self.message[message.scontent] and not message.scontent == "content":
-                await self.pr[message.scontent].remove()
-                del self.pr[message.scontent]
+                await self.cnt[message.scontent].remove()
+                del self.cnt[message.scontent]
                 del self.message[message.scontent]
         self.app.refresh_bindings()
