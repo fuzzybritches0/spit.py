@@ -24,6 +24,22 @@ class Process(ActionsMixIn, VerticalScroll):
             if self is self.parent.children[count]:
                 return count
 
+    def tool_output_type_hint(self) -> None:
+        self.output_type_hint = None
+        if self.message.message["role"] == "tool":
+            name = self.message.message["name"]
+            self.output_type_hint = self.app.tool_call.tools[name]["output_type_hint"]
+
+    def tool_start(self) -> str:
+        if self.output_type_hint and self.pos == 0:
+            return f"~~~~~{self.output_type_hint}\n"
+        return ""
+
+    def tool_end(self) -> str:
+        if self.output_type_hint:
+            return "\n~~~~~"
+        return ""
+
     def init(self) -> None:
         self.pp = PatternProcessing(self)
         self.pos = 0
@@ -33,12 +49,14 @@ class Process(ActionsMixIn, VerticalScroll):
         self.finished = False
         self.is_edit = False
         self.edit = None
+        self.tool_output_type_hint()
 
     async def reset(self) -> None:
         await self.remove_children()
         self.init()
 
     async def process_content(self, content: str) -> None:
+        content = self.tool_start() + content
         self.pp.part = ""
         if len(content)-self.pos-self.pp.bsize > 0:
             for pos in range(self.pos, len(content) - self.pp.bsize):
@@ -47,6 +65,8 @@ class Process(ActionsMixIn, VerticalScroll):
             self.pos=pos+1
 
     async def finish_content(self, content: str) -> None:
+        content = self.tool_start() + content
+        content = content + self.tool_end()
         self.pp.part = ""
         pos = 0
         for pos in range(self.pos, len(content)):
