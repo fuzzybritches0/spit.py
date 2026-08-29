@@ -2,7 +2,7 @@
 
 ![spit.py logo](./assets/images/logo.png)
 
-Although this is still work in progress, it should work and keep you productive.
+Although this is still work in progress (alpha), it should work and keep you productive.
 
 
 ## Supported platforms:
@@ -56,10 +56,10 @@ $ sudo apt install python3-venv python3-pip
 
 ## Install system dependencies
 
-Then make sure libcairo2 and bubblewrap are installed. We need the former for LaTeX math formula rendering and the latter for sandboxing LLM function calls. On standard installations both are usually present. To simply make sure they are, do:
+Then make sure libcairo2, bubblewrap, and tmux are installed. We need libcairo2 for LaTeX math formula rendering and bubblewrap for sandboxing LLM function calls. We also need tmux for non-blocking background processes. On standard installations both libcairo2 and bubblewrap are usually present. With tmux it's less likely. To simply make sure they are all installed, do:
 
 ```
-$ sudo apt install libcairo2 bubblewrap
+$ sudo apt install libcairo2 bubblewrap tmux
 ```
 
 
@@ -81,7 +81,7 @@ We assume the Python venv is still active from the step above. You'll see `(spit
 $ python3 ~/spit.py/main.py
 ```
 
-For a more comfortable invocation you might want to save the following as a Bash script, maybe in `~/bin/spit.py`.
+For a more convenient invocation you might want to save the following as a Bash script, maybe in `~/bin/spit.py`.
 
 ```bash
 #!/bin/bash
