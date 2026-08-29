@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
-from spit_app.tools.run.run import Run, get_script
+from spit_app.tools.run.run import Run, get_script, get_args
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -35,7 +35,7 @@ DESC = {
                 },
                 "dry_run": {
                     "type": "boolean",
-                    "description": "Only show preview. Implies preview=True. Default=False"
+                    "description": "Don't change file. Only show count of replacements. Default: False"
                 }
             },
             "required": ["path", "find", "replace"]
@@ -61,16 +61,7 @@ EXEC = {
 
 async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
-    find = json.dumps(arguments["find"])
-    replace = json.dumps(arguments["replace"])
-    args = f"""
-path = "{arguments['path']}"
-find = {find}
-replace = {replace}
-use_regex = {arguments.get('use_regex', False)}
-dry_run = {arguments.get('dry_run', False)}
-max_replacements = {arguments.get('max_replacements', 0)}
-"""
+    args = get_args(arguments, {"use_regex": False, "max_replacements": 0, "dry_run": False})
     script = args + EXEC["script"]
     run = Run(app, chat_id, EXEC["interpreter"], script,
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
