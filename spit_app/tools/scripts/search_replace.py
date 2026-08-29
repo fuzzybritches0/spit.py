@@ -27,14 +27,15 @@ try:
             start = idx + 1
         num_matches = len(matches)
     if num_matches == 0:
-        print(f"No matches found in {path}.")
+        print(f"No matches found for `{find}` in `{path}`.")
         sys.exit(0)
     max_matches = num_matches
     if not max_replacements == 0:
         if num_matches > max_replacements:
             max_matches = max_replacements
     if dry_run:
-        print(f"dry_run: Would replace `{max_matches}` in `{path}`.")
+        print(f"DRY RUN: Found {num_matches} match(es) for `{find}` in `{path}`.")
+        print(f"Would replace {max_matches} with `{replace}`. File not modified.")
         sys.exit(0)
     if use_regex:
         new_content, num_replaced = pattern.subn(replace, content, count=max_matches)
