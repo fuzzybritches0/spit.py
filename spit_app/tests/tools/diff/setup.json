@@ -1,0 +1,4 @@
+{
+    "script": "../../../tools/scripts/diff.py",
+    "args": ["file1", "file2", "context", "output_format"]
+}
