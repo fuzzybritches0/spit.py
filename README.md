@@ -91,9 +91,19 @@ python3 ~/spit.py/main.py
 
 Don't forget to run `chmod u+x ~/bin/spit.py` after you've saved the file. Then it will be as simple as typing `spit.py` to start the app.
 
-To get started, go to 'Manage Llamacpp', download a llama.cpp version, and a model of your choice. Then go to 'Create New Chat' and create a new chat.
+To get started, click 'Manage Llamacpp' in the side-panel and scroll to the section 'Manage llama.cpp server installations' and download a llama.cpp version. The latest version should be already in the 'Llama.cpp Version' field. Then download a model of your choice in section 'Manage Models', select it as active in section 'Manage llama.cpp server settings'. Select an 'Active Version' for llama.cpp and click 'Apply'. The server should now start with a notification in the bottom right corner of your temrinal. Then click 'Create New Chat' in the side-panel and set up a new Chat.
 
-You can also use other endpoints. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum required.
+You can also use other endpoints. Choose 'Manage Endpoints' and then choose 'Create new endpoint' and enter the necessary settings: A name for the new endpoint and the endpoint URL is the minimum required. If the endpoint requires an api-key, provide that too.
+
+With 'Manage Endpoints', 'Manage Model Settings', and 'Server Settings', you can add or remove any custom settings to your configuration you require, provided they are understood by the endpoint or llama.cpp server.
+
+You can find 'Server Settings' for each model you download in 'Manage Llamacpp' when you choose the model in section 'Manage Models'.
+
+For supported server settings see: https://github.com/ggml-org/llama.cpp/tree/master/tools/server#usage
+
+Server settings are entered without the leading `--` or `-`, e.g.: `--rope-scale` becomes `rope-scale`
+
+For Endpoint and Model settings see: https://github.com/ggml-org/llama.cpp/tree/master/tools/server#post-completion-given-a-prompt-it-returns-the-predicted-completion
 
 
 ## Version requirements
