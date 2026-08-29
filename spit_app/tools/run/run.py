@@ -14,6 +14,15 @@ def get_script(tool, common: str = "") -> str:
     with open(script_path, "r") as f:
         return common + f.read()
 
+def get_args(arguments: dict, defaults: dict) -> str:
+    ret = f"arguments = {arguments}\ndefaults = {defaults}\n\n"
+    for argument in defaults.keys():
+        if not argument in arguments:
+            ret += f"{argument} = defaults['{argument}']\n"
+    for argument in arguments.keys():
+        ret += f"{argument} = arguments['{argument}']\n"
+    return ret + "\n"
+
 class Run(CommonMixIn):
     def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0) -> None:
         super().__init__(app, sandbox, chat_id)
