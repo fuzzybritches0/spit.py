@@ -1,0 +1,4 @@
+{
+    "script": "../../../tools/scripts/read_files.py",
+    "args": ["path", "encoding", "show_line_numbers"]
+}
