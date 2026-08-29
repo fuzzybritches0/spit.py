@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import json
-from spit_app.tools.run.run import Run, get_script
+from spit_app.tools.run.run import Run, get_script, get_args
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -63,15 +63,7 @@ EXEC = {
 
 async def call_async_generator(app, arguments: dict, chat_id):
     load_user_settings(app, NAME, SETTINGS)
-    pattern = json.dumps(arguments["pattern"])
-    args = f"""
-path = "{arguments['path']}"
-pattern = {pattern}
-file_pattern = "{arguments.get('file_pattern', '*')}"
-recursive = {arguments.get('recursive', True)}
-context = {arguments.get('context', 0)}
-max_results = {arguments.get('max_results', 100)}
-"""
+    args = get_args(arguments, {"file_pattern": "*", "recursive": True, "context": 0, "max_results": 100})
     script = args + EXEC["script"]
     run = Run(app, chat_id, EXEC["interpreter"], script,
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
