@@ -1,0 +1,4 @@
+{
+    "script": "../../../tools/scripts/search_replace.py",
+    "args": ["path", "find", "replace", "use_regex", "max_replacements", "dry_run"]
+}
