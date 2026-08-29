@@ -20,8 +20,8 @@ bindings = [
 class ChatViewActionsMixIn:
     def show_cots(self, show: bool = True) -> None:
         for message in self.children:
-            if "reasoning" in message.pr:
-                message.pr["reasoning"].display = show
+            if "reasoning" in message.cnt:
+                message.cnt["reasoning"].display = show
 
     async def reset_message_edit(self) -> None:
         async with self.batch():
