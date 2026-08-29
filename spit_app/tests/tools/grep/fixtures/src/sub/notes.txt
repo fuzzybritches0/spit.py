@@ -1,0 +1,5 @@
+line one
+grep_me again here
+nothing on this line
+another grep_me line
+final line

@@ -1,0 +1,4 @@
+{
+    "script": "../../../tools/scripts/grep.py",
+    "args": ["path", "pattern", "file_pattern", "recursive", "context", "max_results"]
+}
