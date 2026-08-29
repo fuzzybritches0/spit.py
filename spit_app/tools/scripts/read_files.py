@@ -11,6 +11,8 @@ def format_content(content):
     return "\n".join(f"{n:>{width}}\t{line}" for n, line in enumerate(lines, 1))
 
 try:
+    if not type(path) is list:
+        path = [path]
     results = {}
     for p in path:
         try:
