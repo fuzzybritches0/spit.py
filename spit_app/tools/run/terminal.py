@@ -76,7 +76,7 @@ class Terminal(CommonMixIn):
         except:
             del self.tmux[self.chat_id]["windows"][name]
             return f"{self.output}\n\nINFO: Session dead."
-        output = f"Session: {name}\n\n```text\n"
+        output = f"Session: {name}\n\n"
         count_y = 0
         for line in _output:
             if count_y == y:
@@ -87,5 +87,4 @@ class Terminal(CommonMixIn):
             else:
                 output += line + "\n"
             count_y += 1
-        self.output = output + "\n```"
         return self.output
