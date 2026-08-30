@@ -1,0 +1,8 @@
+ Line one
+-Line two
++Line two CHANGED
+ Line three
+^^ -1,3 +1,3 ^^
+-Line nine
++Line nine CHANGED
+^^ -9 +9 ^^
