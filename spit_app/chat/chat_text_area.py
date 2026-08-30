@@ -62,6 +62,8 @@ class ChatTextArea(TextArea):
 
     def on_focus(self) -> None:
         self.was_focused = True
+        self.chat_view.ensure_is_highlighted()
+        self.chat_view.set_active()
 
     def on_blur(self) -> None:
         self.was_focused = False
