@@ -44,21 +44,20 @@ try:
     else:
         line_number = coerce_int(line_number, "line_number")
         insert_at = line_number
-    original = p.read_text(encoding='utf-8')
+    original = read_text_raw(p)
+    newline_style = detect_newline(original)
     lines = original.splitlines()
     n = len(lines)
-    orig_has_nl = original == "" or original.endswith("\n")
+    orig_has_nl = original == "" or ends_with_newline(original)
     if insert_at < 1 or insert_at > n + 1:
         err(f"Position {insert_at} is out of range. Valid: 1 to {n + 1}.")
     new_lines = content.splitlines()
     if not new_lines:
         err("Content is empty.")
     result_lines = lines[:insert_at - 1] + new_lines + lines[insert_at - 1:]
-    result = "\n".join(result_lines)
+    result = newline_style.join(result_lines)
     if result_lines and orig_has_nl:
-        result += "\n"
-    elif not lines and result_lines:
-        result += "\n"
+        result += newline_style
     if insert_at == 1:
         where = "at the beginning"
     elif insert_at > n:
@@ -76,7 +75,7 @@ try:
             print(render_preview(a, b, p), end="")
         print(f"\n{added} line(s) would be inserted {where}. File would have {len(result_lines)} line(s).")
     else:
-        p.write_text(result, encoding='utf-8')
+        write_text_raw(p, result)
         print(f"Inserted {added} line(s) into `{p}` {where}.")
         print(f"File now has {len(result_lines)} line(s).")
 except Exception as exception:

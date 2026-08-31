@@ -49,7 +49,7 @@ SETTINGS = {
 }
 
 EXEC = {
-    "script": get_script(__file__),
+    "script": get_script(__file__, "lines"),
     "interpreter": "python3"
 }
 

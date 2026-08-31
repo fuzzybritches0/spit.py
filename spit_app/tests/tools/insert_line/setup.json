@@ -1,4 +1,5 @@
 {
     "script": "../../../tools/scripts/insert_line.py",
+    "common": "../../../tools/scripts/common/lines.py",
     "args": ["path", "content", "line_number", "after_line", "dry_run"]
 }
