@@ -1,5 +1,8 @@
 #!/bin/bash
 source ../test_common.sh
+trap remove_fixtures EXIT
+rm -rf ./fixtures
+bash ./create_fixtures.sh || exit 1
 H="python3 ../harness.py"
 
 echo "=== 1. Unified diff (default) ==="
