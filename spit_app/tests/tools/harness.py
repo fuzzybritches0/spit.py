@@ -49,5 +49,7 @@ setup = Path.cwd() / "setup.json"
 if os.path.isfile(setup):
     setup = json.loads(setup.read_text())
     script = open(setup["script"]).read()
+    if "common" in setup:
+        script = open(setup["common"]).read() + "\n" + script
     harness = Harness(script, setup["args"])
     harness.run()
