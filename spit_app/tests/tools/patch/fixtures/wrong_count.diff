@@ -1,8 +1,0 @@
---- work.txt
-+++ work.txt
-@@ -1,20 +1,21 @@
- Line one
--Line two
-+Line two CHANGED
- Line three
- Line four
