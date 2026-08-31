@@ -1,4 +1,5 @@
 {
     "script": "../../../tools/scripts/patch.py",
+    "common": "../../../tools/scripts/common/lines.py",
     "args": ["path", "diff", "reverse", "dry_run"]
 }

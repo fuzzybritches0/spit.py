@@ -7,15 +7,6 @@ def err(message):
     print(f"ERROR: {message}")
     sys.exit(1)
 
-def detect_newline(text):
-    first_lf = text.find("\n")
-    first_cr = text.find("\r")
-    if first_lf == -1 and first_cr == -1:
-        return "\n"
-    if first_cr != -1 and (first_lf == -1 or first_cr < first_lf):
-        return "\r\n" if first_cr + 1 == first_lf else "\r"
-    return "\n"
-
 try:
     p = Path(path)
     if not p.exists():
@@ -137,8 +128,7 @@ try:
         if not h["implicit"] and (body_old != h["old_count"] or body_new != h["new_count"]):
             err(f"Hunk {i} counts mismatch: header says {h['old_count']} old / {h['new_count']} new line(s), body has {body_old} old / {body_new} new line(s).")
         h["old_count"], h["new_count"] = body_old, body_new
-    with open(p, 'r', encoding='utf-8', newline='') as f:
-        original = f.read()
+    original = read_text_raw(p)
     newline_style = detect_newline(original)
     orig_lines = original.splitlines()
 
@@ -221,8 +211,7 @@ try:
             print("".join(difflib.unified_diff(a, b, fromfile=str(p), tofile=str(p) + " (patched)", n=3)), end="")
         print(f"\n{added} line(s) would be added, {removed} line(s) removed. File would have {len(work)} line(s).")
     else:
-        with open(p, 'w', encoding='utf-8', newline='') as f:
-            f.write(result)
+        write_text_raw(p, result)
         mode = " (reversed)" if reverse else ""
         print(f"Patched `{p}`{mode}: {len(hunks)} hunk(s) applied.")
         print(f"{added} line(s) added, {removed} line(s) removed. File now has {len(work)} line(s).")
