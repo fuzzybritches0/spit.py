@@ -3,9 +3,37 @@ source ../test_common.sh
 H="python3 ../harness.py"
 # Only fixed args go in the base; line_number and dry_run are set per-test
 B="--after_line None --dry_run False"
+patch_dir=$(cd ../patch && pwd)
+
+# il PATH CONTENT LINE_NUMBER DRY — always passes every arg, the harness reads
+# each flag only once (first occurrence wins)
+il() {
+  $H --path "$1" --content "$2" --line_number "$3" --after_line None --dry_run "$4"
+}
+
+# Keep only the unified diff of a dry_run report (drops the header and the summary)
+extract_diff() {
+  awk '/^--- /{f=1} /^[0-9]+ line\(s\) would be inserted/{exit} f{h[++n]=$0}
+       END{while(n>0 && h[n]=="") n--; for(i=1;i<=n;i++) print h[i]}'
+}
+
+# Apply the dry_run preview with the patch tool and compare against the real result
+roundtrip() {
+  local src="$1" content="$2" line="$3" label="$4"
+  cp "$src" work.txt
+  cp "$src" /tmp/il_rt.txt
+  il /tmp/il_rt.txt "$content" "$line" True | extract_diff > /tmp/il_rt.diff
+  [ -s /tmp/il_rt.diff ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: $label empty diff"; }
+  il work.txt "$content" "$line" False > /dev/null
+  ( cd "$patch_dir" && python3 ../harness.py --path /tmp/il_rt.txt \
+    --diff "$(cat /tmp/il_rt.diff)" --reverse False --dry_run False ) > /dev/null
+  check "$label-patch-rc" 0 $?
+  expect_file "$label" /tmp/il_rt.txt work.txt
+}
 
 cleanup() {
   rm -f work.txt work_no_nl.txt work_empty.txt /tmp/exp9_sr.txt /tmp/exp10_sr.txt
+  rm -f /tmp/il_*.txt /tmp/il_rt.diff
 }
 trap cleanup EXIT
 
@@ -147,5 +175,45 @@ check "t14-rc" 0 $?
 if echo "$out" | grep -q "^---"; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: no --- in diff"; fi
 if echo "$out" | grep -q "^+++"; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: no +++ in diff"; fi
 if echo "$out" | grep -q "^@@"; then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL: no @@ in diff"; fi
+
+echo
+echo "=== 15. dry_run marks a missing trailing newline (and only then) ==="
+printf 'a\nb' > work_no_nl.txt
+out=$(il work_no_nl.txt X 2 True)
+check "t15a-rc" 0 $?
+expect_output "t15a-marker" "$out" "\ No newline at end of file"
+printf 'a\nb' > work_no_nl.txt
+out=$(il work_no_nl.txt NEW 3 True)
+check "t15b-rc" 0 $?
+expect_output "t15b-marker" "$out" "\ No newline at end of file"
+cp fixtures/original.txt work.txt
+out=$(il work.txt X 3 False)
+check "t15c-rc" 0 $?
+echo "$out" | grep -qF "No newline" && { fail=$((fail+1)); echo "FAIL: marker on a file that ends with a newline"; } || pass=$((pass+1))
+cp fixtures/original.txt work.txt
+out=$(il work.txt X 3 True)
+check "t15d-rc" 0 $?
+echo "$out" | grep -qF "No newline" && { fail=$((fail+1)); echo "FAIL: marker on a file that ends with a newline"; } || pass=$((pass+1))
+
+echo
+echo "=== 16. dry_run diff is pasteable into the patch tool ==="
+printf 'a\nb' > /tmp/il_nonl.txt
+printf '\n\nalpha\n' > /tmp/il_blank.txt
+: > /tmp/il_empty.txt
+roundtrip fixtures/original.txt X 3 t16a-middle
+roundtrip fixtures/original.txt TOP 1 t16b-beginning
+roundtrip fixtures/original.txt END 6 t16c-end
+roundtrip /tmp/il_nonl.txt X 2 t16d-nonl-middle
+roundtrip /tmp/il_nonl.txt NEW 3 t16e-nonl-end
+roundtrip /tmp/il_nonl.txt TOP 1 t16f-nonl-beginning
+roundtrip /tmp/il_blank.txt MID 2 t16g-blank
+roundtrip /tmp/il_empty.txt FIRST 1 t16h-empty-file
+roundtrip /tmp/il_blank.txt $'A\nB' 1 t16i-multiline
+
+echo
+echo "=== 17. round-tripped result is byte-identical, not just line-identical ==="
+printf 'a\nb' > /tmp/il_nonl.txt
+roundtrip /tmp/il_nonl.txt X 2 t17-bytes-check > /dev/null
+tail -c 1 /tmp/il_rt.txt | od -An -tx1 | grep -q "62" && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: patched file gained a trailing newline"; }
 
 summary
