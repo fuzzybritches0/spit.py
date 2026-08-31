@@ -1,11 +1,10 @@
 #!/bin/bash
 source ../test_common.sh
+trap remove_fixtures EXIT
+rm -rf ./fixtures
+bash ./create_fixtures.sh || exit 1
 H="python3 ../harness.py"
 
-cleanup() {
-  rm -rf /tmp/grep_single_test.txt
-}
-trap cleanup EXIT
 
 echo "=== 1. Basic grep: match pattern in directory ==="
 out=$($H --path fixtures/src --pattern grep_me --file_pattern "*" --recursive True --context 0 --max_results 100)
@@ -62,8 +61,8 @@ expect_output "t6-msg" "$out" "No matches found for"
 
 echo
 echo "=== 7. Single file as path ==="
-cp fixtures/src/app.py /tmp/grep_single_test.txt
-out=$($H --path /tmp/grep_single_test.txt --pattern "grep_me" --file_pattern "*" --recursive True --context 0 --max_results 100)
+cp fixtures/src/app.py fixtures/single_file_test.txt
+out=$($H --path fixtures/single_file_test.txt --pattern "grep_me" --file_pattern "*" --recursive True --context 0 --max_results 100)
 check "t7-rc" 0 $?
 expect_output "t7-count" "$out" "Found 3 match(es)"
 
@@ -76,7 +75,7 @@ expect_output "t8-msg" "$out" "No matches"
 
 echo
 echo "=== 9. Missing path -> error ==="
-out=$($H --path /tmp/nonexistent_grep_dir --pattern x --file_pattern "*" --recursive True --context 0 --max_results 100)
+out=$($H --path fixtures/no_such_dir --pattern x --file_pattern "*" --recursive True --context 0 --max_results 100)
 check "t9-rc" 1 $?
 expect_output "t9-msg" "$out" "ERROR"
 
