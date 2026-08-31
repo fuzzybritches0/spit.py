@@ -216,4 +216,39 @@ printf 'a\nb' > /tmp/il_nonl.txt
 roundtrip /tmp/il_nonl.txt X 2 t17-bytes-check > /dev/null
 tail -c 1 /tmp/il_rt.txt | od -An -tx1 | grep -q "62" && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: patched file gained a trailing newline"; }
 
+echo
+echo "=== 18. the inserted line takes the file's own line terminator ==="
+cp fixtures/original_crlf.txt work.txt
+out=$(il work.txt MID 2 False)
+check "t18a-rc" 0 $?
+expect_file "t18a-crlf-mid" work.txt fixtures/exp_crlf_mid.txt
+cp fixtures/original_crlf.txt work.txt
+il work.txt END 4 False > /dev/null
+expect_file "t18b-crlf-end" work.txt fixtures/exp_crlf_end.txt
+count=$(grep -c $'\r' work.txt)
+[ "$count" -eq 4 ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: CRLF count is $count, expected 4"; }
+cp fixtures/original_crlf_nonl.txt work.txt
+il work.txt NEW 3 False > /dev/null
+expect_file "t18c-crlf-nonl-end" work.txt fixtures/exp_crlf_nonl_end.txt
+cp fixtures/original_cr.txt work.txt
+il work.txt X 2 False > /dev/null
+expect_file "t18d-lone-cr" work.txt fixtures/exp_cr_mid.txt
+cp fixtures/original_mixed.txt work.txt
+il work.txt X 2 False > /dev/null
+expect_file "t18e-mixed" work.txt fixtures/exp_mixed_mid.txt
+cp fixtures/original.txt work.txt
+il work.txt NEW 3 False > /dev/null
+expect_file "t18f-lf-unchanged" work.txt fixtures/exp_insert3.txt
+count=$(grep -c $'\r' work.txt || true)
+[ "$count" -eq 0 ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: LF file gained $count CR characters"; }
+
+echo
+echo "=== 19. insert_line and patch agree byte-for-byte on every terminator ==="
+roundtrip fixtures/original_crlf.txt MID 2 t19a-crlf-mid
+roundtrip fixtures/original_crlf.txt END 4 t19b-crlf-end
+roundtrip fixtures/original_crlf.txt TOP 1 t19c-crlf-beginning
+roundtrip fixtures/original_crlf_nonl.txt NEW 3 t19d-crlf-nonl-end
+roundtrip fixtures/original_cr.txt X 2 t19e-lone-cr
+roundtrip fixtures/original_mixed.txt X 2 t19f-mixed
+
 summary
