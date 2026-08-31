@@ -14,6 +14,18 @@ def coerce_int(value, name):
     except (ValueError, TypeError):
         err(f"`{name}` must be an integer, got `{value}`")
 
+def render_preview(old_lines, new_lines, path):
+    chunks = []
+    for chunk in difflib.unified_diff(old_lines, new_lines, fromfile=str(path),
+                                      tofile=str(path) + " (inserted)", n=3):
+        is_body = chunk[:1] in (" ", "-", "+")
+        if is_body and not chunk.endswith(("\n", "\r")):
+            chunks.append(chunk + "\n")
+            chunks.append("\\ No newline at end of file\n")
+        else:
+            chunks.append(chunk)
+    return "".join(chunks)
+
 try:
     p = Path(path)
     if not p.exists():
@@ -61,9 +73,7 @@ try:
             print("DRY RUN: preview of changes (file not modified):")
             a = original.splitlines(keepends=True)
             b = result.splitlines(keepends=True)
-            diff = difflib.unified_diff(a, b, fromfile=str(p),
-                     tofile=str(p) + " (inserted)", n=3)
-            print("".join(diff), end="")
+            print(render_preview(a, b, p), end="")
         print(f"\n{added} line(s) would be inserted {where}. File would have {len(result_lines)} line(s).")
     else:
         p.write_text(result, encoding='utf-8')
