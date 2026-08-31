@@ -1,2 +1,0 @@
-Numbers 123 and 456 and 789 should be replaced.
-Also 1000 and 2000 are digit sequences.
