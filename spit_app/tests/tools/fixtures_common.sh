@@ -23,7 +23,7 @@ testfile() {
 
 testfile_bytes() {
   mkdir -p "$(dirname "$1")"
-  printf "$2" > "$1"
+  printf -- "$2" > "$1"
 }
 
 fixtures_selftest() {
