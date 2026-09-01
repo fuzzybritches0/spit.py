@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$( dirname ${0})"
 source ../test_common.sh
 trap remove_fixtures EXIT
 rm -rf ./fixtures
