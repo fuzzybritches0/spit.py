@@ -8,10 +8,6 @@ FIXTURES=$PWD/fixtures
 H="python3 ../harness.py"
 RD_FALSE="--reverse False --dry_run False"
 
-
-sed '2s/.*/Line two CHANGED/' fixtures/corpus/original.txt > fixtures/shared-exp-changel2.txt
-sed '7s/.*/Line seven CHANGED/' fixtures/corpus/original.txt > fixtures/shared-exp-changel7.txt
-
 echo "=== 1. Regression: standard diff (existing fixtures/corpus/patch.diff) ==="
 cp fixtures/corpus/original.txt fixtures/t01-work.txt
 out=$($H --path fixtures/t01-work.txt --diff fixtures/corpus/patch.diff ${RD_FALSE})
@@ -67,7 +63,6 @@ expect_file "t7-bytes" fixtures/t07-work.txt fixtures/shared-exp-changel2.txt
 
 echo
 echo "=== 8. Multi-hunk with ^^ trailing headers (full + abbreviated) ==="
-sed '2s/.*/Line two CHANGED/; 9s/.*/Line nine CHANGED/' fixtures/corpus/original.txt > fixtures/t08-exp-caret-multi.txt
 cp fixtures/corpus/original.txt fixtures/t08-work.txt
 out=$($H --path fixtures/t08-work.txt --diff fixtures/t08-caret-multi.diff ${RD_FALSE})
 check "t8-rc" 0 $?
@@ -110,10 +105,8 @@ echo "$out"
 
 echo
 echo "=== 14. \\ No newline at end of file marker ==="
-printf 'a\nb' > fixtures/t14-nonl.txt
 out=$($H --path fixtures/t14-nonl.txt --diff fixtures/shared-nonl.diff ${RD_FALSE})
 check "t14-rc" 0 $?
-printf 'a\nb CHANGED' > fixtures/t14-exp-nonl.txt
 expect_file "t14-bytes" fixtures/t14-nonl.txt fixtures/t14-exp-nonl.txt
 
 echo
@@ -189,42 +182,32 @@ echo "$out"
 
 echo
 echo "=== 24. CRLF line endings preserved ==="
-printf 'one\r\ntwo\r\nthree\r\n' > fixtures/t24-crlf.txt
-printf 'one\r\nTWO\r\nthree\r\n' > fixtures/t24-crlf-exp.txt
 out=$($H --path fixtures/t24-crlf.txt --diff fixtures/shared-crlf.diff ${RD_FALSE})
 check "t24-rc" 0 $?
 expect_file "t24-bytes" fixtures/t24-crlf.txt fixtures/t24-crlf-exp.txt
 
 echo
 echo "=== 25. CRLF reverse round-trip (byte-exact back to original) ==="
-printf 'one\r\ntwo\r\nthree\r\n' > fixtures/t25-crlf.txt
 $H --path fixtures/t25-crlf.txt --diff fixtures/shared-crlf.diff --reverse False --dry_run False > /dev/null
 $H --path fixtures/t25-crlf.txt --diff fixtures/shared-crlf.diff --reverse True --dry_run False > /dev/null
-printf 'one\r\ntwo\r\nthree\r\n' > fixtures/t25-crlf-back.txt
 expect_file "t25-roundtrip" fixtures/t25-crlf.txt fixtures/t25-crlf-back.txt
 
 echo
 echo "=== 26. no-newline fixture forward+reverse round-trip (byte-exact) ==="
-printf 'a\nb' > fixtures/t26-work.txt
 $H --path fixtures/t26-work.txt --diff fixtures/shared-nonl.diff --reverse False --dry_run False > /dev/null
 $H --path fixtures/t26-work.txt --diff fixtures/shared-nonl.diff --reverse True --dry_run False > /dev/null
-printf 'a\nb' > fixtures/t26-exp-nonl.txt
 expect_file "t26-nonl-roundtrip" fixtures/t26-work.txt fixtures/t26-exp-nonl.txt
 
 echo
 echo "=== 27. body line starting with '--' as first headerless line (removed, not dropped) ==="
-printf -- '--x\nkeep\nmore\n' > fixtures/t27-dashes-del.txt
 out=$($H --path fixtures/t27-dashes-del.txt --diff fixtures/t27-del-dashes.diff ${RD_FALSE})
 check "t27-rc" 0 $?
-printf -- 'keep\nmore\n' > fixtures/t27-exp-dashes-del.txt
 expect_file "t27-bytes" fixtures/t27-dashes-del.txt fixtures/t27-exp-dashes-del.txt
 
 echo
 echo "=== 28. body line starting with '++' as first headerless line (added, not dropped) ==="
-printf -- 'keep\nmore\n' > fixtures/t28-dashes-add.txt
 out=$($H --path fixtures/t28-dashes-add.txt --diff fixtures/t28-add-dashes.diff ${RD_FALSE})
 check "t28-rc" 0 $?
-printf -- '++deep\nkeep\nmore\n' > fixtures/t28-exp-dashes-add.txt
 expect_file "t28-bytes" fixtures/t28-dashes-add.txt fixtures/t28-exp-dashes-add.txt
 
 echo
