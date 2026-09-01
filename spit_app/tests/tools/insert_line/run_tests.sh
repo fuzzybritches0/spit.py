@@ -104,18 +104,14 @@ tail -c 1 fixtures/t08-work-empty.txt | od -An -tx1 | grep -q "0a" && pass=$((pa
 
 echo
 echo "=== 9. No trailing newline + insert at end → preserved ==="
-printf 'a\nb' > fixtures/t09-work-no-nl.txt
 out=$($H --path fixtures/t09-work-no-nl.txt --content NEW --line_number 3 ${B})
 check "t9-rc" 0 $?
-printf 'a\nb\nNEW' > fixtures/t09-exp.txt
 expect_file "t9-bytes" fixtures/t09-work-no-nl.txt fixtures/t09-exp.txt
 
 echo
 echo "=== 10. No trailing newline + insert at beginning → preserved ==="
-printf 'a\nb' > fixtures/t10-work-no-nl.txt
 out=$($H --path fixtures/t10-work-no-nl.txt --content MID --line_number 1 ${B})
 check "t10-rc" 0 $?
-printf 'MID\na\nb' > fixtures/t10-exp.txt
 expect_file "t10-bytes" fixtures/t10-work-no-nl.txt fixtures/t10-exp.txt
 
 echo
@@ -178,11 +174,9 @@ if echo "$out" | grep -q "^@@"; then pass=$((pass+1)); else fail=$((fail+1)); ec
 
 echo
 echo "=== 15. dry_run marks a missing trailing newline (and only then) ==="
-printf 'a\nb' > fixtures/t15-work-no-nl.txt
 out=$(il fixtures/t15-work-no-nl.txt X 2 True)
 check "t15a-rc" 0 $?
 expect_output "t15a-marker" "$out" "\ No newline at end of file"
-printf 'a\nb' > fixtures/t15-work-no-nl.txt
 out=$(il fixtures/t15-work-no-nl.txt NEW 3 True)
 check "t15b-rc" 0 $?
 expect_output "t15b-marker" "$out" "\ No newline at end of file"
@@ -197,8 +191,6 @@ echo "$out" | grep -qF "No newline" && { fail=$((fail+1)); echo "FAIL: marker on
 
 echo
 echo "=== 16. dry_run diff is pasteable into the patch tool ==="
-printf 'a\nb' > fixtures/t16-nonl.txt
-printf '\n\nalpha\n' > fixtures/t16-blank.txt
 : > fixtures/t16-empty.txt
 roundtrip fixtures/shared-original.txt X 3 t16a-middle
 roundtrip fixtures/shared-original.txt TOP 1 t16b-beginning
@@ -212,7 +204,6 @@ roundtrip fixtures/t16-blank.txt $'A\nB' 1 t16i-multiline
 
 echo
 echo "=== 17. round-tripped result is byte-identical, not just line-identical ==="
-printf 'a\nb' > fixtures/t17-nonl.txt
 roundtrip fixtures/t17-nonl.txt X 2 t17-bytes-check > /dev/null
 tail -c 1 $FIXTURES/shared-rt-src.txt | od -An -tx1 | grep -q "62" && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: patched file gained a trailing newline"; }
 
