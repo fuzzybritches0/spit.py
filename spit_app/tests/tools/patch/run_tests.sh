@@ -10,7 +10,6 @@ RD_FALSE="--reverse False --dry_run False"
 
 sed '2s/.*/Line two CHANGED/' fixtures/corpus/original.txt > fixtures/shared-exp-changel2.txt
 sed '7s/.*/Line seven CHANGED/' fixtures/corpus/original.txt > fixtures/shared-exp-changel7.txt
-sed '2s/.*/Line two CHANGED/; 9s/.*/Line nine CHANGED/' fixtures/corpus/original.txt > fixtures/t08-exp-caret-multi.txt
 
 echo "=== 1. Regression: standard diff (existing fixtures/corpus/patch.diff) ==="
 cp fixtures/corpus/original.txt fixtures/t01-work.txt
@@ -67,6 +66,7 @@ expect_file "t7-bytes" fixtures/t07-work.txt fixtures/shared-exp-changel2.txt
 
 echo
 echo "=== 8. Multi-hunk with ^^ trailing headers (full + abbreviated) ==="
+sed '2s/.*/Line two CHANGED/; 9s/.*/Line nine CHANGED/' fixtures/corpus/original.txt > fixtures/t08-exp-caret-multi.txt
 cp fixtures/corpus/original.txt fixtures/t08-work.txt
 out=$($H --path fixtures/t08-work.txt --diff fixtures/t08-caret-multi.diff ${RD_FALSE})
 check "t8-rc" 0 $?
