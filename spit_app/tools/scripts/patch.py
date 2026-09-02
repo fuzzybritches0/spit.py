@@ -19,9 +19,9 @@ try:
         print(f"Reading diff from file `{dp}`.")
     else:
         content = diff
-    lines = [line for line in content.splitlines() if line]
-    if not lines:
+    if not content.strip():
         err("Diff is empty or contains no hunks.")
+    lines = content.splitlines()
     # A header is matched in full (with or without the optional counts, which
     # `diff` omits when a count is 1) but only the two start line numbers are
     # captured: the counts are derived from the body and never trusted.
@@ -58,6 +58,12 @@ try:
         if m:
             cur = new_hunk(int(m["old_start"]), int(m["new_start"]))
             hunks.append(cur)
+            continue
+        if not line:
+            # An empty line separates hunks: it belongs to none of them, so the
+            # body run below it starts a new hunk. A blank line *inside* a hunk
+            # is never empty -- context is " ", added is "+", removed is "-".
+            cur = None
             continue
         if line[:1] in (" ", "-", "+"):
             if cur is None:
@@ -129,6 +135,11 @@ try:
             if deepest is None or item["end"] > deepest["end"]:
                 deepest = item
 
+    def shown(text):
+        if text is None:
+            return "<past end of file>"
+        return "a BLANK line" if text == "" else "`" + text + "`"
+
     def describe_mismatch(exp, start, work):
         # first position within the expected block that differs from the file,
         # so the error names the real culprit line instead of always line 1.
@@ -136,8 +147,11 @@ try:
             at = start + k
             have = work[at] if 0 <= at < len(work) else None
             if have != want:
-                found = "`" + have + "`" if have is not None else "<past end of file>"
-                return f"line {at + 1}: expected `{want}`, found {found}"
+                advice = ""
+                if have == "" or want == "":
+                    advice = (" -- a blank line inside a hunk is ` ` for context or `+`/`-` for an "
+                              "added/removed line; a truly empty line only separates hunks")
+                return f"line {at + 1}: expected {shown(want)}, found {shown(have)}{advice}"
         return "the block matches at its start but not as a whole (internal)"
 
     orig_has_nl = original == "" or original.endswith(newline_style)

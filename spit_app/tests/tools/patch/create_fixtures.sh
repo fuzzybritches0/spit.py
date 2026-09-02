@@ -78,3 +78,25 @@ testfile ./fixtures/t32-overlap.diff '@@ -1,3 +1,3 @@\n Line one\n-Line two\n+Li
 testfile ./fixtures/t33-src.txt 'x\ny\nz\n'
 testfile ./fixtures/t33-exp.txt 'y\nz\nx\nY\nZ\n'
 testfile ./fixtures/t33-inserted-match.diff '@@ -1,0 +1,2 @@\n+y\n+z\n@@ -2,2 +4,2 @@\n-y\n-z\n+Y\n+Z\n'
+testfile ./fixtures/t34-src.txt 'alpha\n\nbeta\n'
+testfile ./fixtures/t34-exp.txt 'alpha\n\nBETA\n'
+testfile ./fixtures/t34-blank-context.diff '@@ -1,3 +1,3 @@\n alpha\n \n-beta\n+BETA\n'
+
+testfile ./fixtures/t35-src.txt 'alpha\nbeta\n'
+testfile ./fixtures/t35-exp.txt 'alpha\n\nbeta\n'
+testfile ./fixtures/t35-add-blank.diff '@@ -1,2 +1,3 @@\n alpha\n+\n beta\n'
+
+testfile ./fixtures/t36-src.txt 'alpha\n\nbeta\n'
+testfile ./fixtures/t36-exp.txt 'alpha\nbeta\n'
+testfile ./fixtures/t36-del-blank.diff '@@ -1,3 +1,2 @@\n alpha\n-\n beta\n'
+
+testfile ./fixtures/t37-src.txt 'a\nb\nc\nd\n'
+testfile ./fixtures/t37-exp.txt 'A\nb\nc\nD\n'
+testfile ./fixtures/t37-separated.diff '-a\n+A\n\n\n\n-d\n+D\n'
+
+testfile ./fixtures/t38-src.txt 'a\nb\nc\nd\n'
+testfile ./fixtures/t38-exp.txt 'a\nB\nc\nD\n'
+testfile ./fixtures/t38-split-nonadjacent.diff '@@ -1,3 +1,3 @@\n a\n-b\n+B\n\n-d\n+D\n'
+
+testfile ./fixtures/t39-src.txt 'alpha\n\nbeta\n'
+testfile ./fixtures/t39-blank-miss.diff '@@ -1,2 +1,2 @@\n alpha\n-beta\n+BETA\n'

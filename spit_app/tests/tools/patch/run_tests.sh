@@ -220,4 +220,51 @@ check "t33-rc" 0 $?
 expect_output "t33-applied" "$out" "2 hunk(s) applied"
 expect_file "t33-bytes" fixtures/t33-work.txt fixtures/t33-exp.txt
 
+echo
+echo '=== 34. blank line as CONTEXT (" "), the way diff/git/difflib write it ==='
+[ "$(grep -c '^ $' fixtures/t34-blank-context.diff)" == "1" ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL(t34-fixture): the space-only context line did not survive generation"; }
+cp fixtures/t34-src.txt fixtures/t34-work.txt
+out=$($H --path fixtures/t34-work.txt --diff fixtures/t34-blank-context.diff ${RD_FALSE})
+check "t34-rc" 0 $?
+expect_file "t34-bytes" fixtures/t34-work.txt fixtures/t34-exp.txt
+
+echo
+echo '=== 35. ADDED blank line ("+" with nothing after it) ==='
+cp fixtures/t35-src.txt fixtures/t35-work.txt
+out=$($H --path fixtures/t35-work.txt --diff fixtures/t35-add-blank.diff ${RD_FALSE})
+check "t35-rc" 0 $?
+expect_file "t35-bytes" fixtures/t35-work.txt fixtures/t35-exp.txt
+
+echo
+echo '=== 36. REMOVED blank line: a "-" with nothing after it ==='
+cp fixtures/t36-src.txt fixtures/t36-work.txt
+out=$($H --path fixtures/t36-work.txt --diff fixtures/t36-del-blank.diff ${RD_FALSE})
+check "t36-rc" 0 $?
+expect_file "t36-bytes" fixtures/t36-work.txt fixtures/t36-exp.txt
+
+echo
+echo "=== 37. empty lines separate hunks: headerless hunks, any number of blanks ==="
+cp fixtures/t37-src.txt fixtures/t37-work.txt
+out=$($H --path fixtures/t37-work.txt --diff fixtures/t37-separated.diff ${RD_FALSE})
+check "t37-rc" 0 $?
+expect_output "t37-two-hunks" "$out" "2 hunk(s) applied"
+expect_file "t37-bytes" fixtures/t37-work.txt fixtures/t37-exp.txt
+
+echo
+echo "=== 38. an empty line splits a headed hunk into two non-adjacent edits ==="
+cp fixtures/t38-src.txt fixtures/t38-work.txt
+out=$($H --path fixtures/t38-work.txt --diff fixtures/t38-split-nonadjacent.diff ${RD_FALSE})
+check "t38-rc" 0 $?
+expect_output "t38-two-hunks" "$out" "2 hunk(s) applied"
+expect_file "t38-bytes" fixtures/t38-work.txt fixtures/t38-exp.txt
+
+echo
+echo "=== 39. a blank line in the file is named, not printed as an empty gap ==="
+md5b=$(md5 fixtures/t39-src.txt)
+out=$($H --path fixtures/t39-src.txt --diff fixtures/t39-blank-miss.diff ${RD_FALSE})
+check "t39-rc" 1 $?
+expect_output "t39-says-blank" "$out" "found a BLANK line"
+expect_output "t39-tells-how" "$out" "only separates hunks"
+unchanged "t39" "$md5b" "$(md5 fixtures/t39-src.txt)"
+
 summary
