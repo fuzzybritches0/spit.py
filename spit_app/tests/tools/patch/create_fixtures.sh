@@ -73,3 +73,8 @@ testfile ./fixtures/t30-claim.diff '@@ -3 +3,2 @@\n+inserted\n'
 testfile ./fixtures/t30-canonical.diff '@@ -3,0 +3,1 @@\n+inserted\n'
 
 testfile ./fixtures/t31-all-garbage.diff '@@ -1,99 +1,99 @@\n Line one\n-Line two\n+Line two CHANGED\n Line three\n Line four\n Line five\n Line six\n-Line seven\n Line eight\n Line nine\n Line ten\n@@ -13,99 +12,99 @@\n Line thirteen\n Line fourteen\n Line fifteen\n+Line inserted A\n+Line inserted B\n Line sixteen\n Line seventeen\n Line eighteen\n Line nineteen\n-Line twenty\n+Line twenty UPDATED\n'
+testfile ./fixtures/t32-overlap.diff '@@ -1,3 +1,3 @@\n Line one\n-Line two\n+Line two CHANGED\n Line three\n@@ -3,3 +3,3 @@\n Line three\n-Line four\n+Line four CHANGED\n Line five\n'
+
+testfile ./fixtures/t33-src.txt 'x\ny\nz\n'
+testfile ./fixtures/t33-exp.txt 'y\nz\nx\nY\nZ\n'
+testfile ./fixtures/t33-inserted-match.diff '@@ -1,0 +1,2 @@\n+y\n+z\n@@ -2,2 +4,2 @@\n-y\n-z\n+Y\n+Z\n'

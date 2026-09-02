@@ -42,8 +42,6 @@ try:
         return {
             "old_start": old_start,
             "new_start": new_start,
-            "old_count": 0,
-            "new_count": 0,
             "old": [],
             "new": [],
             "ctx": 0,
@@ -88,10 +86,6 @@ try:
     for i, h in enumerate(hunks, 1):
         if not h["old"] and not h["new"]:
             err(f"Hunk {i} is empty.")
-    # The body is the ground truth: a hunk's line span is what its lines are,
-    # whatever the header's counts claim (or fail to claim).
-    for h in hunks:
-        h["old_count"], h["new_count"] = len(h["old"]), len(h["new"])
     original = read_text_raw(p)
     newline_style = detect_newline(original)
     orig_lines = original.splitlines()
@@ -120,6 +114,21 @@ try:
                 f"lines, or point the header at the line you mean.")
         return nearest[0]
 
+    def sides(h):
+        if reverse:
+            return h["new"], h["old"], h["new_start"], h["old_eof"]
+        return h["old"], h["new"], h["old_start"], h["new_eof"]
+
+    def reject_overlaps(placed):
+        deepest = None
+        for item in sorted(placed, key=lambda item: (item["start"], item["hunk"])):
+            if deepest is not None and item["start"] < deepest["end"]:
+                err(f"Hunk {item['hunk']} overlaps hunk {deepest['hunk']} (lines "
+                    f"{item['start'] + 1}-{item['end']} and {deepest['start'] + 1}-{deepest['end']}) "
+                    f"— hunks must describe different parts of the file.")
+            if deepest is None or item["end"] > deepest["end"]:
+                deepest = item
+
     def describe_mismatch(exp, start, work):
         # first position within the expected block that differs from the file,
         # so the error names the real culprit line instead of always line 1.
@@ -132,39 +141,47 @@ try:
         return "the block matches at its start but not as a whole (internal)"
 
     orig_has_nl = original == "" or original.endswith(newline_style)
-    work = list(orig_lines)
-    offset = 0
+
+    # Every hunk is placed against the untouched file, because a hunk's own
+    # lines describe the file as it originally is. An earlier hunk's edit can
+    # therefore neither create nor destroy a later hunk's match, the headers
+    # need no running offset to be reinterpreted, and hunks that claim the
+    # same lines become visible instead of quietly overwriting each other.
+    placed = []
     for i, h in enumerate(hunks, 1):
-        if reverse:
-            exp, rep, start = h["new"], h["old"], h["new_start"]
-        else:
-            exp, rep, start = h["old"], h["new"], h["old_start"]
-        hint = start - 1 + offset
-        if not exp:
+        look_for, replacement, header_line, eof = sides(h)
+        hint = header_line - 1
+        if not look_for:
             # a pure insertion has no old lines to anchor on: only a header can place it
             if not h["headed"]:
                 err(f"Hunk {i} is ambiguous — it only inserts lines, so its position has to "
                     f"come from a `@@ -start +start @@` header.")
-            pos = max(0, min(hint, len(work)))
+            start = max(0, min(hint, len(orig_lines)))
         else:
-            positions = find_all(work, exp)
+            positions = find_all(orig_lines, look_for)
             if not positions:
                 print(f"ERROR: Hunk {i} does not match the file.")
-                probe = max(0, min(hint, len(work) - 1)) if work else 0
-                print(describe_mismatch(exp, probe, work))
+                probe = max(0, min(hint, len(orig_lines) - 1)) if orig_lines else 0
+                print(describe_mismatch(look_for, probe, orig_lines))
                 sys.exit(1)
-            pos = resolve_position(i, h, hint, positions)
-        work[pos:pos + len(exp)] = rep
-        offset += (pos - hint) + (len(rep) - len(exp))
-    # trailing newline of the resulting file
-    last = hunks[-1]
+            start = resolve_position(i, h, hint, positions)
+        placed.append({"start": start, "end": start + len(look_for), "hunk": i,
+                       "replacement": replacement, "eof": eof})
+
+    reject_overlaps(placed)
+    # Bottom-up application leaves every span above untouched, so the positions
+    # resolved against the original stay valid. Two hunks inserting at the same
+    # line keep the order they have in the patch: the first one ends up on top.
+    work = list(orig_lines)
+    for item in sorted(placed, key=lambda item: (-item["start"], -item["hunk"])):
+        work[item["start"]:item["end"]] = item["replacement"]
+
+    # The trailing newline follows the hunk that reaches the end of the file
+    # and its `\ No newline at end of file` marker, if it carries one.
+    deepest = max(placed, key=lambda item: item["end"])
     final_has_nl = orig_has_nl
-    if not reverse:
-        if last["old_start"] + last["old_count"] - 1 >= len(orig_lines):
-            final_has_nl = not last["new_eof"]
-    else:
-        if last["new_start"] + last["new_count"] - 1 >= len(orig_lines):
-            final_has_nl = not last["old_eof"]
+    if deepest["end"] == len(orig_lines):
+        final_has_nl = not deepest["eof"]
     result = newline_style.join(work)
     if work and final_has_nl:
         result += newline_style

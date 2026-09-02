@@ -203,4 +203,21 @@ check "t31-rc" 0 $?
 expect_output "t31-applied" "$out" "2 hunk(s) applied"
 expect_file "t31-bytes" fixtures/t31-work.txt fixtures/corpus/expected.txt
 
+echo
+echo "=== 32. Two hunks matching uniquely but claiming overlapping lines -> rejected ==="
+cp fixtures/corpus/original.txt fixtures/t32-work.txt
+md5b=$(md5 fixtures/t32-work.txt)
+out=$($H --path fixtures/t32-work.txt --diff fixtures/t32-overlap.diff ${RD_FALSE})
+check "t32-rc" 1 $?
+expect_output "t32-overlap" "$out" "overlaps"
+unchanged "t32" "$md5b" "$(md5 fixtures/t32-work.txt)"
+
+echo
+echo "=== 33. A hunk is placed against the original, not against an earlier hunk's output ==="
+cp fixtures/t33-src.txt fixtures/t33-work.txt
+out=$($H --path fixtures/t33-work.txt --diff fixtures/t33-inserted-match.diff ${RD_FALSE})
+check "t33-rc" 0 $?
+expect_output "t33-applied" "$out" "2 hunk(s) applied"
+expect_file "t33-bytes" fixtures/t33-work.txt fixtures/t33-exp.txt
+
 summary
