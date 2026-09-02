@@ -39,43 +39,6 @@ echo "$out"
 unchanged "t4" "$md5b" "$(md5 fixtures/t04-work.txt)"
 
 echo
-echo "=== 5. ^^ trailing header (relocated) ==="
-cp fixtures/corpus/original.txt fixtures/t05-work.txt
-out=$($H --path fixtures/t05-work.txt --diff fixtures/t05-trailing-caret.diff ${RD_FALSE})
-check "t5-rc" 0 $?
-expect_file "t5-bytes" fixtures/t05-work.txt fixtures/shared-exp-changel2.txt
-
-echo
-echo "=== 6. ^^ trailing header with wrong counts -> error ==="
-cp fixtures/corpus/original.txt fixtures/t06-work.txt
-md5b=$(md5 fixtures/t06-work.txt)
-out=$($H --path fixtures/t06-work.txt --diff fixtures/t06-caret-wrong-count.diff ${RD_FALSE})
-check "t6-rc" 1 $?
-echo "$out"
-unchanged "t6" "$md5b" "$(md5 fixtures/t06-work.txt)"
-
-echo
-echo "=== 7. ^^ wins over preceding wrong @@ header ==="
-cp fixtures/corpus/original.txt fixtures/t07-work.txt
-out=$($H --path fixtures/t07-work.txt --diff fixtures/t07-caret-beats-at.diff ${RD_FALSE})
-check "t7-rc" 0 $?
-expect_file "t7-bytes" fixtures/t07-work.txt fixtures/shared-exp-changel2.txt
-
-echo
-echo "=== 8. Multi-hunk with ^^ trailing headers (full + abbreviated) ==="
-cp fixtures/corpus/original.txt fixtures/t08-work.txt
-out=$($H --path fixtures/t08-work.txt --diff fixtures/t08-caret-multi.diff ${RD_FALSE})
-check "t8-rc" 0 $?
-expect_file "t8-bytes" fixtures/t08-work.txt fixtures/t08-exp-caret-multi.txt
-
-echo
-echo "=== 9. ^^ in leading position (no body before) ==="
-cp fixtures/corpus/original.txt fixtures/t09-work.txt
-out=$($H --path fixtures/t09-work.txt --diff fixtures/t09-caret-leading.diff ${RD_FALSE})
-check "t9-rc" 0 $?
-expect_file "t9-bytes" fixtures/t09-work.txt fixtures/shared-exp-changel2.txt
-
-echo
 echo "=== 10. Headerless, unique body ==="
 cp fixtures/corpus/original.txt fixtures/t10-work.txt
 out=$($H --path fixtures/t10-work.txt --diff fixtures/t10-headerless.diff ${RD_FALSE})

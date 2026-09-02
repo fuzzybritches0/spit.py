@@ -23,12 +23,6 @@ try:
     if not lines:
         err("Diff is empty or contains no hunks.")
     hunk_re = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
-    trail_re = re.compile(r"^\^\^ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? \^\^")
-
-    def to_header(m):
-        old = m.group(1) + (f",{m.group(2)}" if m.group(2) else "")
-        new = m.group(3) + (f",{m.group(4)}" if m.group(4) else "")
-        return f"@@ -{old} +{new} @@"
 
     # A real file header always comes as a `--- old` line directly followed
     # by a `+++ new` line. A body line whose text starts with `--`/`++`
@@ -40,29 +34,6 @@ try:
         if arr[i][:3] == "+++":
             return i > 0 and arr[i - 1][:3] == "---"
         return False
-
-    # `^^ ... ^^` is a hunk header written *after* the hunk body
-    # (where the counts are easy to get right for LLMs).
-    # If the body run already has a `@@ ... @@` header, the `^^` header
-    # replaces it. Lines are processed from the end so that not-yet-moved
-    # `^^` lines still separate adjacent body runs.
-    pre = list(lines)
-    for i in range(len(pre) - 1, -1, -1):
-        m = trail_re.match(pre[i])
-        if not m:
-            continue
-        j = i
-        while j > 0 and (pre[j - 1][:1] in (" ", "-", "+")
-                         and not is_header_pair(pre, j - 1)
-                         or pre[j - 1].startswith("\\")):
-            j -= 1
-        header = to_header(m)
-        if 0 < j < i and hunk_re.match(pre[j - 1]):
-            pre[j - 1] = header      # ^^ wins over the preceding @@
-        else:
-            del pre[i]               # drop the trailing form
-            pre.insert(j, header)    # place at the start of the body run
-    lines = pre
 
     def new_hunk(old_start, new_start, old_count, new_count, implicit=False):
         return {

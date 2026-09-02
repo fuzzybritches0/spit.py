@@ -19,17 +19,6 @@ testfile ./fixtures/shared-crlf.diff '@@ -1,3 +1,3 @@\n one\n-two\n+TWO\n three\
 
 testfile ./fixtures/t04-wrong-count.diff '--- work.txt\n+++ work.txt\n@@ -1,20 +1,21 @@\n Line one\n-Line two\n+Line two CHANGED\n Line three\n Line four\n'
 
-testfile ./fixtures/t05-trailing-caret.diff ' Line one\n-Line two\n+Line two CHANGED\n Line three\n Line four\n^^ -1,4 +1,4 ^^\n'
-
-testfile ./fixtures/t06-caret-wrong-count.diff ' Line one\n-Line two\n+Line two CHANGED\n Line three\n Line four\n^^ -1,9 +1,9 ^^\n'
-
-testfile ./fixtures/t07-caret-beats-at.diff '@@ -1,10 +1,11 @@\n Line one\n-Line two\n+Line two CHANGED\n Line three\n^^ -1,3 +1,3 ^^\n'
-
-testfile ./fixtures/t08-caret-multi.diff ' Line one\n-Line two\n+Line two CHANGED\n Line three\n^^ -1,3 +1,3 ^^\n-Line nine\n+Line nine CHANGED\n^^ -9 +9 ^^\n'
-sed '2s/.*/Line two CHANGED/; 9s/.*/Line nine CHANGED/' ./fixtures/corpus/original.txt > ./fixtures/t08-exp-caret-multi.txt
-
-testfile ./fixtures/t09-caret-leading.diff '^^ -1,3 +1,3 ^^\n Line one\n-Line two\n+Line two CHANGED\n Line three\n'
-
 testfile ./fixtures/t10-headerless.diff ' Line six\n-Line seven\n+Line seven CHANGED\n Line eight\n'
 
 testfile ./fixtures/t11-headerless-headers.diff '--- work.txt\n+++ work.txt\n Line six\n-Line seven\n+Line seven CHANGED\n Line eight\n'
