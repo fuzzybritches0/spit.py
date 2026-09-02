@@ -191,7 +191,6 @@ echo "$out" | grep -qF "No newline" && { fail=$((fail+1)); echo "FAIL: marker on
 
 echo
 echo "=== 16. dry_run diff is pasteable into the patch tool ==="
-: > fixtures/t16-empty.txt
 roundtrip fixtures/shared-original.txt X 3 t16a-middle
 roundtrip fixtures/shared-original.txt TOP 1 t16b-beginning
 roundtrip fixtures/shared-original.txt END 6 t16c-end

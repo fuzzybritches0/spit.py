@@ -25,6 +25,7 @@ testfile_bytes ./fixtures/t10-exp.txt 'MID\na\nb'
 testfile_bytes ./fixtures/t15-work-no-nl.txt 'a\nb'
 testfile_bytes ./fixtures/t15-work-no-nl.txt 'a\nb'
 
+touch ./fixtures/t16-empty.txt
 testfile_bytes ./fixtures/t16-nonl.txt 'a\nb'
 testfile_bytes ./fixtures/t16-blank.txt '\n\nalpha\n'
 
