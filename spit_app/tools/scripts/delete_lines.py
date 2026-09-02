@@ -15,19 +15,11 @@ def coerce_int(value, name):
     except (ValueError, TypeError):
         err(f"`{name}` must be an integer, got `{value}`")
 
-def strip_ending(line):
-    for ending in ("\r\n", "\n", "\r"):
-        if line.endswith(ending):
-            return line[:-len(ending)]
-    return line
-
 def read_lines(path):
-    with open(path, "r", encoding="utf-8", newline="") as file:
-        return file.read().splitlines(keepends=True)
+    return read_text_raw(path).splitlines(keepends=True)
 
 def write_lines(path, lines):
-    with open(path, "w", encoding="utf-8", newline="") as file:
-        file.write("".join(lines))
+    write_text_raw(path, "".join(lines))
 
 def render_preview(old_lines, new_lines, path):
     chunks = []
@@ -92,7 +84,7 @@ try:
     else:
         region = range(total)
     doomed = {index for index in region
-              if matcher is None or matcher.search(strip_ending(lines[index]))}
+              if matcher is None or matcher.search(strip_newline(lines[index]))}
     if not doomed:
         print(f"No lines matched `{pattern}` in `{p}`.")
         sys.exit(0)

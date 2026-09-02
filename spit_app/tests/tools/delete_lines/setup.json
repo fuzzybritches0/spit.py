@@ -1,4 +1,5 @@
 {
     "script": "../../../tools/scripts/delete_lines.py",
+    "common": "../../../tools/scripts/common/lines.py",
     "args": ["path", "start_line", "end_line", "pattern", "dry_run"]
 }
