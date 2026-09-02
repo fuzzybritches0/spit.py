@@ -37,7 +37,7 @@ DESC = {
 
 OUTPUT_TYPE_HINT = "text"
 
-PROMPT = "Use this function to apply unified diff patches to a file. Write each hunk as a standard unified diff hunk: a header `@@ -start[,count] +start[,count] @@` followed by its body lines (` ` context, `-` removed, `+` added). A patch is either fully headed or fully headerless — never mix. Header line counts must match the hunk body exactly. Each hunk must match the file at its header position or in exactly one place (a headed hunk whose header position does not match is applied at the nearest match; a headerless hunk that matches in more than one place is rejected as ambiguous). If any hunk fails, the whole patch is rejected and the file is left unmodified."
+PROMPT = "Use this function to apply unified diff patches to a file. Write each hunk as a standard unified diff hunk: a header `@@ -start[,count] +start[,count] @@` followed by its body lines (` ` context, `-` removed, `+` added). A patch is either fully headed or fully headerless — never mix. The counts in the header are IGNORED — only the two start line numbers are used, so you never need to count the hunk's lines. Each hunk must match the file at its header position or in exactly one place (a headed hunk whose header position does not match is applied at the nearest match; a headerless hunk that matches in more than one place is rejected as ambiguous). If any hunk fails, the whole patch is rejected and the file is left unmodified."
 PROMPT_INST = "Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
 SANDBOX = True
 MAX_SECONDS = 0

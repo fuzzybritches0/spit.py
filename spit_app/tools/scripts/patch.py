@@ -22,7 +22,10 @@ try:
     lines = [line for line in content.splitlines() if line]
     if not lines:
         err("Diff is empty or contains no hunks.")
-    hunk_re = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+    # A header is matched in full (with or without the optional counts, which
+    # `diff` omits when a count is 1) but only the two start line numbers are
+    # captured: the counts are derived from the body and never trusted.
+    hunk_re = re.compile(r"^@@ -(?P<old_start>\d+)(?:,\d+)? \+(?P<new_start>\d+)(?:,\d+)? @@")
 
     # A real file header always comes as a `--- old` line directly followed
     # by a `+++ new` line. A body line whose text starts with `--`/`++`
@@ -35,12 +38,12 @@ try:
             return i > 0 and arr[i - 1][:3] == "---"
         return False
 
-    def new_hunk(old_start, new_start, old_count, new_count, implicit=False):
+    def new_hunk(old_start, new_start, implicit=False):
         return {
             "old_start": old_start,
-            "old_count": old_count,
             "new_start": new_start,
-            "new_count": new_count,
+            "old_count": 0,
+            "new_count": 0,
             "old": [],
             "new": [],
             "ctx": 0,
@@ -55,9 +58,7 @@ try:
     for idx, line in enumerate(lines):
         m = hunk_re.match(line)
         if m:
-            cur = new_hunk(int(m.group(1)), int(m.group(3)),
-                           int(m.group(2)) if m.group(2) is not None else 1,
-                           int(m.group(4)) if m.group(4) is not None else 1)
+            cur = new_hunk(int(m["old_start"]), int(m["new_start"]))
             hunks.append(cur)
             continue
         if line[:1] in (" ", "-", "+"):
@@ -65,7 +66,7 @@ try:
                 if is_header_pair(lines, idx):
                     continue  # `--- old` / `+++ new` file header, not a body line
                 # body without a header: implicit hunk (must match in exactly one place)
-                cur = new_hunk(1, 1, 0, 0, implicit=True)
+                cur = new_hunk(1, 1, implicit=True)
                 hunks.append(cur)
             cur["last"] = line[0]
             if line[0] in " -":
@@ -93,12 +94,10 @@ try:
         subject = (f"Hunk {missing[0]} has no header" if len(missing) == 1
                    else "Hunks " + ", ".join(str(i) for i in missing) + " have no header")
         err(f"{subject}, but the other hunks do — either every hunk needs a header or none of them do.")
-    # header line counts must match the hunk body exactly
-    for i, h in enumerate(hunks, 1):
-        body_old, body_new = len(h["old"]), len(h["new"])
-        if not h["implicit"] and (body_old != h["old_count"] or body_new != h["new_count"]):
-            err(f"Hunk {i} counts mismatch: header says {h['old_count']} old / {h['new_count']} new line(s), body has {body_old} old / {body_new} new line(s).")
-        h["old_count"], h["new_count"] = body_old, body_new
+    # The body is the ground truth: a hunk's line span is what its lines are,
+    # whatever the header's counts claim (or fail to claim).
+    for h in hunks:
+        h["old_count"], h["new_count"] = len(h["old"]), len(h["new"])
     original = read_text_raw(p)
     newline_style = detect_newline(original)
     orig_lines = original.splitlines()

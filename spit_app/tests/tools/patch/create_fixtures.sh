@@ -67,3 +67,10 @@ testfile_bytes ./fixtures/t28-exp-dashes-add.txt '++deep\nkeep\nmore\n'
 testfile ./fixtures/t28-add-dashes.diff '+++deep\n keep\n more\n'
 
 testfile ./fixtures/t29-culprit.diff '@@ -1,3 +1,3 @@\n Line one\n-Line WRONG\n+Line FIXED\n Line three\n'
+
+testfile ./fixtures/t30-src.txt 'one\ntwo\nthree\n'
+testfile ./fixtures/t30-exp.txt 'one\ntwo\ninserted\nthree\n'
+testfile ./fixtures/t30-claim.diff '@@ -3 +3,2 @@\n+inserted\n'
+testfile ./fixtures/t30-canonical.diff '@@ -3,0 +3,1 @@\n+inserted\n'
+
+testfile ./fixtures/t31-all-garbage.diff '@@ -1,99 +1,99 @@\n Line one\n-Line two\n+Line two CHANGED\n Line three\n Line four\n Line five\n Line six\n-Line seven\n Line eight\n Line nine\n Line ten\n@@ -13,99 +12,99 @@\n Line thirteen\n Line fourteen\n Line fifteen\n+Line inserted A\n+Line inserted B\n Line sixteen\n Line seventeen\n Line eighteen\n Line nineteen\n-Line twenty\n+Line twenty UPDATED\n'

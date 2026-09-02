@@ -30,13 +30,12 @@ check "t3-rc" 0 $?
 unchanged "t3" "$md5b" "$(md5 fixtures/t03-work.txt)"
 
 echo
-echo "=== 4. Wrong header counts -> error, file unchanged ==="
+echo "=== 4. Wrong header counts -> ignored, patch applied (body is the ground truth) ==="
 cp fixtures/corpus/original.txt fixtures/t04-work.txt
-md5b=$(md5 fixtures/t04-work.txt)
 out=$($H --path fixtures/t04-work.txt --diff fixtures/t04-wrong-count.diff ${RD_FALSE})
-check "t4-rc" 1 $?
-echo "$out"
-unchanged "t4" "$md5b" "$(md5 fixtures/t04-work.txt)"
+check "t4-rc" 0 $?
+expect_output "t4-applied" "$out" "applied"
+expect_file "t4-bytes" fixtures/t04-work.txt fixtures/shared-exp-changel2.txt
 
 echo
 echo "=== 10. Headerless, unique body ==="
@@ -112,13 +111,12 @@ check "t19-rc" 0 $?
 expect_file "t19-bytes" fixtures/t19-work2.txt fixtures/corpus/dup_tie.txt
 
 echo
-echo "=== 20. Multi-hunk, second hunk wrong counts -> whole patch rejected ==="
+echo "=== 20. Multi-hunk, wrong counts on the second hunk -> ignored, applies ==="
 cp fixtures/corpus/original.txt fixtures/t20-work.txt
-md5b=$(md5 fixtures/t20-work.txt)
 out=$($H --path fixtures/t20-work.txt --diff fixtures/t20-multi-wrong.diff ${RD_FALSE})
-check "t20-rc" 1 $?
-echo "$out"
-unchanged "t20" "$md5b" "$(md5 fixtures/t20-work.txt)"
+check "t20-rc" 0 $?
+expect_output "t20-applied" "$out" "2 hunk(s) applied"
+expect_file "t20-bytes" fixtures/t20-work.txt fixtures/corpus/expected.txt
 
 echo
 echo "=== 21. Atomic: hunk 1 applies, hunk 2 no match -> file unchanged ==="
@@ -180,5 +178,27 @@ out=$($H --path fixtures/t29-culprit.txt --diff fixtures/t29-culprit.diff ${RD_F
 check "t29-rc" 1 $?
 expect_output "t29-culprit-line" "$out" "line 2: expected"
 unchanged "t29" "$(md5 fixtures/corpus/original.txt)" "$(md5 fixtures/t29-culprit.txt)"
+
+echo
+echo "=== 30. Pure insertion whose header claims an old count the body does not have ==="
+cp fixtures/t30-src.txt fixtures/t30-claim.txt
+cp fixtures/t30-src.txt fixtures/t30-canonical.txt
+out=$($H --path fixtures/t30-claim.txt --diff fixtures/t30-claim.diff ${RD_FALSE})
+check "t30-claim-rc" 0 $?
+expect_file "t30-claim-bytes" fixtures/t30-claim.txt fixtures/t30-exp.txt
+$H --path fixtures/t30-canonical.txt --diff fixtures/t30-canonical.diff ${RD_FALSE} > /dev/null
+check "t30-canonical-rc" 0 $?
+expect_file "t30-canonical-bytes" fixtures/t30-canonical.txt fixtures/t30-exp.txt
+out=$($H --path fixtures/t30-claim.txt --diff fixtures/t30-claim.diff --reverse True --dry_run False)
+check "t30-reverse-rc" 0 $?
+expect_file "t30-roundtrip" fixtures/t30-claim.txt fixtures/t30-src.txt
+
+echo
+echo "=== 31. Every count in a 2-hunk patch is garbage -> same bytes as the real patch ==="
+cp fixtures/corpus/original.txt fixtures/t31-work.txt
+out=$($H --path fixtures/t31-work.txt --diff fixtures/t31-all-garbage.diff ${RD_FALSE})
+check "t31-rc" 0 $?
+expect_output "t31-applied" "$out" "2 hunk(s) applied"
+expect_file "t31-bytes" fixtures/t31-work.txt fixtures/corpus/expected.txt
 
 summary
