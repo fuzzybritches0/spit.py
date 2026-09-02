@@ -72,13 +72,13 @@ check "t14-rc" 0 $?
 expect_file "t14-bytes" fixtures/t14-nonl.txt fixtures/t14-exp-nonl.txt
 
 echo
-echo "=== 15. Mixed headed/headerless hunks -> error, file unchanged ==="
+echo "=== 15. Mixed headed/headerless hunks, each unambiguous -> both applied ==="
 cp fixtures/corpus/original.txt fixtures/t15-work.txt
-md5b=$(md5 fixtures/t15-work.txt)
+sed '2s/.*/Line two CHANGED/; 7s/.*/Line seven CHANGED/' fixtures/corpus/original.txt > fixtures/t15-exp-both.txt
 out=$($H --path fixtures/t15-work.txt --diff fixtures/t15-mixed-headers.diff ${RD_FALSE})
-check "t15-rc" 1 $?
-echo "$out"
-unchanged "t15" "$md5b" "$(md5 fixtures/t15-work.txt)"
+check "t15-rc" 0 $?
+expect_output "t15-applied" "$out" "2 hunk(s) applied"
+expect_file "t15-bytes" fixtures/t15-work.txt fixtures/t15-exp-both.txt
 
 echo
 echo "=== 16. Headerless ambiguous body -> error, file unchanged ==="
@@ -104,11 +104,13 @@ check "t18-rc" 0 $?
 expect_file "t18-bytes" fixtures/t18-work2.txt fixtures/corpus/dup_headed.txt
 
 echo
-echo "=== 19. Headed, equidistant candidates -> earlier match ==="
+echo "=== 19. Headed, equidistant candidates -> ambiguity error, file unchanged ==="
 cp fixtures/corpus/dup.txt fixtures/t19-work2.txt
+md5b=$(md5 fixtures/t19-work2.txt)
 out=$($H --path fixtures/t19-work2.txt --diff fixtures/t19-headed-tie.diff ${RD_FALSE})
-check "t19-rc" 0 $?
-expect_file "t19-bytes" fixtures/t19-work2.txt fixtures/corpus/dup_tie.txt
+check "t19-rc" 1 $?
+expect_output "t19-ambiguous" "$out" "does not pick one"
+unchanged "t19" "$md5b" "$(md5 fixtures/t19-work2.txt)"
 
 echo
 echo "=== 20. Multi-hunk, wrong counts on the second hunk -> ignored, applies ==="

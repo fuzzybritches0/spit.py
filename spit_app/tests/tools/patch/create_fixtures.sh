@@ -12,7 +12,6 @@ testfile ./fixtures/corpus/expected.txt 'Line one\nLine two CHANGED\nLine three\
 testfile ./fixtures/corpus/patch.diff '--- original.txt\t2026-08-19 11:55:08.690432414 +0000\n+++ expected.txt\t2026-08-19 11:56:08.791277633 +0000\n@@ -1,10 +1,9 @@\n Line one\n-Line two\n+Line two CHANGED\n Line three\n Line four\n Line five\n Line six\n-Line seven\n Line eight\n Line nine\n Line ten\n@@ -13,8 +12,10 @@\n Line thirteen\n Line fourteen\n Line fifteen\n+Line inserted A\n+Line inserted B\n Line sixteen\n Line seventeen\n Line eighteen\n Line nineteen\n-Line twenty\n+Line twenty UPDATED\n'
 testfile ./fixtures/corpus/dup.txt 'alpha\nbeta\nalpha\nbeta\nalpha\nbeta\ngamma\n'
 testfile ./fixtures/corpus/dup_headed.txt 'alpha\nbeta\nalpha\nBETA\nalpha\nbeta\ngamma\n'
-testfile ./fixtures/corpus/dup_tie.txt 'alpha\nBETA\nalpha\nbeta\nalpha\nbeta\ngamma\n'
 
 testfile ./fixtures/shared-nonl.diff '@@ -1,2 +1,2 @@\n a\n-b\n\\ No newline at end of file\n+b CHANGED\n\\ No newline at end of file\n'
 testfile ./fixtures/shared-crlf.diff '@@ -1,3 +1,3 @@\n one\n-two\n+TWO\n three\n'

@@ -38,7 +38,7 @@ try:
             return i > 0 and arr[i - 1][:3] == "---"
         return False
 
-    def new_hunk(old_start, new_start, implicit=False):
+    def new_hunk(old_start, new_start, headed=True):
         return {
             "old_start": old_start,
             "new_start": new_start,
@@ -50,7 +50,7 @@ try:
             "old_eof": False,
             "new_eof": False,
             "last": None,
-            "implicit": implicit,
+            "headed": headed,
         }
 
     hunks = []
@@ -65,8 +65,8 @@ try:
             if cur is None:
                 if is_header_pair(lines, idx):
                     continue  # `--- old` / `+++ new` file header, not a body line
-                # body without a header: implicit hunk (must match in exactly one place)
-                cur = new_hunk(1, 1, implicit=True)
+                # body lines with no header: the body alone has to place the hunk
+                cur = new_hunk(1, 1, headed=False)
                 hunks.append(cur)
             cur["last"] = line[0]
             if line[0] in " -":
@@ -88,12 +88,6 @@ try:
     for i, h in enumerate(hunks, 1):
         if not h["old"] and not h["new"]:
             err(f"Hunk {i} is empty.")
-    # a patch is either fully headed or fully headerless; mixing is an error
-    missing = [i for i, h in enumerate(hunks, 1) if h["implicit"]]
-    if 0 < len(missing) < len(hunks):
-        subject = (f"Hunk {missing[0]} has no header" if len(missing) == 1
-                   else "Hunks " + ", ".join(str(i) for i in missing) + " have no header")
-        err(f"{subject}, but the other hunks do — either every hunk needs a header or none of them do.")
     # The body is the ground truth: a hunk's line span is what its lines are,
     # whatever the header's counts claim (or fail to claim).
     for h in hunks:
@@ -108,6 +102,23 @@ try:
         if m > n:
             return []
         return [i for i in range(n - m + 1) if lines_[i:i + m] == block]
+
+    def at_lines(positions):
+        return ", ".join(f"line {pos_ + 1}" for pos_ in positions)
+
+    def resolve_position(i, h, hint, positions):
+        if len(positions) == 1:
+            return positions[0]
+        if not h["headed"]:
+            err(f"Hunk {i} is ambiguous — its body matches the file at {at_lines(positions)} "
+                f"and it has no header to choose between them. Add context lines, or a "
+                f"`@@ -start +start @@` header naming the line you mean.")
+        nearest = [pos_ for pos_ in positions if abs(pos_ - hint) == min(abs(x - hint) for x in positions)]
+        if len(nearest) > 1:
+            err(f"Hunk {i} is ambiguous — {at_lines(nearest)} match the file and are all the same "
+                f"distance from header line {hint + 1}, so the header does not pick one. Add context "
+                f"lines, or point the header at the line you mean.")
+        return nearest[0]
 
     def describe_mismatch(exp, start, work):
         # first position within the expected block that differs from the file,
@@ -130,9 +141,10 @@ try:
             exp, rep, start = h["old"], h["new"], h["old_start"]
         hint = start - 1 + offset
         if not exp:
-            # pure insertion hunk
-            if h["implicit"]:
-                err(f"Hunk {i} is ambiguous — it only inserts lines and has no header!")
+            # a pure insertion has no old lines to anchor on: only a header can place it
+            if not h["headed"]:
+                err(f"Hunk {i} is ambiguous — it only inserts lines, so its position has to "
+                    f"come from a `@@ -start +start @@` header.")
             pos = max(0, min(hint, len(work)))
         else:
             positions = find_all(work, exp)
@@ -141,16 +153,7 @@ try:
                 probe = max(0, min(hint, len(work) - 1)) if work else 0
                 print(describe_mismatch(exp, probe, work))
                 sys.exit(1)
-            if h["implicit"]:
-                if len(positions) > 1:
-                    where = ", ".join(f"line {pos_ + 1}" for pos_ in positions)
-                    err(f"Hunk {i} is ambiguous — its body matches the file at {where}!")
-                pos = positions[0]
-            elif hint in positions:
-                pos = hint
-            else:
-                # nearest to the header position; equidistant -> earlier
-                pos = min(positions, key=lambda pos_: (abs(pos_ - hint), pos_))
+            pos = resolve_position(i, h, hint, positions)
         work[pos:pos + len(exp)] = rep
         offset += (pos - hint) + (len(rep) - len(exp))
     # trailing newline of the resulting file
