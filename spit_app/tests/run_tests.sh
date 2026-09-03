@@ -8,3 +8,10 @@ for tool in tools/*; do
 		"${tool}/run_tests.sh" | tail -n 1
 	fi
 done
+
+for suite in unit/*; do
+	if [ -d "${suite}" ] && [ -f "${suite}/run_tests.sh" ]; then
+		echo -n "unit:$(basename ${suite}): "
+		"${suite}/run_tests.sh" | tail -n 1
+	fi
+done

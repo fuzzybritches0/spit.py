@@ -6,6 +6,7 @@ import asyncio
 import inspect
 import importlib.util
 from pathlib import Path
+from spit_app.arguments import coerce
 
 def load_user_settings(app, name: str, settings: dict) -> None:
     if name in app.settings.tool_settings:
@@ -55,6 +56,11 @@ class ToolCall:
         file_path = "/".join(file_path[:-1]) + "/tools"
         load_tools(self.tools, file_path)
         load_tools(self.tools, str(app.settings.path["custom_tools"]))
+
+    def argument_properties(self, name: str) -> dict:
+        parameters = self.tools[name]["desc"]["function"].get("parameters", {})
+        properties = parameters.get("properties", {})
+        return properties if isinstance(properties, dict) else {}
 
     def required_arguments(self, name: str, arguments: dict) -> None|str:
         if not "parameters" in self.tools[name]["desc"]["function"]:
@@ -110,6 +116,9 @@ class ToolCall:
         if (self.app.tool_call.tools[name]["requires_multimodal_image"] and
             not chat.has_cap("image")):
             return self.end_call(messages, f"ERROR: tool {name} requires multimodal capabilities!")
+        # A decoder that cannot express a union type hands us the list as text;
+        # put the value back into the shape the schema declared, once for all.
+        coerce(arguments, self.argument_properties(name))
         missing = self.required_arguments(name, arguments)
         if missing:
             return self.end_call(messages, missing)
