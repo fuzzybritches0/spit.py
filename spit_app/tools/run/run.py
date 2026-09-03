@@ -14,6 +14,30 @@ def get_script(tool, common: str = "") -> str:
     with open(script_path, "r") as f:
         return common + f.read()
 
+SANDBOX_ENV_STATE = "~/.sandbox_env"
+
+TRAILER = (f"EXIT_CODE=${{?}}; declare > {SANDBOX_ENV_STATE}; "
+           f"export -p >> {SANDBOX_ENV_STATE}; exit ${{EXIT_CODE}}")
+
+def wrap_script(command: str) -> str:
+    """A command plus the trailer that carries exit code and shell state out.
+
+    The trailer goes on a line of its own and must not be prefixed with ";".
+    Both halves of that matter:
+
+      * glued to the last line ("cmd; TRAILER"), a command whose last line is a
+        here-document delimiter never ends its here-document: bash reads to end
+        of input, warns, and hands the trailer to the here-document -- into the
+        very file the command was writing. A command ending in a comment
+        swallows the trailer the same way, and the environment silently stops
+        being saved.
+      * on its own line but still starting with ";", bash refuses the whole
+        script: "syntax error near unexpected token `;'".
+
+    Bare, on its own line, is the only form that survives both.
+    """
+    return f"{command}\n{TRAILER}"
+
 def get_args(arguments: dict, defaults: dict) -> str:
     ret = f"arguments = {arguments}\ndefaults = {defaults}\n\n"
     for argument in defaults.keys():

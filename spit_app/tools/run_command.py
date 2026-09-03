@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 import shutil
-from spit_app.tools.run.run import Run
+from spit_app.tools.run.run import Run, wrap_script
 from spit_app.tool_call import load_user_settings
 
 NAME = __file__.split("/")[-1][:-3]
@@ -43,8 +43,8 @@ async def call_async_generator(app, arguments: dict, chat_id):
     if not shutil.which("bash"):
         yield f"ERROR: `bash` not found! Give user instructions to install!\n"
         return
-    run = Run(app, chat_id, "bash", arguments["command"] +
-              "; EXIT_CODE=${?}; declare > ~/.sandbox_env; export -p >> ~/.sandbox_env; exit ${EXIT_CODE}",
+    # the trailer goes on its own line -- see wrap_script()
+    run = Run(app, chat_id, "bash", wrap_script(arguments["command"]),
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
     async for line in run.run():
         yield line
