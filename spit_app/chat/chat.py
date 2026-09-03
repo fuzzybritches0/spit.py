@@ -11,6 +11,7 @@ from .multimodal import load_image_base64, image_url
 from spit_app.modal_screens import ChooseImageFile
 from .message.message import Message
 from .textual_message import StreamCallback
+from spit_app.tools.run.common import kill_process_group
 
 class Chat(Vertical):
     BINDINGS = [
@@ -45,10 +46,12 @@ class Chat(Vertical):
                     return None
                 if self._work.exit_after_busy:
                     caller.terminated = True
-                    proc.kill()
+                    kill_process_group(proc)
                     return None
             caller.timeout_reached = True
-            proc.kill()
+            # the group, not just the shell: the timeout would otherwise stop
+            # bash and leave whatever it had started running
+            kill_process_group(proc)
         else:
             while True:
                 await asyncio.sleep(.1)
@@ -56,7 +59,7 @@ class Chat(Vertical):
                     return None
                 if self._work.exit_after_busy:
                     caller.terminated = True
-                    proc.kill()
+                    kill_process_group(proc)
                     return None
 
     def has_cap(self, cap: str) -> bool:
