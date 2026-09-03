@@ -1,6 +1,21 @@
 # SPDX-License-Identifier: GPL-2.0
 import asyncio
+import os
+import tempfile
 from .common import CommonMixIn
+
+def script_path_in_sandbox(host_path: str, sandbox: bool) -> str:
+    """Where a file written into sandbox_tmp is visible to the running command.
+
+    bwrap_args() binds the sandbox tmp directory to /tmp, so a file the app
+    wrote there is under /tmp for the command; without bwrap the host path is
+    the one to execute. Delivering the script this way instead of on stdin is
+    what keeps a command that reads stdin -- `read`, a bare `cat`, a passphrase
+    prompt -- from eating the wrapper instead of its input.
+    """
+    if not sandbox:
+        return host_path
+    return "/tmp/" + os.path.basename(host_path)
 
 def get_script(tool, common: str = "") -> str:
     ret = ""
@@ -63,37 +78,69 @@ def get_args(arguments: dict, defaults: dict) -> str:
     return ret + "\n"
 
 class Run(CommonMixIn):
-    def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0) -> None:
+    def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0,
+                 script_as_file: bool = False) -> None:
         super().__init__(app, sandbox, chat_id)
         self.cmd = [cmd]
         self.script = script
+        # deliver the script as a file instead of on stdin: the command then has
+        # a stdin of its own (see script_path_in_sandbox)
+        self.script_as_file = script_as_file
+        self.script_file = None
         self.timeout = timeout
         self.timeout_reached = False
         self.terminated = False
         self.chat = app.query_one("#main").query_one(f"#{chat_id}")
 
+    def write_script_file(self) -> str:
+        """Put the script in the sandbox tmp dir, return its in-sandbox path."""
+        handle, host_path = tempfile.mkstemp(prefix=".spit_cmd_", suffix=".sh",
+                                             dir=self.sandbox_tmp)
+        with os.fdopen(handle, "w") as script_file:
+            script_file.write(self.script)
+        self.script_file = host_path
+        return script_path_in_sandbox(host_path, self.sandbox)
+
+    def remove_script_file(self) -> None:
+        if self.script_file and os.path.exists(self.script_file):
+            os.remove(self.script_file)
+        self.script_file = None
+
     async def run(self):
-        ret = self.check_bwrap(self.cmd)
+        cmd = list(self.cmd)
+        if self.script_as_file:
+            cmd += [self.write_script_file()]
+        ret = self.check_bwrap(cmd)
         if ret:
+            self.remove_script_file()
             yield ret
             return
         if self.sandbox:
             cmd_args = self.bwrap_args()
-            cmd_args += [f"/home/{self.user}/.sandbox_env.sh"] + self.cmd
+            cmd_args += [f"/home/{self.user}/.sandbox_env.sh"] + cmd
         else:
-            cmd_args = [self.SANDBOX_ENV] + self.cmd
+            cmd_args = [self.SANDBOX_ENV] + cmd
         yield "Running process...\n\n"
+        # with the script in a file there is nothing to feed in, and the command
+        # reads from an empty stdin rather than from what is left of the script
+        stdin = asyncio.subprocess.DEVNULL if self.script_as_file else asyncio.subprocess.PIPE
         proc = await asyncio.create_subprocess_exec(*cmd_args,
-                        stdin=asyncio.subprocess.PIPE,
+                        stdin=stdin,
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.STDOUT,
                         cwd=self.sandbox_path, start_new_session=True)
-        proc.stdin.write(self.script.encode())
-        await proc.stdin.drain()
-        proc.stdin.close()
+        if not self.script_as_file:
+            proc.stdin.write(self.script.encode())
+            await proc.stdin.drain()
+            proc.stdin.close()
         self.chat.watchdog(proc, self)
-        async for data in proc.stdout:
-            yield data.decode("UTF-8", errors="replace")
+        try:
+            async for data in proc.stdout:
+                yield data.decode("UTF-8", errors="replace")
+        finally:
+            # the file is the command, so it has to outlive the stream, but it
+            # is a copy of a command and there is no reason to leave it behind
+            self.remove_script_file()
         if proc.returncode < 0:
             if self.timeout_reached:
                 yield "\nProcess was terminated due to timeout limit!"
