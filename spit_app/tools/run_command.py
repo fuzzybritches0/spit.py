@@ -16,6 +16,13 @@ DESC = {
                 "command": {
                     "type": "string",
                     "description": "The command to execute."
+                },
+                "separate_stderr": {
+                    "type": "boolean",
+                    "description": ("Report stderr in a labelled section after the output "
+                                    "rather than interleaved with it. Default: true; set "
+                                    "false when the two streams form one dialogue whose "
+                                    "order matters")
                 }
             },
             "required": ["command"]
@@ -48,6 +55,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
     # was the command's stdin, so `read` or a bare `cat` ate the trailer
     run = Run(app, chat_id, "bash", wrap_script(arguments["command"]),
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"],
-              script_as_file=True)
+              script_as_file=True,
+              separate_stderr=arguments.get("separate_stderr", True))
     async for line in run.run():
         yield line

@@ -72,6 +72,10 @@ TRAILER = (f'EXIT_CODE=${{?}}; '
 # resets it, and every failed command then reported success.
 ABSORB = "# absorbed by run_command"
 
+# Only emitted when there is something to say: a clean run keeps the shape it
+# always had -- no stdout header, and no empty block below the output.
+STDERR_HEADER = "~~~~ stderr ~~~~"
+
 def wrap_script(command: str) -> str:
     """A command plus the trailer that carries exit code and shell state out.
 
@@ -115,10 +119,19 @@ def get_args(arguments: dict, defaults: dict) -> str:
 
 class Run(CommonMixIn):
     def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0,
-                 script_as_file: bool = False) -> None:
+                 script_as_file: bool = False,
+                 separate_stderr: bool = False) -> None:
         super().__init__(app, sandbox, chat_id)
         self.cmd = [cmd]
         self.script = script
+        # False: stderr is written into stdout as it happens, the shell's own
+        # behaviour. True: it is collected and reported in a labelled block at the
+        # end, which is the only honest place for it -- the block is not complete
+        # until the process is gone. Only run_command asks for it, because for a
+        # model reading the result the grouping is the information: git, pip and
+        # every compiler put progress and diagnostics on stderr, and interleaved
+        # they are indistinguishable from the output they describe.
+        self.separate_stderr = separate_stderr
         # deliver the script as a file instead of on stdin: the command then has
         # a stdin of its own (see script_path_in_sandbox)
         self.script_as_file = script_as_file
@@ -144,6 +157,21 @@ class Run(CommonMixIn):
 
     # how long to wait for the tail of the pipe once the command is gone
     DRAIN_TIMEOUT = 0.5
+
+    async def _collect(self, stream, sink) -> None:
+        """Drain one pipe into `sink` while something else reads the other one.
+
+        Both have to be read at the same time. A pipe holds about 64 KB; a process
+        writing past that stops writing until someone reads, and if we are blocked
+        reading the other pipe there is no one -- the child waits for us and we
+        wait for the child. Reading each into its own task is what keeps a command
+        that is noisy on both streams from deadlocking the call.
+        """
+        while True:
+            data = await stream.read(65536)
+            if not data:
+                return
+            sink.append(data)
 
     async def _command_finished(self, proc):
         """Resolve when the command has exited -- deliberately not proc.wait().
@@ -220,8 +248,13 @@ class Run(CommonMixIn):
         proc = await asyncio.create_subprocess_exec(*cmd_args,
                         stdin=stdin,
                         stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.STDOUT,
+                        stderr=(asyncio.subprocess.PIPE if self.separate_stderr
+                                else asyncio.subprocess.STDOUT),
                         cwd=self.sandbox_path, start_new_session=True)
+        stderr_chunks = []
+        stderr_task = None
+        if self.separate_stderr:
+            stderr_task = asyncio.create_task(self._collect(proc.stderr, stderr_chunks))
         if not self.script_as_file:
             proc.stdin.write(self.script.encode())
             await proc.stdin.drain()
@@ -234,6 +267,20 @@ class Run(CommonMixIn):
             # the file is the command, so it has to outlive the stream, but it
             # is a copy of a command and there is no reason to leave it behind
             self.remove_script_file()
+        if stderr_task:
+            # the group is stopped by now, so this pipe is closing too; if
+            # something escaped the kill, report what was read instead of waiting
+            try:
+                await asyncio.wait_for(stderr_task, self.DRAIN_TIMEOUT)
+            except asyncio.TimeoutError:
+                stderr_task.cancel()
+            errors = b"".join(stderr_chunks).decode("UTF-8", errors="replace")
+            if errors.strip():
+                yield f"\n{STDERR_HEADER}\n{errors}"
+        # the drain above can return before the child has been reaped, and
+        # returncode is None until it is: comparing None < 0 is a TypeError, which
+        # is what the rare flake in the suite was
+        await self._command_finished(proc)
         if proc.returncode < 0:
             if self.timeout_reached:
                 yield "\nProcess was terminated due to timeout limit!"

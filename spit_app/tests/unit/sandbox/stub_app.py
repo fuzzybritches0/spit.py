@@ -41,7 +41,7 @@ class StubApp:
         return StubMain(self.chat)
 
 
-def run_as_file(script: str, home: str, root: str, timeout: int = 0):
+def run_as_file(script: str, home: str, root: str, timeout: int = 0, **kwargs):
     """Run a script through Run with file delivery. Returns (output, leftovers, seconds)."""
     from spit_app.tools.run.run import Run
 
@@ -54,7 +54,7 @@ def run_as_file(script: str, home: str, root: str, timeout: int = 0):
     started = time.time()
     try:
         runner = Run(StubApp(sandbox_root, tmp_root), "chat1", "bash", script,
-                     sandbox=False, timeout=timeout, script_as_file=True)
+                     sandbox=False, timeout=timeout, script_as_file=True, **kwargs)
 
         async def collect():
             out = ""
