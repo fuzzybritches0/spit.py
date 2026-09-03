@@ -34,6 +34,8 @@ DESC = {
     }
 }
 
+PATH_ARGS = ["path"]
+
 PROMPT = "Use this function to get directory contents with metadata including owner/group, file type, size, and modification times."
 SANDBOX = True
 

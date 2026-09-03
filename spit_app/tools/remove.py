@@ -22,6 +22,8 @@ DESC = {
     }
 }
 
+PATH_ARGS = ["path"]
+
 PROMPT = "Use this function to remove a file or directory recursively."
 SANDBOX = True
 

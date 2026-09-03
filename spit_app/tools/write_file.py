@@ -39,6 +39,8 @@ DESC = {
     }
 }
 
+PATH_ARGS = ["path"]
+
 PROMPT = "Use this function to save any type of text content in a file. Any sub-directories that do not exist will be created for you."
 SANDBOX = True
 

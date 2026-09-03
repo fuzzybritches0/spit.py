@@ -15,6 +15,7 @@ re-discovering the same decoder quirk in its own script.
 """
 import ast
 import json
+import os
 
 CONTAINERS = (list, dict)
 CONTAINER_TYPES = ("array", "object")
@@ -187,3 +188,35 @@ def field_render(value) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     return str(value)
+
+
+# --- paths a model wrote as ~/something --------------------------------------
+
+def expand_path(path):
+    """Resolve `~`, `~user` and $VARs in a path, as a shell would have.
+
+    open() does not expand a leading ~: it takes the two characters as part of
+    the name, so read_files("~/notes.txt") is a FileNotFoundError that reads as
+    though the file were missing rather than as though the argument was never a
+    path at all. A model writes ~ because every shell example it has ever read
+    uses it.
+
+    Only the arguments a tool declares in PATH_ARGS are expanded. For anything
+    else -- a grep pattern, the body of write_file, a URL -- ~ and $ are
+    characters the caller meant literally and expanding them would corrupt the
+    call. expandvars leaves a $VAR alone when it is not set, so the only names
+    at risk are ones that really are in the environment.
+    """
+    if isinstance(path, list):
+        return [expand_path(item) for item in path]
+    if not isinstance(path, str):
+        return path
+    return os.path.expanduser(os.path.expandvars(path))
+
+
+def expand_arguments(arguments: dict, path_args) -> dict:
+    """Expand the arguments named in `path_args`, in place."""
+    for key in path_args or []:
+        if key in arguments:
+            arguments[key] = expand_path(arguments[key])
+    return arguments

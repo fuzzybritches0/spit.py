@@ -43,6 +43,8 @@ DESC = {
     }
 }
 
+PATH_ARGS = ["path"]
+
 PROMPT = "Use this function to find and replace text in a file."
 PROMPT_INST = "Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
 SANDBOX = True

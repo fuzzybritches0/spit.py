@@ -39,6 +39,7 @@ DESC = {
 }
 
 OUTPUT_TYPE_HINT = "text"
+PATH_ARGS = ["path"]
 
 PROMPT = "Use this function to delete lines from a file by line number range and/or by regex pattern. Lines are 1-based and `end_line` is inclusive and defaults to `start_line`, so `start_line=5` alone deletes only line 5. With `pattern` alone every matching line in the file is deleted; with `pattern` plus a range only the matching lines inside that range are deleted. Read the file first with `read_files(show_line_numbers=true)` to get reliable line numbers. A pattern that matches nothing is not an error: nothing changes. Preview anything uncertain with `dry_run=true` — the preview is a unified diff you can hand to the `patch` tool."
 SANDBOX = True

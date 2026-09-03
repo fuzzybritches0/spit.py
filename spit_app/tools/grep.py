@@ -44,6 +44,7 @@ DESC = {
 }
 
 OUTPUT_TYPE_HINT = "text"
+PATH_ARGS = ["path"]
 
 PROMPT = "Use this function to search file contents for regex patterns."
 PROMPT_INST = "Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."

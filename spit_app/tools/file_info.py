@@ -27,6 +27,8 @@ DESC = {
     }
 }
 
+PATH_ARGS = ["path"]
+
 PROMPT = "Use this function to get detailed metadata for a single file or directory. Returns size, permissions, modification time, file type, owner, group, and more."
 SANDBOX = True
 

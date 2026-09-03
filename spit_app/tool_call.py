@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import importlib.util
 from pathlib import Path
-from spit_app.arguments import coerce
+from spit_app.arguments import coerce, expand_arguments
 
 def load_user_settings(app, name: str, settings: dict) -> None:
     if name in app.settings.tool_settings:
@@ -44,6 +44,9 @@ def load_tools(tools: dict, file_path: str) -> None:
             tools[name]["requires_multimodal_image"] = False
             if hasattr(module, "REQUIRES_MULTIMODAL_IMAGE"):
                 tools[name]["requires_multimodal_image"] = getattr(module, "REQUIRES_MULTIMODAL_IMAGE")
+            # which arguments are filesystem paths, so that ~ and $VAR are
+            # resolved for them and for nothing else
+            tools[name]["path_args"] = getattr(module, "PATH_ARGS", [])
             tools[name]["stream_tool_response"] = False
             if hasattr(module, "STREAM_TOOL_RESPONSE"):
                 tools[name]["stream_tool_response"] = getattr(module, "STREAM_TOOL_RESPONSE")
@@ -119,6 +122,8 @@ class ToolCall:
         # A decoder that cannot express a union type hands us the list as text;
         # put the value back into the shape the schema declared, once for all.
         coerce(arguments, self.argument_properties(name))
+        # ~/~user/$VAR are a shell's syntax and open() has never heard of them
+        expand_arguments(arguments, self.tools[name]["path_args"])
         missing = self.required_arguments(name, arguments)
         if missing:
             return self.end_call(messages, missing)

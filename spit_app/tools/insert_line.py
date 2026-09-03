@@ -39,6 +39,7 @@ DESC = {
 }
 
 OUTPUT_TYPE_HINT = "text"
+PATH_ARGS = ["path"]
 
 PROMPT = "Use this function to insert line(s) at a specific position in a file. Use `line_number` to insert before a line, or `after_line` to insert after a line. They are mutually exclusive. To append at the end, use line_number=n+1 or after_line=n."
 SANDBOX = True

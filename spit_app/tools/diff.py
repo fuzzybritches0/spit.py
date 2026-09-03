@@ -36,6 +36,7 @@ DESC = {
 }
 
 OUTPUT_TYPE_HINT = "text"
+PATH_ARGS = ["file1", "file2"]
 
 PROMPT = "Use this function to compare two files and show differences. Supports unified, context, and side_by_side output formats."
 SANDBOX = True
