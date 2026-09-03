@@ -43,8 +43,11 @@ async def call_async_generator(app, arguments: dict, chat_id):
     if not shutil.which("bash"):
         yield f"ERROR: `bash` not found! Give user instructions to install!\n"
         return
-    # the trailer goes on its own line -- see wrap_script()
+    # the trailer goes on its own line -- see wrap_script() -- and the script is
+    # delivered as a file so the command gets a stdin of its own: on stdin it
+    # was the command's stdin, so `read` or a bare `cat` ate the trailer
     run = Run(app, chat_id, "bash", wrap_script(arguments["command"]),
-              SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"])
+              SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"],
+              script_as_file=True)
     async for line in run.run():
         yield line
