@@ -19,6 +19,12 @@ SANDBOX_ENV_STATE = "~/.sandbox_env"
 TRAILER = (f"EXIT_CODE=${{?}}; declare > {SANDBOX_ENV_STATE}; "
            f"export -p >> {SANDBOX_ENV_STATE}; exit ${{EXIT_CODE}}")
 
+# Absorbs a command's trailing backslash so the trailer cannot be pulled into it
+# as arguments. A comment, deliberately: it is not a command either, so it does
+# not reset $?, which the trailer reads on the very next line. The no-op ":"
+# resets it, and every failed command then reported success.
+ABSORB = "# absorbed by run_command"
+
 def wrap_script(command: str) -> str:
     """A command plus the trailer that carries exit code and shell state out.
 
@@ -35,8 +41,17 @@ def wrap_script(command: str) -> str:
         script: "syntax error near unexpected token `;'".
 
     Bare, on its own line, is the only form that survives both.
+
+    The comment line in between absorbs one more case: a command whose last line
+    ends in a backslash continues onto whatever follows, and the trailer then
+    becomes arguments to it -- `echo continued \\` printed "continued
+    EXIT_CODE=0". A comment absorbs the continuation and is not itself a word,
+    so the command is left untouched. It has to be a comment rather than the
+    no-op `:` because a comment is not a command either: `:` resets $? and the
+    trailer's EXIT_CODE=${?} would then report the no-op, silently turning every
+    failed command into a success.
     """
-    return f"{command}\n{TRAILER}"
+    return f"{command}\n{ABSORB}\n{TRAILER}"
 
 def get_args(arguments: dict, defaults: dict) -> str:
     ret = f"arguments = {arguments}\ndefaults = {defaults}\n\n"

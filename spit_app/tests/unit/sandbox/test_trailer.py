@@ -29,7 +29,7 @@ import tempfile
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                 *[".."] * 4)))
 
-from spit_app.tools.run.run import TRAILER, wrap_script  # noqa: E402
+from spit_app.tools.run.run import ABSORB, TRAILER, wrap_script  # noqa: E402
 
 OLD = ";" + TRAILER          # how run_command.py assembled it before
 
@@ -57,6 +57,16 @@ def bash(script: str, home: str):
 def state(home: str) -> str:
     path = os.path.join(home, ".sandbox_env")
     return open(path).read() if os.path.exists(path) else ""
+
+
+def has_var(dump: str, name: str) -> bool:
+    """Was `name` assigned in the shell that wrote the dump?
+
+    Substring tests are not enough: when the trailer is swallowed, bash files
+    the eaten assignment in its "_" variable, so the state reads "_=EXIT_CODE=0"
+    and still contains the name.
+    """
+    return any(line.startswith(name + "=") for line in dump.splitlines())
 
 
 HEREDOC = "cat > out.txt <<'EOF'\nfirst line\nsecond line\nEOF"
@@ -111,6 +121,38 @@ with tempfile.TemporaryDirectory() as home:
 with tempfile.TemporaryDirectory() as home:
     bash("export SPIT_KEPT=yes # trailing comment" + OLD, home)
     check("t5-environment-lost", "SPIT_KEPT" in state(home), False)
+
+print()
+print("=== 6. A command ending in a backslash ===")
+CONTINUED = "echo continued \\"
+lines = wrap_script(CONTINUED).splitlines()
+check("t6-absorb-line-present", ABSORB in lines, True)
+check("t6-absorb-last-before-trailer", lines[-2], ABSORB)
+check("t6-absorb-is-a-comment", ABSORB.startswith("#"), True)
+with tempfile.TemporaryDirectory() as home:
+    proc = bash(wrap_script(CONTINUED), home)
+    check("t6-rc", proc.returncode, 0)
+    check("t6-output", proc.stdout.strip(), "continued")
+    check("t6-no-trailer-in-output", "EXIT_CODE" in proc.stdout, False)
+    check("t6-state-saved", has_var(state(home), "EXIT_CODE"), True)
+
+print()
+print("=== 7. Control: without the absorb line the trailer is swallowed ===")
+with tempfile.TemporaryDirectory() as home:
+    proc = bash(CONTINUED + "\n" + TRAILER, home)
+    check("t7-trailer-became-arguments", "EXIT_CODE" in proc.stdout, True)
+    # the assignment was eaten as an argument and ended up in bash's "_" instead
+    # of being executed, so the trailer ran with no exit code of its own
+    check("t7-exit-code-never-assigned", has_var(state(home), "EXIT_CODE"), False)
+    check("t7-landed-in-last-argument", "_=EXIT_CODE=" in state(home), True)
+
+print()
+print("=== 8. A failing command keeps its code through the absorb line ===")
+for command, expected in (("ls /definitely-not-here", 2), ("exit 7", 7),
+                          ("false", 1)):
+    with tempfile.TemporaryDirectory() as home:
+        check(f"t8-rc-{command}", bash(wrap_script(command), home).returncode,
+              expected)
 
 print()
 print("==============================")
