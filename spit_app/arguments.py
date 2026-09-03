@@ -17,16 +17,17 @@ import ast
 import json
 
 CONTAINERS = (list, dict)
+CONTAINER_TYPES = ("array", "object")
+SCALAR_TYPES = ("string", "boolean", "integer", "number", "float")
 
 
-def declared_types(properties: dict, key: str) -> list:
-    """The JSON-schema types declared for `key`, flattened to a list of names.
+def spec_types(spec) -> list:
+    """The JSON-schema type names a property spec declares, flattened.
 
     `"type": "string"` -> ["string"], `"type": ["string", "array"]` ->
     ["string", "array"], `anyOf` -> the union of the sub-schemas. A property
     with no usable declaration yields [], which callers treat as "leave it be".
     """
-    spec = properties.get(key)
     if not isinstance(spec, dict):
         return []
     types = spec.get("type", [])
@@ -34,8 +35,13 @@ def declared_types(properties: dict, key: str) -> list:
         return [types]
     ret = [t for t in types if isinstance(t, str)] if isinstance(types, list) else []
     for sub in spec.get("anyOf", []):
-        ret += declared_types({"_": sub}, "_")
+        ret += spec_types(sub)
     return sorted(set(ret))
+
+
+def declared_types(properties: dict, key: str) -> list:
+    """spec_types() of the spec that `properties` declares for `key`."""
+    return spec_types(properties.get(key))
 
 
 def unwrap(value: str):
@@ -88,3 +94,96 @@ def coerce(arguments: dict, properties: dict) -> dict:
                 value = value[0]
         arguments[key] = value
     return arguments
+
+
+# --- one argument shown in, and typed back from, a text field ----------------
+#
+# The tool-call editor holds every argument in a TextArea, so a value whose
+# schema allows a container has to be flattened to text and parsed again. Both
+# directions have to use JSON: str() renders a list with single quotes, which
+# is not JSON, so saving turned ['a.txt', 'b.txt'] into the *text* of a list --
+# feeding the editor's own output back into the defect coerce() repairs.
+
+def scalar_valid(type_name: str, text: str) -> bool:
+    if type_name == "integer":
+        try:
+            int(text)
+        except ValueError:
+            return False
+    elif type_name in ("number", "float"):
+        try:
+            float(text)
+        except ValueError:
+            return False
+    elif type_name == "boolean":
+        if text.lower() not in ("true", "false"):
+            return False
+    return True
+
+
+def scalar_parse(type_name: str, text: str):
+    if type_name == "integer":
+        try:
+            return int(text)
+        except ValueError:
+            return text
+    if type_name in ("number", "float"):
+        try:
+            return float(text)
+        except ValueError:
+            return text
+    if type_name == "boolean":
+        if text.lower() == "true":
+            return True
+        if text.lower() == "false":
+            return False
+        return text
+    return text
+
+
+def field_valid(spec, text: str) -> bool:
+    """Can `text` stand for a value of the property `spec` declares?
+
+    Empty is left to the caller -- a blank field means "argument not given",
+    not "invalid". A union is edited as text and parsed on save, so it passes
+    when it parses as a container or when any one member would take the text;
+    a union that offers `string` takes anything, as it must.
+    """
+    if not text:
+        return True
+    names = spec_types(spec)
+    if not names:
+        return True
+    if any(n in CONTAINER_TYPES for n in names) and unwrap(text) is not None:
+        return True
+    if "string" in names:
+        return True
+    return any(scalar_valid(n, text) for n in names)
+
+
+def field_parse(spec, text: str):
+    """The value the field text denotes, in the shape `spec` declares."""
+    if not text:
+        return None
+    names = spec_types(spec)
+    if any(n in CONTAINER_TYPES for n in names):
+        parsed = unwrap(text)
+        if parsed is not None:
+            return parsed
+    if "array" in names and "string" not in names:
+        return [text]
+    for name in names:
+        if name in SCALAR_TYPES:
+            return scalar_parse(name, text)
+    return text
+
+
+def field_render(value) -> str:
+    """The text a field should show for `value`."""
+    if value is None:
+        return ""
+    if isinstance(value, CONTAINERS):
+        return json.dumps(value)
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)

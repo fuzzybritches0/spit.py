@@ -3,48 +3,22 @@ from copy import deepcopy
 from textual.widgets import TextArea as _TextArea, Label, Select
 from textual.containers import Vertical
 from .tool_call import ToolCall
+from spit_app.arguments import field_parse, field_render, field_valid
 from spit_app.chat.textual_message import ResetProcess
 
-def valid(stype: str, text: str) -> bool:
-    if stype == "integer":
-        try:
-            int(text)
-        except:
-            return False
-    elif stype == "float":
-        try:
-            float(text)
-        except:
-            return False
-    elif stype == "boolean":
-        if not text.lower() == "true" and not text.lower() == "false":
-            return False
-    return True
-
-def ret_stype(stype: str, text: str) -> any:
-    if not text:
-        return None
-    if stype == "integer":
-        return int(text)
-    if stype == "float":
-        return float(text)
-    if stype == "boolean":
-        if text.lower() == "true":
-            return True
-        else:
-            return False
-    return text
-
 class TextArea(_TextArea):
-    def __init__(self, id: str, required: bool, stype: str) -> None:
+    def __init__(self, id: str, required: bool, spec: dict = None) -> None:
         super().__init__()
         self.id = id
         self.required = required
-        self.stype = stype
+        # the property's whole schema spec, never just its type name: a union
+        # such as ["string", "array"] and an anyOf are the spec's business
+        self.spec = spec or {}
         self._background = self.styles.background
 
     def on_text_area_changed(self, event: _TextArea.Changed) -> None:
-        if (self.required and not self.text) or (self.text and not valid(self.stype, self.text)):
+        if (self.required and not self.text) or \
+           (self.text and not field_valid(self.spec, self.text)):
             self.styles.background = "red"
         else:
             self.styles.background = self._background
@@ -103,16 +77,18 @@ class TextAreaTool():
             await self.process.mount(Label("\n[bold $accent-lighten-1]arguments:\n"))
             async with self.process.batch():
                 for prop in self.properties.keys():
-                    stype = self.properties[prop]["type"]
-                    value = ""
+                    spec = self.properties[prop]
+                    # None, not "": an argument that was never sent has to look
+                    # different from one whose value is False or 0
+                    value = None
                     await self.process.mount(Label(f"{prop}:"))
                     if prop in self.arguments:
                         value = self.arguments[prop]
                     if prop in self.required:
-                        await self.process.mount(TextArea(prop, True, stype))
+                        await self.process.mount(TextArea(prop, True, spec))
                     else:
-                        await self.process.mount(TextArea(prop, False, stype))
-                    self.process.children[-1].text = str(value)
+                        await self.process.mount(TextArea(prop, False, spec))
+                    self.process.children[-1].text = field_render(value)
                     self.process.children[-1].styles.height = "auto"
             if len(self.process.children) > 4:
                 self.process.children[4].focus()
@@ -139,17 +115,19 @@ class TextAreaTool():
     def save_known(self) -> bool:
         arguments = {}
         for prop in self.properties.keys():
-            text = self.process.query_one(f"#{prop}").text
-            required = self.process.query_one(f"#{prop}").required
-            stype = self.properties[prop]["type"]
-            if required and not text:
+            widget = self.process.query_one(f"#{prop}")
+            spec = self.properties[prop]
+            if widget.required and not widget.text:
                 return False
-            if text and not valid(stype, text):
+            if widget.text and not field_valid(spec, widget.text):
                 return False
-            arguments[prop] = ret_stype(stype, text)
+            arguments[prop] = field_parse(spec, widget.text)
         save_arguments = {}
         for prop in arguments:
-            if prop in self.properties.keys() and arguments[prop]:
+            # None and "" mean the field was left empty. False and 0 are values:
+            # a bare truthiness test here dropped them and let the default win.
+            if prop in self.properties.keys() and arguments[prop] is not None \
+               and arguments[prop] != "":
                 save_arguments[prop] = arguments[prop]
         if save_arguments:
             self.tool["function"]["arguments"] = json.dumps(save_arguments)

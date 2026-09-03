@@ -5,7 +5,7 @@
 cd "$(dirname $0)"
 rc=0
 out=""
-for test in test_arguments.py test_pipeline.py; do
+for test in test_*.py; do
 	this=$(python3 "./${test}") || rc=1
 	echo "${this}"
 	out+="${this}"$'\n'
