@@ -29,10 +29,42 @@ def get_script(tool, common: str = "") -> str:
     with open(script_path, "r") as f:
         return common + f.read()
 
-SANDBOX_ENV_STATE = "~/.sandbox_env"
+# Where a call leaves the state the next one starts from, in shell form: $HOME
+# is resolved when the script runs, and the sandbox's HOME is the sandbox's home.
+SANDBOX_ENV_STATE = "$HOME/.sandbox_env"
+SANDBOX_CWD_STATE = "$HOME/.sandbox_cwd"
 
-TRAILER = (f"EXIT_CODE=${{?}}; declare > {SANDBOX_ENV_STATE}; "
-           f"export -p >> {SANDBOX_ENV_STATE}; exit ${{EXIT_CODE}}")
+# What must never come back from a previous call. The first group is bash's own
+# state, which `declare` used to write out in full: BASHOPTS, BASH_VERSINFO and
+# EUID are read-only, so replaying them errored on every call -- and the source
+# hid those errors, along with any real one. The second group is the identity of
+# the account: HOME above all, which would otherwise move the sandbox's home out
+# from under the next call, since that is where that call reads its state from.
+STATE_EXCLUDE = (r"^(BASH[A-Za-z_]*|BASHOPTS|SHELLOPTS|SHLVL|_|HOME|USER|"
+                 r"LOGNAME|SHELL|PWD|OLDPWD|CDPATH)=")
+
+# Resolved before the command runs, so a command that rewrites HOME cannot send
+# the state somewhere the next call will not look.
+STATE_HEADER = (f'SPIT_STATE="{SANDBOX_ENV_STATE}"; '
+                f'SPIT_CWD="{SANDBOX_CWD_STATE}"')
+
+# The exported environment, as `export NAME=value` lines so the reader can tell
+# them from anything else in the file, moved into place rather than truncated --
+# a half-written state file would now be an error the user sees. pwd goes to a
+# file of its own because a working directory is not an environment variable, but
+# it is state the next call should start from. The two defaults are only for a
+# TRAILER used on its own; wrap_script always emits STATE_HEADER first.
+#
+# EXIT_CODE is captured first, before the two defaults: an assignment is a
+# command as far as $? is concerned, and taking it after them reported the
+# assignment instead of the command -- the same trap as the ":" no-op.
+TRAILER = (f'EXIT_CODE=${{?}}; '
+           f'SPIT_STATE="${{SPIT_STATE:-{SANDBOX_ENV_STATE}}}"; '
+           f'SPIT_CWD="${{SPIT_CWD:-{SANDBOX_CWD_STATE}}}"; '
+           f'export -p | sed \'s/^declare -x //\' | grep -vE \'{STATE_EXCLUDE}\' '
+           f'| sed \'s/^/export /\' > "$SPIT_STATE.tmp"; '
+           f'mv -f "$SPIT_STATE.tmp" "$SPIT_STATE"; pwd -P > "$SPIT_CWD"; '
+           f'exit ${{EXIT_CODE}}')
 
 # Absorbs a command's trailing backslash so the trailer cannot be pulled into it
 # as arguments. A comment, deliberately: it is not a command either, so it does
@@ -65,8 +97,12 @@ def wrap_script(command: str) -> str:
     no-op `:` because a comment is not a command either: `:` resets $? and the
     trailer's EXIT_CODE=${?} would then report the no-op, silently turning every
     failed command into a success.
+
+    STATE_HEADER goes first so the state paths are settled before the command can
+    touch them, and it is the one part of the wrapper a command could legitimately
+    want to see, so it sits above the command rather than hidden inside it.
     """
-    return f"{command}\n{ABSORB}\n{TRAILER}"
+    return f"{STATE_HEADER}\n{command}\n{ABSORB}\n{TRAILER}"
 
 def get_args(arguments: dict, defaults: dict) -> str:
     ret = f"arguments = {arguments}\ndefaults = {defaults}\n\n"

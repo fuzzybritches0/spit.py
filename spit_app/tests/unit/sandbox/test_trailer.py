@@ -18,8 +18,10 @@ Putting the trailer on its own line fixes both, but only if the leading ";"
 goes with the newline: a statement list may not begin with ";", and bash then
 rejects the entire script.
 
-bash is fed the script on stdin here exactly as Run.run() does it, and HOME is
-pointed at a temporary directory so ~/.sandbox_env lands there.
+The helper here feeds the script to bash on stdin on purpose: these tests are
+about the shape of the wrapper, independently of how it is delivered, which is
+test_delivery.py's business. HOME is pointed at a temporary directory so
+~/.sandbox_env lands there.
 """
 import os
 import subprocess
@@ -59,25 +61,17 @@ def state(home: str) -> str:
     return open(path).read() if os.path.exists(path) else ""
 
 
-def has_var(dump: str, name: str) -> bool:
-    """Was `name` assigned in the shell that wrote the dump?
-
-    Substring tests are not enough: when the trailer is swallowed, bash files
-    the eaten assignment in its "_" variable, so the state reads "_=EXIT_CODE=0"
-    and still contains the name.
-    """
-    return any(line.startswith(name + "=") for line in dump.splitlines())
-
-
 HEREDOC = "cat > out.txt <<'EOF'\nfirst line\nsecond line\nEOF"
 
 print("=== 1. Shape of the wrapped script ===")
 wrapped = wrap_script("true")
 lines = wrapped.splitlines()
-check("t1-command-first", lines[0], "true")
+check("t1-state-header-first", lines[0].startswith("SPIT_STATE="), True)
+check("t1-command-alone", lines[1], "true")
+check("t1-nothing-glued-to-command", ";" in lines[1], False)
 check("t1-trailer-last", lines[-1], TRAILER)
-check("t1-trailer_line", lines[-1].startswith("EXIT_CODE="), True)
-check("t1-no-glued-semicolon", "; EXIT_CODE" in wrapped, False)
+# the trailer begins by capturing $?, before anything of its own can reset it
+check("t1-trailer-captures-first", lines[-1].startswith("EXIT_CODE="), True)
 heredoc_lines = wrap_script(HEREDOC).splitlines()
 check("t1-delimiter-alone", "EOF" in heredoc_lines, True)
 check("t1-delimiter-before-trailer",
@@ -133,18 +127,16 @@ with tempfile.TemporaryDirectory() as home:
     proc = bash(wrap_script(CONTINUED), home)
     check("t6-rc", proc.returncode, 0)
     check("t6-output", proc.stdout.strip(), "continued")
-    check("t6-no-trailer-in-output", "EXIT_CODE" in proc.stdout, False)
-    check("t6-state-saved", has_var(state(home), "EXIT_CODE"), True)
+    check("t6-no-trailer-in-output", "SPIT_STATE" in proc.stdout, False)
 
 print()
 print("=== 7. Control: without the absorb line the trailer is swallowed ===")
 with tempfile.TemporaryDirectory() as home:
     proc = bash(CONTINUED + "\n" + TRAILER, home)
+    # the trailer's first statement -- the exit code capture -- became an
+    # argument to echo: the command ran, but with the wrapper's text appended
     check("t7-trailer-became-arguments", "EXIT_CODE" in proc.stdout, True)
-    # the assignment was eaten as an argument and ended up in bash's "_" instead
-    # of being executed, so the trailer ran with no exit code of its own
-    check("t7-exit-code-never-assigned", has_var(state(home), "EXIT_CODE"), False)
-    check("t7-landed-in-last-argument", "_=EXIT_CODE=" in state(home), True)
+    check("t7-command-not-alone", proc.stdout.strip() != "continued", True)
 
 print()
 print("=== 8. A failing command keeps its code through the absorb line ===")

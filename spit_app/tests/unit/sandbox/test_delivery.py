@@ -104,7 +104,9 @@ def state(home: str) -> str:
 
 
 def has_var(dump: str, name: str) -> bool:
-    return any(line.startswith(name + "=") for line in dump.splitlines())
+    """Was `name` exported into the state? It is written as `export NAME=value`."""
+    return any(line.startswith(prefix + name + "=")
+               for line in dump.splitlines() for prefix in ("export ", ""))
 
 
 READING = "export SPIT_DELIV=yes; read FOO; echo \"read: [$FOO]\""
