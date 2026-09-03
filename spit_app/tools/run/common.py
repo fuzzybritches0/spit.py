@@ -1,6 +1,32 @@
 import os
 import shutil
+import signal
 import getpass
+
+def kill_process_group(proc) -> None:
+    """Stop everything a call started, not only the shell it ran through.
+
+    Run starts its child with start_new_session=True, so the child's pid is also
+    its process group id and one signal reaches the command and everything still
+    running under it. Two places needed this and neither had it:
+
+      * A background process outlives the shell that started it and keeps the
+        write end of the stdout pipe open. A read that waits for end-of-file then
+        waits for the background process instead: `sleep 3600 &`, or a server
+        started with `&`, holds the call open indefinitely, and no timeout is
+        watching a call whose command already finished.
+      * proc.kill() stops the shell alone and leaves its children running with no
+        owner and no way to reach them.
+
+    Inside bwrap both are invisible: --die-with-parent tears the sandbox down with
+    the call. Outside it, nothing is. Anything that called setsid has left the
+    group on purpose and survives, which is the escape hatch for a process meant
+    to outlive the call.
+    """
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
 
 class CommonMixIn:
     SANDBOX_ENV = "/".join(__file__.split("/")[:-1]) + "/sandbox_env.sh"

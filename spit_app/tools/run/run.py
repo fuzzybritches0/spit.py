@@ -2,7 +2,7 @@
 import asyncio
 import os
 import tempfile
-from .common import CommonMixIn
+from .common import CommonMixIn, kill_process_group
 
 def script_path_in_sandbox(host_path: str, sandbox: bool) -> str:
     """Where a file written into sandbox_tmp is visible to the running command.
@@ -142,6 +142,63 @@ class Run(CommonMixIn):
             os.remove(self.script_file)
         self.script_file = None
 
+    # how long to wait for the tail of the pipe once the command is gone
+    DRAIN_TIMEOUT = 0.5
+
+    async def _command_finished(self, proc):
+        """Resolve when the command has exited -- deliberately not proc.wait().
+
+        asyncio's transport does not consider a subprocess finished until its
+        pipes have reached end-of-file, so proc.wait() inherits exactly the wait
+        this method exists to avoid: a background process holding the write end
+        of stdout holds proc.wait() with it. The return code, on the other hand,
+        is set when the process exits, so this polls for it -- 50 ms at worst,
+        against the minutes a held pipe can cost.
+        """
+        while proc.returncode is None:
+            await asyncio.sleep(0.05)
+
+    async def _stream(self, proc):
+        """Yield stdout as it arrives, without waiting for whatever it left behind.
+
+        Reading to end-of-file is not the same as waiting for the command. A file
+        descriptor is held by everyone who inherited it, so a background process
+        keeps the write end open long after the shell that started it exited -- and
+        the read waits for that instead. Measured: a bash that backgrounds a three
+        second sleep and exits in 54 ms holds the reader for the full three
+        seconds; replace the sleep with a server and the call never returns, with
+        no timeout watching, because as far as the process table is concerned the
+        command finished at once.
+
+        So the wait is on the process, and the pipe is only read while it lives.
+        When the process is gone and no data is pending, the rest of the group is
+        stopped and whatever is buffered is drained -- nothing holds the pipe by
+        then. Output still streams, in order.
+        """
+        exited = asyncio.create_task(self._command_finished(proc))
+        try:
+            while True:
+                reading = asyncio.create_task(proc.stdout.read(65536))
+                done, _ = await asyncio.wait((reading, exited),
+                                             return_when=asyncio.FIRST_COMPLETED)
+                if reading in done:
+                    data = reading.result()
+                    if not data:
+                        return
+                    yield data
+                    continue
+                kill_process_group(proc)
+                try:
+                    rest = await asyncio.wait_for(reading, self.DRAIN_TIMEOUT)
+                except asyncio.TimeoutError:
+                    return
+                if rest:
+                    yield rest
+                return
+        finally:
+            if not exited.done():
+                exited.cancel()
+
     async def run(self):
         cmd = list(self.cmd)
         if self.script_as_file:
@@ -171,7 +228,7 @@ class Run(CommonMixIn):
             proc.stdin.close()
         self.chat.watchdog(proc, self)
         try:
-            async for data in proc.stdout:
+            async for data in self._stream(proc):
                 yield data.decode("UTF-8", errors="replace")
         finally:
             # the file is the command, so it has to outlive the stream, but it
