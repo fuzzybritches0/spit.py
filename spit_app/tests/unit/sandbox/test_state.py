@@ -42,6 +42,7 @@ def check(name, got, expected):
     if got == expected:
         pass_ += 1
     else:
+        fail_ += 1
         print(f"FAIL: {name}\n  got:      {got!r}\n  expected: {expected!r}")
 
 
