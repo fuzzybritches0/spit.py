@@ -8,11 +8,11 @@ class ToolCall:
     # ends - before the next key or at the closing brace. Fences are the code
     # block language of the render pipeline (pattern_methods), so they must
     # always balance: one more emitted newline-fence than values would leave
-    # the last value inside an unclosed block. 5 tildes match
-    # Process.tool_start()/tool_end() and out-length the `~~~~` runs that
-    # tool arguments and tool output contain, so those stay literal inside
-    # the block (a fence only closes against one of the same character and
-    # at least its length).
+    # the last value inside an unclosed block. 5 tildes match the tool hint
+    # fences of Process (process.py) and out-length the `~~~~` runs that tool
+    # arguments and tool output contain, so those stay literal inside the
+    # block (a fence only closes against one of the same character and at
+    # least its length).
     def __init__(self, tool_call: list) -> None:
         self.tool_call = tool_call
         text = f"\n### function: `{self.tool_call['name']}`\n#### arguments:\n"

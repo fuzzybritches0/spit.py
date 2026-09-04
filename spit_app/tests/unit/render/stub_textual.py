@@ -62,10 +62,24 @@ class FakeStream:
 
 
 class FakeMarkdown:
+    app = None
+
     def __init__(self, source="", parser_factory=None, **kwargs):
         self.source = source
-        self.styles = FakeStyles()
+        self.parent = None
+        self.children = []
         self.classes = ""
+        self.styles = FakeStyles()
+
+    async def mount(self, widget):
+        widget.parent = self
+        self.children.append(widget)
+        result = None
+        if hasattr(widget, "on_mount"):
+            result = widget.on_mount()
+            if inspect.iscoroutine(result):
+                await result
+        return widget
 
     @classmethod
     def get_stream(cls, widget):
@@ -137,6 +151,7 @@ class FakeApp:
         self.tool_call = types.SimpleNamespace(tools=tools or {})
         self.refresh_bindings_calls = 0
         FakeWidget.app = self
+        FakeMarkdown.app = self
 
     def refresh_bindings(self):
         self.refresh_bindings_calls += 1

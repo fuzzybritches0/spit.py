@@ -92,15 +92,12 @@ async def code_block_start_end(self, pattern: str) -> None:
             self.codeblock = True
             self.code_fences.append(pattern)
             await code_block_start(self, pattern)
-        elif self.code_fences[-1] == pattern:
+        elif (pattern[0] == self.code_fences[-1][0] and
+            len(pattern) >= len(self.code_fences[-1])):
             del self.code_fences[-1]
-            if not self.code_fences:
-                self.codeblock = False
-                await code_block_end(self, pattern)
-            else:
-                self.part += pattern
+            self.codeblock = False
+            await code_block_end(self, pattern)
         else:
-            self.code_fences.append(pattern)
             self.part += pattern
     else:
         self.part += escape_fence(self, pattern)
