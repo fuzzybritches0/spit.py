@@ -34,7 +34,18 @@ OUTPUT_TYPE_HINT = "text"
 
 SANDBOX = True
 MAX_SECONDS = 0
-PROMPT = "Use this function to run Shell commands and receive their output."
+# work.py concatenates PROMPT and PROMPT_INST with no separator, hence the
+# trailing newline: without it the timeout sentence runs into this one.
+PROMPT = ("Use this function to run Shell commands and receive their output. "
+          "Nothing you background outlives the call: the command's process group is "
+          "killed when the command ends, and inside the sandbox `--die-with-parent` "
+          "tears the whole thing down. Use the `terminal` tool for a server, a tail, "
+          "a REPL -- anything meant to keep running; `setsid cmd &` is the escape "
+          "hatch, since it leaves the group and survives. stderr is reported in a "
+          "`~~~~ stderr ~~~~` block after the output, and only when there is stderr; "
+          "set `separate_stderr=false` to interleave the two streams when their "
+          "relative order is the point. `export` and `cd` carry over to the next "
+          "call; `~` and `$VAR` are expanded in the arguments that hold paths.\n")
 PROMPT_INST = "Timeout is set to [timeout]. When timeout is set to 0, there is no timeout limit."
 
 SETTINGS = {
