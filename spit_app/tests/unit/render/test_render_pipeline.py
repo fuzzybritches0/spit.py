@@ -251,6 +251,18 @@ check("t6-tilde-all-two-splits",
       min([drive_toolcall(TILDE_ARGS, i) == TILDE_SCREEN
            for i in range(1, len(TILDE_ARGS))]), True)
 
+DASH_ARGS = '{"a":"----\\n---- diff ----"}'
+DASH_SCREEN = [
+    ("Part", "\n### function: `f`\n#### arguments:\n`a`\n"),
+    ("Code", "~~~~~\n----\n---- diff ----\n~~~~~"),
+    ("Part", "\n"),
+]
+check("t6-dash-oneshot", drive_toolcall(DASH_ARGS, len(DASH_ARGS)),
+      DASH_SCREEN)
+check("t6-dash-all-two-splits",
+      min([drive_toolcall(DASH_ARGS, i) == DASH_SCREEN
+           for i in range(1, len(DASH_ARGS))]), True)
+
 print("=== 7. value with newlines ends balanced; no Part starts inside a block ===")
 NL_ARGS = '{"a":"line one\\nline two"}'
 NL_SCREEN = [
