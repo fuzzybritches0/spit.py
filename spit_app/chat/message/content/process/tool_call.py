@@ -1,90 +1,99 @@
+# SPDX-License-Identifier: GPL-2.0
+FENCE = "\n~~~~~\n"
+
+
 class ToolCall:
+    # The render is a sequence of `key` label lines and fenced value blocks:
+    # every `:` opens a value fence and the fence closes again when the value
+    # ends - before the next key or at the closing brace. Fences are the code
+    # block language of the render pipeline (pattern_methods), so they must
+    # always balance: one more emitted newline-fence than values would leave
+    # the last value inside an unclosed block. 5 tildes match
+    # Process.tool_start()/tool_end() and out-length the `~~~~` runs that
+    # tool arguments and tool output contain, so those stay literal inside
+    # the block (a fence only closes against one of the same character and
+    # at least its length).
     def __init__(self, tool_call: list) -> None:
         self.tool_call = tool_call
         text = f"\n### function: `{self.tool_call['name']}`\n#### arguments:\n"
         self.formatted_tool_call = text
-        self.last_char = ""
         self.pos = 0
-        self.skip = False
-        self.mark = 0
-        self.key = False
-        self.value = False
         self.json = []
-        self.unesc_pos = 0
-        self.unesc_skip = False
-        self.unesc_last_char = ""
-        self.unesc_tool_call = ""
+        self.in_string = False
+        self.escaped = False
+        self.key = False
+        self.in_value_fence = False
 
-    def tool_call_arguments(self) -> None:
-        arguments = self.tool_call["arguments"]
+    def decoded_escape(self, char: str) -> str:
+        if char == "n":
+            return "\n"
+        if char == "t":
+            return "\t"
+        if char == "\\" or char == '"':
+            return char
+        return "\\" + char
+
+    def close_value_fence(self, ret: str) -> str:
+        if self.in_value_fence:
+            self.in_value_fence = False
+            return ret + FENCE
+        return ret
+
+    def tool_call_arguments(self) -> str:
+        arguments = self.tool_call.get("arguments", "")
         ret = ""
         for pos in range(self.pos, len(arguments)):
             char = arguments[pos:pos+1]
-            if (char == "{" or char == "[") and not self.value and not self.key:
-                if len(self.json) == 0:
-                    self.skip = True
-                    self.key = True
-                if len(self.json) == 1 and self.mark % 2 == 0:
-                    self.mark += 1
-                self.json += [char]
-            elif (char == "}" or char == "]") and not self.value and not self.key:
-                del self.json[-1]
-                if len(self.json) == 1 and self.mark % 2 == 1:
-                    ret += f"{char}\n~~~~\n"
-                    self.key = True
-                    self.mark += 1
-                self.skip = True
-            elif len(self.json) == 1:
-                if char == '"' and not self.last_char == "\\":
-                    self.mark += 1
-                    self.skip = True
+            if self.escaped:
+                self.escaped = False
+                ret += self.decoded_escape(char)
+            elif self.in_string:
+                if char == "\\":
+                    self.escaped = True
+                elif char == '"':
+                    self.in_string = False
                     if self.key:
                         ret += "`"
-                    else:
-                        self.value = not self.value
-                elif char == "`" and self.key:
-                    self.mark +=1
-                elif char == ":" and self.mark % 2 == 0 and self.key:
-                    self.skip = True
-                    self.key = False
-                    ret += "\n~~~~\n"
-                elif char == " " and not self.value and not self.key:
-                    self.skip = True
-                elif char == "," and self.mark % 2 == 0:
-                    if not self.key:
-                        self.skip = True
+                    elif len(self.json) > 1:
+                        ret += char
+                else:
+                    ret += char
+            elif not self.json:
+                if char == "{" or char == "[":
+                    self.json += [char]
+                    self.key = True
+                else:
+                    ret += char
+            elif char == '"':
+                self.in_string = True
+                if self.key:
+                    ret += "`"
+                elif len(self.json) > 1:
+                    ret += char
+            elif char == "{" or char == "[":
+                self.json += [char]
+                ret += char
+            elif char == "}" or char == "]":
+                del self.json[-1]
+                if self.json:
+                    ret += char
+                    if len(self.json) == 1:
+                        ret = self.close_value_fence(ret)
                         self.key = True
-                        ret += "\n~~~~\n"
-                    else:
-                        self.skip = True
-            self.last_char = char
-            if not self.skip:
-                ret+=char
-            self.skip = False
+                else:
+                    ret = self.close_value_fence(ret)
+            elif len(self.json) == 1 and char == ":" and self.key:
+                ret += FENCE
+                self.key = False
+                self.in_value_fence = True
+            elif len(self.json) == 1 and char == ",":
+                if not self.key:
+                    ret = self.close_value_fence(ret)
+                self.key = True
+            elif len(self.json) == 1 and char == " " and not self.key:
+                None
+            else:
+                ret += char
         self.pos = len(arguments)
         self.formatted_tool_call += ret
-        return self.unescaped()
-
-    def unescaped(self) -> str:
-        newlines = self.formatted_tool_call[self.unesc_pos:].rstrip(r"\\")
-        self.unesc_pos += len(newlines)
-        newlines = newlines.replace(r"\n", "\n")
-        newlines = newlines.replace(r"\t", "\t")
-        newlines = newlines.replace(r"\\\\", "\\")
-        newlines = newlines.replace(r'\"', '"')
-        for pos in range(0, len(newlines)):
-            char = newlines[pos:pos+1]
-            if self.unesc_last_char == "\\" and char == "\n":
-                self.unesc_skip = True
-                self.unesc_tool_call = self.unesc_tool_call[:-1] + r"\n"
-            if self.unesc_last_char == "\\" and char == "\t":
-                self.unesc_skip = True
-                self.unesc_tool_call = self.unesc_tool_call[:-1] + r"\t"
-            if self.unesc_last_char == "\\" and char == "\\":
-                self.unesc_skip = True
-                self.unesc_tool_call = self.unesc_tool_call[:-1] + r"\\"
-            if not self.unesc_skip:
-                self.unesc_tool_call += char
-            self.unesc_skip = False
-            self.unesc_last_char = char
-        return self.unesc_tool_call
+        return self.formatted_tool_call
