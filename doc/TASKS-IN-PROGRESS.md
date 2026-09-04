@@ -140,71 +140,59 @@ verified by the probe) flips the fence parity downstream.
 
 ### State (kept current while working - crash-recovery record)
 
-- **Branch**: `task-streaming-render-bugs` (existed at `af9a328` = main tip,
-  created empty by the planning agent; now carries this task). Last commit:
-  docs(tasks) move-in entry.
-- **Scope**: files touched so far: `doc/TASKS-IN-PROGRESS.md`,
-  `doc/TASKS-PLANNED.md` only. No code touched yet.
+- **Branch**: `task-streaming-render-bugs`. Commits on it, in order:
+  - `f72dcd1` docs(tasks): start P0 on its branch (this entry moved here)
+  - `69bd1ba` tool_call: rewrite the arguments formatter as a per-char
+    JSON scanner (+ `tests/unit/render/test_tool_call_format.py`, 230
+    checks; differential old-vs-new over 35 shapes recorded in the
+    message)
+  - `ba87435` process: stop the fence drift and fence poisoning that
+    garble streams (+ `tests/unit/render/test_render_pipeline.py`;
+    process.py hint fences become stable prefix/suffix attributes,
+    pattern_methods pairs fences by same-char + at-least-length;
+    suspects cleared by measurement and NOT changed: pp.part reset,
+    tool_start-twice, skip_add_part - recorded in the commit message)
+  - (pending commit) docs: TESTING ground-truth row unit:render 278 +
+    sandbox re-measurement 119, DECISIONS 59 (fence language, pairing
+    rule, accepted limits), `----` argument shape added to the suite.
+- **Scope**: `spit_app/chat/message/content/process/tool_call.py`
+  (rewritten), `process.py`, `pattern_methods.py`, new
+  `spit_app/tests/unit/render/` (run_tests.sh, stub_textual.py,
+  test_tool_call_format.py, test_render_pipeline.py), docs as above.
 - **Done**:
-  - All docs read (AGENTS, PROJECT, CONVENTIONS, TRAPS, TESTING, DECISIONS,
-    TASKS-*).
-  - Baseline full suite green on main: delete_lines 127, diff 24, grep 30,
-    insert_line 119, patch 80, read_files 32, search_replace 29,
-    unit:arguments 131, unit:sandbox **119** (TESTING.md table still says
-    103 - counts only went up, table is stale, not a regression).
-  - Probe re-run, confirmed: `{}` renders `...#### arguments:\n}` (stray
-    `}` leak); 2-arg render ends `...d` with 3 `~~~~` fences (odd - missing
-    trailing `\n~~~~\n`); value containing `~~~~` verified.
-  - Data flow read end to end (llamacpp -> callback -> Message -> Content ->
-    Process -> PatternProcessing/pattern_methods -> Part/Code streams) plus
-    `run.py` wrapper text (`STDERR_HEADER = "~~~~ stderr ~~~~"`).
-  - Additional confirmed-by-reasoning suspects (each needs a test first):
-    - `unescaped()` per-char repair (`last_char == "\\" and char == "\n"`)
-      cannot tell a JSON-escape repair from a formatter-emitted real fence
-      newline preceded by a value ending in a backslash - it eats the
-      fence's leading `\n`. This IS symptom (a) (value ending `\\` in JSON
-      + emitted `\n~~~~`).
-    - formatter quote detection tests only `last_char == "\\"` (one
-      backslash), so a value ending `"...\\"` in JSON (odd-backslash
-      ambiguity) closes the string wrongly -> `}` arrives with `value`
-      still True -> appended verbatim (another stray-} path).
-    - `Process.process_content` sets `self.pp.part = ""` at the START of
-      every call - wipes a pending `"~~~~"` that `code_block_start` left in
-      `part` awaiting the closing fence (loss depends on chunk arrival =
-      symptom (c)). Same reset at start of `finish_content`.
-    - `tool_start()` gates on `self.pos == 0`, but `pos` stays 0 while
-      content is shorter than bsize=8 - a second early callback prepends
-      `~~~~~hint\n` AGAIN (5-tilde fence twice, parity flip).
-    - 4-vs-5-tilde mix: inside a `~~~~~hint` block a `~~~~ stderr ~~~~`
-      run neither closes (not equal to `~~~~~`) nor pushes-and-closes;
-      `code_block_start_end` else-branch pushes it onto `code_fences`
-      forever -> `tool_end`'s `\n~~~~~` closes the wrong entry (matches
-      the `...with~~~~~` example).
-- **Left** (next step, small): create `spit_app/tests/unit/render/` unit
-  suite: `stub_textual.py` (sys.modules injection for textual, textual.widgets,
-  textual.containers, textual.message, textual_image.widget, markdown_it,
-  cairosvg, ziamath, PIL - LaTeX is imported by pattern_methods so these
-  stubs are required even without latex in fixtures), `test_tool_call_format.py`
-  (golden values + chunk-split invariance, imports tool_call.py directly,
-  needs NO stub), `test_render_pipeline.py` (drive Process with fake
-  target/Part; invariance across chunk splits for: tool_call render,
-  tool-role content with output_type_hint incl. tool_start-once and mixed
-  4/5 fences; run.py wrapper text + `~~~~ stderr ~~~~`). Tests must be RED
-  on current code for the exact defects above (characterize-as-failing),
-  then fixes in separate commits. Planned fix design (formatter rewrite):
-  per-char JSON string scanner with proper escape-pair state integrated in
-  the accumulate loop (replaces the whole-string `unescaped()` post-pass);
-  close-branch drops `not self.key`; top-level close emits `\n~~~~\n` iff
-  content was rendered since the last emitted fence; `{}` renders header
-  only. Public API of ToolCall must not change (text_area_tool.py calls it
-  once on complete JSON).
-- **State hazards**: nothing half-finished; tree clean; no fixtures left
-  over. Suites all green. Do NOT trust the 4/5-tilde analysis for the fix
-  shape until the pipeline test reproduces it.
-- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` - all tool
-  suites at ground-truth counts (127/24/30/119/80/32/29), unit:arguments
-  131, unit:sandbox 119, new unit:render suite all green; manual checklist
-  above in the running app (owner-side).
+  - All symptoms (a), (b), (c) have failing-first characterization tests
+    and fixes; unit:render 278 green (formatter 230 + pipeline 48).
+  - (a) was the whole-string `unescaped()` post-pass eating fence and
+    escaped newlines and mis-detecting quote escapes - gone with the
+    per-char scanner; streaming == whole-string == monotonic per shape.
+  - (b) stray `}`: the rewrite's close branch has no `not self.key`
+    guard; the trailing fence is emitted at the top-level close; `{}`
+    renders the header only; even fence parity asserted per shape.
+  - (c) two root causes fixed and measured (see ba87435): self.pos
+    indexing a string whose `~~~~~text\n` prefix vanished after the
+    first callback (per-boundary text loss), and code_block_start_end
+    pushing foreign fence runs onto code_fences forever (STDERR_HEADER
+    inside the hint block poisoned the stack). Chunk-split invariance
+    asserted at every two-split boundary for the run_command shape.
+  - text_area_tool.py save path kept working (format suite t6);
+    missing-"arguments" KeyError crash fixed (t7).
+  - Focus-skip catch-up (suspect 5) verified benign via finish-only
+    re-render tests (pipeline t8) - final screen identical to
+    fully-streamed.
+- **Left**: owner-side MANUAL checklist in the running app (needs the
+  app runtime; system python3 has no Textual, TRAPS #19): empty-args
+  call (`lsterm`), `run_command` with stderr, `write_file` content
+  containing `~~~~`/`----`, streaming `python`, focus switching
+  mid-stream, re-open an old chat. Every item has an automated analogue
+  in tests/unit/render; this item is the human confirmation. On its
+  pass: move this entry to TASKS-FINISHED.md.
+- **State hazards**: none. Tree clean at every commit; no fixtures used;
+  no suite red. KNOWN ACCEPTED LIMITS (DECISIONS 59): argument values
+  with >=5-tilde runs at column 0 can close their own block early;
+  JSON truncated mid-stream leaves the last value fence open.
+- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` -
+  127/24/30/119/80/32/29 + 131/278/119, all FAIL 0 (the tool-suite
+  counts must not move); manual checklist (owner-side) as in Left.
 
 ## Protocol when starting a task from TASKS-PLANNED.md
 

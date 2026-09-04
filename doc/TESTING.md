@@ -27,7 +27,12 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | diff | 24 |
 | tools total | 441 |
 | unit:arguments | 131 |
-| unit:sandbox | 103 |
+| unit:render | 278 |
+| unit:sandbox | 119 |
+
+(The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
+the failure-counting fix raised it; the table lagged. Counts only ever go
+up, per the rule above.)
 
 A count going down without you deleting tests is a bug (see TRAPS #18: the
 runner once discarded failures - fixed in `39ceb2f`). New checks only ever
