@@ -46,7 +46,12 @@ input, not merely be a pair.
 
 ---
 
-## P2 - New tool: `rename`  [medium priority, not started]
+## P2 - DONE - `rename` implemented  [medium priority]
+
+Branch `rename-tool`, commit `7c1d062` (docs in the follow-up commit);
+resolution in `TASKS-FINISHED.md`, spec in TOOLS.md #14, policy
+rationale DECISIONS 60. The drafted spec below (verbatim) stays here.
+
 ## P3 - New tool: `copy`  [medium priority, not started]
 ## P4 - New tool: `code_parser`  [low priority, not started]
 

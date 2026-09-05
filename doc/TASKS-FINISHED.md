@@ -22,6 +22,13 @@ Test-count ground truth: see TESTING.md.
   `test_delivery.py` now imports `run_as_file` from `stub_app.py` (3-tuple);
   sandbox suite total held at 103.
 - **Test failure counting fixed** (`39ceb2f`).
+- **`rename` tool** (branch `rename-tool`, commit `7c1d062`) - planned P2:
+  rename/move for files, directories (whole tree) and symlinks; NEVER
+  overwrites (target checked with `lexists()`, dangling symlinks count);
+  `dry_run` is an identical validation that reports the planned rename
+  (not a diff - a rename changes no bytes) - full rationale DECISIONS 60,
+  spec TOOLS.md #14; `tests/tools/rename/` 68 checks (18 numbered
+  sections, error paths dominate by design).
 
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)

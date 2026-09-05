@@ -24,8 +24,9 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | read_files | 32 |
 | grep | 30 |
 | search_replace | 29 |
+| rename | 68 |
 | diff | 24 |
-| tools total | 441 |
+| tools total | 509 |
 | unit:arguments | 131 |
 | unit:render | 278 |
 | unit:sandbox | 119 |

@@ -82,7 +82,7 @@ Terminal tools (`terminal`, `lsterm`) have a different structure:
 | `patch` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
 | `insert_line` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
 | `delete_lines` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| `rename` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| `rename` | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
 | `copy` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
 
 ¹ Line numbers are inherent to the output format (`file:line:`, match counts, diff hunk headers) — not a toggle.
@@ -664,6 +664,43 @@ DRY RUN: preview of changes (file not modified):
 ```
 
 2 line(s) would be deleted (matching `TODO`). File would have 5 line(s).
+```
+
+---
+
+### 14. `rename` (NEW - branch `rename-tool`, decision 60)
+**Purpose**: Rename or move a file or directory (a symlink moves as a symlink)
+
+**Parameters**:
+- `old_path` (required): Current path of the file or directory
+- `new_path` (required): New path. Must NOT already exist (rename never overwrites); its parent directory must exist
+- `dry_run` (optional): Preview without renaming. Default: `False`
+
+**Output**:
+- Applied: `Renamed {file|directory|symlink} \`old_path\` to \`new_path\`.`
+- `dry_run`: `DRY RUN: nothing moved.` + `Would rename {kind} \`old_path\` to \`new_path\`.`
+- Errors: `ERROR: <reason>` with a non-zero exit, nothing moved
+
+**Features**:
+- **Never overwrites**: the target is checked with `lexists()`, so a file, directory or *dangling symlink* at `new_path` is a refusal (`rename never overwrites`) - the conflicting name must be moved or deleted deliberately first
+- Directories move whole (atomic on the same filesystem); symlinks move as links, the pointee is never touched
+- The target's parent directory must already exist (no `mkdir` side effects); the error names the missing parent
+- Same path (compared by `abspath`) and moving a directory into its own subtree are refused with named errors
+- Bytes, line endings and permissions are untouched by construction - the file is never opened (tested: CRLF file md5-identical through the move; binary with NULs and high bytes too)
+- `dry_run` runs the **identical validation** and refuses exactly what the real call would refuse; its report is informational - a rename is not a content change, so there is no pasteable unified diff (unlike `delete_lines`/`insert_line`)
+- Cross-filesystem moves work through `shutil.move` (the `EXDEV` fallback); pure stdlib
+- `~`/`$VAR` expansion on both arguments (`PATH_ARGS`); `OUTPUT_TYPE_HINT = "text"`
+
+**Example**:
+```
+rename(old_path="~/notes.txt", new_path="~/archive/notes-2026.txt")
+rename(old_path="/tmp/work", new_path="/tmp/work-old")
+rename(old_path="a.txt", new_path="b.txt", dry_run=True)
+```
+
+**Example Output**:
+```
+Renamed file `notes.txt` to `archive/notes-2026.txt`.
 ```
 
 ---
