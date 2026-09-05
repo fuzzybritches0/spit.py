@@ -1,0 +1,4 @@
+{
+    "script": "../../../tools/scripts/rename.py",
+    "args": ["old_path", "new_path", "dry_run"]
+}
