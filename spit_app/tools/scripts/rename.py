@@ -6,13 +6,6 @@ def err(message):
     print(f"ERROR: {message}")
     sys.exit(1)
 
-def describe(source, is_link, is_directory):
-    if is_link:
-        return "symlink"
-    if is_directory:
-        return "directory"
-    return "file"
-
 try:
     if not old_path or not new_path:
         err("`old_path` and `new_path` are both required and must not be empty.")
@@ -34,7 +27,12 @@ try:
     target_parent = os.path.dirname(os.path.abspath(target))
     if not os.path.isdir(target_parent):
         err(f"Target directory does not exist: `{target_parent}` - create it first (e.g. `mkdir -p` via run_command).")
-    kind = describe(source, is_link, is_directory)
+    if is_link:
+        kind = "symlink"
+    elif is_directory:
+        kind = "directory"
+    else:
+        kind = "file"
     if dry_run:
         print("DRY RUN: nothing moved.")
         print(f"Would rename {kind} `{source}` to `{target}`.")
@@ -47,5 +45,5 @@ try:
             err(f"Rename failed: `{type(exception).__name__}: {exception}`")
         print(f"Renamed {kind} `{source}` to `{target}`.")
 except Exception as exception:
-    print(f"ERROR: `{type(exception).__name__}`: `{exception}`")
+    err(f"`{type(exception).__name__}`: `{exception}`")
     sys.exit(1)
