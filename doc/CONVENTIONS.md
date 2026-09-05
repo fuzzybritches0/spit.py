@@ -80,10 +80,16 @@ argument block prepended to the script.
 - One concern per commit. Imperative subject like the existing ones
   (`patch: ignore header line counts`). Body explains *why*, including the
   measurement that forced the decision where there is one.
-- **Commit messages via `git commit -F /tmp/msg.txt`, never a heredoc** - the
-  sandbox shell wrapper appends its trailer to the last line and pollutes
-  heredocs (this actually happened; the commit had to be amended).
+- **Commit messages via `git commit -F /tmp/msg.txt`** - the house style, and
+  it keeps a multi-paragraph message out of shell quoting entirely. It is NOT
+  a heredoc-safety rule any more: the wrapper's trailer has not been glued to
+  the last line since `68cff03`, so a heredoc reaches its terminator and is
+  written clean (TRAPS #2 is resolved; re-measured 2026-09-05 - `git commit`
+  via `-m`, via `cat > f <<EOF` + `-F f`, and via `-F - <<EOF` all produce
+  byte-exact messages with no wrapper text). Do not restate the old warning.
 - Clean `__pycache__` before `git add -A` (gitignored anyway, but keep the
   tree honest).
-- Author file content with `write_file`/`search_replace`, not shell heredocs
-  (same trailer-pollution trap).
+- Author file content with `write_file`/`search_replace` rather than shell
+  redirection or heredocs - they are the tools meant for it, and the result is
+  not hostage to quoting. The trailer-pollution reason this bullet originally
+  gave no longer applies (TRAPS #2 resolved, `68cff03`).

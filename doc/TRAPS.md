@@ -13,10 +13,29 @@ matching area.
    a trailing backslash and is not a command - that is why `ABSORB` in
    `run/run.py` is a comment. Same trap: the trailer's own default assignments
    must not precede `EXIT_CODE=${?}`.
-2. **The wrapper appends its trailer after the command** - heredocs never see
-   the terminator in time, so wrapper text lands inside heredoc content. Use
-   `write_file`/`search_replace` to author file content and `git commit -F
-   file` for commit messages (this polluted a real commit once).
+2. **RESOLVED - a trailer glued to the last line of a command lands inside
+   heredoc content.** When the wrapper was `command + "; EXIT_CODE=${?}; ..."`
+   this was exactly as bad as it sounds: a command whose last line is a heredoc
+   delimiter never ends its here-document, bash reads to end of input, and the
+   trailer is written into the file (`git commit -F -` carried it into a real
+   commit message once; `python3 - <<'PY'` died on a SyntaxError three lines
+   from the end of a script nobody wrote). It has been fixed twice over: the
+   trailer now starts a line of its own, bare, with no leading `;` (`68cff03`),
+   preceded by the `ABSORB` comment for backslash continuations (`05ffc9a`),
+   and `run_command` delivers the script as a file with stdin `DEVNULL`
+   (`3fa330a`). Re-measured 2026-09-05 over the real file-delivery path:
+   terminated heredocs are byte-exact with no bash warning and no trailer text
+   in the file, `git commit` is clean via `-m` with a real newline, via
+   `cat > f <<EOF` + `-F f`, and via `-F - <<EOF`, and an export survives a
+   trailing comment. `test_trailer.py` pins both halves (t3 heredoc clean, t5
+   control asserting the old glue still pollutes). Kept in this list because the
+   mechanism is one refactor away from returning and because one case survives:
+   **an *unterminated* heredoc still absorbs the wrapper** into the file - that
+   is malformed input, and bash says so (`warning: here-document ... delimited
+   by end-of-file`), so it fails loudly rather than silently. Prefer
+   `write_file`/`search_replace` for file content and `git commit -F file` for
+   commit messages - still good practice, no longer a landmine. See DECISIONS
+   and CONVENTIONS.
 
 ## Process lifecycle (run_command / Run)
 

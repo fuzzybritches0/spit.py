@@ -21,7 +21,8 @@ Quick map:
 Non-negotiables (details in the docs above):
 
 - **Never `git pull` or `git push`. Leave `main` untouched.** Work on a
-  descriptively named branch; commit with `git commit -F file` (no heredocs).
+  descriptively named branch; commit with `git commit -F file` (house
+  style; the heredoc-pollution reason it used to give is fixed — TRAPS #2).
 - Read `doc/TRAPS.md` before your first code change.
 - Run the full test suite (`bash spit_app/tests/run_tests.sh`) before and
   after changes; expected counts and rules in `doc/TESTING.md`.
