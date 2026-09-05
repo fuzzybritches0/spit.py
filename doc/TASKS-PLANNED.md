@@ -60,8 +60,9 @@ rationale DECISIONS 60. The drafted spec below (verbatim) stays here.
   (exactly three files: `setup.json`, `run_tests.sh`, `create_fixtures.sh`).
 - **Verify**: full suite `bash ~/spit.py/spit_app/tests/run_tests.sh` stays green;
   new suite's checks counted in its summary line.
-- **Gotchas**: TRAPS #9 (PATH_ARGS), #7/#8 (`git commit -F`, author with
-  write_file), #10 (generated fixtures only); follow CONVENTIONS.md module
+- **Gotchas**: TRAPS #21 (PATH_ARGS), #2 (`git commit -F` is house style,
+  author with write_file; the pollution trap it warned about is resolved),
+  #10 (generated fixtures only); follow CONVENTIONS.md module
   contract end to end; both destructive file tools need `dry_run`.
 - **Drafted specs (verbatim)**:
 
