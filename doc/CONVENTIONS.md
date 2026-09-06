@@ -10,9 +10,10 @@ Part of the spit.py documentation set (see `PROJECT.md`).
 - Docstrings and comments are **not forbidden** - the preference is to avoid
   them, but when the situation calls for one (a non-obvious invariant, a trap
   the code cannot express), use it. A real example in the repo: the comment in
-  `run_command.py` explaining that `work.py` concatenates PROMPT and
-  PROMPT_INST without a separator. A future agent should not refuse a needed
-  comment because of an over-styled reading of this rule.
+  `run/run.py` explaining why `ABSORB` has to be a comment and not the no-op
+  `:` (a comment is not a command, so it does not reset `$?`). A future agent
+  should not refuse a needed comment because of an over-styled reading of this
+  rule.
 - Every source file starts with `# SPDX-License-Identifier: GPL-2.0`.
 - Tool scripts (`spit_app/tools/scripts/`) are **pure stdlib, self-contained,
   import nothing from the app**. Shared code between scripts is *prepended*
