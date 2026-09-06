@@ -28,12 +28,17 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | diff | 24 |
 | tools total | 509 |
 | unit:arguments | 131 |
+| unit:prompt | 33 |
 | unit:render | 278 |
 | unit:sandbox | 119 |
 
 (The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
 the failure-counting fix raised it; the table lagged. Counts only ever go
 up, per the rule above.)
+
+`unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
+`Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
+so the one string the model reads about its tools is covered without the app.
 
 A count going down without you deleting tests is a bug (see TRAPS #18: the
 runner once discarded failures - fixed in `39ceb2f`). New checks only ever

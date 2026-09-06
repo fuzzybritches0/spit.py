@@ -44,8 +44,11 @@ Rules behind the columns:
   anything that is not Markdown.
 - `PROMPT_INST` carries `[placeholder]` tokens that the app substitutes
   (timeout, interpreters, ...). Never disturb or rename a token, and note that
-  `work.py` concatenates PROMPT and PROMPT_INST with **no separator** - PROMPT
-  must end in a newline when PROMPT_INST follows.
+  **`work.py` owns every line break of the assembled prompt**: one break
+  between PROMPT and PROMPT_INST, one blank line between two tools, so a
+  `## <tool>` heading always starts a line. Neither string carries a leading or
+  trailing newline of its own (decision 62, pinned by
+  `tests/unit/prompt/test_prompt_assembly.py`).
 - `STREAM_TOOL_RESPONSE` tools stream their output into the chat as it arrives.
 
 ## Tool file structure and test layout

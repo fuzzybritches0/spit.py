@@ -43,8 +43,9 @@ Loaded dynamically at app startup by `tool_call.load_tools()`. Required:
 Optional (picked up by `load_tools` if present):
 `OUTPUT_TYPE_HINT` (screen rendering only: "text"/"python"/"json"/"html";
 set it for anything non-Markdown), `PROMPT_INST` (instruction string with
-`[placeholder]` tokens the app substitutes - never break a token; PROMPT must
-end with `\n` when PROMPT_INST follows), `Validators`,
+`[placeholder]` tokens the app substitutes - never break a token; neither
+PROMPT nor PROMPT_INST carries a leading or trailing newline, `work.py` owns
+those breaks - decision 62), `Validators`,
 `REQUIRES_MULTIMODAL_IMAGE`, `PATH_ARGS` (every filesystem-path argument -
 only those get `~`/`$VAR` expansion), `STREAM_TOOL_RESPONSE`.
 
