@@ -78,12 +78,18 @@ check("t5-prompt-has-no-tokens", re.search(r"\[\w+\]", PROMPT), None)
 check("t5-timeout-token-intact", "[timeout]" in run_command.PROMPT_INST, True)
 
 print()
-print("=== 6. work.py joins the two strings with no separator ===")
-# prompt += tool_prompt; prompt += prompt_inst(tool) -- so without a trailing
-# break the timeout sentence runs into the last word of PROMPT
-check("t6-trailing-break", PROMPT.endswith("\n"), True)
-joined = PROMPT + run_command.PROMPT_INST.replace("[timeout]", "0")
-check("t6-timeout-starts-a-line", "\nTimeout is set to 0." in joined, True)
+print("=== 6. work.py owns the break between the two strings ===")
+# work.py puts the line break in front of PROMPT_INST (and a blank line between
+# two tools), so PROMPT is prose that ends with a full stop and PROMPT_INST
+# starts with its sentence. The old contract was the opposite -- "PROMPT must
+# end with a newline, work.py joins with no separator" -- and these two checks
+# pinned it; a trailing break now, when the break comes from work.py, would
+# reach the model as a blank line in the middle of one tool's section. The
+# assembly itself is pinned by tests/unit/prompt/test_prompt_assembly.py, which
+# drives the real prompt() over every tool in the tree.
+check("t6-prompt-carries-no-trailing-whitespace", PROMPT, PROMPT.rstrip())
+check("t6-prompt_inst_starts_its_own_line", run_command.PROMPT_INST.startswith("\n"),
+      False)
 
 print()
 print("==============================")

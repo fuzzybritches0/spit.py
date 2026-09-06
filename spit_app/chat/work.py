@@ -56,20 +56,29 @@ class Work:
                     if setting in self.settings.tool_settings[tool]:
                         value = self.settings.tool_settings[tool][setting]["value"]
                 prompt = prompt.replace(f"[{setting}]", str(value))
+        prompt = prompt.strip("\n")
         if prompt:
             return "\n" + prompt
         return ""
 
     def prompt(self) -> str:
-        prompt = ""
+        blocks = []
         for tool in self.app.tool_call.tools.keys():
             if tool in self.cs("tools") and self.req_mm_image(tool):
                 tool_prompt = self.app.tool_call.tools[tool]["settings"]["prompt"]["value"]
                 if tool in self.settings.tool_settings:
                     if "prompt" in self.settings.tool_settings[tool]:
                         tool_prompt = self.settings.tool_settings[tool]["prompt"]["value"]
-                prompt += f"## {tool}\n\n" + tool_prompt
-                prompt += self.prompt_inst(tool)
+                # work.py owns every break of the assembled prompt: a heading
+                # starts a line (else it is not a heading), the tool's text
+                # starts the line after it, the substituted instructions follow
+                # on the next line, and two tools are one blank line apart --
+                # so the newlines a stored or hand-written PROMPT happens to
+                # end with decide nothing.
+                text = tool_prompt.strip("\n")
+                block = f"## {tool}\n\n{text}" if text else f"## {tool}"
+                blocks.append(block + self.prompt_inst(tool))
+        prompt = "\n\n".join(blocks)
         if prompt:
             prompt = TOOL_PROMPT + prompt
         if self.cs("prompt") and self.cs("prompt") in self.settings.prompts:
