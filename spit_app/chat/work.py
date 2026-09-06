@@ -56,7 +56,9 @@ class Work:
                     if setting in self.settings.tool_settings[tool]:
                         value = self.settings.tool_settings[tool][setting]["value"]
                 prompt = prompt.replace(f"[{setting}]", str(value))
-        return prompt
+        if prompt:
+            return "\n" + prompt
+        return ""
 
     def prompt(self) -> str:
         prompt = ""
