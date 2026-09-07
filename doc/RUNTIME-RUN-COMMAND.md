@@ -37,7 +37,9 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
 - Timeout: `MAX_SECONDS = 0` means no timeout; the `[timeout]` token in
   `PROMPT_INST` is substituted by the app - never remove or rename it.
 - `run_script` wraps the same machinery for named interpreters
-  (`[interpreters]` token); `python.py` is the restricted-builtin variant.
+  (`[interpreters]` token, and the list is **enforced** - nothing outside it
+  reaches `PATH`; bash alone gets the wrapper, decision 63 and decision 64);
+  `python.py` is the restricted-builtin variant.
 
 ## terminal / lsterm
 

@@ -28,7 +28,7 @@ code. The full design-rationale log lives in `DECISIONS.md`.
 | read_url | sync | html | - | PROMPT_INST |
 | remove | async | - | path | |
 | run_command | async | text | - | wrap_script, PROMPT_INST, STREAM_TOOL_RESPONSE, MAX_SECONDS=0 |
-| run_script | async | text | - | PROMPT_INST ([interpreters]), STREAM_TOOL_RESPONSE, MAX_SECONDS=0, separate_stderr, wrap_script (bash only) |
+| run_script | async | text | - | PROMPT_INST ([interpreters]), STREAM_TOOL_RESPONSE, MAX_SECONDS=0, separate_stderr, wrap_script (bash only), interpreters allow-list (enforced) |
 | search_replace | async | (markdown) | path | PROMPT_INST, MAX_SECONDS=0 |
 | set_chat_description | sync | - | - | |
 | terminal | sync | text | - | tmux backend, SANDBOX=True |
@@ -60,6 +60,13 @@ Rules behind the columns:
   `~~~~ stderr ~~~~` block after the output; both default it to true. Declaring
   it in `DESC` without passing it to `Run` wires it to nothing - which is what
   happened once, and decision 63 keeps the reason on the record.
+- **the `interpreters` setting is a permission, not a description**:
+  `run_script` refuses any interpreter the user's setting does not name, before
+  `PATH` is consulted and before the script is read, and the refusal quotes the
+  list back. Names compare as written, an absolute path is its own name, and an
+  empty setting allows nothing - widening it is a user action (decision 64).
+  A setting the UI shows and the code ignores is worse than no setting, because
+  it reads like a control.
 
 ## Tool file structure and test layout
 File-based tools follow this structure:
