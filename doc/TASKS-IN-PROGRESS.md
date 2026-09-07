@@ -4,6 +4,189 @@ Tasks currently under way, with enough state for a different agent (or a
 rescheduled one) to pick up exactly where work stopped. A task is only
 "finished" when its Verify command passes on a clean tree.
 
+> **Two entries are open. Start with `P0b` — the `terminal` tool.** It is
+> broken today, and it is also the harness the UI migration will depend on.
+> The streaming-render entry below it is code-complete and merged; only the
+> owner's manual checklist in the running app is outstanding.
+
+## P0b - `terminal` returns an empty message container: `term_screen()` throws the screen away  [high priority, user-visible, blocks all interactive work and the UI migration]
+
+Reported by the owner 2026-09-07: a `terminal` call produced an empty message
+container. Root cause found by reading the code; the fix is small, the
+diagnosis is complete, the *tests* are the work. Started on branch
+`task-terminal-empty-output`.
+
+### Root cause (static, certain)
+
+`spit_app/tools/run/terminal.py` `term_screen()` builds the screen into the
+**local** `output` and then returns **`self.output`**, which is assigned exactly
+once — to `""` in `__init__` — and never written again:
+
+```
+$ grep -rn "self\.output" spit_app/tools/run/*.py spit_app/tools/*.py
+run/terminal.py:14:   self.output = ""            # the only write, in __init__
+run/terminal.py:70:   return f"{self.output}\n\nINFO: Session dead."
+run/terminal.py:78:   return f"{self.output}\n\nINFO: Session dead."
+run/terminal.py:90:   return self.output          # <-- the screen is `output`, not this
+```
+
+So for a **live** pane the tool returns `""`, and `spit_app/tools/terminal.py`
+`call()` ends with `return terminal.term_screen(name)` → an empty tool response
+→ an empty message container. For a **dead** pane it returns
+`"\n\nINFO: Session dead."` with an empty prefix, which is why a dead session
+looks like a truncated one. The two dead-pane branches were clearly written
+expecting `self.output` to hold the last screen; nothing ever puts it there.
+
+`term_send_keys()` calls `self.term_screen(name)` and discards the result (line
+46) — the intent was surely to keep the pre-input screen for the dead-session
+message. That is the shape the fix should restore: capture into `self.output`
+where it is wanted, and **return the local `output` from `term_screen()`**.
+
+**Verify the live copy first (TRAPS #19).** The app runs outside this
+interpreter, and in the session where this was diagnosed, some `terminal` calls
+*did* return real screens while the code in this tree can only return `""`. So
+before anything else: confirm the running copy is this file
+(`git log -1 --format=%H -- spit_app/tools/run/terminal.py`, compare against the
+checkout the app imports), then reproduce with
+`terminal(name="probe", input=["echo one two three", "Enter"])`.
+
+### Second real defect, same tool: every key combination is sent as literal text
+
+`term_input()` strips the key/modifier names out of `_inp` to decide whether the
+argument is a bare key or a chord — and throws the result away, because `str`
+is immutable and the return value is discarded:
+
+```python
+_inp = inp
+for key in KEYS:      _inp.replace(key, "")    # no-op, five times over
+for mod in MODS:      _inp.replace(mod, "")    # no-op
+if len(_inp) <= 1:
+    return self.term_send_keys(name, inp, False)   # never taken for "C-c"
+return self.term_send_keys(name, inp, True)        # literal text "C-c"
+```
+
+`"C-c"` is 3 characters, so the `<= 1` branch is unreachable for a chord and
+Ctrl-C — the thing the tool's own PROMPT advertises (`Send a signal ["C-c"]`) —
+is typed into the pane as the four characters `C-c`. Everything in `KEYS` still
+works (it returns earlier), which is why the bug is invisible until you need an
+interrupt. Note the corollary: `S-Tab`, `M-x`, `C-a`, `C-q` are all broken, and
+`tui-textarea`-style editors driven through this tool cannot be interrupted.
+Empirically confirm before fixing (send `C-c` to `sleep 60` and check whether it
+dies), then fix by comparing the *returned* string, and add a check that a chord
+reaches the pane as a control character, not as text.
+
+### Third and fourth defects (small, same file, fix in the same sweep)
+
+- `tools/terminal.py`: `dealy = arguments["delay"]` — misspelled target, so the
+  caller's `delay` is silently ignored and `time.sleep(delay)` always sleeps 1.
+  Also `if "delay" in arguments and arguments["delay"]` means `delay=0` is
+  ignored too. (Both are silent-wrong-argument bugs: TRAPS #9's cousin.)
+- `tools/terminal.py`: `terminal.term_new(name)`'s return value is discarded.
+  `term_new` returns `check_bwrap(...)`'s error string when bwrap is unusable,
+  **and returns without creating anything** — `call()` then indexes
+  `app.tmux[chat_id]["windows"]`, which was never populated, and raises
+  `KeyError` instead of reporting "bwrap missing". Return the error.
+  Relatedly, `Terminal.pane_active()` and `lsterm.pane_active()` index
+  `self.tmux[self.chat_id]` with no guard for a chat that has no tmux entry.
+- `time.sleep(delay)` sits in a synchronous `call()`, i.e. it blocks the UI
+  event loop for the whole wait — a 1-second freeze per `terminal` call, on an
+  app whose complaint list starts with "the UI is sluggish". Out of scope for
+  the fix, fatal for the migration (see Enhancements).
+
+### No coverage exists
+
+No test suite anywhere mentions `libtmux`, `term_screen` or `term_new` — the
+`terminal` and `lsterm` tools are the only user-facing tools in the repo with
+zero checks, which is precisely how a `return self.output` survives. The fix
+must arrive with `spit_app/tests/unit/terminal/` (pure python, real tmux, no
+Textual — same pattern as `tests/unit/sandbox/stub_app.py` driving `Run`):
+live capture returns the pane's text and the cursor marker; a dead pane returns
+the last screen plus `INFO: Session dead.`; `delay` is honoured; `C-c`
+interrupts; missing bwrap is reported and not a `KeyError`. Lifecycle checks
+MUST use `sandbox=False` (TRAPS #6).
+
+### Done / Left / Verify
+
+- **Branch**: `task-terminal-empty-output` (this entry). No code changed yet.
+- **Scope**: `spit_app/tools/run/terminal.py`, `spit_app/tools/terminal.py`,
+  new `spit_app/tests/unit/terminal/`, `run_tests.sh` (new suite row), TESTING.md
+  ground-truth row, and optionally `lsterm.py`'s duplicated `pane_active`.
+- **Done**: root cause located and quoted; three further defects in the same
+  file identified (chords sent literally, `dealy` typo + `delay=0`, discarded
+  `term_new` error → `KeyError`); coverage gap confirmed by grep; migration
+  requirements written up below.
+- **Left** (first sitting): confirm the running copy matches this tree, then
+  reproduce all four symptoms, then fix + write the suite. Fix `term_screen`'s
+  return and the `self.output` contract **together**, or the dead-pane message
+  stays empty and only the happy path appears fixed.
+- **State hazards**: none. Tree clean; no code touched; no fixtures.
+- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` — existing
+  counts must not move (127/24/30/119/80/32/68/29 + 131/33/278/121/119) and a
+  new `unit:terminal` row must appear with FAIL 0; plus manual: a `terminal`
+  call shows its screen in the chat, and `C-c` interrupts a `sleep 60`.
+
+### Enhancements this tool needs *for* the ratatui migration
+
+Once `spit-tui` exists (the Rust front end planned in
+`doc/UI-ROUTE-RATATUI.md`, on branch `task-ui-route-ratatui-json` — that
+file is not on this branch yet), this
+tool stops being a convenience and becomes **the only harness that can see the
+real binary running in a real pty** — ratatui's `TestBackend` covers widgets,
+the `terminal` tool covers the end-to-end app. Design it for that job now:
+
+1. **`command`, not hardcoded `bash`.** Launch arbitrary argv in the pane
+   (`command=["./spit-tui"]`, plus `env={}`, `cwd=`) — "start the UI under test"
+   is the primitive; interactive bash is a special case of it.
+2. **Geometry you control.** `cols`/`rows` at creation and a `resize` action.
+   Re-wrap-on-resize is load-bearing in the new architecture (measured: 746 ms
+   to re-wrap 2,000 messages), and it cannot be tested at 24x80 only. During
+   this evaluation I had to nest a private tmux server to get 120x40 and
+   150x35.
+3. **Capture modes: text | styled | bytes.** Today only plain text. `styled`
+   (`capture-pane -e`) is how markdown/heading/highlight/border styling gets
+   asserted. `bytes` (raw pane output) is how the **Kitty/Sixel graphics path
+   gets asserted** — LaTeX and image rendering could not be verified at all in
+   this environment because there is no way to see the escape sequences, and
+   that is the single biggest unproven risk in the migration.
+4. **Cursor as data, not decoration.** Report `cursor_x`/`cursor_y` as fields
+   instead of splicing a `█` into the text (which corrupts the line and breaks
+   under double-width characters); keep the marker as an option.
+5. **`wait_for` instead of `delay`.** Wait until a regex matches the pane or the
+   screen is stable for N ms, with a timeout — blind sleeps make streaming tests
+   flaky, and streaming (token deltas, follow-bottom, abort) is the main thing
+   the new UI must get right.
+6. **`send_bytes` / raw mode**, so a test can inject SGR mouse sequences and
+   bracketed paste. That is exactly how pyratatui's mouse and paste defects were
+   proven (4 injected sequences → 0 delivered; a pasted Enter arriving as
+   `Ctrl+J` wipes the line), and the new front end's input layer must be tested
+   against the same sequences.
+7. **Scrollback and diffs**: `capture(since=-N)` and "changed lines since last
+   capture". With no scrollback and full-screen captures, an agent burns context
+   re-reading the same 24 lines; a diff capture makes long-session work cheap.
+8. **Process state as first-class output**: `pane_pid`,
+   `pane_current_command`, exited-with-code. Today a dead pane is one sentence
+   with no content, so a crashed UI and an empty UI look identical.
+9. **Namespaced sessions.** One tmux session per chat is right, but windows are
+   addressed by bare `name`, and a call naming a session that does not exist can
+   land on an already-running window instead of failing (this bit me live: the
+   first call of a session named `prt` reached a different, already-attached
+   pane). Prefix windows by `chat_id`, name the tmux window, and fail loudly on
+   a name that does not resolve — `lsterm` should list the same names, and its
+   private `pane_active()` (which mutates state as a side effect of *listing*)
+   should be the one implementation in `Terminal`.
+10. **Non-blocking and cancellable**: the wait must not block the UI loop; an
+    in-flight `terminal` call should be abortable (the engine already has
+    `kill_process_group` and the abort path — TRAPS #4).
+11. **Structured output option** (`format="json"`: rows, cursor, attrs, bytes,
+    process state) so tests assert on data instead of parsing prose.
+12. **Sandbox stays on by default** (and lifecycle tests use `sandbox=False`,
+    TRAPS #6), and teardown is guaranteed: a `kill` that takes the process group
+    and auto-cleanup when the chat closes. During this evaluation the only way
+    to clean up orphaned sessions was `tmux kill-server`, which is not
+    acceptable in a shared tmux.
+
+---
+
 ## P0 - Garbled streaming render: tool-call arguments and streamed tool output  [high priority, user-visible bug]
 
 Investigated 2025-09-04; a standalone probe (below) confirmed one bug outright.
