@@ -106,7 +106,29 @@ rationale DECISIONS 60. The drafted spec below (verbatim) stays here.
 
 ---
 
-## P5 - Longer-term roadmap (from the repo README, no specs yet)
+## P5 - run_script: the `interpreters` setting restricts the prompt, not the call  [medium priority, security-adjacent]
+
+Found while fixing the wrapper (DECISIONS 63, branch
+`fix-prompt-join-and-run-script`) and deliberately left out of that commit --
+one concern each, and this one is a policy call, not a bug fix.
+
+- **The gap**: `SETTINGS["interpreters"]` (default `bash, python3, perl`) is
+  used for exactly one thing -- substituting the `[interpreters]` token in
+  PROMPT_INST. The call itself checks only `shutil.which(interpreter)`, so any
+  interpreter on `PATH` runs: the setting tells the model what it is *offered*
+  and enforces nothing.
+- **The call to make**: is the sandbox the boundary and the list a hint (then
+  the setting's description should say so, since a user tightening it believes
+  they have restricted the tool), or is membership enforced? If enforced: a set
+  comparison against the user's own setting, an error naming it and listing
+  what is allowed, and checks in `tests/unit/run_script/` -- which already
+  stubs `shutil.which`, so the shapes are there.
+- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` (unit:run_script
+  83 must not move unless checks are added; ground truth TESTING.md).
+
+---
+
+## P6 - Longer-term roadmap (from the repo README, no specs yet)
 
 - More advanced agent capabilities
 - GUI/TUI alternative to Textual
