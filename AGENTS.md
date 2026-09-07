@@ -13,6 +13,8 @@ Quick map:
 | `doc/TOOLS.md` | Tool development guide (attributes, structure, full specs) |
 | `doc/TESTING.md` | Test infrastructure, fixtures, verification methods |
 | `doc/RUNTIME-RUN-COMMAND.md` | The run/sandbox/terminal subsystem |
+| `doc/UI-PROTOCOL.md` | Engine <-> front-end contract (JSONL) — the seam that makes the UI replaceable |
+| `doc/UI-ROUTE-RATATUI.md` | Route off Textual to a ratatui front end: gates M0-M5, measurements, fallbacks |
 | `doc/DECISIONS.md` | Design decision log — the *why*; append-only |
 | `doc/TASKS-IN-PROGRESS.md` | Check first — half-finished work may need recovery |
 | `doc/TASKS-PLANNED.md` | Pick up work here |

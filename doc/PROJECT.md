@@ -16,6 +16,9 @@ development of the project; everything here reflects the repo at
    - `TOOLS.md` - tool development (attribute matrix, structure, full specs)
    - `TESTING.md` - test harness, fixtures, verification methods
    - `RUNTIME-RUN-COMMAND.md` - the run/sandbox/terminal subsystem
+   - `UI-PROTOCOL.md` - the engine <-> front-end contract (the seam; read before
+     touching anything that renders or reads input)
+   - `UI-ROUTE-RATATUI.md` - the route off Textual, with its gates and measurements
 5. `TASKS-IN-PROGRESS.md` - is someone's work half-done? Recover it first.
 6. `TASKS-PLANNED.md` - pick up work here.
 7. `TASKS-FINISHED.md` - what is already done (do not redo or "fix" it).

@@ -15,6 +15,22 @@ data-flow map, probe, suspects, constraints) and its live State fields are in
 
 ---
 
+## P7 - MOVED to doc/UI-ROUTE-RATATUI.md — leave Textual for a ratatui front end  [high priority, architecture]
+
+Decided 2026-09-07 (DECISIONS 65). The plan, the gates (M0–M5), the measurements
+and the fallback ladder are in **`doc/UI-ROUTE-RATATUI.md`**; the front-end
+contract is **`doc/UI-PROTOCOL.md`**.
+
+- **Prerequisite**: **P0b**, the `terminal` tool returning an empty message
+  container, filed on branch `task-terminal-empty-output`. Merge that branch
+  first: P0b is also the harness the new front end is tested with
+  (`UI-ROUTE-RATATUI.md`, "Prerequisite: the `terminal` tool").
+- **Do not start before the owner approves M0** (a ~2-day gated spike).
+- **Verify**: the M0 gate in the route doc; the full suite unchanged throughout
+  (the tool layer imports no Textual, so its counts are the safety net).
+
+---
+
 ## P1 - patch: the `is_header_pair` adjacency edge  [open, deliberate]
 
 - **Scope**: `spit_app/tools/scripts/patch.py` (+ its test suite)
