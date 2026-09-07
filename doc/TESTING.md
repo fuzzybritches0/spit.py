@@ -30,6 +30,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:arguments | 131 |
 | unit:prompt | 33 |
 | unit:render | 278 |
+| unit:run_script | 83 |
 | unit:sandbox | 119 |
 
 (The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
@@ -39,6 +40,13 @@ up, per the rule above.)
 `unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
 `Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
 so the one string the model reads about its tools is covered without the app.
+`unit:run_script` (83) is new too: `tests/unit/run_script/` covers a tool
+*module* two ways - a spy `Run` (`stub_run.py`) for the call it makes, and the
+real bash/python3/perl for the payload it builds, because a wrong payload is a
+parse failure and only the real interpreter sees one. Its two perl checks
+report a verdict (`absent` / `ran` / `refused`) against the machine they run on,
+so the count holds wherever it runs while a perl that is installed and broken
+still fails.
 
 A count going down without you deleting tests is a bug (see TRAPS #18: the
 runner once discarded failures - fixed in `39ceb2f`). New checks only ever

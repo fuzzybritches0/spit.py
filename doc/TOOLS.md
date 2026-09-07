@@ -28,7 +28,7 @@ code. The full design-rationale log lives in `DECISIONS.md`.
 | read_url | sync | html | - | PROMPT_INST |
 | remove | async | - | path | |
 | run_command | async | text | - | wrap_script, PROMPT_INST, STREAM_TOOL_RESPONSE, MAX_SECONDS=0 |
-| run_script | async | text | - | PROMPT_INST ([interpreters]), STREAM_TOOL_RESPONSE, MAX_SECONDS=0 |
+| run_script | async | text | - | PROMPT_INST ([interpreters]), STREAM_TOOL_RESPONSE, MAX_SECONDS=0, separate_stderr, wrap_script (bash only) |
 | search_replace | async | (markdown) | path | PROMPT_INST, MAX_SECONDS=0 |
 | set_chat_description | sync | - | - | |
 | terminal | sync | text | - | tmux backend, SANDBOX=True |
@@ -50,6 +50,16 @@ Rules behind the columns:
   trailing newline of its own (decision 62, pinned by
   `tests/unit/prompt/test_prompt_assembly.py`).
 - `STREAM_TOOL_RESPONSE` tools stream their output into the chat as it arrives.
+- **the shell wrapper is bash's own**: `wrap_script()` is what carries a call's
+  exit code and shell state (exported env, cwd) out of a run, and `run_script`
+  hands it **only to bash**. A python or perl script goes to its interpreter
+  verbatim - still as a file, so the script keeps a stdin of its own - and saves
+  no shell state, though it starts from the state a previous bash call left
+  (decision 63; `run_script.SHELL_INTERPRETERS` is the one place that decides).
+- `separate_stderr` (`run_command`, `run_script`) collects stderr into a
+  `~~~~ stderr ~~~~` block after the output; both default it to true. Declaring
+  it in `DESC` without passing it to `Run` wires it to nothing - which is what
+  happened once, and decision 63 keeps the reason on the record.
 
 ## Tool file structure and test layout
 File-based tools follow this structure:
