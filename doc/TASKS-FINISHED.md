@@ -42,6 +42,16 @@ Test-count ground truth: see TESTING.md.
   `tests/unit/prompt/` (33 checks) and `tests/unit/run_script/` (83); the
   differentials are recorded in the two commits (10/33 and 25/83 fail against
   the pre-fix code).
+- **run_script enforces its `interpreters` setting** (branch
+  `fix-run-script-interpreter-allow-list`, `5494c9a` code + `52ca61c` docs) -
+  planned P5: the list that only ever filled the `[interpreters]` token is a
+  permission now, checked before the `python`->`python3` fallback and before
+  `PATH`, with a refusal that names the setting and quotes the list back. The
+  same placement closes the `TypeError` a non-string interpreter used to raise
+  inside `which()`. DECISIONS 64; 38 new checks (unit:run_script 83 -> 121),
+  differential against the previous module: 11 explicit failures - a plain `sh`
+  running, twice over - plus section 11's 16 checks never running there at all.
+  Awaiting the owner's merge; main untouched, nothing pushed.
 
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)

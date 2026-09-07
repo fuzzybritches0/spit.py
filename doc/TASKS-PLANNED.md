@@ -106,13 +106,21 @@ rationale DECISIONS 60. The drafted spec below (verbatim) stays here.
 
 ---
 
-## P5 - run_script: the `interpreters` setting restricts the prompt, not the call  [medium priority, security-adjacent]
+## P5 - DONE - run_script: the `interpreters` setting restricts the prompt, not the call  [medium priority, security-adjacent]
+
+Branch `fix-run-script-interpreter-allow-list`: `5494c9a` (the enforcement and
+38 checks, suite 83 -> 121) and `52ca61c` (DECISIONS 64, TOOLS.md,
+RUNTIME-RUN-COMMAND.md, TESTING.md). The call was made in favour of
+enforcement -- the field is a permission, so the tool obeys it, and the refusal
+quotes the list back. The question as written stays below (verbatim, with the
+`enforces nothing` of the first bullet now historical), because the reasoning
+that made it a decision is the thing worth keeping.
 
 Found while fixing the wrapper (DECISIONS 63, branch
 `fix-prompt-join-and-run-script`) and deliberately left out of that commit --
 one concern each, and this one is a policy call, not a bug fix.
 
-- **The gap**: `SETTINGS["interpreters"]` (default `bash, python3, perl`) is
+- **The gap** (as found; closed by `5494c9a`): `SETTINGS["interpreters"]` (default `bash, python3, perl`) is
   used for exactly one thing -- substituting the `[interpreters]` token in
   PROMPT_INST. The call itself checks only `shutil.which(interpreter)`, so any
   interpreter on `PATH` runs: the setting tells the model what it is *offered*
