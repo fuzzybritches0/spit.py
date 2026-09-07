@@ -60,6 +60,11 @@ def with_interpreters(present, fn):
 BASH_SCRIPT = "echo rs-one-bash"
 PY_SCRIPT = "print('rs-two-python')"
 PERL_SCRIPT = "print 'rs-two-perl\\n';"
+# `sh` is not in the default allowed list (the wrapper rule, decision 63), so a
+# call that names it has to widen the setting first -- and sections 1-4 are
+# about the payload and the switches, not about the setting. Section 9 is where
+# the setting itself is what is under test.
+WITH_SH = "bash, python3, perl, sh"
 
 print("=== 1. bash gets the wrapper (state and exit code ride on it) ===")
 run, text = build("bash", BASH_SCRIPT)
@@ -76,7 +81,7 @@ print("=== 2. every other interpreter gets its script verbatim ===")
 for interpreter, script, token in (("python3", PY_SCRIPT, "rs-two-python"),
                                    ("perl", PERL_SCRIPT, "rs-two-perl"),
                                    ("sh", "echo rs-two-sh", "rs-two-sh")):
-    run, text = build(interpreter, script)
+    run, text = build(interpreter, script, allowed=WITH_SH)
     check(f"t2-{interpreter}-built", run is not None, True)
     check(f"t2-{interpreter}-verbatim", run.script, script)
     check(f"t2-{interpreter}-no-trailer", "EXIT_CODE" in run.script, False)
@@ -95,7 +100,8 @@ run, text = build("python3", PY_SCRIPT, separate_stderr=False)
 check("t3-false-reaches-run", run.kwargs.get("separate_stderr"), False)
 run, text = build("bash", BASH_SCRIPT, separate_stderr=True)
 check("t3-true-reaches-run", run.kwargs.get("separate_stderr"), True)
-run, text = build("sh", "echo rs-three-sh", separate_stderr=False)
+run, text = build("sh", "echo rs-three-sh", allowed=WITH_SH,
+                  separate_stderr=False)
 check("t3-switch-applies-to-a-wrapped-call-too",
       run.kwargs.get("separate_stderr"), False)
 
@@ -117,16 +123,27 @@ check("t4-settings-restored-after-an-override",
 
 print()
 print("=== 5. which interpreter actually runs ===")
+# `python` appears in the allowed string here because section 9 is where the
+# setting is under test; here the question is only the fallback, so the name has
+# to be one the tool would accept at all in the first place.
+PYTHON_ALLOWED = "bash, python, python3, perl"
 run, text = with_interpreters({"python3"},
-                              lambda: build("python", "print('rs-five')"))
-check("t5-python-mapped-when-python-absent", run.cmd, "python3")
+                              lambda: build("python", "print('rs-five')",
+                                            allowed=PYTHON_ALLOWED))
+check("t5-python-mapped-when-python-absent", run.cmd if run else None, "python3")
 run, text = with_interpreters({"python", "python3"},
-                              lambda: build("python", "print('rs-five')"))
-check("t5-python-kept-when-present", run.cmd, "python")
-run, text = with_interpreters({"python3"}, lambda: build("cobol", "x = 1"))
-check("t5-unknown-interpreter-refused", run, None)
-check("t5-unknown-interpreter-says-so", "not found" in text, True)
-check("t5-unknown-interpreter-ran-nothing", "SPY-RAN-THIS" in text, False)
+                              lambda: build("python", "print('rs-five')",
+                                            allowed=PYTHON_ALLOWED))
+check("t5-python-kept-when-present", run.cmd if run else None, "python")
+# t5-unknown-interpreter-* pinned "cobol is not on PATH". A name outside the
+# allowed list never reaches PATH now (section 9 refuses it), so the trio is
+# re-pinned to what `not found` means today: allowed by the setting, missing on
+# the machine. The refusal for a name outside the list is t9's, with its own
+# wording checked there.
+run, text = with_interpreters(set(), lambda: build("python3", PY_SCRIPT))
+check("t5-allowed-but-missing-refused", run, None)
+check("t5-allowed-but-missing-says-so", "not found" in text, True)
+check("t5-allowed-but-missing-ran-nothing", "SPY-RAN-THIS" in text, False)
 
 print()
 print("=== 6. script is the script itself, or the path of a file ===")
@@ -174,6 +191,84 @@ for label, blank in (("empty", ""), ("whitespace", "  \n\t\n")):
     check(f"t8-{label}-refused", run, None)
     check(f"t8-{label}-says-so", "ERROR" in text and "empty" in text, True)
     check(f"t8-{label}-ran-nothing", "SPY-RAN-THIS" in text, False)
+
+print()
+print("=== 9. the `interpreters` setting decides what runs ===")
+for name, script in (("bash", BASH_SCRIPT), ("python3", PY_SCRIPT),
+                     ("perl", PERL_SCRIPT)):
+    run, text = build(name, script)
+    check(f"t9-default-list-allows-{name}", run is not None, True)
+run, text = build("cobol", "x = 1")
+check("t9-outside-the-list-refused", run, None)
+check("t9-refusal-says-not-allowed", "not an allowed interpreter" in text, True)
+check("t9-refusal-names-the-setting", "`interpreters` setting" in text, True)
+check("t9-refusal-lists-what-is-allowed", "bash, python3, perl" in text, True)
+check("t9-refusal-ran-nothing", "SPY-RAN-THIS" in text, False)
+check("t9-refusal-does-not-probe-path", "not found" in text, False)
+check("t9-refusal-reads-no-script-file", "Reading script from file" in text, False)
+# `sh` is the sharp case: it is installed on every machine that runs these
+# tests and the default setting does not name it, so this is the check where the
+# setting -- not PATH -- is what refuses. `cobol` above only proves the refusal
+# is well-worded, because an uninstalled name is refused either way.
+run, text = build("sh", "echo rs-nine")
+check("t9-installed-but-unlisted-refused", run, None)
+check("t9-unlisted-ran-nothing", "SPY-RAN-THIS" in text, False)
+check("t9-unlisted-names-what-is-allowed", "bash, python3, perl" in text, True)
+run, text = with_interpreters({"bash", "ruby"},
+                              lambda: build("ruby", "puts 'rs-nine'",
+                                            allowed="bash, ruby"))
+check("t9-user-widening-opens-the-list", run.cmd if run else None, "ruby")
+run, text = build("sh", "echo rs-nine", allowed=WITH_SH)
+check("t9-widened-name-runs", run.cmd if run else None, "sh")
+run, text = build("python3", PY_SCRIPT, allowed="bash")
+check("t9-user-narrowing-holds", run, None)
+check("t9-narrowing-lists-only-what-is-left", "allows bash." in text, True)
+
+print()
+print("=== 10. the name that is checked is the name that was asked ===")
+run, text = with_interpreters({"python3"}, lambda: build("python", PY_SCRIPT))
+check("t10-python-outside-the-list-refused", run, None)
+check("t10-refusal-quotes-the-asked-name", "`python` is not an allowed" in text, True)
+check("t10-the-fallback-did-not-answer-for-it", "python3 is not an allowed" in text,
+      False)
+run, text = with_interpreters({"python3"},
+                              lambda: build("python", PY_SCRIPT,
+                                            allowed="bash, python"))
+check("t10-an-allowed-python-still-resolves", run.cmd if run else None, "python3")
+check("t10-and-says-what-ran", "SPY-RAN-THIS" in text, True)
+
+print()
+print("=== 11. the shape of the setting string ===")
+parse = run_script.allowed_interpreters
+check("t11-default", parse(run_script.ALLOWED), ["bash", "python3", "perl"])
+check("t11-no-commas", parse("bash python3"), ["bash", "python3"])
+check("t11-one-per-line", parse("bash\npython3\nperl\n"), ["bash", "python3", "perl"])
+check("t11-stray-and-empty-entries-dropped", parse(" bash ,,perl  "), ["bash", "perl"])
+check("t11-empty-allows-nothing", parse(""), [])
+run, text = build("python3", PY_SCRIPT, allowed="   ")
+check("t11-blank-setting-refuses", run, None)
+check("t11-blank-setting-says-why", "the setting is empty" in text, True)
+check("t11-names-are-case-sensitive", parse("BASH"), ["BASH"])
+run, text = build("bash", BASH_SCRIPT, allowed="BASH")
+check("t11-a-name-is-a-name", run, None)
+check("t11-typo-is-listed-back", "allows BASH." in text, True)
+run, text = build("/usr/bin/python3", PY_SCRIPT)
+check("t11-an-absolute-path-is-its-own-name", run, None)
+# which() raises TypeError on anything that is not a name, so the pre-fix tool
+# died with a traceback inside the tool on this call (measured: TypeError,
+# "expected str, bytes or os.PathLike object, not list"). The refusal is the
+# same refusal as any other name that is not on the list.
+run, text = build(["python3"], PY_SCRIPT)
+check("t11-a-value-that-is-not-a-name-is-refused", run, None)
+check("t11-and-reaches-no-which", "not an allowed interpreter" in text, True)
+# the same rule on the other side of the comparison: a settings file hand-edited
+# into a list or a number is quoted back as the allow-list instead of raising
+# AttributeError on .replace() inside the tool.
+run, text = build("bash", BASH_SCRIPT, allowed=["bash"])
+check("t11-a-malformed-setting-refuses", run, None)
+check("t11-and-quotes-the-value-back", "['bash']" in text, True)
+run, text = build("bash", BASH_SCRIPT, allowed=7)
+check("t11-a-number-setting-refuses", run, None)
 
 print()
 print("==============================")

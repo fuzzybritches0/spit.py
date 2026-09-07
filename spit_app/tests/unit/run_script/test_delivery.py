@@ -95,7 +95,9 @@ with tempfile.TemporaryDirectory() as home:
 print()
 print("=== 3. A script that is not a shell still gets stderr where it belongs ===")
 with tempfile.TemporaryDirectory() as home:
-    built, text = build("sh", "echo rs-three-sh")
+    # `sh` has to be named in the `interpreters` setting to reach an interpreter
+    # at all; what this section is about is what it is handed once it does.
+    built, text = build("sh", "echo rs-three-sh", allowed="bash, sh")
     proc = execute("sh", built.script, home)
     check("t3-sh-exit-code", proc.returncode, 0)
     check("t3-sh-own-output", "rs-three-sh" in proc.stdout, True)

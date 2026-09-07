@@ -71,11 +71,20 @@ def call(user_app=None, **arguments):
     return output, SpyRun.built
 
 
-def build(interpreter, script, **arguments):
+def app_with(interpreters):
+    """An app whose `interpreters` user setting says `interpreters`."""
+    return stub_app({run_script.NAME: {"interpreters": {"value": interpreters}}})
+
+
+def build(interpreter, script, allowed=None, **arguments):
     """The call a tool invocation makes: (SpyRun or None, yielded text).
 
     None means nothing was run -- the tool refused -- and every caller says so
     explicitly rather than reading attributes off a missing run.
+    `allowed`, when given, is the `interpreters` setting the call runs under;
+    without it the module default applies.
     """
-    text, builds = call(interpreter=interpreter, script=script, **arguments)
+    user_app = app_with(allowed) if allowed is not None else None
+    text, builds = call(user_app, interpreter=interpreter, script=script,
+                        **arguments)
     return (builds[0] if len(builds) == 1 else None), text
