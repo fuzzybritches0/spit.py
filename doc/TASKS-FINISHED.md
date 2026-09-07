@@ -29,6 +29,19 @@ Test-count ground truth: see TESTING.md.
   (not a diff - a rename changes no bytes) - full rationale DECISIONS 60,
   spec TOOLS.md #14; `tests/tools/rename/` 68 checks (18 numbered
   sections, error paths dominate by design).
+- **Prompt assembly and the run_script wrapper** (branch
+  `fix-prompt-join-and-run-script`: `94b68a9` code, `451a50a` code, `e5e80ed`
+  + `850c2d1` + `4907f0f` docs; awaiting the owner's merge, never pushed).
+  The model now gets **one block per tool**: `work.py` owns every line break of
+  the assembled prompt (DECISIONS 62) - before, 1 of 19 `## <tool>` headings
+  started a line, so the tool boundaries it reads were invisible. And
+  `run_script` gives the bash wrapper to **bash only**, with `separate_stderr`
+  actually reaching `Run` (DECISIONS 63) - before, python3 and perl produced
+  nothing but a SyntaxError quoting the trailer, because the wrapper is bash and
+  they parse the whole file before running any of it. New suites
+  `tests/unit/prompt/` (33 checks) and `tests/unit/run_script/` (83); the
+  differentials are recorded in the two commits (10/33 and 25/83 fail against
+  the pre-fix code).
 
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)
