@@ -143,6 +143,23 @@ def send_raw(app, name: str, keys: str, literal: bool) -> None:
     pane_of(app, name).send_keys(keys, enter=False, literal=literal)
 
 
+def window_exists(app, name: str) -> bool:
+    """Is the tmux window still there -- WITHOUT the tool's bookkeeping side effect.
+
+    pane_active() forgets a window it finds dead, which is its job in production
+    and a trap in a test: a test that polls it to wait for a session to die has
+    quietly cleaned the registry, and the code under test then never meets the
+    dead entry it is supposed to survive. Waiting on this instead leaves the
+    registry untouched, so the dead window is still in it when the tool is called.
+    """
+    chat = app.tmux.get("chat1", {})
+    window = chat.get("windows", {}).get(name)
+    if window is None:
+        return False
+    chat["session"].refresh()
+    return window in chat["session"].windows
+
+
 def kill_window(app, name: str) -> None:
     """Close the tmux window the way a dying shell does, from outside the tool."""
     window = app.tmux["chat1"]["windows"][name]

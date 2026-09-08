@@ -7,6 +7,26 @@ KEYS = ["Up", "Down", "Left", "Right", "Space", "Tab", "Delete", "End", "Enter",
         "PgDn", "PgUp", "PageUp"]
 MODS = ["C-", "S-", "M-"]
 
+def pane_active(tmux: dict, chat_id: str, name: str) -> bool:
+    chat = tmux.get(chat_id)
+    if not chat:
+        return False
+    windows = chat.get("windows", {})
+    if not name in windows:
+        return False
+    chat["session"].refresh()
+    if windows[name] in chat["session"].windows:
+        return True
+    del windows[name]
+    return False
+
+def live_window_names(tmux: dict, chat_id: str) -> list:
+    # the names are snapshotted first: pane_active() drops a dead window from the
+    # very dict a listing loop walks, and a dict that changes size mid-iteration
+    # raises RuntimeError out of what is supposed to be a read-only listing.
+    return [name for name in list(tmux.get(chat_id, {}).get("windows", {}))
+            if pane_active(tmux, chat_id, name)]
+
 class Terminal(CommonMixIn):
     def __init__(self, app, chat_id: str, sandbox: bool = True) -> None:
         super().__init__(app, sandbox, chat_id)
@@ -49,16 +69,7 @@ class Terminal(CommonMixIn):
         windows[name] = self.tmux[self.chat_id]["session"].new_window(attach=True, window_shell=cmd_args)
 
     def pane_active(self, name: str) -> bool:
-        chat = self.chat_state()
-        windows = chat.get("windows", {})
-        if not name in windows:
-            return False
-        session = chat["session"]
-        session.refresh()
-        if windows[name] in session.windows:
-            return True
-        del windows[name]
-        return False
+        return pane_active(self.tmux, self.chat_id, name)
 
     def term_send_keys(self, name: str, keys: str, literal: bool) -> bool:
         if not self.pane_active(name):
