@@ -76,12 +76,12 @@ class Terminal(CommonMixIn):
             return self.term_send_keys(name, inp, True)
         if "Esc" in inp and not "Escape" in inp:
             inp = inp.replace("Esc", "Escape")
-        _inp = inp
+        key_body = inp
         for key in KEYS:
-            _inp.replace(key, "")
+            key_body = key_body.replace(key, "")
         for mod in MODS:
-            _inp.replace(mod, "")
-        if len(_inp) <= 1:
+            key_body = key_body.replace(mod, "")
+        if len(key_body) <= 1:
             return self.term_send_keys(name, inp, False)
         return self.term_send_keys(name, inp, True)
 
