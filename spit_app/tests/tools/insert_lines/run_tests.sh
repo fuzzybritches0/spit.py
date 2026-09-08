@@ -233,7 +233,7 @@ count=$(grep -c $'\r' fixtures/t18-work.txt || true)
 [ "$count" -eq 0 ] && pass=$((pass+1)) || { fail=$((fail+1)); echo "FAIL: LF file gained $count CR characters"; }
 
 echo
-echo "=== 19. insert_line and patch agree byte-for-byte on every terminator ==="
+echo "=== 19. insert_lines and patch agree byte-for-byte on every terminator ==="
 roundtrip fixtures/shared-original-crlf.txt MID 2 t19a-crlf-mid
 roundtrip fixtures/shared-original-crlf.txt END 4 t19b-crlf-end
 roundtrip fixtures/shared-original-crlf.txt TOP 1 t19c-crlf-beginning

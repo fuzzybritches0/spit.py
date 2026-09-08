@@ -26,7 +26,7 @@ from spit_app.tools.run.run import get_args                   # noqa: E402
 
 DEFAULTS = {"encoding": "utf-8", "show_line_numbers": False}
 PATH_TOOLS = ["delete_lines", "diff", "file_info", "find_files", "grep",
-              "insert_line", "list_directory", "patch", "read_files", "remove",
+              "insert_lines", "list_directory", "patch", "read_files", "remove",
               "search_replace", "write_file"]
 
 pass_ = 0

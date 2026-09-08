@@ -34,7 +34,7 @@ DESC = {
 OUTPUT_TYPE_HINT = "text"
 PATH_ARGS = ["path"]
 
-PROMPT = "Use this function to read the content of one or more text files. Set show_line_numbers=true to prefix each line with a 1-based line number (useful when targeting lines by number, e.g. insert_line/delete_lines)."
+PROMPT = "Use this function to read the content of one or more text files. Set show_line_numbers=true to prefix each line with a 1-based line number (useful when targeting lines by number, e.g. insert_lines/delete_lines)."
 SANDBOX = True
 
 SETTINGS = {
