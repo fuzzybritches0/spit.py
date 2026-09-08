@@ -74,6 +74,10 @@ class Terminal(CommonMixIn):
     def term_send_keys(self, name: str, keys: str, literal: bool) -> bool:
         if not self.pane_active(name):
             return False
+        # the result is discarded on purpose: what this call is FOR is the cache
+        # it writes. Keys can kill the pane -- exit, C-d, a command that takes the
+        # shell down with it -- and the screen reported afterwards is this one.
+        # Removing it as dead code empties every dead-session message again.
         self.term_screen(name)
         self.tmux[self.chat_id]["windows"][name].panes[0].send_keys(keys, enter=False, literal=literal)
         return True
