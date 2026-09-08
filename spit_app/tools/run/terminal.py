@@ -11,7 +11,24 @@ class Terminal(CommonMixIn):
     def __init__(self, app, chat_id: str, sandbox: bool = True) -> None:
         super().__init__(app, sandbox, chat_id)
         self.tmux = app.tmux
-        self.output = ""
+
+    def chat_state(self) -> dict:
+        return self.tmux.get(self.chat_id, {})
+
+    def last_screen(self, name: str) -> str:
+        return self.chat_state().get("last_screen", {}).get(name, "")
+
+    def remember_screen(self, name: str, screen: str) -> None:
+        self.chat_state().setdefault("last_screen", {})[name] = screen
+
+    def forget_screen(self, name: str) -> None:
+        self.chat_state().get("last_screen", {}).pop(name, None)
+
+    def dead_session_message(self, name: str) -> str:
+        last_screen = self.last_screen(name)
+        if not last_screen:
+            return f"Session: {name}\n\nINFO: Session dead. It closed before anything was captured from it."
+        return f"{last_screen}\n\nINFO: Session dead."
 
     def term_new(self, name: str) -> None|str:
         ret = self.check_bwrap(["bash"])
@@ -27,18 +44,21 @@ class Terminal(CommonMixIn):
             self.tmux[self.chat_id]["server"] = libtmux.Server()
             self.tmux[self.chat_id]["session"] = self.tmux[self.chat_id]["server"].new_session()
             self.tmux[self.chat_id]["windows"] = {}
+        self.forget_screen(name)
         windows = self.tmux[self.chat_id]["windows"]
         windows[name] = self.tmux[self.chat_id]["session"].new_window(attach=True, window_shell=cmd_args)
 
     def pane_active(self, name: str) -> bool:
-        if not name in self.tmux[self.chat_id]["windows"]:
+        chat = self.chat_state()
+        windows = chat.get("windows", {})
+        if not name in windows:
             return False
-        self.tmux[self.chat_id]["session"].refresh()
-        if self.tmux[self.chat_id]["windows"][name] in self.tmux[self.chat_id]["session"].windows:
+        session = chat["session"]
+        session.refresh()
+        if windows[name] in session.windows:
             return True
-        else:
-            del self.tmux[self.chat_id]["windows"][name]
-            return False
+        del windows[name]
+        return False
 
     def term_send_keys(self, name: str, keys: str, literal: bool) -> bool:
         if not self.pane_active(name):
@@ -67,7 +87,7 @@ class Terminal(CommonMixIn):
 
     def term_screen(self, name: str) -> str:
         if not self.pane_active(name):
-            return f"{self.output}\n\nINFO: Session dead."
+            return self.dead_session_message(name)
         pane = self.tmux[self.chat_id]["windows"][name].panes[0]
         _output = pane.capture_pane(preserve_trailing=True, join_wrapped=True)
         try:
@@ -75,7 +95,7 @@ class Terminal(CommonMixIn):
             y = int(pane.display_message('#{cursor_y}', get_text=True)[0])
         except:
             del self.tmux[self.chat_id]["windows"][name]
-            return f"{self.output}\n\nINFO: Session dead."
+            return self.dead_session_message(name)
         output = f"Session: {name}\n\n"
         count_y = 0
         for line in _output:
@@ -87,4 +107,5 @@ class Terminal(CommonMixIn):
             else:
                 output += line + "\n"
             count_y += 1
-        return self.output
+        self.remember_screen(name, output)
+        return output

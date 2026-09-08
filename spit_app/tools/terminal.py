@@ -76,8 +76,8 @@ def call(app, arguments: dict, chat_id) -> str:
         for inp in arguments["input"]:
             if not terminal.term_input(name, inp):
                 if not count == len(arguments["input"])-1:
-                    return f"{terminal.output}\n\nWARNING: unconsumed input: `{arguments['input'][count:]}`!"
-                return f"{terminal.output}"
+                    return f"{terminal.last_screen(name)}\n\nWARNING: unconsumed input: `{arguments['input'][count:]}`!"
+                return f"{terminal.last_screen(name)}"
             count +=1
     delay = 1
     if "delay" in arguments and arguments["delay"]:
