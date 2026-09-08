@@ -65,6 +65,15 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
   (`> log 2>&1`) and a session dying unattended recovers nothing.
 - These tools bypass `scripts/`: they call the Run class's tmux methods
   (`term_new`, `term_input`, `term_screen`) directly from a sync `call()`.
+- A sync `call()` does not run on the UI's event loop:
+  `tool_call.ToolCall.call()` dispatches it through `await asyncio.to_thread(...)`
+  (`d455761`), which is why `delay` (default 1 s) costs the loop a 22 ms worst gap
+  and not the second it is often blamed for. Keep it that way: libtmux spawns the
+  `tmux` binary on every round-trip — a plain `term_screen()` is ~46 ms here and,
+  run on the loop, stalls it by about its own duration — so a generator-form
+  `call()` would put the tmux I/O on the UI thread while the sleep it meant to
+  rescue was already off it. DECISIONS 68, pinned by
+  `tests/unit/terminal/test_event_loop.py`.
 
 ## Where the knowledge lives
 
@@ -73,12 +82,14 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
   `test_delivery.py`, `test_prompt.py` (PROMPT assertions) - 119 checks, all
   no-Textual via `stub_app.run_as_file(script, home, root, timeout, **kw)`
   returning `(output, leftovers, elapsed)`.
-- Terminal behaviour specs: `spit_app/tests/unit/terminal/` - 98 checks against
+- Terminal behaviour specs: `spit_app/tests/unit/terminal/` - 119 checks against
   a **real tmux on a private socket**. `test_screen.py` the capture and the
   cross-call cache, `test_keys.py` keys versus literal text (with a control
   showing literal bytes do NOT interrupt), `test_lsterm.py` the listing
   surviving dead sessions, `test_tool_call.py` `delay` and the errors `call()`
-  must report rather than raise. Needs libtmux, so it needs the test venv:
+  must report rather than raise, `test_event_loop.py` the dispatcher's
+  `to_thread` hop and the event loop's heartbeat through a call (with the control
+  that reproduces the freeze on demand). Needs libtmux, so it needs the test venv:
   `bash spit_app/tests/create_venv.sh` (TRAPS #19, TESTING.md).
 - Commit history worth reading: `fix-run-command-*` branches merged in
   `3767dac` + `fb15e08` + `d2121b1` + `3fa330a` + `05ffc9a`/`68cff03`.

@@ -32,7 +32,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 119 |
-| unit:terminal | 98 |
+| unit:terminal | 119 |
 
 ## The test venv (unit:terminal needs it)
 
@@ -59,6 +59,10 @@ on a machine with the venv and no app runtime.
 (The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
 the failure-counting fix raised it; the table lagged. Counts only ever go
 up, per the rule above.)
+
+(`unit:terminal` was re-measured at 119 when `test_event_loop.py` landed on the
+`task-terminal-empty-output` branch: 98 → 119 by addition alone, every other row
+byte-for-byte where it was.)
 
 `unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
 `Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
@@ -134,6 +138,14 @@ harness **absolute** fixture paths.
   polling it has cleaned the registry the code under test needs dirty —
   `window_exists()` is the non-mutating probe. Both were found by running the
   suite against the unfixed code and watching it pass when it should have failed.
+  `test_event_loop.py` (21 checks, the row's 98 → 119) is the one file that
+  drives the *dispatcher* — the real `tool_call.ToolCall.call()`, the thing
+  `chat/work.py` awaits — rather than calling `call()` directly, because the
+  property it pins belongs to the dispatcher's `asyncio.to_thread` hop: a
+  `delay=1` call costs the event loop a 22 ms worst gap, not a second. It carries
+  the control that produces the freeze on demand (the hop removed), and its
+  section 3 compares two gaps measured in the same process (medians of three), so
+  the assertion is about the hop and not about how fast tmux is on the box.
 - `tests/unit/sandbox/` - script wrapper and delivery: trailer, state
   (env/cwd carry-over), streams (stderr separation), lifecycle (background -
   MUST use sandbox=False, TRAPS #6), delivery, prompt (asserts the

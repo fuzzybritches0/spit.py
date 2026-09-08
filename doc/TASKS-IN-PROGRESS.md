@@ -5,8 +5,10 @@
 > `TASKS-FINISHED.md`, "the `terminal` tool's empty response and its four
 > siblings". What is left of it is here as followups 1-4: `remain-on-exit`
 > (designed, measured, **not started** — it waits for the owner's explicit Go),
-> the blocking `time.sleep()` in the tool's `call()`, one PROMPT question for the
-> owner, and the capture/geometry list the ratatui harness will need. The
+> the `time.sleep()` in the tool's `call()` — measured, **not** a UI freeze: the
+> dispatcher already runs a sync `call()` off the loop, and what is left of that
+> entry is cancellation —, one PROMPT question for the owner, and the
+> capture/geometry list the ratatui harness will need. The
 > streaming-render entry is code-complete and merged; only the owner's manual
 > checklist in the running app is outstanding — **nobody else should sign it off**.
 
@@ -73,23 +75,50 @@ session that dies on its own reports its final screen **and** an exit status.
 
 ---
 
-## P0b-followup 2 - the tool's `time.sleep()` blocks the UI event loop  [medium, known, deliberately left]
+## P0b-followup 2 - the tool's `time.sleep()`: the freeze is not in the shipped path  [measured, code unchanged; what is left is cancellation]
 
-`spit_app/tools/terminal.py:call()` is synchronous and sleeps for `delay`
-(default 1 s) before capturing: a 1-second freeze of the Textual UI on every
-`terminal` call, on an app whose complaint list starts with "the UI is
-sluggish". Recorded in the original P0b entry as *out of scope for the fix and
-fatal for the migration*; the fix went in without touching it, so this is the
-debt, still unpaid.
+The claim was that `spit_app/tools/terminal.py:call()` sleeps for `delay`
+(default 1 s) before capturing and so freezes the Textual UI for a second on
+every `terminal` call, on an app whose complaint list starts with "the UI is
+sluggish". Measured over the path the app actually awaits — `chat/work.py:118` →
+`tool_call.ToolCall.call()` — it does not happen, and the reason is not in the
+tool: the dispatcher routes a plain function call through
+`await asyncio.to_thread(...)` (`d455761`, 2026-07-28), so the sleep sleeps in
+the worker pool. Measured here (the real `ToolCall` loading the real tools
+directory, a real tmux, a 20 ms heartbeat): `delay=1` → 1.05 s of wall clock and
+**53 loop ticks, worst gap 22 ms**; `delay=2` → 101 ticks, worst gap 22 ms. The
+**same dispatcher with `to_thread` replaced by a direct call is 1 tick and a
+1065 ms gap** — the reported freeze, produced by removing the hop.
 
-Fix shape: `call_async_generator` (the tool contract supports it — CONVENTIONS)
-with `await asyncio.sleep(delay)`, so the wait yields to the event loop. Pairs
-naturally with enhancement 5 (`wait_for` instead of blind sleeps) — do them
-together and the streaming tests stop needing sleeps at all.
+Pinned by `tests/unit/terminal/test_event_loop.py` (21 checks, `unit:terminal`
+98 → 119): section 1 the shipped path, section 2 the control, section 3 what the
+tmux round-trips cost, section 4 which branch of the dispatcher the shipped
+tools land on. The differential — `to_thread` removed process-wide — turns three
+of the new checks red while the control stays green in both configurations, so
+section 1 is a probe that has been shown catching the stall, not one reporting
+an absence it cannot see (DECISIONS 67, applied forwards).
 
-**Verify**: full suite unchanged; a check that the call no longer blocks
-(measure the event loop, not the wall clock) — and note `tests/unit/terminal/`
-drives `call()` directly, so it will not see an event-loop regression on its own.
+**Do not take the prescribed fix.** `call_async_generator` with
+`await asyncio.sleep(delay)` would move onto the UI thread the part that really
+does block: libtmux spawns the `tmux` binary on every round-trip, and a plain
+`term_screen()` measures 46 ms here, stalling the loop by 65 ms when it runs on
+the loop — against a 22 ms worst gap with the same work running off it. The
+generator rewrite installs the freeze it was meant to remove. DECISIONS 68.
+
+What survives of the complaint, and none of it is blocking:
+
+- an in-flight `terminal` call cannot be aborted: the worker thread cannot be
+  interrupted and `delay` is a blind wait. That is enhancement 5 (`wait_for`)
+  together with enhancement 10 (cancellable) — done together the wait stops
+  being a sleep *and* stops holding a thread, and nothing moves onto the loop.
+- one pool thread is held per call for the duration of `delay` (default
+  executor: `min(32, cpu+4)` threads). Occupancy, not a frozen UI.
+- `tests/unit/terminal/` drives `call()` directly everywhere else, so the
+  dispatcher's branch is covered by exactly this one file: a change to
+  `tool_call.py`'s dispatch is now seen, for the terminal tools, by it.
+
+**Verify**: done — `unit:terminal` 119, FAIL 0, every other row unmoved, no tool
+code touched and no behaviour of the tool's own to sign off.
 
 ---
 
