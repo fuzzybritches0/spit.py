@@ -317,9 +317,9 @@ Would replace 3 with `new_text`. File not modified.
 **Parameters**:
 - `name` (required): The terminal session name. A new name creates a new session; an existing name sends input to that session.
 - `input` (optional): An array of string-of-characters and/or key names to send to the terminal.
-- `delay` (optional): Seconds to wait before capturing the screen after sending input. Default: `1`
+- `delay` (optional): Seconds to wait before capturing the screen after sending input. Default: `1`. Honoured exactly, including `delay: 0` for no wait at all (a non-integer value is ignored and the default applies).
 
-**Output**: The current 24×80 terminal screen with cursor position indicated by `█`. If the session has died: `INFO: Session dead.`
+**Output**: The current 24×80 terminal screen with cursor position indicated by `█`. If the session has died: the **last screen it showed**, followed by `INFO: Session dead.` — or, when nothing was ever captured from that name, the session header and a line saying so (never a blank prefix, which read as a truncation). The last screen is cached per session name in `app.tmux[chat_id]["last_screen"]`, which is what lets a later call report it; a name reused by a new session starts with an empty cache, because the dead one's screen is not this one's history (decision 66).
 
 **Architecture**:
 - Uses `libtmux` to create persistent tmux sessions (one tmux session per chat conversation)

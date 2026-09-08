@@ -32,6 +32,29 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 119 |
+| unit:terminal | 98 |
+
+## The test venv (unit:terminal needs it)
+
+`unit:terminal` drives a **real tmux** through `libtmux`, and the bare system
+python3 has no app dependencies (TRAPS #19), so it needs a venv. Build it once:
+
+```
+bash spit_app/tests/create_venv.sh        # -> ~/.venv-spit, everything in requirements.txt
+```
+
+The `unset PIP_USER PIP_BREAK_SYSTEM_PACKAGES` inside that script is not
+decoration: this environment exports both so installs work against the system
+interpreter, and a virtualenv refuses a `--user` install outright, so without
+them the very first install fails and pip leaves an empty venv.
+
+The suite picks its interpreter in a fixed order -- `$SPIT_TEST_PYTHON`, then
+`~/.venv-spit/bin/python3`, then `python3` if it imports libtmux -- and **a
+missing dependency is a FAIL, not a skip**. A suite that prints
+`PASS: 0  FAIL: 0` because it could not start is indistinguishable from one that
+ran and passed, which is the mistake `39ceb2f` fixed for discarded failures; this
+row goes red and names the command that fixes it. Every suite here still passes
+on a machine with the venv and no app runtime.
 
 (The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
 the failure-counting fix raised it; the table lagged. Counts only ever go
@@ -98,6 +121,19 @@ harness **absolute** fixture paths.
 ## Unit suites
 
 - `tests/unit/arguments/` - schema coercion, paths, pipeline (131 checks).
+- `tests/unit/terminal/` - the tmux backend and the two tools on it, against a
+  **real tmux on a private socket** (`libtmux.Server` is wrapped to pass
+  `socket_name`, so a user's own server never gets a window created in it or
+  input sent to it). `stub_app.py` supplies the three things `Terminal` asks the
+  app for and nothing else, plus `wait_for`-style polling — every timing
+  expectation is a poll with a ceiling, never a fixed sleep. Two traps it had to
+  step around: `capture_pane()` returns **lines**, so `token in lines` asks
+  whether a line *equals* the token and silently never matches a token sharing
+  its line with a prompt (`screen_of()` joins first); and `pane_active()`
+  **forgets** a dead window as a side effect, so a test that waits for death by
+  polling it has cleaned the registry the code under test needs dirty —
+  `window_exists()` is the non-mutating probe. Both were found by running the
+  suite against the unfixed code and watching it pass when it should have failed.
 - `tests/unit/sandbox/` - script wrapper and delivery: trailer, state
   (env/cwd carry-over), streams (stderr separation), lifecycle (background -
   MUST use sandbox=False, TRAPS #6), delivery, prompt (asserts the

@@ -107,23 +107,63 @@ MUST use `sandbox=False` (TRAPS #6).
 
 ### Done / Left / Verify
 
-- **Branch**: `task-terminal-empty-output` (this entry). No code changed yet.
+- **Branch**: `task-terminal-empty-output`. Commits, in order:
+  - `e699bb4` terminal: return the captured screen, and keep it per chat
+    (+ `tests/unit/terminal/`: `stub_app.py`, `run_tests.sh`, `test_screen.py`,
+    and `tests/create_venv.sh`)
+  - `1984851` terminal: send a key chord as a key, not as literal text
+    (+ `test_keys.py`, 30 checks)
+  - `c948b3e` lsterm: list the sessions without dying on one that died
+    (+ `test_lsterm.py`, 21 checks) — a **fifth defect**, found by probing
+    rather than by reading: the listing raised `RuntimeError` on any dead
+    session. DECISIONS 67.
+  - `b5621fe` terminal: honour delay, and report a session that could not start
+    (+ `test_tool_call.py`, 14 checks)
 - **Scope**: `spit_app/tools/run/terminal.py`, `spit_app/tools/terminal.py`,
-  new `spit_app/tests/unit/terminal/`, `run_tests.sh` (new suite row), TESTING.md
-  ground-truth row, and optionally `lsterm.py`'s duplicated `pane_active`.
-- **Done**: root cause located and quoted; three further defects in the same
-  file identified (chords sent literally, `dealy` typo + `delay=0`, discarded
-  `term_new` error → `KeyError`); coverage gap confirmed by grep; migration
-  requirements written up below.
-- **Left** (first sitting): confirm the running copy matches this tree, then
-  reproduce all four symptoms, then fix + write the suite. Fix `term_screen`'s
-  return and the `self.output` contract **together**, or the dead-pane message
-  stays empty and only the happy path appears fixed.
-- **State hazards**: none. Tree clean; no code touched; no fixtures.
-- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` — existing
-  counts must not move (127/24/30/119/80/32/68/29 + 131/33/278/121/119) and a
-  new `unit:terminal` row must appear with FAIL 0; plus manual: a `terminal`
-  call shows its screen in the chat, and `C-c` interrupts a `sleep 60`.
+  `spit_app/tools/lsterm.py`, `spit_app/tests/unit/terminal/` (4 files +
+  stub + runner), `spit_app/tests/create_venv.sh`, docs.
+- **Done** — all four reported symptoms fixed and **measured**, each against
+  the pre-fix code as well as after it:
+  - Empty response: `term_screen()` returns the local it built, and the last
+    screen is cached in `app.tmux[chat_id]["last_screen"][name]` — *not* on the
+    instance, because a `Terminal` is built per call, so `self.output` could
+    never be "the last screen" across calls. DECISIONS 66.
+  - Chords: assigning the result of the strip (`key_body = key_body.replace(...)`)
+    makes `C-c` a signal. Proved by effects, since a control char is invisible:
+    `pane_current_command` leaves `sleep`, bash's Ctrl-A puts an X at the front
+    of a line, `C-d` ends the shell — **plus a control** (t5) showing the same
+    bytes as text do *not* interrupt, so the suite cannot pass on a pane where
+    nothing kills anything.
+  - `delay`: the `dealy` typo and the truthiness test on `delay=0` both fixed.
+  - Missing bwrap: `term_new()`'s error is returned; the unreachable-by-accident
+    `windows = ...` line that raised the `KeyError` is gone.
+  - Dead pane: reports the cached screen verbatim + `INFO: Session dead.`, with
+    an explicit "closed before anything was captured" instead of a blank prefix.
+  - Coverage gap closed: `unit:terminal` 98 checks, real tmux on a **private
+    socket** (`libtmux.Server` wrapped to pass `socket_name`) — a test suite has
+    no business creating windows in the user's server.
+- **Left**:
+  1. **`remain-on-exit`** — measured and ready, **awaiting the owner's Go** as
+     its own commit. Today a dead window's content is gone with it (verified:
+     server exits, `no server running`), so the cached screen is all a dead
+     session can say. With `remain-on-exit on` the pane survives: content
+     capturable, `#{pane_dead}` and `#{pane_dead_status}` give the exit code,
+     and history reaches past the visible 24 lines. The cost is that
+     `pane_active()`'s membership test would call a dead pane **live**, so
+     liveness moves to `pane_dead` — which the fix now does in one function
+     (DECISIONS 67), and `lsterm`'s "names are reusable after death" rule has to
+     move with it.
+  2. `time.sleep(delay)` still blocks the UI event loop (entry above: out of
+     scope for the fix, fatal for the ratatui migration → enhancement 10).
+  3. Owner-side manual check in the running app: a `terminal` call shows its
+     screen in chat, `C-c` interrupts a `sleep 60`, and a dead session shows its
+     last screen. Automated analogues exist for all three.
+- **State hazards**: none. Tree clean at every commit; no fixtures used; no
+  suite red. The venv at `~/.venv-spit` is machine state, not repo state — see
+  TESTING.md if `unit:terminal` reports FAIL 1 on a fresh machine.
+- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` —
+  127/24/30/119/80/32/68/29 + 131/33/278/121/119 **unchanged** and
+  `unit:terminal: PASS: 98 FAIL: 0`.
 
 ### Enhancements this tool needs *for* the ratatui migration
 

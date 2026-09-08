@@ -45,9 +45,22 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
 
 - `libtmux`; **one tmux session per chat conversation**, one window per named
   terminal running bash (bwrap-sandboxed by default).
-- Screen capture: 24x80, **no scrollback**; cursor rendered as `█`. A dead
-  session reports `INFO: Session dead.` and is auto-cleaned, so names are
-  reusable; `lsterm` lists only live sessions.
+- Screen capture: 24x80, **no scrollback**; cursor rendered as `█`. The last
+  screen of each name is cached in `app.tmux[chat_id]["last_screen"][name]` —
+  on the app, not on the `Terminal`, because `tools/terminal.py` builds a new
+  `Terminal` per call and an instance attribute cannot remember anything across
+  calls (decision 66). A dead session reports that cached screen plus
+  `INFO: Session dead.` and is auto-cleaned, so names are reusable — and
+  `term_new()` clears the slot, so a reused name never reports the dead one's
+  screen. `lsterm` lists only live sessions, from `live_window_names()`, which
+  snapshots the names before checking any of them: the liveness check deletes a
+  dead window from the dict being walked, and doing that mid-iteration is the
+  `RuntimeError` that used to kill the listing (decision 67).
+- Liveness lives in ONE function, `run/terminal.py:pane_active()` — `lsterm`
+  had a private copy and it is the thing that mutates. Tests that need to wait
+  for a session to die without cleaning up behind it use a non-mutating probe
+  (`tests/unit/terminal/stub_app.py:window_exists`), otherwise the setup performs
+  the fix and the test passes against broken code.
 - Output that scrolls off is lost; long-lived/verbose processes must redirect
   (`> log 2>&1`) and a session dying unattended recovers nothing.
 - These tools bypass `scripts/`: they call the Run class's tmux methods
@@ -57,9 +70,16 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
 
 - Behaviour specs: `spit_app/tests/unit/sandbox/test_trailer.py`,
   `test_state.py`, `test_streams.py`, `test_lifecycle.py`,
-  `test_delivery.py`, `test_prompt.py` (PROMPT assertions) - 103 checks, all
+  `test_delivery.py`, `test_prompt.py` (PROMPT assertions) - 119 checks, all
   no-Textual via `stub_app.run_as_file(script, home, root, timeout, **kw)`
   returning `(output, leftovers, elapsed)`.
+- Terminal behaviour specs: `spit_app/tests/unit/terminal/` - 98 checks against
+  a **real tmux on a private socket**. `test_screen.py` the capture and the
+  cross-call cache, `test_keys.py` keys versus literal text (with a control
+  showing literal bytes do NOT interrupt), `test_lsterm.py` the listing
+  surviving dead sessions, `test_tool_call.py` `delay` and the errors `call()`
+  must report rather than raise. Needs libtmux, so it needs the test venv:
+  `bash spit_app/tests/create_venv.sh` (TRAPS #19, TESTING.md).
 - Commit history worth reading: `fix-run-command-*` branches merged in
   `3767dac` + `fb15e08` + `d2121b1` + `3fa330a` + `05ffc9a`/`68cff03`.
 - The old `HANDOFF-run-command-leftovers.md` (deleted after absorption; see
