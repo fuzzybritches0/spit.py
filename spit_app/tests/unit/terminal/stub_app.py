@@ -36,17 +36,30 @@ import libtmux
 
 REAL_SERVER = libtmux.Server
 
+ENABLED_TOOLS = ["terminal", "lsterm"]
+
 
 def tmux_available() -> bool:
     return shutil.which("tmux") is not None
 
 
 def stub_app(root: str):
-    """The three things Terminal asks the app for, and nothing else."""
+    """The three things Terminal asks the app for, and nothing else.
+
+    Two inert extras come with it for a test that drives the dispatcher rather
+    than Terminal -- see StubChat. Nothing a test of Terminal needs changes.
+    """
 
     class StubChat:
+        # tool_call.ToolCall.call() reads chat.cs("tools") to decide whether the
+        # tool is available and touches chat.chat_view on its way without ever
+        # using it -- the callback arrives as an argument. Everything else, the
+        # "sandbox" name CommonMixIn builds its directories from above all, answers
+        # exactly as it did before.
+        chat_view = None
+
         def cs(self, key):
-            return "unittest"
+            return ENABLED_TOOLS if key == "tools" else "unittest"
 
     class StubMain:
         def __init__(self, chat):
