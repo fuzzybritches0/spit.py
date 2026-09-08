@@ -67,8 +67,9 @@ def call(app, arguments: dict, chat_id) -> str:
         return "ERROR: No session 'name' provided!"
     name = arguments["name"]
     if not chat_id in app.tmux or not name in app.tmux[chat_id]["windows"]:
-        terminal.term_new(name)
-    windows = app.tmux[chat_id]["windows"]
+        error = terminal.term_new(name)
+        if error:
+            return error
     if "input" in arguments and arguments["input"]:
         if not type(arguments["input"]) is list:
             return "ERROR: expected array for argument 'input'!"
@@ -80,8 +81,8 @@ def call(app, arguments: dict, chat_id) -> str:
                 return f"{terminal.last_screen(name)}"
             count +=1
     delay = 1
-    if "delay" in arguments and arguments["delay"]:
+    if "delay" in arguments and arguments["delay"] is not None:
         if type(arguments["delay"]) is int:
-                dealy = arguments["delay"]
+            delay = arguments["delay"]
     time.sleep(delay)
     return terminal.term_screen(name)
