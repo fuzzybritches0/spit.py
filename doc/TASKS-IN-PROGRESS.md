@@ -1,176 +1,134 @@
-# TASKS-IN-PROGRESS.md
+> **Five entries are open**: four `terminal` followups — all on this branch's
+> tail — and the streaming-render checklist. The empty-response
+> defect that used to head this file is **fixed and committed on this branch**
+> (`e699bb4`…`8f65e32`, six commits, 98 new checks) — the full record is in
+> `TASKS-FINISHED.md`, "the `terminal` tool's empty response and its four
+> siblings". What is left of it is here as followups 1-4: `remain-on-exit`
+> (designed, measured, **not started** — it waits for the owner's explicit Go),
+> the blocking `time.sleep()` in the tool's `call()`, one PROMPT question for the
+> owner, and the capture/geometry list the ratatui harness will need. The
+> streaming-render entry is code-complete and merged; only the owner's manual
+> checklist in the running app is outstanding — **nobody else should sign it off**.
 
-Tasks currently under way, with enough state for a different agent (or a
-rescheduled one) to pick up exactly where work stopped. A task is only
-"finished" when its Verify command passes on a clean tree.
+## Machine state these entries assume (none of it is in git)
 
-> **Two entries are open. Start with `P0b` — the `terminal` tool.** It is
-> broken today, and it is also the harness the UI migration will depend on.
-> The streaming-render entry below it is code-complete and merged; only the
-> owner's manual checklist in the running app is outstanding.
+- **The test venv**: `bash spit_app/tests/create_venv.sh` → `~/.venv-spit`
+  (all of `requirements.txt`). `unit:terminal` needs libtmux and reports
+  `PASS: 0  FAIL: 1` with the remedy when it cannot import it — never a silent
+  zero. `doc/TESTING.md`, "The test venv". Note the `unset PIP_USER
+  PIP_BREAK_SYSTEM_PACKAGES` inside that script: this environment exports both
+  and a virtualenv refuses a `--user` install outright.
+- **Never drive a shared tmux.** `tests/unit/terminal/stub_app.py` wraps
+  `libtmux.Server` to pass `socket_name`, so the suite runs on its own server and
+  may `kill-server` freely. A run leaves stale socket *files* under
+  `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
+  files is safe, and any new terminal test must keep both properties.
 
-## P0b - `terminal` returns an empty message container: `term_screen()` throws the screen away  [high priority, user-visible, blocks all interactive work and the UI migration]
+## P0b-followup 1 - `remain-on-exit`: let a dead session report its real last screen  [**awaiting the owner's Go — do not start without it**]
 
-Reported by the owner 2026-09-07: a `terminal` call produced an empty message
-container. Root cause found by reading the code; the fix is small, the
-diagnosis is complete, the *tests* are the work. Started on branch
-`task-terminal-empty-output`.
+Owner instruction 2026-09-07: *"Make `remain-on-exit` its own commit… Before you
+start `remain-on-exit`, come back to me and wait for my `Go!`"*. The session
+ended before the Go arrived. **It is not started and nothing in the tree
+implements it.** Get the Go, or a clear no, before touching code.
 
-### Root cause (static, certain)
+**What it buys.** The dead-session path reports the last screen *we* captured
+(decision 66 context: the cache lives in `app.tmux[chat_id]`), because with tmux
+defaults the window is destroyed when its shell exits — measured: capture fails,
+and if it was the last window the whole server goes (`no server running on
+/tmp/tmux-1000/…`). With `remain-on-exit on` the pane survives its process, so
+the report can carry the pane's **actual final screen** plus its **exit code**,
+and `capture-pane -S -N` reaches past the visible 24 lines. Measured on tmux
+3.7b: `dead=1 status=0`, `CCC-DIED-NOW` still on the screen, history recovered
+from `-S -50`, and tmux appends its own `Pane is dead (status 0, …)` line — which
+is what a test should assert the exit code from, not the tool's prose.
 
-`spit_app/tools/run/terminal.py` `term_screen()` builds the screen into the
-**local** `output` and then returns **`self.output`**, which is assigned exactly
-once — to `""` in `__init__` — and never written again:
+This is the direct answer to enhancement 8 below ("a crashed UI and an empty UI
+look identical") and it is the cheapest of them, which is why it is first.
 
-```
-$ grep -rn "self\.output" spit_app/tools/run/*.py spit_app/tools/*.py
-run/terminal.py:14:   self.output = ""            # the only write, in __init__
-run/terminal.py:70:   return f"{self.output}\n\nINFO: Session dead."
-run/terminal.py:78:   return f"{self.output}\n\nINFO: Session dead."
-run/terminal.py:90:   return self.output          # <-- the screen is `output`, not this
-```
+**The cost, and it is a real one.** `remain-on-exit` keeps the window in
+`session.windows`, so the membership test in `run/terminal.py:pane_active()`
+would call a dead pane **live**. Liveness therefore moves to `pane_dead`:
 
-So for a **live** pane the tool returns `""`, and `spit_app/tools/terminal.py`
-`call()` ends with `return terminal.term_screen(name)` → an empty tool response
-→ an empty message container. For a **dead** pane it returns
-`"\n\nINFO: Session dead."` with an empty prefix, which is why a dead session
-looks like a truncated one. The two dead-pane branches were clearly written
-expecting `self.output` to hold the last screen; nothing ever puts it there.
+- `pane_active()` — one function, shared by `terminal` and `lsterm` since
+  `c948b3e`, so there is exactly one place to change (deliberate: this decision
+  was split out of the bug fix partly because it lands cleanly on a single
+  implementation).
+- the documented contract that **names are reusable after death** and that
+  `lsterm` "lists only live sessions" (TOOLS.md 7/8, RUNTIME-RUN-COMMAND.md) —
+  both rest on the membership test and must be restated in terms of `pane_dead`.
+- `term_send_keys()` on a dead-but-retained pane: measured, tmux accepts the
+  send and delivers nothing, so the tool must refuse explicitly instead of
+  reporting success.
 
-`term_send_keys()` calls `self.term_screen(name)` and discards the result (line
-46) — the intent was surely to keep the pre-input screen for the dead-session
-message. That is the shape the fix should restore: capture into `self.output`
-where it is wanted, and **return the local `output` from `term_screen()`**.
+**How to start.** Set it on the **session before `new_window()`**
+(`setw -t <session> remain-on-exit on`): set after creation it races the first
+shell exit — in the probe that raced, the content was already gone. Then flip
+liveness to `pane_dead`, add `pane_dead_status` to the dead report, and keep the
+`app.tmux[chat_id]["last_screen"]` cache as the fallback for panes that died
+before the option existed and for the window-destroyed path.
 
-**Verify the live copy first (TRAPS #19).** The app runs outside this
-interpreter, and in the session where this was diagnosed, some `terminal` calls
-*did* return real screens while the code in this tree can only return `""`. So
-before anything else: confirm the running copy is this file
-(`git log -1 --format=%H -- spit_app/tools/run/terminal.py`, compare against the
-checkout the app imports), then reproduce with
-`terminal(name="probe", input=["echo one two three", "Enter"])`.
+**Verify**: full suite unchanged (…/119 + `unit:terminal` at its current count)
+plus the new checks green; new `tNN-*` numbers only (append-only). Manual: a
+session that dies on its own reports its final screen **and** an exit status.
 
-### Second real defect, same tool: every key combination is sent as literal text
+---
 
-`term_input()` strips the key/modifier names out of `_inp` to decide whether the
-argument is a bare key or a chord — and throws the result away, because `str`
-is immutable and the return value is discarded:
+## P0b-followup 2 - the tool's `time.sleep()` blocks the UI event loop  [medium, known, deliberately left]
 
-```python
-_inp = inp
-for key in KEYS:      _inp.replace(key, "")    # no-op, five times over
-for mod in MODS:      _inp.replace(mod, "")    # no-op
-if len(_inp) <= 1:
-    return self.term_send_keys(name, inp, False)   # never taken for "C-c"
-return self.term_send_keys(name, inp, True)        # literal text "C-c"
-```
+`spit_app/tools/terminal.py:call()` is synchronous and sleeps for `delay`
+(default 1 s) before capturing: a 1-second freeze of the Textual UI on every
+`terminal` call, on an app whose complaint list starts with "the UI is
+sluggish". Recorded in the original P0b entry as *out of scope for the fix and
+fatal for the migration*; the fix went in without touching it, so this is the
+debt, still unpaid.
 
-`"C-c"` is 3 characters, so the `<= 1` branch is unreachable for a chord and
-Ctrl-C — the thing the tool's own PROMPT advertises (`Send a signal ["C-c"]`) —
-is typed into the pane as the four characters `C-c`. Everything in `KEYS` still
-works (it returns earlier), which is why the bug is invisible until you need an
-interrupt. Note the corollary: `S-Tab`, `M-x`, `C-a`, `C-q` are all broken, and
-`tui-textarea`-style editors driven through this tool cannot be interrupted.
-Empirically confirm before fixing (send `C-c` to `sleep 60` and check whether it
-dies), then fix by comparing the *returned* string, and add a check that a chord
-reaches the pane as a control character, not as text.
+Fix shape: `call_async_generator` (the tool contract supports it — CONVENTIONS)
+with `await asyncio.sleep(delay)`, so the wait yields to the event loop. Pairs
+naturally with enhancement 5 (`wait_for` instead of blind sleeps) — do them
+together and the streaming tests stop needing sleeps at all.
 
-### Third and fourth defects (small, same file, fix in the same sweep)
+**Verify**: full suite unchanged; a check that the call no longer blocks
+(measure the event loop, not the wall clock) — and note `tests/unit/terminal/`
+drives `call()` directly, so it will not see an event-loop regression on its own.
 
-- `tools/terminal.py`: `dealy = arguments["delay"]` — misspelled target, so the
-  caller's `delay` is silently ignored and `time.sleep(delay)` always sleeps 1.
-  Also `if "delay" in arguments and arguments["delay"]` means `delay=0` is
-  ignored too. (Both are silent-wrong-argument bugs: TRAPS #9's cousin.)
-- `tools/terminal.py`: `terminal.term_new(name)`'s return value is discarded.
-  `term_new` returns `check_bwrap(...)`'s error string when bwrap is unusable,
-  **and returns without creating anything** — `call()` then indexes
-  `app.tmux[chat_id]["windows"]`, which was never populated, and raises
-  `KeyError` instead of reporting "bwrap missing". Return the error.
-  Relatedly, `Terminal.pane_active()` and `lsterm.pane_active()` index
-  `self.tmux[self.chat_id]` with no guard for a chat that has no tmux entry.
-- `time.sleep(delay)` sits in a synchronous `call()`, i.e. it blocks the UI
-  event loop for the whole wait — a 1-second freeze per `terminal` call, on an
-  app whose complaint list starts with "the UI is sluggish". Out of scope for
-  the fix, fatal for the migration (see Enhancements).
+---
 
-### No coverage exists
+## P0b-followup 3 - open question for the owner: the `Esc` limitation belongs in the PROMPT  [small, owner decision]
 
-No test suite anywhere mentions `libtmux`, `term_screen` or `term_new` — the
-`terminal` and `lsterm` tools are the only user-facing tools in the repo with
-zero checks, which is precisely how a `return self.output` survives. The fix
-must arrive with `spit_app/tests/unit/terminal/` (pure python, real tmux, no
-Textual — same pattern as `tests/unit/sandbox/stub_app.py` driving `Run`):
-live capture returns the pane's text and the cursor marker; a dead pane returns
-the last screen plus `INFO: Session dead.`; `delay` is honoured; `C-c`
-interrupts; missing bwrap is reported and not a `KeyError`. Lifecycle checks
-MUST use `sandbox=False` (TRAPS #6).
+Measured while writing `test_keys.py`: bash reads a lone `Esc` and then **merges
+the next character into it as Alt-`<char>`**. `Esc` followed immediately by
+`echo mm-after-esc` reached the prompt as `cho mm-after-esc` — the `e` was
+consumed by the escape sequence. This is terminal semantics (readline's
+`keyseq-timeout`), **not** a spit.py defect, and the test deliberately asserts
+only that the key is delivered and its name is not typed.
 
-### Done / Left / Verify
+But a model reading today's PROMPT is told `["Esc", "Escape", …]` sequences are
+fine and gets a mangled command, with no hint why. **Question for the owner**:
+add one sentence to `terminal`'s PROMPT (something like: *a lone `Esc` merges
+with the character that follows it; send `Esc` alone and wait, or use the pane's
+own key names*)? Decision only, because PROMPT text is what the model reads and
+TRAPS/RUNTIME-RUN-COMMAND require code and PROMPT to stay in sync — and
+`tests/unit/prompt/` pins PROMPT strings.
 
-- **Branch**: `task-terminal-empty-output`. Commits, in order:
-  - `e699bb4` terminal: return the captured screen, and keep it per chat
-    (+ `tests/unit/terminal/`: `stub_app.py`, `run_tests.sh`, `test_screen.py`,
-    and `tests/create_venv.sh`)
-  - `1984851` terminal: send a key chord as a key, not as literal text
-    (+ `test_keys.py`, 30 checks)
-  - `c948b3e` lsterm: list the sessions without dying on one that died
-    (+ `test_lsterm.py`, 21 checks) — a **fifth defect**, found by probing
-    rather than by reading: the listing raised `RuntimeError` on any dead
-    session. DECISIONS 67.
-  - `b5621fe` terminal: honour delay, and report a session that could not start
-    (+ `test_tool_call.py`, 14 checks)
-- **Scope**: `spit_app/tools/run/terminal.py`, `spit_app/tools/terminal.py`,
-  `spit_app/tools/lsterm.py`, `spit_app/tests/unit/terminal/` (4 files +
-  stub + runner), `spit_app/tests/create_venv.sh`, docs.
-- **Done** — all four reported symptoms fixed and **measured**, each against
-  the pre-fix code as well as after it:
-  - Empty response: `term_screen()` returns the local it built, and the last
-    screen is cached in `app.tmux[chat_id]["last_screen"][name]` — *not* on the
-    instance, because a `Terminal` is built per call, so `self.output` could
-    never be "the last screen" across calls. DECISIONS 66.
-  - Chords: assigning the result of the strip (`key_body = key_body.replace(...)`)
-    makes `C-c` a signal. Proved by effects, since a control char is invisible:
-    `pane_current_command` leaves `sleep`, bash's Ctrl-A puts an X at the front
-    of a line, `C-d` ends the shell — **plus a control** (t5) showing the same
-    bytes as text do *not* interrupt, so the suite cannot pass on a pane where
-    nothing kills anything.
-  - `delay`: the `dealy` typo and the truthiness test on `delay=0` both fixed.
-  - Missing bwrap: `term_new()`'s error is returned; the unreachable-by-accident
-    `windows = ...` line that raised the `KeyError` is gone.
-  - Dead pane: reports the cached screen verbatim + `INFO: Session dead.`, with
-    an explicit "closed before anything was captured" instead of a blank prefix.
-  - Coverage gap closed: `unit:terminal` 98 checks, real tmux on a **private
-    socket** (`libtmux.Server` wrapped to pass `socket_name`) — a test suite has
-    no business creating windows in the user's server.
-- **Left**:
-  1. **`remain-on-exit`** — measured and ready, **awaiting the owner's Go** as
-     its own commit. Today a dead window's content is gone with it (verified:
-     server exits, `no server running`), so the cached screen is all a dead
-     session can say. With `remain-on-exit on` the pane survives: content
-     capturable, `#{pane_dead}` and `#{pane_dead_status}` give the exit code,
-     and history reaches past the visible 24 lines. The cost is that
-     `pane_active()`'s membership test would call a dead pane **live**, so
-     liveness moves to `pane_dead` — which the fix now does in one function
-     (DECISIONS 67), and `lsterm`'s "names are reusable after death" rule has to
-     move with it.
-  2. `time.sleep(delay)` still blocks the UI event loop (entry above: out of
-     scope for the fix, fatal for the ratatui migration → enhancement 10).
-  3. Owner-side manual check in the running app: a `terminal` call shows its
-     screen in chat, `C-c` interrupts a `sleep 60`, and a dead session shows its
-     last screen. Automated analogues exist for all three.
-- **State hazards**: none. Tree clean at every commit; no fixtures used; no
-  suite red. The venv at `~/.venv-spit` is machine state, not repo state — see
-  TESTING.md if `unit:terminal` reports FAIL 1 on a fresh machine.
-- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` —
-  127/24/30/119/80/32/68/29 + 131/33/278/121/119 **unchanged** and
-  `unit:terminal: PASS: 98 FAIL: 0`.
+---
 
-### Enhancements this tool needs *for* the ratatui migration
+## P0b-followup 4 - what the `terminal` tool still needs *for* the ratatui migration  [enhancement list, picked up piece by piece]
+
+The list below was written during P0b and is **verbatim from it**; two items have
+moved since, and they are marked. Nothing else has been done.
+
+**Already done while fixing P0b** (so do not re-do them): the *single
+implementation* half of item 9 — `pane_active()` now exists once in
+`run/terminal.py` and `lsterm` uses it (`c948b3e`); the *namespaced
+windows / fail loudly on an unresolved name* half is still open. Item 8
+(process state as first-class output) is half-done: a dead pane now reports
+the last cached screen instead of one bare sentence (P0b), but there is
+still no `pane_pid` / exit code — see followup 1.
 
 Once `spit-tui` exists (the Rust front end planned in
-`doc/UI-ROUTE-RATATUI.md`, on branch `task-ui-route-ratatui-json` — that
-file is not on this branch yet), this
-tool stops being a convenience and becomes **the only harness that can see the
+`doc/UI-ROUTE-RATATUI.md` and the engine <-> front-end protocol in
+`doc/UI-PROTOCOL.md` — both merged into this branch at `51faf79`, so they are
+**here**, read them here), this tool stops being a convenience and becomes **the only harness that can see the
 real binary running in a real pty** — ratatui's `TestBackend` covers widgets,
 the `terminal` tool covers the end-to-end app. Design it for that job now:
 
@@ -224,6 +182,7 @@ the `terminal` tool covers the end-to-end app. Design it for that job now:
     and auto-cleanup when the chat closes. During this evaluation the only way
     to clean up orphaned sessions was `tmux kill-server`, which is not
     acceptable in a shared tmux.
+
 
 ---
 

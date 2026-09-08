@@ -52,6 +52,59 @@ Test-count ground truth: see TESTING.md.
   differential against the previous module: 11 explicit failures - a plain `sh`
   running, twice over - plus section 11's 16 checks never running there at all.
   Awaiting the owner's merge; main untouched, nothing pushed.
+- **The `terminal` tool's empty response and its four siblings** (branch
+  `task-terminal-empty-output`, six commits; P0b). Five defects, one per commit,
+  each carrying its own checks and each **measured against the pre-fix code as
+  well as after it**:
+  - `e699bb4` — `term_screen()` built the screen into a local and returned
+    `self.output`, assigned exactly once, to `""` in `__init__`: every capture of
+    a *live* pane returned an empty message container, and a dead one returned
+    `"\n\nINFO: Session dead."` with an empty prefix, which is why a dead session
+    read as a truncated one. The cache is **per session name in
+    `app.tmux[chat_id]["last_screen"]`, not on the object** — `tools/terminal.py`
+    builds a new `Terminal` inside `call()`, so an instance attribute is born
+    empty every call and could never be "the last screen" across calls, which is
+    the only case the dead-pane branch exists to report. DECISIONS 66.
+  - `1984851` — every key **chord** was typed as literal text: `_inp.replace(key,
+    "")` discards its result (`str` is immutable), so the strip that decides
+    key-vs-text did nothing, `len(_inp) <= 1` was false for every chord, and
+    `C-c` — advertised by the tool's own PROMPT — arrived as the four characters
+    `C - c`; so did `C-a`, `S-Tab`, `M-x`, `C-d`. Bare key names still worked,
+    which is why it survived.
+  - `c948b3e` — a **fifth defect, found by probing rather than reading**: `lsterm`
+    walked `windows.keys()` while its private liveness check deleted the dead
+    window it found from that same dict, so the first session to die in a chat
+    made the listing raise `RuntimeError: dictionary changed size during
+    iteration` — no answer at all, from the tool the PROMPT says to call when you
+    are unsure a session is alive. Liveness now exists once, in `run/terminal.py`,
+    used by both tools, with the listing snapshotting names first. DECISIONS 67.
+  - `b5621fe` — `delay` was read and dropped twice over (`dealy = arguments[...]`
+    misspelled the target, and `if arguments["delay"]` read `delay=0` as "no
+    delay given"), and `term_new()`'s return was discarded, so a machine without
+    bubblewrap got `KeyError: 'chat1'` where it should have got "install
+    bubblewrap".
+  - `a7eb47a` docs, `8f65e32` a comment with a measurement behind it: the
+    discarded `term_screen()` call in `term_send_keys()` looks exactly like the
+    bug just removed and is not — deleting it fails two checks, and it is the
+    only reason a session killed by its own input still has a screen to report.
+  **New coverage**: `tests/unit/terminal/`, 98 checks, real tmux on a **private
+  socket** (`libtmux.Server` wrapped to pass `socket_name` — a suite has no
+  business creating windows in, or sending input to, the user's server); needs
+  libtmux, so `spit_app/tests/create_venv.sh` is documented as the way to get it,
+  and a missing dependency FAILs loudly instead of reporting `PASS: 0  FAIL: 0`.
+  Ground truth moved only by that new row: `unit:terminal` 98, everything else
+  unchanged. Two traps the differential caught in the tests themselves are
+  recorded in DECISIONS 67 and TESTING.md — `capture_pane()` returns **lines**
+  (`token in lines` is whole-line equality and never matches a token sharing its
+  line with a prompt), and a liveness check that *forgets* what it finds dead
+  cannot be used to wait for death, because the wait performs the fix and the
+  test passes against the broken code.
+  **Left, deliberately**: `remain-on-exit` (owner's Go required — see
+  TASKS-IN-PROGRESS followup 1), the blocking `time.sleep()` in `call()`
+  (followup 2), the ratatui capture/geometry list (followup 4), and the owner's
+  manual check in the running app: a `terminal` call shows its screen in chat,
+  `C-c` interrupts a `sleep 60`, and a dead session shows its last screen. Every
+  one of those three has an automated analogue. Main untouched, nothing pushed.
 
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)
