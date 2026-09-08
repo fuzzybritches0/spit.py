@@ -100,11 +100,51 @@ Test-count ground truth: see TESTING.md.
   cannot be used to wait for death, because the wait performs the fix and the
   test passes against the broken code.
   **Left, deliberately**: `remain-on-exit` (owner's Go required — see
-  TASKS-IN-PROGRESS followup 1), the blocking `time.sleep()` in `call()`
-  (followup 2), the ratatui capture/geometry list (followup 4), and the owner's
+  TASKS-IN-PROGRESS followup 1), the `time.sleep()` in `call()` (followup 2 —
+  **since closed as a false premise**, see the entry below and DECISIONS 68: a
+  sync `call()` is dispatched off the event loop, so it never froze the UI), the
+  ratatui capture/geometry list (followup 4), and the owner's
   manual check in the running app: a `terminal` call shows its screen in chat,
   `C-c` interrupts a `sleep 60`, and a dead session shows its last screen. Every
   one of those three has an automated analogue. Main untouched, nothing pushed.
+- **P0b-followup 2 closed as a false premise: the `terminal` tool's `delay` never
+  blocked the event loop** (branch `task-terminal-empty-output`, `d6ddc88` checks +
+  `7a3fefc` docs; DECISIONS 68). The entry claimed `tools/terminal.py:call()` sleeps
+  `delay` (default 1 s) before capturing and so froze the Textual UI for a second on
+  every call, and prescribed `call_async_generator` with `await asyncio.sleep(delay)`.
+  What decides is not in the tool: `tool_call.ToolCall.call()` (`d455761`) routes a
+  plain function call through `await asyncio.to_thread(...)`, and that is what
+  `chat/work.py:118` awaits. Measured over that path — the real `ToolCall` loading the
+  real tools directory, a real tmux on a private socket, a 20 ms heartbeat counting
+  ticks and the worst gap between them: `delay=1` → 1.05 s wall clock, **53 loop
+  ticks, worst gap 22 ms**; `delay=2` → 101 ticks, worst gap 22 ms. The same
+  dispatcher with `to_thread` replaced by a direct call — the configuration the
+  prescribed fix creates — gives **1 tick and gaps of 1065 ms and 2053 ms**: the
+  reported freeze, on the other side of the hop. The rewrite was therefore **not**
+  applied, and would have been a pessimization twice over: libtmux spawns the `tmux`
+  binary on every round-trip, and one `term_screen()` measured 46 ms, stalling the
+  loop by 65 ms when it runs on the loop against 22 ms with the same work off it.
+  **New coverage**: `tests/unit/terminal/test_event_loop.py`, 21 checks — section 1
+  the shipped path, section 2 the control (an `asyncio` whose `to_thread` runs on the
+  caller, so the control is the same dispatcher and the same tool call, not a copy of
+  it), section 3 the cost of the tmux round-trips as two medians of three taken in one
+  process (an assertion about the hop, not about the machine), section 4 which branch
+  of the dispatcher the loaded tools actually land on. `stub_app.py` gained
+  `chat.cs("tools")` and `chat.chat_view`, the two inert things the dispatcher asks a
+  chat for on its way to a tool. Differential with the hop removed process-wide: 3 of
+  the 21 go red (`t1-the-loop-kept-ticking-through-the-delay`,
+  `t1-the-loop-never-stalled-for-the-delay`,
+  `t3-the-hop-keeps-the-tmux-work-off-the-loop-too`) while the control stays green in
+  both configurations — DECISIONS 67's rule, a probe is shown catching the stall
+  before it is trusted to report its absence. Ground truth: `unit:terminal` 98 → 119,
+  every other row where it was, FAIL 0 everywhere.
+  **What survives of the complaint is not blocking**: an in-flight call cannot be
+  aborted, because a running thread cannot be interrupted and `delay` is a blind wait
+  (enhancement 5, `wait_for`, with enhancement 10 — done together the wait stops being
+  a sleep *and* stops holding a thread, and nothing moves onto the loop); and one pool
+  thread is held per call for the duration of `delay` (`min(32, cpu+4)` default
+  executor) — occupancy, not a frozen UI. Owner confirmed the reading before the docs
+  landed. No tool code changed; main untouched, nothing pushed.
 
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)
