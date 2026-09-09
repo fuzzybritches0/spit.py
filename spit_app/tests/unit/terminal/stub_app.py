@@ -7,13 +7,17 @@ paths and the per-chat sandbox setting -- so it can be driven without Textual,
 which is not a dependency of the tests and is not installed everywhere they run
 (the way tests/unit/sandbox/stub_app.py drives Run).
 
-What it does add is a private tmux server. Terminal builds its server with
-`libtmux.Server()`, which means the user's own tmux server, and a test suite has
-no business creating windows in it: the windows are named after whatever the
-test fancied at the time and a name that collides with a window the user is
-working in would be sent input by a test. So `libtmux.Server` is wrapped here to
-pass `socket_name`, which is the one deviation from production and the reason
-the suite can `kill-server` at the end without touching anything of the user's.
+What it does add is a private tmux server. Terminal asks for a socket of its own
+now (`server_socket()` = `spit-<pid>`, because a bare `libtmux.Server()` is the
+user's tmux and actions.py `kill-server`s it when the app quits), but a suite
+still cannot drive that one: the windows are named after whatever the test fancied
+at the time, a crashed run leaves them behind, and the only teardown a suite has
+is `kill-server`, which must land on a socket this file named. So
+`libtmux.Server` is wrapped to FORCE our `socket_name` over whatever was asked for
+-- a `setdefault` would let production's name win, and the suite would be driving
+the very socket it exists to stay off -- and to record the request, so a check can
+pin which socket production wanted without ever driving it (`requested_sockets`,
+test_tool_call.py t10).
 
 Every assertion here uses sandbox=False. Inside bwrap the process table belongs
 to the sandbox (TRAPS #6): `pane_current_command` and the death of a pane are
@@ -35,6 +39,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),
 import libtmux
 
 REAL_SERVER = libtmux.Server
+
+# What the code under test asked for, in order, one entry per libtmux.Server()
+# it built (None when it built one without a socket). See use_private_server().
+requested_sockets = []
+
 
 ENABLED_TOOLS = ["terminal", "lsterm"]
 
@@ -86,10 +95,20 @@ def stub_app(root: str):
 
 
 def use_private_server(socket_name: str) -> None:
-    """Point every libtmux.Server() at a socket of our own, for this process."""
+    """Point every libtmux.Server() at a socket of our own, for this process.
+
+    The socket is FORCED, not defaulted: `Terminal` passes a socket of its own now
+    (run/terminal.py server_socket(), because a bare libtmux.Server() is the user's
+    tmux and actions.py kill-server's it at exit), and a `setdefault` here would let
+    production's name win -- which is exactly the kind of bug this wrapper exists to
+    keep out of the user's tmux. So the suite overrides it and records what was
+    asked for instead: `requested_sockets` is the list of what the code under test
+    passed, and a check can pin the production choice without driving it.
+    """
 
     def private_server(*args, **kwargs):
-        kwargs.setdefault("socket_name", socket_name)
+        requested_sockets.append(kwargs.get("socket_name"))
+        kwargs["socket_name"] = socket_name
         return REAL_SERVER(*args, **kwargs)
 
     libtmux.Server = private_server
@@ -99,6 +118,19 @@ def kill_private_server(socket_name: str) -> None:
     if shutil.which("tmux"):
         subprocess.run(["tmux", "-L", socket_name, "kill-server"],
                        capture_output=True)
+
+
+def default_server_running() -> bool:
+    """Is a tmux server up on the user's DEFAULT socket?
+
+    The point of this is the negative: a tool run must not START one there. It
+    answers the question rather than asserting False so the check stays correct on
+    a machine whose user has their own tmux open -- what is pinned is that the
+    number did not change because we ran, not that nobody else has a server.
+    """
+    if shutil.which("tmux") is None:
+        return False
+    return subprocess.run(["tmux", "ls"], capture_output=True).returncode == 0
 
 
 def make_terminal(app, sandbox: bool = False):
@@ -171,6 +203,33 @@ def window_exists(app, name: str) -> bool:
         return False
     chat["session"].refresh()
     return window in chat["session"].windows
+
+
+def window_dead(app, name: str):
+    """Has the registered window's PROCESS exited -- and nothing else.
+
+    Since the windows are created with `remain-on-exit` on, tmux keeps them after
+    their shell dies, so "is the window still there" (window_exists) and "is the
+    session still alive" are now two different questions with different answers:
+    for a dead one the first is True and the second is False. A death-wait has to
+    poll the second.
+
+    It cannot poll pane_active() -- that is decision 67's trap, and a sharper one
+    now: pane_active() FORGETS the name it finds dead, so a test that waits on it
+    cleans up the very state the code under test is meant to be handed. This reads
+    the pane and touches no bookkeeping at all.
+
+    None means there is nothing to ask: the name is not registered, or tmux has no
+    window for it. True/False is the answer when there is.
+    """
+    chat = app.tmux.get("chat1", {})
+    window = chat.get("windows", {}).get(name)
+    if window is None or "session" not in chat:
+        return None
+    if window not in chat["session"].windows:
+        return None
+    panes = window.panes
+    return panes[0].pane_dead == "1" if panes else None
 
 
 def kill_window(app, name: str) -> None:

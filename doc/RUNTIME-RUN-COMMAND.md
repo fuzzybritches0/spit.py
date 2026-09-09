@@ -45,24 +45,39 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
 
 - `libtmux`; **one tmux session per chat conversation**, one window per named
   terminal running bash (bwrap-sandboxed by default).
+- The tmux server is one of spit.py's own: `run/terminal.py:server_socket()` is
+  `spit-<pid>` and every `libtmux.Server(socket_name=…)` is built with it. A bare
+  `libtmux.Server()` means the user's DEFAULT socket, and `actions.py:action_exit_app`
+  calls `server.kill()`, which is `tmux kill-server` — so before this, quitting the app
+  took down every session of the user's tmux. One server per process, one session per
+  chat inside it. The suite forces its own socket over this and records the request
+  (`stub_app.requested_sockets`), because pinning a choice the harness overrides needs
+  the record, not the socket.
 - Screen capture: 24x80, **no scrollback**; cursor rendered as `█`. The last
   screen of each name is cached in `app.tmux[chat_id]["last_screen"][name]` —
   on the app, not on the `Terminal`, because `tools/terminal.py` builds a new
   `Terminal` per call and an instance attribute cannot remember anything across
-  calls (decision 66). A dead session reports that cached screen plus
-  `INFO: Session dead.` and is auto-cleaned, so names are reusable — and
-  `term_new()` clears the slot, so a reused name never reports the dead one's
-  screen. `lsterm` lists only live sessions, from `live_window_names()`, which
+  calls (decision 66). The cache holds **what the tool last reported** for that
+  name: for a live screen the rendered capture with the cursor marker, for a dead
+  one the dead report including its `Exit status: N`, so a repeat call says exactly
+  the same thing. `lsterm` lists only live sessions, from `live_window_names()`, which
   snapshots the names before checking any of them: the liveness check deletes a
   dead window from the dict being walked, and doing that mid-iteration is the
   `RuntimeError` that used to kill the listing (decision 67).
 - Liveness lives in ONE function, `run/terminal.py:pane_active()` — `lsterm`
-  had a private copy and it is the thing that mutates. Tests that need to wait
-  for a session to die without cleaning up behind it use a non-mutating probe
-  (`tests/unit/terminal/stub_app.py:window_exists`), otherwise the setup performs
-  the fix and the test passes against broken code.
-- Output that scrolls off is lost; long-lived/verbose processes must redirect
-  (`> log 2>&1`) and a session dying unattended recovers nothing.
+  had a private copy and it is the thing that mutates. It asks the pane's
+  `pane_dead`, not whether tmux still holds the window: `remain-on-exit` means a
+  dead session keeps its window, so membership now answers "is there still a
+  corpse". Discovering a death there also harvests the real screen into the cache
+  and destroys the window (`retire()`), because `lsterm` is often the only thing
+  that ever sees a death — the model is told to call it first. Tests that wait for
+  a session to die without cleaning up behind them use a non-mutating probe
+  (`stub_app.py:window_dead`); `window_exists` is now a different question and is
+  only for asking whether tmux still has the window. Either way a mutating probe in
+  the setup performs the fix and the test passes against broken code (decision 67).
+- Output that scrolls off a live session is lost, so long-lived/verbose processes must
+  redirect (`> log 2>&1`). A session dying unattended is no longer one of them: its
+  report carries the pane's actual final screen (last 50 lines) and its exit status.
 - These tools bypass `scripts/`: they call the Run class's tmux methods
   (`term_new`, `term_input`, `term_screen`) directly from a sync `call()`.
 - A sync `call()` does not run on the UI's event loop:

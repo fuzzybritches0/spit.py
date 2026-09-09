@@ -1,13 +1,19 @@
-> **Four entries are open**: three `terminal` followups — all on this branch's
+> **Three entries are open**: two `terminal` followups — all on this branch's
 > tail — and the streaming-render checklist. The empty-response
 > defect that used to head this file is **fixed and committed on this branch**
 > (`e699bb4`…`8f65e32`, six commits, 98 new checks) — the full record is in
 > `TASKS-FINISHED.md`, "the `terminal` tool's empty response and its four
-> siblings". What is left of it is here as followups 1, 3 and 4 — the numbering is
+> siblings". What is left of it is here as followups 3 and 4 — the numbering is
 > kept so that anything pointing at a followup by number stays true:
-> `remain-on-exit` (designed, measured, **not started** — it waits for the owner's
-> explicit Go), one PROMPT question for the owner, and the capture/geometry list
-> the ratatui harness will need. **Followup 2 — the `time.sleep()` in the tool's
+> one PROMPT question for the owner, and the capture/geometry list the ratatui
+> harness will need. **Followup 1 — `remain-on-exit` — is DONE** (`d549b61`…`e5b4fba`,
+> `unit:terminal` 119 → 173, DECISIONS 69): a dead session now reports its real final
+> screen and its exit status, and the sessions run on a tmux socket of spit.py's own
+> instead of the user's. Its entry is in `TASKS-FINISHED.md`, together with the one
+> piece of follow-up work its measurement uncovered and no commit made yet — the state
+> layer (registry keyed by `window_id`, ONE `list-panes -a` per call instead of 6 `tmux`
+> invocations, `window_name=name` written into tmux, "no such session" distinct from
+> "session dead"). **Followup 2 — the `time.sleep()` in the tool's
 > `call()`, said to block the UI event loop — closed as a false premise** and moved
 > to `TASKS-FINISHED.md` (`d6ddc88` checks, `7a3fefc` docs, DECISIONS 68):
 > `tool_call.ToolCall.call()` dispatches a sync `call()` through
@@ -28,59 +34,6 @@
   may `kill-server` freely. A run leaves stale socket *files* under
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
-
-## P0b-followup 1 - `remain-on-exit`: let a dead session report its real last screen  [**awaiting the owner's Go — do not start without it**]
-
-Owner instruction 2026-09-07: *"Make `remain-on-exit` its own commit… Before you
-start `remain-on-exit`, come back to me and wait for my `Go!`"*. The session
-ended before the Go arrived. **It is not started and nothing in the tree
-implements it.** Get the Go, or a clear no, before touching code.
-
-**What it buys.** The dead-session path reports the last screen *we* captured
-(decision 66 context: the cache lives in `app.tmux[chat_id]`), because with tmux
-defaults the window is destroyed when its shell exits — measured: capture fails,
-and if it was the last window the whole server goes (`no server running on
-/tmp/tmux-1000/…`). With `remain-on-exit on` the pane survives its process, so
-the report can carry the pane's **actual final screen** plus its **exit code**,
-and `capture-pane -S -N` reaches past the visible 24 lines. Measured on tmux
-3.7b: `dead=1 status=0`, `CCC-DIED-NOW` still on the screen, history recovered
-from `-S -50`, and tmux appends its own `Pane is dead (status 0, …)` line — which
-is what a test should assert the exit code from, not the tool's prose.
-
-This is the direct answer to enhancement 8 below ("a crashed UI and an empty UI
-look identical") and it is the cheapest of them, which is why it is first.
-
-**The cost, and it is a real one.** `remain-on-exit` keeps the window in
-`session.windows`, so the membership test in `run/terminal.py:pane_active()`
-would call a dead pane **live**. Liveness therefore moves to `pane_dead`:
-
-- `pane_active()` — one function, shared by `terminal` and `lsterm` since
-  `c948b3e`, so there is exactly one place to change (deliberate: this decision
-  was split out of the bug fix partly because it lands cleanly on a single
-  implementation).
-- the documented contract that **names are reusable after death** and that
-  `lsterm` "lists only live sessions" (TOOLS.md 7/8, RUNTIME-RUN-COMMAND.md) —
-  both rest on the membership test and must be restated in terms of `pane_dead`.
-- `term_send_keys()` on a dead-but-retained pane: measured, tmux accepts the
-  send and delivers nothing, so the tool must refuse explicitly instead of
-  reporting success.
-
-**How to start.** Set it on the **session before `new_window()`**
-(`setw -t <session> remain-on-exit on`): set after creation it races the first
-shell exit — in the probe that raced, the content was already gone. Then flip
-liveness to `pane_dead`, add `pane_dead_status` to the dead report, and keep the
-`app.tmux[chat_id]["last_screen"]` cache as the fallback for panes that died
-before the option existed and for the window-destroyed path.
-
-**Verify**: the full suite unchanged except for `unit:terminal` rising by the new
-checks. Ground truth at the time of writing: 127/24/30/119/80/32/68/29 tools (509)
-+ unit 131/33/278/121/119 + **`unit:terminal` 119** (raised 98 → 119 by
-`d6ddc88`), all FAIL 0. New `tNN-*` numbers only (append-only), and new `tNN-`
-check-name prefixes that do not collide with the ones already used per file.
-Manual: a session that dies on its own reports its final screen **and** an exit
-status.
-
----
 
 ## P0b-followup 3 - open question for the owner: the `Esc` limitation belongs in the PROMPT  [small, owner decision]
 
@@ -109,10 +62,12 @@ moved since, and they are marked. Nothing else has been done.
 **Already done while fixing P0b** (so do not re-do them): the *single
 implementation* half of item 9 — `pane_active()` now exists once in
 `run/terminal.py` and `lsterm` uses it (`c948b3e`); the *namespaced
-windows / fail loudly on an unresolved name* half is still open. Item 8
-(process state as first-class output) is half-done: a dead pane now reports
-the last cached screen instead of one bare sentence (P0b), but there is
-still no `pane_pid` / exit code — see followup 1.
+windows / fail loudly on an unresolved name* half is still open. Item 8 (process state as first-class output) is mostly done: a dead
+pane reports its REAL final screen and its exit code (followup 1), and
+`pane_pid`, `pane_current_command`, `pane_dead_signal` and
+`pane_dead_time` all exist in libtmux 0.62 (the last two need tmux
+>= 3.3). What is left of item 8 is surfacing them as fields on a LIVE
+screen — the state layer named in `TASKS-FINISHED.md` and DECISIONS 69.
 
 Once `spit-tui` exists (the Rust front end planned in
 `doc/UI-ROUTE-RATATUI.md` and the engine <-> front-end protocol in

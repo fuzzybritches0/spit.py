@@ -46,7 +46,7 @@ Examples:
 
 Key limitations to keep in mind:
 - The terminal is 24x80 characters with no scroll-back. Each screen capture shows only the 24 lines.
-- When a session dies while not interacting with it, no output can be recovered. Use redirects.
+- A session that dies while you are not looking is not lost: the next capture of that name reports the pane's real final screen and `Exit status: N`, then the name is freed. Output that scrolls off a LIVE session is still gone, so redirect long-lived output to a file.
 - Providing only the 'name' gives you a snapshot of the current terminal screen.
 - The "Enter" key is never implied. Always use it explicitly. This is a real terminal.
 - End all processes and close the session with ["exit", "Enter"] if you no longer need it.

@@ -338,11 +338,19 @@ Modifier prefixes: `C-` (Ctrl), `S-` (Shift), `M-` (Alt)
 - Cursor position rendered with `█` in the screen capture
 - Sandbox support (bwrap) for security; can be disabled (at the user's own risk)
 - Dead session detection with automatic cleanup
+- A session that dies unattended reports its **real final screen and exit status**: the
+  windows are created with tmux's `remain-on-exit` on, so the pane survives its process
+  and the next capture reads what it actually printed (`Exit status: N`) instead of the
+  last screen the tool happened to cache. The report reaches 50 lines into the pane's
+  scrollback, because tmux writes its own `Pane is dead (status N, …)` line into the
+  pane and that scrolls the top line off — a session that printed one line would
+  otherwise report nothing at all. The corpse is then destroyed and its name freed.
+- The sessions live on a tmux socket of spit.py's own (`spit-<pid>`), never on the
+  user's default socket, so quitting the app cannot take down the user's tmux
 
 **Limitations**:
 - 24×80 character window with **no scrollback**
-- Output that scrolls off the screen is lost
-- When a session dies while not being actively interacted with, no output can be recovered
+- Output that scrolls off a live session is lost (a dead one's last 50 lines are not)
 - For verbose or long-lived processes, redirect output to a file (`> log.txt 2>&1`)
 - Not ideal for one-shot file operations — prefer dedicated file and command tools
 
@@ -364,12 +372,17 @@ terminal(name="dev", input=["exit", "Enter"])    # close session
 **Output**: List of active session names, or `No active sessions found!`
 
 **Architecture**:
-- Uses `libtmux` to verify which tmux windows are still alive
-- Dead sessions are automatically removed from the internal tracking
+- Uses `libtmux` to verify which tmux sessions are still alive. Liveness is the pane's
+  `pane_dead` flag, **not** whether tmux still has the window: the windows are created
+  with `remain-on-exit` on, so a dead session's window is still there and a membership
+  test would call it live
+- A dead session discovered here is harvested (its real final screen and exit status
+  go into the per-name cache, where a later `terminal` call will find them) and its
+  window is destroyed, then it is removed from the internal tracking
 - Session names can be freely reused after the session dies
 
 **Features**:
-- Shows only live sessions (dead sessions are auto-cleaned)
+- Shows only live sessions (dead sessions are harvested, cleaned up and auto-removed)
 - Prevents accidentally reusing a name that still has a live session
 - Useful for checking whether a session has died after a long period of inactivity or due to system failure / user actions
 
