@@ -44,6 +44,9 @@ use_private_server(SOCKET)
 import spit_app.tools.terminal as tool
 import spit_app.tools.lsterm as lsterm
 import spit_app.tools.run.common as run_common
+from spit_app.tools.run.common import CommonMixIn
+
+REAL_SANDBOX_ENV = CommonMixIn.SANDBOX_ENV
 
 
 def without_bwrap():
@@ -116,6 +119,37 @@ try:
         check("t8-input-not-a-list",
               "ERROR" in tool.call(app, {"name": "t8", "input": "echo mm-not-a-list"}, "chat1"),
               True)
+
+    print("=== 9. a session whose shell dies while tmux is creating it ===")
+    # new_window() reads back the window it just made. If the shell died in the
+    # meantime -- a sandbox_env.sh that cannot exec, a command that exits before
+    # tmux answers -- libtmux raises TmuxObjectDoesNotExist out of new_window
+    # itself (measured on tmux 3.7b/libtmux 0.62 for a shell that cannot exec AND
+    # for one that execs and exits at once). That escaped term_new and call() and
+    # reached the model as a traceback. term_new's contract is an error STRING,
+    # which is what check_bwrap() returns for the same class of "cannot start".
+    # Both shapes are pinned because they look identical from the outside and only
+    # one of them is a race.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        for shape, env in (("cannot-exec", "/nonexistent/zz-sandbox_env.sh"),
+                           ("exits-at-once", "/bin/false")):
+            t.SANDBOX_ENV = env
+            try:
+                answer = t.term_new(f"t9-{shape}")
+            except Exception as exc:
+                answer = f"RAISED {type(exc).__name__}: {exc}"
+            check(f"t9-{shape}-is-an-error-string", str(answer).startswith("ERROR"), True)
+            check(f"t9-{shape}-did-not-raise", "RAISED" in str(answer), False)
+            check(f"t9-{shape}-names-the-session", f"t9-{shape}" in str(answer), True)
+            check(f"t9-{shape}-no-window-registered",
+                  f"t9-{shape}" in app.tmux.get("chat1", {}).get("windows", {}), False)
+            # and the chat is still usable afterwards: the failed start must not
+            # have poisoned the session it created
+            t.SANDBOX_ENV = REAL_SANDBOX_ENV
+            check(f"t9-{shape}-chat-still-usable", t.term_new(f"t9-after-{shape}"), None)
+
 finally:
     kill_private_server(SOCKET)
 

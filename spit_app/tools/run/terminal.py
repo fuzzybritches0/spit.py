@@ -66,7 +66,24 @@ class Terminal(CommonMixIn):
             self.tmux[self.chat_id]["windows"] = {}
         self.forget_screen(name)
         windows = self.tmux[self.chat_id]["windows"]
-        windows[name] = self.tmux[self.chat_id]["session"].new_window(attach=True, window_shell=cmd_args)
+        # new_window() asks tmux for the window it just created, and tmux has
+        # already destroyed it if its shell died while we were asking: a
+        # sandbox_env.sh that cannot exec, a bash that is gone, a command that
+        # exits before tmux answers. libtmux then raises TmuxObjectDoesNotExist
+        # (measured, tmux 3.7b/libtmux 0.62: the raise comes from new_window
+        # itself, for both a shell that cannot exec and one that exits at once,
+        # and it is what this looked like BEFORE this guard too -- it is not
+        # specific to any option set on the window). An exception here escapes
+        # term_new and call() and the model gets a traceback where it should get
+        # the reason, so report it as term_new's own error string (the contract
+        # check_bwrap() established).
+        try:
+            windows[name] = self.tmux[self.chat_id]["session"].new_window(
+                attach=True, window_shell=cmd_args)
+        except libtmux.exc.LibTmuxException as exc:
+            return (f"ERROR: session `{name}` died as it started: the command that "
+                    f"should run in it exited immediately or could not be started. "
+                    f"Nothing is running under that name. ({exc})")
 
     def pane_active(self, name: str) -> bool:
         return pane_active(self.tmux, self.chat_id, name)
