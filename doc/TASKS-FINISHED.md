@@ -146,6 +146,84 @@ Test-count ground truth: see TESTING.md.
   executor) — occupancy, not a frozen UI. Owner confirmed the reading before the docs
   landed. No tool code changed; main untouched, nothing pushed.
 
+### P0b-followup 1 — `remain-on-exit`: a dead session reports its real last screen (branch `task-terminal-empty-output`, commits `d549b61`…`e5b4fba`)
+
+**Owner gate.** The entry carried *"Before you start `remain-on-exit`, come back to
+me and wait for my `Go!`"*, and a crashed session had left an implementation in the
+working tree without recording a Go — so the tree was unauthorised *and* red
+(`unit:terminal` 116/3). It was reverted to HEAD, re-measured from scratch, and the
+owner gave the `Go!` for it plus two follow-on items found by that measurement. Every
+claim below is from this box (tmux 3.7b, libtmux 0.62, private sockets), not from the
+previous session's notes.
+
+**What landed, in three commits.**
+
+- `d549b61` — `term_new()` reported a session whose shell dies during creation as a
+  traceback out of `call()`. Measured: `new_window()` raises `TmuxObjectDoesNotExist`
+  for a shell that cannot exec *and* for one that execs and exits at once, **at HEAD
+  too** — a pre-existing defect, not collateral of the option, which the commit says
+  out loud. Now `term_new`'s own error string (the contract `check_bwrap()` set).
+- `3f6b279` — **the one that could destroy the user's work**: `libtmux.Server()` takes
+  no socket, so every session was created in the user's DEFAULT tmux, and
+  `actions.py:action_exit_app` calls `server.kill()` — `tmux kill-server`. Quitting
+  spit.py took down the user's sessions. Now `server_socket()` = `spit-<pid>`: one
+  server per process, one session per chat. The suite switched from `setdefault` to
+  FORCING its socket (with production passing a name, `setdefault` lets production
+  win and the suite drives the socket it exists to stay off) and records the request,
+  so t10 can pin the production choice without driving it — decision 67's rule applied
+  to the harness itself.
+- `e5b4fba` — `remain-on-exit` on the window, liveness on `pane_dead`, the real
+  dead-session report, and the corpse policy. DECISIONS 69 is the full record.
+
+**Three measurements that changed the design.** (1) The entry's "how to start" does
+not work: session-scope `setw` reports `on` and the next window is still destroyed;
+libtmux 0.62 has no `Session.set_window_option`. Window scope after creation holds.
+(2) tmux writes `Pane is dead (status N, …)` INTO the pane, which scrolls the grid up
+one line — a visible-only capture of a corpse loses the first line of everything it
+printed, and for a one-line session loses everything, so the report captures 50 lines
+of scrollback (which also caps it). (3) Freshness comes from the re-list, not from
+`session.refresh()`: membership was correct with no refresh at all, while a cached
+`Pane` read `pane_dead='0'` after the shell exited and kept its `pane_id` across a
+`respawn-window` that changed the pid. The comment that credited `refresh()` had
+mis-attributed the cause and is gone.
+
+**Decisions taken here.** Corpse disposition: **kill-on-report** — a retained window
+is destroyed by nothing else, and forgetting a name makes the corpse unreachable
+rather than gone (measured: 3 chats + 1 death = 5 windows; reusing the name = 6, one
+an abandoned `sandbox_env.sh[dead]`), and since the PROMPT sends the model to `lsterm`
+first, `pane_active()` harvests the real screen into the cache *before* forgetting and
+destroying. The hazard is measured too: killing the last window takes the session, and
+on our socket the server, so `retire()` checks and rebuilds the chat entry keeping the
+cache. And the cache now holds **what was reported** (dead screens without the cursor
+marker), so a repeat call repeats the exit status instead of appending a second notice.
+
+**Tests.** `unit:terminal` 119 → 173 by addition only: `t9` guard (6 red without it),
+`t10` socket (3 red), `test_screen` `t10`-`t13`, `test_lsterm` `t5`, `test_tool_call`
+`t11`; 22 of them red against the pre-change backend, 0 with it. The three
+`test_lsterm` death-waits moved from `window_exists` to a new non-mutating
+`window_dead`, because with `remain-on-exit` "the window is still there" is True
+forever — the same question, changed meaning, which is why the assertions were
+re-worded rather than the numbers touched. New gotcha found while testing: a
+`kill -SEGV $$` in a pane drops a core file in the tmux server's CWD, which is where
+the suite runs — the check sets `ulimit -c 0` first.
+
+**Docs synced in `e5b4fba`.** The PROMPT sentence *"when a session dies while not
+interacting with it, no output can be recovered"* is false and now says what happens
+instead; `TOOLS.md` §7 and §8; `RUNTIME-RUN-COMMAND.md`'s socket, dead-session,
+liveness and probe paragraphs; `TESTING.md`'s row, its note and the non-mutating-probe
+note; DECISIONS 69. `unit:prompt` 33 still green with the new PROMPT text.
+
+**Manual check the entry asked for** — a session that dies on its own reports its
+final screen *and* an exit status: verified by hand and by `t10`/`t11`. Sample report
+from the probe: `Session: d1` / `…first line…` / `…last line…` / `Pane is dead
+(status 4, Wed Sep 9 …)` / `INFO: Session dead. Exit status: 4.`
+
+**Left for the next agent** — the state layer (registry keyed by `window_id`, one
+`list-panes -a` per call instead of 6 `tmux` invocations for 45 ms, `window_name=name`
+written into tmux, "no such session" distinct from "session dead"). Measured and
+written up in DECISIONS 69(c); enhancement 9 of the followup-4 list. Ground truth for
+a run: 509 tools and unit 131/33/278/121/119, `unit:terminal` 173, FAIL 0 everywhere.
+
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)
 
