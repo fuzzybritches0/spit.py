@@ -32,7 +32,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 119 |
-| unit:terminal | 119 |
+| unit:terminal | 173 |
 
 ## The test venv (unit:terminal needs it)
 
@@ -62,7 +62,15 @@ up, per the rule above.)
 
 (`unit:terminal` was re-measured at 119 when `test_event_loop.py` landed on the
 `task-terminal-empty-output` branch: 98 → 119 by addition alone, every other row
-byte-for-byte where it was.)
+byte-for-byte where it was. It is 173 now, from the same branch: 119 → 129 for the
+`term_new` guard (`t9`, 6 of them red without the guard), → 136 for the private tmux
+socket (`t10`, 3 red without it), → 173 for `remain-on-exit` and the dead-session
+report (`test_screen` `t10`-`t13`, `test_lsterm` `t5`, `test_tool_call` `t11`; 22 of
+the whole set red against the pre-change backend). No existing check was deleted or
+re-numbered; the only existing assertions that changed are the three `test_lsterm`
+death-waits, re-pointed from `window_exists()` to `window_dead()` because
+`remain-on-exit` makes "the window is still there" true for a dead session — a
+question that now means something different, not a check that was wrong.)
 
 `unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
 `Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
@@ -136,7 +144,11 @@ harness **absolute** fixture paths.
   its line with a prompt (`screen_of()` joins first); and `pane_active()`
   **forgets** a dead window as a side effect, so a test that waits for death by
   polling it has cleaned the registry the code under test needs dirty —
-  `window_exists()` is the non-mutating probe. Both were found by running the
+  `window_dead()` is the non-mutating probe for "has the process exited".
+  `window_exists()` still exists but it asks a different question now — "does tmux
+  still hold the window" — and since the windows are made with `remain-on-exit` the
+  two answers differ for every dead session, so picking the wrong one is no longer
+  merely untidy, it waits forever. Both were found by running the
   suite against the unfixed code and watching it pass when it should have failed.
   `test_event_loop.py` (21 checks, the row's 98 → 119) is the one file that
   drives the *dispatcher* — the real `tool_call.ToolCall.call()`, the thing

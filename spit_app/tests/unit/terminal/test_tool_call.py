@@ -30,9 +30,9 @@ import tempfile
 import time
 
 from stub_app import (check, default_server_running, kill_private_server,
-                      make_terminal, pane_of, requested_sockets, stub_app,
-                      summary, tmux_available, use_private_server, wait_for,
-                      wait_for_text)
+                      make_terminal, pane_of, requested_sockets, send_raw,
+                      stub_app, summary, tmux_available, use_private_server,
+                      wait_for, wait_for_prompt, wait_for_text, window_dead)
 
 SOCKET = "spit-unit-terminal-call"
 
@@ -183,6 +183,42 @@ try:
               sorted(app.tmux["chat1"]["windows"]) + sorted(app.tmux["chat2"]["windows"]),
               ["t10", "t10-chat2"])
         # the user's own server is untouched: it is not what we just used
+
+    print("=== 11. input to a session that died between two calls ===")
+    # tmux ACCEPTS a send into a retained corpse and delivers nothing (measured: the
+    # screen was byte-identical afterwards), so the tool must refuse. What it refuses
+    # WITH matters as much: terminal.call() answers unconsumed input with
+    # `terminal.last_screen(name)`, so unless the refusal harvests the corpse's real
+    # final screen into that cache first, the model is shown a capture from BEFORE the
+    # death and never told what killed the session.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t11")
+        wait_for_prompt(app, "t11")
+        send_raw(app, "t11", "echo mm-died-between-calls; exit 7\n", True)
+        check("t11-pane-died", wait_for(lambda: window_dead(app, "t11") is True), True)
+        # the name is still registered (nothing has touched it), so call() takes its
+        # normal path -- no new session -- and the send is what discovers the death
+        answer = tool.call(app, {"name": "t11", "input": ["echo mm-into-a-corpses-ear"]},
+                           "chat1")
+        check("t11-refuses-and-says-it-is-dead", "INFO: Session dead." in answer, True)
+        check("t11-still-carries-the-real-final-screen",
+              "mm-died-between-calls" in answer, True)
+        check("t11-states-the-exit-status", "Exit status: 7." in answer, True)
+        check("t11-the-input-was-not-pretended-delivered",
+              "mm-into-a-corpses-ear" in answer, False)
+        check("t11-name-is-free-afterwards", "t11" in app.tmux["chat1"]["windows"], False)
+        # the two-item shape: the first input fails, so call() reports what it did
+        # not manage to send at all
+        t.term_new("t11b")
+        wait_for_prompt(app, "t11b")
+        send_raw(app, "t11b", "exit 8\n", True)
+        check("t11b-pane-died", wait_for(lambda: window_dead(app, "t11b") is True), True)
+        answer = tool.call(app, {"name": "t11b",
+                                 "input": ["echo mm-too-late", "Enter"]}, "chat1")
+        check("t11b-reports-unconsumed-input", "unconsumed input" in answer, True)
+        check("t11b-says-it-is-dead", "INFO: Session dead." in answer, True)
         check("t10-ran-no-server-on-the-user-s-default-socket",
               default_server_running(), default_before)
 

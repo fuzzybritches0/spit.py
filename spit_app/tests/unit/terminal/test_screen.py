@@ -21,7 +21,8 @@ import tempfile
 
 from stub_app import (check, kill_private_server, kill_window, make_terminal,
                       send_raw, stub_app, summary, tmux_available,
-                      use_private_server, wait_for, wait_for_text)
+                      use_private_server, wait_for, wait_for_prompt,
+                      wait_for_text, window_dead)
 
 SOCKET = "spit-unit-terminal-screen"
 
@@ -170,6 +171,102 @@ try:
         report = t.term_screen("t9")
         check("t9-says-it-is-dead", "INFO: Session dead." in report, True)
         check("t9-carries-the-pre-input-screen", "mm-pre-input-screen" in report, True)
+
+    # ------------------------------------------------------------------
+    # 10 onwards: what `remain-on-exit` bought. The distinction that matters in
+    # every one of them is between the screen the CACHE holds -- something we
+    # happened to capture while the session was alive -- and the screen tmux still
+    # has on the dead pane. t4/t5/t9 above pin the cache path and stay as they
+    # were; these pin the real one, so a token that was NEVER captured while the
+    # session ran still arrives.
+    print("=== 10. a session that dies on its own reports what it really printed ===")
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t10")
+        wait_for_prompt(app, "t10")
+        # ONE call, and that call is the death: nothing is ever captured while this
+        # session lives, so anything in the report can only come from the pane.
+        send_raw(app, "t10", "echo mm-never-captured-alive; exit 4\n", True)
+        check("t10-says-it-is-dead", wait_for(
+            lambda: "INFO: Session dead." in t.term_screen("t10")), True)
+        report = t.last_screen("t10")
+        check("t10-carries-the-screen-it-never-showed-us",
+              "mm-never-captured-alive" in report, True)
+        # the exit code is asserted from TMUX's own line, not from our prose: that
+        # line is the authority, and it is on the pane, so it cannot be invented by
+        # the report writer.
+        check("t10-tmux-s-own-line-states-the-status",
+              "Pane is dead (status 4" in report, True)
+        check("t10-the-notice-states-the-status", "Exit status: 4." in report, True)
+        check("t10-it-is-the-session-s-own-screen", report.startswith("Session: t10"), True)
+
+    print("=== 11. tmux's dead notice does not eat the first line any more ===")
+    # tmux writes `Pane is dead (status N, ...)` INTO the pane and that scrolls the
+    # grid up by one line. Measured on tmux 3.7b with 1, 2, 3 and 10 lines printed:
+    # a visible-only capture lost the FIRST line every time, and for a one-line
+    # session it lost the only line -- which is exactly the crash-report case this
+    # feature exists for. The report therefore captures from the scrollback.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t11")
+        wait_for_prompt(app, "t11")
+        send_raw(app, "t11", "printf 'mm-one-and-only-line\\n'; exit 2\n", True)
+        check("t11-one-line-session-still-reports-it", wait_for(
+            lambda: "mm-one-and-only-line" in t.term_screen("t11")), True)
+        t.term_new("t11b")
+        wait_for_prompt(app, "t11b")
+        send_raw(app, "t11b", "printf 'mm-first-of-three\\nmm-second\\nmm-third\\n'; exit 2\n",
+                 True)
+        check("t11b-waited-for-the-report", wait_for(
+            lambda: "INFO: Session dead." in t.term_screen("t11b")), True)
+        both = t.last_screen("t11b")
+        check("t11b-kept-the-first-line", "mm-first-of-three" in both, True)
+        check("t11b-kept-the-last-line", "mm-third" in both, True)
+
+    print("=== 12. a death by signal does not report an empty exit status ===")
+    # pane_dead_status is set for a normal exit and may be EMPTY for a death by
+    # signal, which is why the notice is conditional. Whatever tmux says for a
+    # signalled shell, it must never read "Exit status: ."
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t12")
+        wait_for_prompt(app, "t12")
+        # `ulimit -c 0` first: the window's CWD is the tmux SERVER's, which is the
+        # directory the suite was started in, and a segfaulting shell drops a core
+        # file there. (It did. The repo root filled with them.)
+        send_raw(app, "t12", "ulimit -c 0; kill -SEGV $$\n", True)
+        check("t12-reports-the-death", wait_for(
+            lambda: "INFO: Session dead." in t.term_screen("t12")), True)
+        report = t.last_screen("t12")
+        check("t12-no-empty-exit-status", "Exit status: ." in report, False)
+        check("t12-still-says-it-is-dead", "INFO: Session dead." in report, True)
+
+    print("=== 13. reusing a dead name is a new session, not the corpse's screen ===")
+    # t7 covers reuse after the window is gone. With the window retained this is the
+    # case that could resurrect the old screen: the tmux window is still there, so a
+    # reuse that merely re-registered it would answer with the dead session's last
+    # screen -- and the model would be reading a finished session's output believing
+    # it had just started a new one.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t13")
+        wait_for_prompt(app, "t13")
+        send_raw(app, "t13", "echo mm-the-old-session; exit 3\n", True)
+        check("t13-old-session-died-and-was-reported", wait_for(
+            lambda: "mm-the-old-session" in t.term_screen("t13")), True)
+        check("t13-reuse-succeeds", t.term_new("t13"), None)
+        check("t13-new-session-draws-a-prompt", wait_for_prompt(app, "t13"), True)
+        send_raw(app, "t13", "echo mm-the-new-session\n", True)
+        check("t13-new-token-arrived", wait_for_text(app, "t13", "mm-the-new-session"), True)
+        fresh = t.term_screen("t13")
+        check("t13-shows-the-new-screen", "mm-the-new-session" in fresh, True)
+        check("t13-does-not-resurrect-the-old-screen",
+              "mm-the-old-session" in fresh, False)
+        check("t13-no-dead-notice-on-a-live-session", "INFO: Session dead." in fresh, False)
 finally:
     kill_private_server(SOCKET)
 

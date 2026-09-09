@@ -205,6 +205,33 @@ def window_exists(app, name: str) -> bool:
     return window in chat["session"].windows
 
 
+def window_dead(app, name: str):
+    """Has the registered window's PROCESS exited -- and nothing else.
+
+    Since the windows are created with `remain-on-exit` on, tmux keeps them after
+    their shell dies, so "is the window still there" (window_exists) and "is the
+    session still alive" are now two different questions with different answers:
+    for a dead one the first is True and the second is False. A death-wait has to
+    poll the second.
+
+    It cannot poll pane_active() -- that is decision 67's trap, and a sharper one
+    now: pane_active() FORGETS the name it finds dead, so a test that waits on it
+    cleans up the very state the code under test is meant to be handed. This reads
+    the pane and touches no bookkeeping at all.
+
+    None means there is nothing to ask: the name is not registered, or tmux has no
+    window for it. True/False is the answer when there is.
+    """
+    chat = app.tmux.get("chat1", {})
+    window = chat.get("windows", {}).get(name)
+    if window is None or "session" not in chat:
+        return None
+    if window not in chat["session"].windows:
+        return None
+    panes = window.panes
+    return panes[0].pane_dead == "1" if panes else None
+
+
 def kill_window(app, name: str) -> None:
     """Close the tmux window the way a dying shell does, from outside the tool."""
     window = app.tmux["chat1"]["windows"][name]
