@@ -1,6 +1,20 @@
 # SPDX-License-Identifier: GPL-2.0
+import os
 import libtmux
 from .common import CommonMixIn
+
+# The tmux server this spit.py process owns, named after its pid. A bare
+# `libtmux.Server()` means the DEFAULT socket (/tmp/tmux-1000/default), and on
+# that socket we would (a) create our windows among the user's own sessions,
+# where a name that collides with one of theirs gets typed into by us, and
+# (b) run `kill-server` there when the app quits: actions.py action_exit_app
+# calls `self.tmux[chat_id]["server"].kill()`, and libtmux Server.kill() is
+# literally `tmux kill-server` -- so quitting the app would have taken down
+# every session of the user's tmux. The pid keeps it ours alone: two spit.py
+# processes never share a server, and one process with five chats has five
+# sessions in one server rather than five servers.
+def server_socket() -> str:
+    return f"spit-{os.getpid()}"
 
 KEYS = ["Up", "Down", "Left", "Right", "Space", "Tab", "Delete", "End", "Enter", "Escape", "Esc", "F1",
         "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10" , "F11", "F12", "Home", "Insert", "PageDown",
@@ -61,7 +75,7 @@ class Terminal(CommonMixIn):
         cmd_args = " ".join(cmd_args)
         if not self.chat_id in self.tmux:
             self.tmux[self.chat_id] = {}
-            self.tmux[self.chat_id]["server"] = libtmux.Server()
+            self.tmux[self.chat_id]["server"] = libtmux.Server(socket_name=server_socket())
             self.tmux[self.chat_id]["session"] = self.tmux[self.chat_id]["server"].new_session()
             self.tmux[self.chat_id]["windows"] = {}
         self.forget_screen(name)

@@ -25,12 +25,14 @@ that died. It now asks Terminal for the names, snapshotted before any check, and
 the liveness rule exists in one place instead of two.
 """
 import shutil
+import os
 import tempfile
 import time
 
-from stub_app import (check, kill_private_server, make_terminal, pane_of,
-                      stub_app, summary, tmux_available, use_private_server,
-                      wait_for, wait_for_text)
+from stub_app import (check, default_server_running, kill_private_server,
+                      make_terminal, pane_of, requested_sockets, stub_app,
+                      summary, tmux_available, use_private_server, wait_for,
+                      wait_for_text)
 
 SOCKET = "spit-unit-terminal-call"
 
@@ -149,6 +151,40 @@ try:
             # have poisoned the session it created
             t.SANDBOX_ENV = REAL_SANDBOX_ENV
             check(f"t9-{shape}-chat-still-usable", t.term_new(f"t9-after-{shape}"), None)
+
+    print("=== 10. the tmux server it builds is one we own, not the user's ===")
+    # A bare `libtmux.Server()` is the user's DEFAULT tmux server. The tool
+    # created its sessions there, so (a) our windows lived among theirs, named
+    # after whatever the model called them, and (b) actions.py action_exit_app
+    # calls `self.tmux[chat_id]["server"].kill()` -- libtmux Server.kill() is
+    # `tmux kill-server` -- so QUITTING SPIT.PY TOOK DOWN THE USER'S TMUX. The
+    # wrapper in stub_app forces its own socket (a setdefault would let
+    # production's name win, and the suite would be driving the very socket it is
+    # supposed to be isolated from) and records what was asked; these checks are
+    # how the production choice is pinned without ever driving it.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        default_before = default_server_running()
+        del requested_sockets[:]
+        t = make_terminal(app)
+        t.term_new("t10")
+        check("t10-a-server-was-built", len(requested_sockets) >= 1, True)
+        check("t10-it-named-a-socket", None in requested_sockets, False)
+        check("t10-not-the-user-default-socket",
+              all(str(s).startswith("spit-") for s in requested_sockets), True)
+        check("t10-the-socket-is-this-process-s",
+              all(str(s).endswith(str(os.getpid())) for s in requested_sockets), True)
+        # one server per process, one session per chat: a second chat asks for the
+        # SAME socket, so five chats do not mean five tmux servers
+        from spit_app.tools.run.terminal import Terminal
+        Terminal(app, "chat2", False).term_new("t10-chat2")
+        check("t10-every-chat-shares-one-server", len(set(requested_sockets)), 1)
+        check("t10-both-chats-got-a-window",
+              sorted(app.tmux["chat1"]["windows"]) + sorted(app.tmux["chat2"]["windows"]),
+              ["t10", "t10-chat2"])
+        # the user's own server is untouched: it is not what we just used
+        check("t10-ran-no-server-on-the-user-s-default-socket",
+              default_server_running(), default_before)
 
 finally:
     kill_private_server(SOCKET)
