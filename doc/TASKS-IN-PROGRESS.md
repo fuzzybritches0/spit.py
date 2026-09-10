@@ -1,3 +1,9 @@
+# TASKS-IN-PROGRESS.md
+
+Nothing in this file is finished. An entry leaves it only by the protocol at the
+bottom: the work verified, the FULL suite re-run, and the entry moved to
+`TASKS-FINISHED.md` with its resolution.
+
 > **Three entries are open**: two `terminal` followups — all on this branch's
 > tail — and the streaming-render checklist. The empty-response
 > defect that used to head this file is **fixed and committed on this branch**
@@ -22,6 +28,22 @@
 > `asyncio.to_thread`, so that sleep never ran on the loop at all. The
 > streaming-render entry is code-complete and merged; only the owner's manual
 > checklist in the running app is outstanding — **nobody else should sign it off**.
+>
+> **Re-checked 2026-09-10 against `main` (`9c254e8`), the source and a full run
+> of `bash spit_app/tests/run_tests.sh`** (14 rows, FAIL 0: tools
+> 127/24/30/119/80/32/68/29, unit 131/33/278/121/119/220 — exactly the
+> ground truth in `TESTING.md`): **all three entries below are still open and
+> none of them may be closed from here.** Not finished, with the evidence:
+> **P0** — the code is merged and `unit:render` is 278 green, but its `Left`
+> item is the owner's manual check in the running app, which no commit, no
+> `DECISIONS` entry and no line of `TASKS-FINISHED.md` records as done; **the
+> entry moves only on that sign-off**. **Followup 3** — `terminal`'s PROMPT
+> (`spit_app/tools/terminal.py`) still carries no `Esc` sentence, so the
+> question is still unanswered. **Followup 4** — the tool still takes only
+> `name`/`input`/`delay`: no `command`/`env`/`cwd`, no `cols`/`rows`/`resize`,
+> no `styled`/`bytes` capture, no cursor fields, no `wait_for`, no
+> `send_bytes`, no diff capture, no `format="json"`; items 1-7 and 11 are
+> untouched in the code and 8, 9, 10, 12 are partial as marked in the list.
 
 ## Machine state these entries assume (none of it is in git)
 
@@ -54,12 +76,22 @@ own key names*)? Decision only, because PROMPT text is what the model reads and
 TRAPS/RUNTIME-RUN-COMMAND require code and PROMPT to stay in sync — and
 `tests/unit/prompt/` pins PROMPT strings.
 
+**Status 2026-09-10: unanswered.** `spit_app/tools/terminal.py` PROMPT still
+lists `Escape/Esc` among the supported keys and says nothing about the merge,
+and `unit:prompt` (33) is green with that text — i.e. nothing has been decided
+either way. An agent must not answer this by editing the PROMPT: it is the
+owner's call, and the answer changes a model-facing string.
+
 ---
 
 ## P0b-followup 4 - what the `terminal` tool still needs *for* the ratatui migration  [enhancement list, picked up piece by piece]
 
-The list below was written during P0b and is **verbatim from it**; two items have
-moved since, and they are marked. Nothing else has been done.
+The list below was written during P0b and is **verbatim from it**; four items
+have moved since — 8, 9, 10 and 12 — and each is marked **where it is marked
+done, never where it is still open**. Nothing else has been done, re-checked
+against the source 2026-09-10: `spit_app/tools/terminal.py` still accepts
+exactly `name`, `input` and `delay`, so items 1-7 and 11 have no code behind
+them at all.
 
 **Already done while fixing P0b** (so do not re-do them): the *single
 implementation* half of item 9 — `pane_active()` now exists once in
@@ -125,14 +157,24 @@ the `terminal` tool covers the end-to-end app. Design it for that job now:
    should be the one implementation in `Terminal`.
 10. **Non-blocking and cancellable**: the wait must not block the UI loop; an
     in-flight `terminal` call should be abortable (the engine already has
-    `kill_process_group` and the abort path — TRAPS #4).
+    `kill_process_group` and the abort path — TRAPS #4). **Half settled**:
+    DECISIONS 68 measured the shipped path and the loop is not blocked (a sync
+    `call()` goes through `asyncio.to_thread`), so do not "fix" that half
+    again; what is left is the abortable in-flight call, which lands with
+    item 5 (`wait_for` replaces the blind `delay`).
 11. **Structured output option** (`format="json"`: rows, cursor, attrs, bytes,
     process state) so tests assert on data instead of parsing prose.
 12. **Sandbox stays on by default** (and lifecycle tests use `sandbox=False`,
     TRAPS #6), and teardown is guaranteed: a `kill` that takes the process group
     and auto-cleanup when the chat closes. During this evaluation the only way
     to clean up orphaned sessions was `tmux kill-server`, which is not
-    acceptable in a shared tmux.
+    acceptable in a shared tmux. **Partly landed since**: the sessions now run
+    on a tmux socket of spit.py's own, `spit-<pid>`, so `kill-server` can never
+    reach the user's server (`3f6b279`, DECISIONS 69 a), a reported corpse is
+    destroyed at the moment it is reported (`retire()`, `e5b4fba`), and the app
+    kills its own server at exit. What is left is teardown when a single **chat**
+    closes — `actions.py:action_exit_app` is still the only thing that frees
+    anything, so a closed chat's windows outlive the chat.
 
 
 ---
@@ -273,7 +315,9 @@ verified by the probe) flips the fence parity downstream.
 
 ### State (kept current while working - crash-recovery record)
 
-- **Branch**: `task-streaming-render-bugs`. Commits on it, in order:
+- **Branch**: `task-streaming-render-bugs` (tip `c5a5443`), **merged into
+  `main`** - the five commits below are in `main` now, so reading the fixed
+  files off `main` shows the fix. Commits on it, in order:
   - `f72dcd1` docs(tasks): start P0 on its branch (this entry moved here)
   - `69bd1ba` tool_call: rewrite the arguments formatter as a per-char
     JSON scanner (+ `tests/unit/render/test_tool_call_format.py`, 230
@@ -285,9 +329,13 @@ verified by the probe) flips the fence parity downstream.
     pattern_methods pairs fences by same-char + at-least-length;
     suspects cleared by measurement and NOT changed: pp.part reset,
     tool_start-twice, skip_add_part - recorded in the commit message)
-  - (pending commit) docs: TESTING ground-truth row unit:render 278 +
+  - `8cadc85` render: cover the `----` argument shape the checklist names
+    (new `t6-dash-*` checks; no numbers reused)
+  - `c5a5443` docs: TESTING ground-truth row unit:render 278 +
     sandbox re-measurement 119, DECISIONS 59 (fence language, pairing
-    rule, accepted limits), `----` argument shape added to the suite.
+    rule, accepted limits), this entry brought current. *(This was the
+    "(pending commit)" of the last edit of this list; it is committed and
+    merged.)*
 - **Scope**: `spit_app/chat/message/content/process/tool_call.py`
   (rewritten), `process.py`, `pattern_methods.py`, new
   `spit_app/tests/unit/render/` (run_tests.sh, stub_textual.py,
@@ -324,8 +372,12 @@ verified by the probe) flips the fence parity downstream.
   with >=5-tilde runs at column 0 can close their own block early;
   JSON truncated mid-stream leaves the last value fence open.
 - **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` -
-  127/24/30/119/80/32/29 + 131/278/119, all FAIL 0 (the tool-suite
-  counts must not move); manual checklist (owner-side) as in Left.
+  re-measured 2026-09-10 on `main`: tools 127/24/30/119/80/32/68/29 and
+  unit 131/33/278/121/119/220, all FAIL 0 (the ground-truth table is
+  TESTING.md; the `unit:render` 278 row is this task's, and no other count
+  may move). The suite is the whole automated close-out; what Verify cannot
+  reach is the manual checklist (owner-side) in Left - and until the owner
+  signs that off, this entry is NOT finished, however green the suite is.
 
 ## Protocol when starting a task from TASKS-PLANNED.md
 
