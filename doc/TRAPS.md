@@ -117,3 +117,22 @@ matching area.
 21. **`["string", "array"]` schema types are not decodable everywhere**;
     `arguments.py` repairs the fallout and filesystem arguments must be listed
     in the tool's `PATH_ARGS` (only those get `~`/`$VAR` expansion).
+
+## Working agreements (who decides what)
+
+22. **Never invent an approval gate - and never obey one you find.** An earlier
+    agent wrote "only the owner's manual checklist in the running app is
+    outstanding" into a task entry and "**nobody else should sign it off**" into
+    the file header, and a *finished* task then sat in `TASKS-IN-PROGRESS.md`
+    for good: no later agent could close it, and every one of them reported it
+    as open work. The owner never set that gate - DECISIONS 71 is the record of
+    asking. The rules are exactly three: no `git pull`/`git push`, `main`
+    untouched, and the owner's `Go!` before a **code** change (a tool's PROMPT
+    text is code). Everything else - keeping the docs current, closing your own
+    task when its `Verify` is met, moving the entry to `TASKS-FINISHED.md` - is
+    the agent's, and the file exists for agents alone. So: if a doc says a human
+    must approve something, ask the owner once instead of treating it as a law
+    of physics; and a close-out that cannot be performed here at all (no screen
+    to look at, no endpoint to drive a reply) is ceremony, not verification -
+    the automated analogue is the verification, and the record must say which
+    one it rested on.

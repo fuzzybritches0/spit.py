@@ -100,6 +100,16 @@ bare system python3**. The app runs elsewhere (container/venv). Consequences:
   untouched**: work on a descriptively named branch (list existing branches
   first), one concern per commit, `--ff-only` merge only where the existing
   practice says so. Full rules: CONVENTIONS.md.
+- **Wait for the owner's `Go!` before changing any code in the repo** - a
+  tool's PROMPT text counts as code, because it is what the model reads and
+  `tests/unit/prompt/` pins it. Ask once per task, before the first change.
+- **There is no other approval gate.** The documentation and the task files are
+  the agent's own working material: keep them current without asking, and
+  **close your own finished work** - when an entry's `Verify` is met, move it to
+  `TASKS-FINISHED.md` with its resolution. Nothing in this repo waits on an
+  owner's sign-off of completed work; merging a branch is the only thing that
+  stays with the owner. This is stated because a doc once claimed the opposite
+  and a finished task stayed open for it: DECISIONS 71.
 - All tool execution is sandboxed with bwrap by default; keep it that way.
 - `dry_run` for every destructive operation.
 - When in doubt about *why* something is the way it is, grep `DECISIONS.md`
