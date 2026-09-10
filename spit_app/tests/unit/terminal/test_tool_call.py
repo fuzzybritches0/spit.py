@@ -110,8 +110,32 @@ try:
     with tempfile.TemporaryDirectory() as root:
         t = make_terminal(stub_app(root))
         check("t7-returns-false-not-keyerror", t.pane_active("anything"), False)
-        check("t7-screen-of-the-unknown-chat-says-dead",
-              "INFO: Session dead." in t.term_screen("anything"), True)
+        # RE-WORDED, not deleted (state layer, DECISIONS 70). This is `term_screen`
+        # of a name that has never existed in a chat that has never had a tmux
+        # entry, and it used to assert the DEAD-SESSION sentence -- which told the
+        # model a session of its own had died. The intent of the line is the one
+        # that matters: the answer is a report about that name, not a crash and not
+        # an empty container. So it asserts the report it is supposed to give: the
+        # name, the reason there is nothing to show, and the way to get one -- and
+        # that nothing is claimed about a death.
+        report = t.term_screen("anything")
+        check("t7-names-the-session", report.startswith("Session: anything"), True)
+        check("t7-says-there-is-no-such-session", "INFO: No such session." in report, True)
+        check("t7-does-not-claim-a-death", "INFO: Session dead." in report, False)
+        check("t7-not-an-empty-container", len(report) > len("Session: anything\n\n"), True)
+        # and the two answers stay two answers: a name this chat HAS had, and whose
+        # pane tmux retained, still reports the death it really died, with tmux's
+        # own exit status. Same tool, same chat, different truth.
+        dead_app = stub_app(root)
+        dead = make_terminal(dead_app)
+        dead.term_new("t7-real")
+        wait_for_prompt(dead_app, "t7-real")
+        send_raw(dead_app, "t7-real", "echo mm-it-really-died; exit 9\n", True)
+        check("t7-real-died", wait_for(lambda: window_dead(dead_app, "t7-real") is True), True)
+        died = dead.term_screen("t7-real")
+        check("t7-a-name-it-had-says-it-is-dead", "INFO: Session dead." in died, True)
+        check("t7-and-carries-the-exit-status", "Exit status: 9." in died, True)
+        check("t7-no-not-a-missing-name-either", "No such session" in died, False)
 
     print("=== 8. the arguments call() refuses ===")
     with tempfile.TemporaryDirectory() as root:

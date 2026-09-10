@@ -32,7 +32,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 119 |
-| unit:terminal | 173 |
+| unit:terminal | 220 |
 
 ## The test venv (unit:terminal needs it)
 
@@ -71,6 +71,28 @@ re-numbered; the only existing assertions that changed are the three `test_lster
 death-waits, re-pointed from `window_exists()` to `window_dead()` because
 `remain-on-exit` makes "the window is still there" true for a dead session — a
 question that now means something different, not a check that was wrong.)
+
+(`unit:terminal` is 220 with the tmux state layer (DECISIONS 70), same branch,
+same rule: 173 → 220, every other row unmoved. +37 `test_screen` `t14`-`t17`
+(id registry and tmux-side window names; the last terminal reported taking the
+session and the server down; the cost of a call counted in `tmux` invocations —
+2 for a capture, 1 for a listing — and the stale-id alias guard, both guards of
+it), +7 `test_tool_call` `t7`, +2 `test_event_loop` `t3`, +1 in `test_screen`
+`t6`. Against the pre-layer backend 18 of `test_screen` and 2 of
+`test_tool_call` go red — `t6` (3), `t14` (4), `t15` (1: the stray window still
+holds the session open), `t16` (6), `t17`'s stamp half (4) — while
+`t17`'s alias half is green on BOTH codes (copying another chat's registry ENTRY
+is caught even by the old membership check — it pins the guard's intent, it does
+not discriminate the codes), and `test_lsterm`, `test_keys` and
+`test_event_loop` stay green on both (t3's checks measure the dispatcher's hop,
+which both codes have; they go red only under section 2's control).
+`t3`'s ratio check became a BURST comparison (5 captures on the loop against 5
+through the hop, same 0.5 margin): at ~16 ms per capture the single-call gap it
+compared had nothing left to separate — the check got weaker-looking precisely
+because the tool got faster, and the burst measures the hop's real job. The two
+re-worded assertions (`t6`, `t7` — one each, numbers and check-counts kept)
+are the deliberate behaviour changes DECISIONS 70 records: "no such session" is
+now a distinct answer from "session dead".)
 
 `unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
 `Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
@@ -150,7 +172,21 @@ harness **absolute** fixture paths.
   two answers differ for every dead session, so picking the wrong one is no longer
   merely untidy, it waits forever. Both were found by running the
   suite against the unfixed code and watching it pass when it should have failed.
-  `test_event_loop.py` (21 checks, the row's 98 → 119) is the one file that
+  Reading the registry and reading tmux are two different questions since the state
+  layer: `window_id_of()`/`registered_window_id()` read the registry (which window_id
+  a name was given — ids now, and `window_id_of` also accepts the object-shaped
+  registry so the harness still fits the code under a differential), while
+  `tmux_panes()` (one libtmux `Server.panes` = one `list-panes -a`),
+  `tmux_window_names()`, `session_window_ids()`, `tmux_session_ids()` and
+  `registered_ids_are_all_the_windows()` ask tmux, independently of the tool — a
+  test that believed the tool's own snapshot would be testing the tool's own
+  snapshot. `counted_tmux_invocations()` records EVERY `tmux` process libtmux
+  starts (all seven of the modules that imported `tmux_cmd` into their own
+  namespace are wrapped — wrapping one counts nothing) and stores the SUBCOMMAND,
+  not `args[0]`, which is the `-L<socket>` flag on every single call; that is what
+  lets `test_screen` t16 pin "a capture is 2 invocations, a listing is 1" instead
+  of hoping nobody quietly adds a round-trip back.
+  `test_event_loop.py` (23 checks, the row's 98 → 119) is the one file that
   drives the *dispatcher* — the real `tool_call.ToolCall.call()`, the thing
   `chat/work.py` awaits — rather than calling `call()` directly, because the
   property it pins belongs to the dispatcher's `asyncio.to_thread` hop: a

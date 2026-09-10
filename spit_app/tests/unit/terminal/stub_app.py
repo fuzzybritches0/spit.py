@@ -138,8 +138,63 @@ def make_terminal(app, sandbox: bool = False):
     return Terminal(app, "chat1", sandbox)
 
 
+# ------------------------------------------------------------------------------------
+# Reading the registry, and reading tmux, are now two different things.
+#
+# `app.tmux[chat_id]["windows"]` maps a session NAME to the `window_id` tmux gave
+# that window (it used to hold libtmux Window OBJECTS, which is what went stale --
+# see run/terminal.py). So a test asks the registry WHICH window a name is, and asks
+# tmux, from a fresh listing, what that window is doing. `tmux_panes()` is one
+# `list-panes -a` through libtmux, keyed by window_id, and it carries the fields the
+# production snapshot needs and the tests want to see independently of it:
+# `window_name` (does tmux call the window what the registry calls it?),
+# `pane_current_command`, `pane_dead`.
+#
+# `window_id_of()` also accepts the object-shaped registry the code BEFORE the state
+# layer stored. That is not leniency for its own sake: a differential runs THESE
+# tests against THAT code, and a harness that only fits the new registry cannot show
+# which checks the old code fails.
+# ------------------------------------------------------------------------------------
+
+def window_id_of(entry) -> str:
+    """The `window_id` of a registry entry, whether the registry holds ids or objects."""
+    return entry if isinstance(entry, str) else entry.window_id
+
+
+def registered_window_id(app, name: str):
+    """The window_id the registry holds for a session name (None: not registered)."""
+    entry = app.tmux.get("chat1", {}).get("windows", {}).get(name)
+    return None if entry is None else window_id_of(entry)
+
+
+def tmux_panes(app) -> dict:
+    """{window_id: Pane} for every pane tmux holds, read NOW, one round-trip.
+
+    libtmux's own `Server.panes` is a `list-panes -a`, so this is the same question
+    the tool asks -- asked independently, which is the point: a test that believed
+    the tool's own objects would be testing the tool's own objects.
+    """
+    server = app.tmux.get("chat1", {}).get("server")
+    if server is None:
+        return {}
+    return {pane.window_id: pane for pane in server.panes}
+
+
+def tmux_window_names(app) -> dict:
+    """{session name: the name tmux itself shows for that window}."""
+    panes = tmux_panes(app)
+    # window_id_of, not the raw entry: with the object-shaped registry (the code
+    # before the state layer) a Window is unhashable and cannot be a dict key --
+    # the differential has to be able to run THIS against THAT and record reds.
+    return {name: panes[window_id_of(entry)].window_name
+            for name, entry in app.tmux["chat1"]["windows"].items()
+            if window_id_of(entry) in panes}
+
+
 def pane_of(app, name: str):
-    return app.tmux["chat1"]["windows"][name].panes[0]
+    """The pane of a registered name, read from a fresh listing. Raises KeyError if
+    tmux does not have that window: a test asking about it is the bug."""
+    return tmux_panes(app)[registered_window_id(app, name)]
 
 
 def screen_of(app, name: str) -> str:
@@ -196,13 +251,14 @@ def window_exists(app, name: str) -> bool:
     quietly cleaned the registry, and the code under test then never meets the
     dead entry it is supposed to survive. Waiting on this instead leaves the
     registry untouched, so the dead window is still in it when the tool is called.
+
+    It asks tmux, not the registry: the registry says which window_id the name was
+    given, and this asks whether tmux still holds that id. (`window in
+    session.windows` compares the same `window_id`; asking a listing instead keeps
+    the test off the objects the tool is built on.)
     """
-    chat = app.tmux.get("chat1", {})
-    window = chat.get("windows", {}).get(name)
-    if window is None:
-        return False
-    chat["session"].refresh()
-    return window in chat["session"].windows
+    window_id = registered_window_id(app, name)
+    return window_id is not None and window_id in tmux_panes(app)
 
 
 def window_dead(app, name: str):
@@ -217,25 +273,104 @@ def window_dead(app, name: str):
     It cannot poll pane_active() -- that is decision 67's trap, and a sharper one
     now: pane_active() FORGETS the name it finds dead, so a test that waits on it
     cleans up the very state the code under test is meant to be handed. This reads
-    the pane and touches no bookkeeping at all.
+    the pane from a fresh listing and touches no bookkeeping at all.
 
     None means there is nothing to ask: the name is not registered, or tmux has no
     window for it. True/False is the answer when there is.
     """
-    chat = app.tmux.get("chat1", {})
-    window = chat.get("windows", {}).get(name)
-    if window is None or "session" not in chat:
-        return None
-    if window not in chat["session"].windows:
-        return None
-    panes = window.panes
-    return panes[0].pane_dead == "1" if panes else None
+    pane = tmux_panes(app).get(registered_window_id(app, name))
+    return None if pane is None else pane.pane_dead == "1"
 
 
 def kill_window(app, name: str) -> None:
     """Close the tmux window the way a dying shell does, from outside the tool."""
-    window = app.tmux["chat1"]["windows"][name]
-    window.kill()
+    libtmux.Window(server=app.tmux["chat1"]["server"],
+                   window_id=registered_window_id(app, name)).kill()
+
+
+def session_window_ids(app, chat_id: str = "chat1") -> list:
+    """Every window id tmux holds in this chat's session, registered or not.
+
+    The tests ask this when they need to know whether tmux holds a window that
+    NOTHING in the chat is registered under -- the window tmux creates along with
+    every session, which no listing of the tool's ever shows, which nothing names,
+    and which holds the session (and so the server) open after the last real
+    terminal in it has been reported and destroyed.
+    """
+    chat = app.tmux.get(chat_id, {})
+    session, server = chat.get("session"), chat.get("server")
+    if session is None or server is None:
+        return []
+    return [pane.window_id for pane in server.panes
+            if pane.session_id == session.session_id]
+
+
+def tmux_session_ids(app, chat_id: str = "chat1") -> list:
+    """The session ids tmux holds on this chat's server RIGHT NOW (nothing at all
+    if there is no server there).
+
+    This is the question the state layer cannot answer for itself -- it is exactly
+    what `retire()` asks before deciding the chat entry has to be rebuilt -- so a
+    test that asked the tool would be asking the code under test to mark its own
+    homework.
+    """
+    chat = app.tmux.get(chat_id, {})
+    server = chat.get("server")
+    return [] if server is None else [session.session_id for session in server.sessions]
+
+
+def registered_ids_are_all_the_windows(app) -> bool:
+    """Does tmux hold exactly the windows the registry names, and no others?"""
+    return sorted(session_window_ids(app)) == sorted(
+        window_id_of(entry) for entry in app.tmux["chat1"]["windows"].values())
+
+
+class counted_tmux_invocations:
+    """Context manager recording EVERY `tmux` process libtmux starts, in order.
+
+    Cost is half the reason the state layer exists: one capture built out of cached
+    objects was 6 `tmux` invocations -- 3 of them libtmux's own ~100-field
+    list-sessions/list-windows/list-panes -- plus 2 `display-message` calls for the
+    cursor, 45 ms, where ONE narrow `list-panes -a` for the whole server is 7 ms. A
+    claim about cost is a claim a later edit can undo without failing any
+    behavioural check, so the shape of the work is asserted directly.
+
+    libtmux starts tmux through the name `tmux_cmd`, and every module that needs it
+    imported that name into its OWN namespace, so wrapping one module leaves the
+    rest counting nothing: all of them are wrapped.
+    """
+
+    MODULES = ("common", "neo", "options", "server", "session", "window", "pane")
+
+    def __init__(self):
+        self.calls = []
+        self.saved = []
+
+    def __enter__(self):
+        import importlib
+        for name in self.MODULES:
+            module = importlib.import_module("libtmux." + name)
+            real = getattr(module, "tmux_cmd", None)
+            if real is None:
+                continue
+            calls = self.calls
+
+            def counting(*args, real=real, **kwargs):
+                # NOT args[0]: libtmux passes the socket flag FIRST
+                # (`-Lspit-<pid>`), measured, so the first argument of every call is
+                # the same string and a count of it counts nothing. The name of the
+                # command is the first argument that is not a flag.
+                calls.append(next((str(a) for a in args if not str(a).startswith("-")), ""))
+                return real(*args, **kwargs)
+
+            self.saved.append((module, real))
+            module.tmux_cmd = counting
+        return self.calls
+
+    def __exit__(self, *exc):
+        for module, real in self.saved:
+            module.tmux_cmd = real
+        return False
 
 
 pass_ = 0
