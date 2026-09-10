@@ -7,11 +7,14 @@ push), and keep the State field honest so an abandoned task is recoverable.
 
 ---
 
-## P0 - MOVED to TASKS-IN-PROGRESS.md  [high priority, user-visible bug]
+## P0 - DONE - garbled streaming render: tool-call arguments and streamed tool output
 
-Started on branch `task-streaming-render-bugs`; the full entry (symptoms,
-data-flow map, probe, suspects, constraints) and its live State fields are in
-`TASKS-IN-PROGRESS.md`.
+Branch `task-streaming-render-bugs` (`69bd1ba`, `ba87435`, `8cadc85`,
+`c5a5443`), **merged into `main`**; resolution in `TASKS-FINISHED.md` (root
+causes, the 278 checks of `tests/unit/render/`, the two accepted limits), the
+fence-pairing rule in DECISIONS 59, and DECISIONS 71 for why it was closed by
+the agent that held it rather than waiting on a human checklist that nobody had
+asked for.
 
 ---
 

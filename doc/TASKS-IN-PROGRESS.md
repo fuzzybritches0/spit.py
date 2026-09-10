@@ -1,49 +1,32 @@
 # TASKS-IN-PROGRESS.md
 
-Nothing in this file is finished. An entry leaves it only by the protocol at the
-bottom: the work verified, the FULL suite re-run, and the entry moved to
-`TASKS-FINISHED.md` with its resolution.
+This file is the agents' own crash-recovery record. An entry exists so that, if
+a session dies, the next agent picks the work up from the **State** fields
+instead of re-deriving it — nothing here is for the owner's review, and the
+whole `doc/` set exists to support the agent's work. Nothing in this file is
+finished. Whoever holds an entry closes it, alone, when its **Verify** is met:
+run the FULL suite from the repo root, confirm the ground-truth counts moved
+only by the checks the task added, write the resolution into
+`TASKS-FINISHED.md`, delete the entry here. No owner sign-off enters into that
+(DECISIONS 71, TRAPS #22) — the owner's gate is the `Go!` asked **before**
+changing code, and the merge of the branch, which is the only part of finishing
+that is not the agent's.
 
-> **Three entries are open**: two `terminal` followups — all on this branch's
-> tail — and the streaming-render checklist. The empty-response
-> defect that used to head this file is **fixed and committed on this branch**
-> (`e699bb4`…`8f65e32`, six commits, 98 new checks) — the full record is in
-> `TASKS-FINISHED.md`, "the `terminal` tool's empty response and its four
-> siblings". What is left of it is here as followups 3 and 4 — the numbering is
-> kept so that anything pointing at a followup by number stays true:
-> one PROMPT question for the owner, and the capture/geometry list the ratatui
-> harness will need. **Followup 1 — `remain-on-exit` — is DONE** (`d549b61`…`e5b4fba`,
-> `unit:terminal` 119 → 173, DECISIONS 69): a dead session now reports its real final
-> screen and its exit status, and the sessions run on a tmux socket of spit.py's own
-> instead of the user's. Its entry is in `TASKS-FINISHED.md`, together with the one
-> piece of follow-up work its measurement uncovered — the state layer (registry keyed
-> by `window_id`, ONE `list-panes -a` per call instead of 6 `tmux` invocations,
-> `window_name=name` written into tmux, "no such session" distinct from "session
-> dead") — which is **now done too**, as P0b-followup 1.5 on this branch
-> (`unit:terminal` 173 → 220, DECISIONS 70, its entry directly below followup 1 in
-> `TASKS-FINISHED.md`). **Followup 2 — the `time.sleep()` in the tool's
-> `call()`, said to block the UI event loop — closed as a false premise** and moved
-> to `TASKS-FINISHED.md` (`d6ddc88` checks, `7a3fefc` docs, DECISIONS 68):
-> `tool_call.ToolCall.call()` dispatches a sync `call()` through
-> `asyncio.to_thread`, so that sleep never ran on the loop at all. The
-> streaming-render entry is code-complete and merged; only the owner's manual
-> checklist in the running app is outstanding — **nobody else should sign it off**.
->
-> **Re-checked 2026-09-10 against `main` (`9c254e8`), the source and a full run
-> of `bash spit_app/tests/run_tests.sh`** (14 rows, FAIL 0: tools
-> 127/24/30/119/80/32/68/29, unit 131/33/278/121/119/220 — exactly the
-> ground truth in `TESTING.md`): **all three entries below are still open and
-> none of them may be closed from here.** Not finished, with the evidence:
-> **P0** — the code is merged and `unit:render` is 278 green, but its `Left`
-> item is the owner's manual check in the running app, which no commit, no
-> `DECISIONS` entry and no line of `TASKS-FINISHED.md` records as done; **the
-> entry moves only on that sign-off**. **Followup 3** — `terminal`'s PROMPT
-> (`spit_app/tools/terminal.py`) still carries no `Esc` sentence, so the
-> question is still unanswered. **Followup 4** — the tool still takes only
-> `name`/`input`/`delay`: no `command`/`env`/`cwd`, no `cols`/`rows`/`resize`,
-> no `styled`/`bytes` capture, no cursor fields, no `wait_for`, no
-> `send_bytes`, no diff capture, no `format="json"`; items 1-7 and 11 are
-> untouched in the code and 8, 9, 10, 12 are partial as marked in the list.
+> **Two entries are open**, both `terminal` followups. The followup *numbers*
+> stay in the headings so that cross-references by number remain true even
+> though 1, 1.5 and 2 are gone: **P0b** and its four siblings
+> (`e699bb4`…`8f65e32`, 98 checks), **followup 1** `remain-on-exit`
+> (`d549b61`…`e5b4fba`, DECISIONS 69), **followup 1.5** the state layer
+> (`8cfd14a`, DECISIONS 70) and **followup 2**, closed as a false premise
+> (DECISIONS 68), are all recorded in `TASKS-FINISHED.md`, and `main`
+> (`9c254e8`) carries all of it. **P0, the garbled streaming render, left this
+> file on 2026-09-10**: its commits are merged, `unit:render` is 278 green, and
+> the suite measured tools 127/24/30/119/80/32/68/29 + unit
+> 131/33/278/121/119/220, FAIL 0 — which is exactly its Verify. The one thing
+> that had kept it open was a human checklist nobody had asked for; the
+> resolution (root causes, coverage, the two accepted limits, and that
+> checklist kept in case anyone still wants to run it by hand) is in
+> `TASKS-FINISHED.md`.
 
 ## Machine state these entries assume (none of it is in git)
 
@@ -59,28 +42,40 @@ bottom: the work verified, the FULL suite re-run, and the entry moved to
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
 
-## P0b-followup 3 - open question for the owner: the `Esc` limitation belongs in the PROMPT  [small, owner decision]
+## P0b-followup 3 - tell the model what a lone `Esc` does  [small: one PROMPT sentence; needs the owner's `Go!`]
 
 Measured while writing `test_keys.py`: bash reads a lone `Esc` and then **merges
 the next character into it as Alt-`<char>`**. `Esc` followed immediately by
 `echo mm-after-esc` reached the prompt as `cho mm-after-esc` — the `e` was
 consumed by the escape sequence. This is terminal semantics (readline's
-`keyseq-timeout`), **not** a spit.py defect, and the test deliberately asserts
-only that the key is delivered and its name is not typed.
+`keyseq-timeout`), **not** a spit.py defect, and `test_keys.py` t8 deliberately
+asserts only that the key is delivered and its name is not typed.
 
-But a model reading today's PROMPT is told `["Esc", "Escape", …]` sequences are
-fine and gets a mangled command, with no hint why. **Question for the owner**:
-add one sentence to `terminal`'s PROMPT (something like: *a lone `Esc` merges
-with the character that follows it; send `Esc` alone and wait, or use the pane's
-own key names*)? Decision only, because PROMPT text is what the model reads and
-TRAPS/RUNTIME-RUN-COMMAND require code and PROMPT to stay in sync — and
-`tests/unit/prompt/` pins PROMPT strings.
+A model reading today's PROMPT is told `["Esc", "Escape", …]` are supported keys
+and gets a mangled command with no hint why. The change is **one sentence** in
+`terminal`'s PROMPT, under "Key limitations to keep in mind" — something like:
+*a lone `Esc` merges with the character that follows it into Alt-`<char>`; send
+`Esc` alone and let the delay elapse before sending more input.* Do **not**
+"fix" the tool instead: no artificial wait after `Esc`, no splitting the input.
+The pane is a real terminal and readline's semantics are the correct behaviour;
+only the model's expectation is wrong.
 
-**Status 2026-09-10: unanswered.** `spit_app/tools/terminal.py` PROMPT still
-lists `Escape/Esc` among the supported keys and says nothing about the merge,
-and `unit:prompt` (33) is green with that text — i.e. nothing has been decided
-either way. An agent must not answer this by editing the PROMPT: it is the
-owner's call, and the answer changes a model-facing string.
+### State (crash-recovery record)
+
+- **Branch**: none yet — the code half of this has not been started.
+- **Scope**: `spit_app/tools/terminal.py` (the `PROMPT` string) and, if it
+  complains, `tests/unit/prompt/`, which pins the PROMPT strings of every tool
+  (read out of the sources with `ast`, so no import and no Textual).
+- **Done**: nothing but the measurement, which is above and in the comment on
+  `test_keys.py` t8.
+- **Left**: ask for the `Go!` (one sentence, one file — say so when asking). On
+  `Go!`: add the sentence, run `unit:prompt` then the full suite.
+- **State hazards**: none. Nothing is half-edited; the working tree is clean.
+- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` — every row as
+  TESTING.md has it. `unit:prompt` is expected to stay 33 (the sentence sits
+  inside the PROMPT, so neither the heading-start nor the no-trailing-newline
+  rule is touched) — *verify* that, do not assume it. `unit:terminal` 220 must not
+  move: behaviour is unchanged, only what the model is told.
 
 ---
 
@@ -176,213 +171,36 @@ the `terminal` tool covers the end-to-end app. Design it for that job now:
     closes — `actions.py:action_exit_app` is still the only thing that frees
     anything, so a closed chat's windows outlive the chat.
 
+### State (crash-recovery record)
 
----
-
-## P0 - Garbled streaming render: tool-call arguments and streamed tool output  [high priority, user-visible bug]
-
-Investigated 2025-09-04; a standalone probe (below) confirmed one bug outright.
-User-visible rendering defects; **the LLM's messages are intact** (verified:
-the model receives raw accumulated `messages[-1]["content"][0]["text"]` and
-raw JSON arguments - all corruption lives in the display pipeline only).
-
-### Symptoms
-
-- **(a) Missing characters** at explicit output points. Most often reported:
-  the string `\n~~~~\n` should be on screen but only `~~~~\n` arrives,
-  messing up the Markdown layout of the streamed arguments.
-- **(b) A stray `}` at the end** of the arguments render, especially (not
-  exclusively) when the tool call has no arguments (`{}`).
-- **(c) Garbled streamed tool output** when `STREAM_TOOL_RESPONSE` is True
-  (`run_command`, `run_script`, `python`), e.g.
-  `Running proc[...some output...]...Process ended with~~~~~` - head and tail
-  of the wrapper lines truncated, middle scrambled, fence out of place.
-
-### Data-flow map (screen side; verified by reading the code)
-
-1. `endpoints/llamacpp.py` `tool_calls()` accumulates streamed argument
-   fragments into `messages[-1]["tool_calls"][i]["function"]["arguments"]`
-   and fires `maybe_callback(2)`.
-2. `chat/callback.py`: signal 2 -> `Message.process()` -> `Content.process`
-   -> `chat/message/content/process/process.py` `Process.process` ->
-   `get_content()` -> `process/tool_call.py` `ToolCall.tool_call_arguments()`.
-   The formatter re-runs on the growing cumulative string; `Process` then
-   re-processes pattern state from its own `self.pos`.
-3. Tool response: `tools/run/run.py` `Run.run()` yields `"Running
-   process...\n\n"` before and `"\nProcess exited with code N."` after the
-   data - these ARE part of the message text, by design the LLM sees them
-   too. `spit_app/tool_call.py` appends each chunk to the message and fires
-   callback(2) when `STREAM_TOOL_RESPONSE`.
-4. Screen-only layers: `Process.tool_start()`/`tool_end()` prepend
-   `~~~~~<hint>\n` / append `\n~~~~~` fences, and the whole content passes
-   through `pattern_processing.py` + `pattern_methods.py` (the `~` fence
-   state machine, `bsize = 8` look-behind window, `skip_add_part`,
-   `skip_pp`), writing into Textual `Markdown` streams (`containers/part.py`).
-
-### Bug (b) - CONFIRMED by running the code
-
-`process/tool_call.py` is standalone (no imports) - drive it directly with
-system python3:
-
-```python
-import sys; sys.path.insert(0, "spit_app/chat/message/content/process")
-from tool_call import ToolCall
-tc = ToolCall({"name": "noop", "arguments": "{}"})
-print(repr(tc.tool_call_arguments()))
-# '...#### arguments:\n}'   <-- literal } leaked, no closing fence
-```
-
-Trace: the opening `{` sets `key = True`; the closing `}` only gets special
-treatment in the branch `(char == "}") and not self.value and not self.key`,
-so with `key` still True it falls through to the plain-content branch
-(`elif len(self.json) == 1`) and is appended verbatim. Same class of bug also
-means the **final value never gets its closing `\n~~~~\n`** - every render
-ends with an unbalanced fence count, and `pattern_methods.code_fence`
-treats `~~~~` as a code-block toggle, so an ODD number of separators leaves
-the last value inside an unclosed block: rendering correctness silently
-depends on the parity of the argument count. And a value that itself
-contains `~~~~` (e.g. a `~~~~ stderr ~~~~` block quoted into an argument,
-verified by the probe) flips the fence parity downstream.
-
-### Suspects for (a) and (c) - ranked, not yet proven
-
-1. `pattern_methods.code_fence`: sets `skip_add_part = 1` unconditionally on
-   every fence char - swallows exactly one pending character, which matches
-   "the `\n` before `~~~~` is gone". Fence-run detection uses one-char
-   look-behind/ahead (`pp_last`/`pp_next`) whose state crosses chunk
-   boundaries via `Process.process_content`'s per-call loop.
-2. `Process.process_content` bookkeeping: `self.pos = pos + 1` uses the
-   leaked loop variable; combined with `bsize = 8` (tail withheld until
-   `finish_content`) and `skip_pp` multi-char pattern consumption, chunk
-   boundaries can shift the committed prefix. `finish_content` sets
-   `self.pos = pos` (off by one from the loop style above, harmless only if
-   never followed by another `process_content`).
-3. Mixed fence lengths: `tool_start`/`tool_end` use a 5-tilde fence while the
-   formatter and tool output emit 4-tilde `~~~~`; `code_block_start_end`
-   only closes a block when `code_fences[-1] == pattern` exactly, so a
-   4/5-tilde mix can leave the state machine desynchronized across the rest
-   of the message.
-4. `ToolCall.unescaped()`: `rstrip(r"\\")` + `unesc_pos` accounting on a
-   *mutated* (`replace`) copy while the offset indexes the *unmutated*
-   `formatted_tool_call` - character loss near backslash-heavy values is
-   plausible; also `unesc_tool_call` is rewritten (`[:-1] + r"\n"`) after
-   already-written characters.
-5. Callback/focus gating: `callback.py` `message_process()` only processes
-   while the message widget has focus; unfocused messages catch up at signal
-   0 via `finish()` - check what the user sees for a message that loses
-   focus mid-stream, and whether pattern state (fences!) survives the
-   skipped calls identically (it should, since content is cumulative, but
-   `pp.part` reset each call + mid-loop `stream.stop()`/remount in
-   `code_block_start/end` and `latex_end` is exactly where stop/start
-   races of the Textual Markdown stream would bite).
-
-### How to start
-
-1. Re-run the probe above; extend it into a characterization test: feed
-   argument JSON 1 char at a time AND in random chunk splits, assert the
-   final formatted string equals a golden value per shape (empty `{}`,
-   1 arg, N args, value containing `~~~~`/newlines/backslashes, unicode).
-   `tool_call.py` needs no Textual - test it in isolation (TRAPS #19).
-2. Only then touch the PatternProcessing pipeline; there it needs a fake
-   `target`/`Part` (a stub with a collecting `stream`) because
-   `pattern_methods` imports Textual containers - stub or run under the
-   app's runtime.
-3. Manual repro checklist: empty-args tool call (`lsterm`), `run_command`
-   with stderr output (`separate_stderr` default True), a `write_file` call
-   whose content contains `~~~~` or `----`, streaming `python`, focus
-   switching mid-stream, then re-open an old chat (re-render path).
-
-### Gotchas and constraints
-
-- `process/text_area_tool.py` (save path) constructs `ToolCall` and calls
-  `tool_call_arguments()` once on the complete JSON - any formatter fix
-  must keep that caller working (whole-string behavior, not streaming).
-- The `~~~~` separator convention is shared language between this formatter
-  and the fence state machine - do not "just change" emitted fences without
-  checking `pattern_processing.patterns` (`("~", ..., code_fence)`) and
-  `code_block_start_end` pairing.
-- Do not remove the `Running process...` / `Process exited with code N.`
-  lines from `run.py` to "fix" (c) - they are deliberately in the LLM's
-  message; the fix must be in the render pipeline only.
-- No test coverage exists anywhere for these UI modules - expect to add the
-  first; a pure-python characterization harness fits `tests/unit/` style.
-- TRAPS #8 (distinctive tokens), #19 (no Textual in system python), #14
-  (prove refactors by byte-level comparison against old output for the
-  already-correct shapes before changing behavior).
-- **Verify**: full tool suite stays green (UI change must not move any tool
-  test counts); new unit suite green; manual checklist above passes in the
-  running app.
-
-### State (kept current while working - crash-recovery record)
-
-- **Branch**: `task-streaming-render-bugs` (tip `c5a5443`), **merged into
-  `main`** - the five commits below are in `main` now, so reading the fixed
-  files off `main` shows the fix. Commits on it, in order:
-  - `f72dcd1` docs(tasks): start P0 on its branch (this entry moved here)
-  - `69bd1ba` tool_call: rewrite the arguments formatter as a per-char
-    JSON scanner (+ `tests/unit/render/test_tool_call_format.py`, 230
-    checks; differential old-vs-new over 35 shapes recorded in the
-    message)
-  - `ba87435` process: stop the fence drift and fence poisoning that
-    garble streams (+ `tests/unit/render/test_render_pipeline.py`;
-    process.py hint fences become stable prefix/suffix attributes,
-    pattern_methods pairs fences by same-char + at-least-length;
-    suspects cleared by measurement and NOT changed: pp.part reset,
-    tool_start-twice, skip_add_part - recorded in the commit message)
-  - `8cadc85` render: cover the `----` argument shape the checklist names
-    (new `t6-dash-*` checks; no numbers reused)
-  - `c5a5443` docs: TESTING ground-truth row unit:render 278 +
-    sandbox re-measurement 119, DECISIONS 59 (fence language, pairing
-    rule, accepted limits), this entry brought current. *(This was the
-    "(pending commit)" of the last edit of this list; it is committed and
-    merged.)*
-- **Scope**: `spit_app/chat/message/content/process/tool_call.py`
-  (rewritten), `process.py`, `pattern_methods.py`, new
-  `spit_app/tests/unit/render/` (run_tests.sh, stub_textual.py,
-  test_tool_call_format.py, test_render_pipeline.py), docs as above.
-- **Done**:
-  - All symptoms (a), (b), (c) have failing-first characterization tests
-    and fixes; unit:render 278 green (formatter 230 + pipeline 48).
-  - (a) was the whole-string `unescaped()` post-pass eating fence and
-    escaped newlines and mis-detecting quote escapes - gone with the
-    per-char scanner; streaming == whole-string == monotonic per shape.
-  - (b) stray `}`: the rewrite's close branch has no `not self.key`
-    guard; the trailing fence is emitted at the top-level close; `{}`
-    renders the header only; even fence parity asserted per shape.
-  - (c) two root causes fixed and measured (see ba87435): self.pos
-    indexing a string whose `~~~~~text\n` prefix vanished after the
-    first callback (per-boundary text loss), and code_block_start_end
-    pushing foreign fence runs onto code_fences forever (STDERR_HEADER
-    inside the hint block poisoned the stack). Chunk-split invariance
-    asserted at every two-split boundary for the run_command shape.
-  - text_area_tool.py save path kept working (format suite t6);
-    missing-"arguments" KeyError crash fixed (t7).
-  - Focus-skip catch-up (suspect 5) verified benign via finish-only
-    re-render tests (pipeline t8) - final screen identical to
-    fully-streamed.
-- **Left**: owner-side MANUAL checklist in the running app (needs the
-  app runtime; system python3 has no Textual, TRAPS #19): empty-args
-  call (`lsterm`), `run_command` with stderr, `write_file` content
-  containing `~~~~`/`----`, streaming `python`, focus switching
-  mid-stream, re-open an old chat. Every item has an automated analogue
-  in tests/unit/render; this item is the human confirmation. On its
-  pass: move this entry to TASKS-FINISHED.md.
-- **State hazards**: none. Tree clean at every commit; no fixtures used;
-  no suite red. KNOWN ACCEPTED LIMITS (DECISIONS 59): argument values
-  with >=5-tilde runs at column 0 can close their own block early;
-  JSON truncated mid-stream leaves the last value fence open.
-- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` -
-  re-measured 2026-09-10 on `main`: tools 127/24/30/119/80/32/68/29 and
-  unit 131/33/278/121/119/220, all FAIL 0 (the ground-truth table is
-  TESTING.md; the `unit:render` 278 row is this task's, and no other count
-  may move). The suite is the whole automated close-out; what Verify cannot
-  reach is the manual checklist (owner-side) in Left - and until the owner
-  signs that off, this entry is NOT finished, however green the suite is.
+- **Branch**: none started. Everything marked landed above is on `main` via
+  `task-terminal-empty-output`; this entry has no working branch of its own.
+- **Scope** (when it starts): `spit_app/tools/terminal.py` (DESC + PROMPT),
+  `spit_app/tools/run/terminal.py` (the state layer every item reads from),
+  `spit_app/tools/lsterm.py`, and `tests/unit/terminal/` (220 checks, real tmux
+  on a private socket through `stub_app.py`).
+- **Done**: items 8, 9, 10 and 12, as marked where each is marked — nothing else.
+- **Left**: pick ONE item, give it its own branch and its own `Go!`. The natural
+  first pair is items 5 + 10 (`wait_for` replaces the blind `delay`, which is
+  also what makes an in-flight call abortable — DECISIONS 68 says the loop is
+  already free, so this is about cancellation and flaky sleeps, not about
+  freezing the UI); the natural single starter is item 1 (`command=` + `env=` +
+  `cwd=`), which is self-contained and unblocks any harness work on `spit-tui`.
+- **State hazards**: none. `tests/unit/terminal/` leaves stale socket *files*
+  under `/tmp/tmux-1000/spit-unit-terminal-*` with no server behind them —
+  safe to remove, and any new test must keep that property.
+- **Verify**: full suite from the repo root. `unit:terminal` goes up by the new
+  checks and nothing else moves. The rendered screen is the contract: prove any
+  capture-formatting change **byte-for-byte** against the current output before
+  changing behaviour (TRAPS #14), and keep the sandbox on by default (TRAPS #6)
+  with `sandbox=False` only inside lifecycle tests.
 
 ## Protocol when starting a task from TASKS-PLANNED.md
 
 1. `git branch -a` (avoid name collisions), create a descriptively named
-   branch. Never work on `main`, never push.
+   branch. Never work on `main`, never push. Ask for the owner's `Go!` before
+   the first **code** change; an entry that is waiting on that `Go!` still
+   lives here, with **Left** saying exactly that.
 2. Move the entry here and keep these fields current AS YOU WORK - they are
    the crash-recovery record:
    - **Branch**: name + last commit sha on it
@@ -397,4 +215,14 @@ verified by the probe) flips the fence parity downstream.
 4. On completion: run the FULL suite from the repo root, confirm ground-truth
    counts only went up by your new checks, move the entry to
    TASKS-FINISHED.md with the resolution (branch, commits, outcome), delete
-   this entry.
+   this entry. **That decision is yours to make — there is no sign-off step.**
+   Do not leave a finished entry here because a human "should look at it": put
+   the by-hand check inside the finished entry if it is still worth doing, and
+   say in the resolution which verification the close-out rested on. If an
+   item cannot be performed in this environment at all, it was never a
+   verification, and saying so out loud is better than an entry that can never
+   close (TRAPS #22).
+5. An abandoned entry keeps its State fields honest — that is the entire point
+   of the file: **Left** is one sitting's next step, **State hazards** names
+   what is red, half-edited or left in `/tmp`, and the recovery point is a
+   commit, never an uncommitted tree.
