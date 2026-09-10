@@ -179,10 +179,45 @@ async def sections():
 
         dispatched = [await measure(lambda: through_the_dispatcher(
             call, {"name": "t3", "delay": 0})) for _ in range(3)]
-        dispatched_gap = statistics.median(run[2] for run in dispatched)
-        check("t3-the-hop-keeps-the-tmux-work-off-the-loop-too",
-              dispatched_gap <= 0.5 * on_loop_gap, True)
         check("t3-and-still-returns-the-screen", "mm-capture-cost" in dispatched[0][3], True)
+
+        # THE BURST (state layer, DECISIONS 70). The assertion above this file
+        # shipped with compared ONE dispatched capture's gap against ONE capture
+        # run on the loop, at a margin of 0.5. It was calibrated on the 46 ms
+        # term_screen of the object layer: on the loop a 46 ms capture pushed the
+        # heartbeat gap to ~66 ms against the dispatcher's ~22 ms, and 22 <= 33
+        # held. The state layer made the SAME call cost 2 tmux invocations and
+        # ~17 ms (one narrow `list-panes -a` plus the `capture-pane`), so a single
+        # on-loop gap is now ~36 ms -- only about the 20 ms heartbeat plus the
+        # capture -- and the ratio had nothing left to measure: the tool got
+        # faster, which is the point of the change. Making the capture slower
+        # again to feed the ratio would be absurd, and deleting the check would
+        # throw away the only probe of the hop's SECOND job: the first two
+        # sections cover a sleep held off the loop, this one covers the tmux
+        # subprocess I/O itself. So compare what the hop is actually protecting
+        # the loop from -- a BURST of captures back to back (5 on the loop = ~99 ms
+        # of worst gap here; the same 5 through the dispatcher = 22 ms and the
+        # loop keeps ticking), same 0.5 margin, measured 22 <= 49. The check
+        # stays red if the hop is removed: see section 2 for the same surgery.
+        def burst_on_loop():
+            for _ in range(5):
+                capture()
+
+        async def burst_through_the_hop():
+            screen = None
+            for _ in range(5):
+                screen = await through_the_dispatcher(call, {"name": "t3", "delay": 0})
+            return screen
+
+        burst = [await measure(burst_on_loop) for _ in range(3)]
+        burst_gap = statistics.median(run[2] for run in burst)
+        check("t3-a-burst-of-captures-on-the-loop-is-felt", burst_gap >= duration, True)
+        burst_dispatched = [await measure(burst_through_the_hop) for _ in range(3)]
+        dispatched_burst_gap = statistics.median(run[2] for run in burst_dispatched)
+        check("t3-the-hop-keeps-the-tmux-work-off-the-loop-too",
+              dispatched_burst_gap <= 0.5 * burst_gap, True)
+        check("t3-the-burst-still-returns-the-screen",
+              "mm-capture-cost" in burst_dispatched[0][3], True)
 
     print("=== 4. which branch of the dispatcher the shipped tools land on ===")
     with tempfile.TemporaryDirectory() as root:

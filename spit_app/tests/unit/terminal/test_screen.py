@@ -17,12 +17,16 @@ call and is what the window registry itself lives in -- and it is per session
 name, because one chat runs several terminals and a reused name is a new
 session, not the old one's history.
 """
+import subprocess
 import tempfile
 
-from stub_app import (check, kill_private_server, kill_window, make_terminal,
-                      send_raw, stub_app, summary, tmux_available,
-                      use_private_server, wait_for, wait_for_prompt,
-                      wait_for_text, window_dead)
+from stub_app import (check, counted_tmux_invocations, kill_private_server,
+                      kill_window, make_terminal, registered_ids_are_all_the_windows,
+                      registered_window_id, requested_sockets, send_raw,
+                      session_window_ids, stub_app, summary, tmux_panes,
+                      tmux_available, tmux_session_ids, tmux_window_names,
+                      use_private_server, wait_for, wait_for_prompt, wait_for_text,
+                      window_dead, window_id_of)
 
 SOCKET = "spit-unit-terminal-screen"
 
@@ -32,6 +36,9 @@ if not tmux_available():
     raise SystemExit(0)
 
 use_private_server(SOCKET)
+
+import spit_app.tools.lsterm as lsterm
+from spit_app.tools.run.terminal import Terminal
 
 try:
     print("=== 1. a live pane returns its screen (the empty-response defect) ===")
@@ -107,14 +114,24 @@ try:
               "mm-last-screen" in report, True)
         check("t5-not-an-empty-container", len(report) > len("\n\nINFO: Session dead."), True)
 
-    print("=== 6. a session that never showed anything says so, without a blank prefix ===")
+    print("=== 6. a name that never existed says there is no such session ===")
+    # RE-WORDED, not deleted (state layer, DECISIONS 70). This asserted "INFO:
+    # Session dead." for a name that had never been started, which reports a death
+    # that never happened -- and a reported death is something a model acts on: it
+    # goes looking for the crash of a session that was never a session. The number,
+    # the section and the shape stay; what is pinned is the real intent: a clear
+    # report, naming the session, with no blank prefix, saying what would start one
+    # -- and NOT claiming a death. `test_tool_call` t7 is the same call from the
+    # other side and was re-worded the same way (the handoff named that one; this
+    # is its twin, made from the same two lines of code).
     with tempfile.TemporaryDirectory() as root:
         app = stub_app(root)
         t = make_terminal(app)
         report = t.term_screen("t6-never-existed")
-        check("t6-says-it-is-dead", "INFO: Session dead." in report, True)
+        check("t6-says-there-is-no-such-session", "INFO: No such session." in report, True)
         check("t6-no-empty-prefix-above-the-message", report.startswith("\n"), False)
-        check("t6-says-nothing-was-captured", "before anything was captured" in report, True)
+        check("t6-says-what-would-start-one", "Send input" in report, True)
+        check("t6-does-not-invent-a-death", "INFO: Session dead." in report, False)
 
     print("=== 7. a reused name is a new session, not the old screen ===")
     with tempfile.TemporaryDirectory() as root:
@@ -267,6 +284,179 @@ try:
         check("t13-does-not-resurrect-the-old-screen",
               "mm-the-old-session" in fresh, False)
         check("t13-no-dead-notice-on-a-live-session", "INFO: Session dead." in fresh, False)
+
+    # ------------------------------------------------------------------
+    # 14 onwards: the state layer (DECISIONS 70). These read the REGISTRY and
+    # read TMUX and compare them, which is only possible from outside the tool:
+    # what is pinned is the SHAPE of what app.tmux holds (ids, not objects), the
+    # NAMES tmux shows for our windows, the COST of a call in `tmux` invocations,
+    # and the guard that keeps one chat's stale id from pointing at another
+    # chat's live window. All of them are red on the object layer: there the
+    # registry held libtmux Window objects, tmux called the windows `bash`, a
+    # capture cost 6+2 invocations, and the stray window tmux creates with every
+    # session sat in it unnamed.
+    print("=== 14. the registry holds window ids, tmux calls the windows by our names ===")
+    # The registry is `name -> window_id` (strings), because ids are what tmux
+    # never reuses and objects are what was measured lying. `window_name=name`
+    # makes tmux say what the registry says -- before it, anyone looking at our
+    # socket saw windows called `bash` while the tool called them `alpha`. And
+    # since the window tmux creates along with every session is destroyed once a
+    # real window exists, a listing of the session holds EXACTLY the registered
+    # windows: no unnamed window 0 holding the session (and the server) open.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t14-alpha")
+        t.term_new("t14-beta")
+        ids = list(app.tmux["chat1"]["windows"].values())
+        check("t14-registry-holds-strings", all(isinstance(i, str) for i in ids), True)
+        # the isinstance guard comes FIRST in the next line on purpose: on the
+        # object layer these are Window objects, and `i.startswith` there is an
+        # AttributeError that aborts the file instead of a recorded FAIL -- the
+        # differential must be able to SEE the reds, not die on them. Same reason
+        # distinctness goes through window_id_of, which reads `.window_id` off an
+        # object and the string itself off an id (a Window may not be hashable).
+        check("t14-strings-are-window-ids",
+              all(isinstance(i, str) and i.startswith("@") for i in ids), True)
+        check("t14-ids-are-distinct", len(set(window_id_of(i) for i in ids)), 2)
+        check("t14-tmux-uses-our-names", tmux_window_names(app),
+              {"t14-alpha": "t14-alpha", "t14-beta": "t14-beta"})
+        check("t14-no-unregistered-window-in-the-session",
+              registered_ids_are_all_the_windows(app), True)
+
+    print("=== 15. the last terminal reported takes its session -- and the server -- down ===")
+    # With the stray window gone (t14), the ORDINARY end of a chat is: its last
+    # window is reported dead, retire() kills it, the session dies with it, and
+    # since ours was the server's only session the server goes too (the next
+    # listing answers `no server running on /tmp/tmux-.../spit-...`). The entry
+    # must survive that in exactly the right way: actions.py indexes
+    # `chat["server"]` unguarded at exit, so the KEY must stay -- and stay the
+    # SAME Server object, because `new_session()` on it starts tmux again on the
+    # same socket instead of a second Server being built. The cache survives
+    # (invariant 4: a repeat call repeats what was reported), and the chat has to
+    # become usable again.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        del requested_sockets[:]
+        check("t15-started", t.term_new("t15"), None)
+        wait_for_prompt(app, "t15")
+        old_session = app.tmux["chat1"]["session"].session_id
+        server = app.tmux["chat1"]["server"]
+        send_raw(app, "t15", "exit 4\n", True)
+        check("t15-the-death-was-reported", wait_for(
+            lambda: "INFO: Session dead." in t.term_screen("t15")), True)
+        check("t15-tmux-has-no-such-session-any-more",
+              old_session in tmux_session_ids(app), False)
+        check("t15-the-entry-still-has-its-server-key", "server" in app.tmux["chat1"], True)
+        # .get(), not []: the OLD rebuild dropped the key, and indexing it would
+        # raise KeyError out of the differential instead of recording the red.
+        check("t15-and-it-is-the-same-object", app.tmux["chat1"].get("server") is server, True)
+        report = app.tmux["chat1"]["last_screen"]["t15"]
+        check("t15-the-cache-keeps-the-report-with-the-status",
+              "Exit status: 4." in report, True)
+        check("t15-a-repeat-repeats-the-report-verbatim", t.term_screen("t15"), report)
+        check("t15-the-chat-is-usable-again", t.term_new("t15b"), None)
+        check("t15-still-the-one-and-only-server", len(set(requested_sockets)), 1)
+
+    print("=== 16. what a capture and a listing COST (the other half of the reason) ===")
+    # Behaviour can stay green while the cost doubles back, so count the `tmux`
+    # processes themselves. The object layer's term_screen was 6 invocations
+    # (libtmux's fat list-sessions/list-windows/list-panes and their refreshes)
+    # plus 2 `display-message` calls for the cursor splice -- 45 ms, measured at
+    # 69 ms here for the same work. The snapshot layer is TWO: one narrow
+    # `list-panes -a` (liveness, exit status, geometry, cursor, for every window
+    # of every chat at once) and the `capture-pane` itself -- ~17 ms. One
+    # `lsterm` over three windows is ONE listing, not one per window (probe
+    # printed 1).
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t16-a")
+        t.term_new("t16-b")
+        t.term_new("t16-c")
+        wait_for_prompt(app, "t16-a")
+        with counted_tmux_invocations() as calls:
+            screen = t.term_screen("t16-a")
+        check("t16-the-screen-still-arrives", screen.startswith("Session: t16-a"), True)
+        check("t16-exactly-two-invocations", len(calls), 2)
+        check("t16-one-narrow-listing", calls.count("list-panes"), 1)
+        check("t16-no-per-session-or-per-window-listings",
+              calls.count("list-sessions") + calls.count("list-windows"), 0)
+        check("t16-no-display-message-for-the-cursor", calls.count("display-message"), 0)
+        with counted_tmux_invocations() as calls:
+            listing = lsterm.call(app, {}, "chat1")
+        check("t16-the-listing-still-lists-all-three",
+              all(n in listing for n in ("t16-a", "t16-b", "t16-c")), True)
+        check("t16-one-listing-for-the-whole-listing", calls.count("list-panes"), 1)
+        check("t16-and-nothing-else", len(calls), 1)
+
+    print("=== 17. a stale id cannot point a chat at another chat's window ===")
+    # A tmux server numbers from zero AGAIN when it starts (measured, twice): the
+    # next session is `$0`, the next window `@1`. So a registry that outlives its
+    # server can hold `@1` for a name of its own while `@1` on the NEW server
+    # belongs to ANOTHER CHAT's live window. That is exactly what this fakes --
+    # chat1's name re-pointed at chat2's window_id -- and window_is_ours() has to
+    # survive it on both of its guards: the capture must not read the other
+    # chat's screen, the send must not type into it, and the retire path must not
+    # destroy it. Reading a stranger's window as your own is the very defect this
+    # file exists to remove, aimed at a fellow chat.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        mine = make_terminal(app)
+        theirs = Terminal(app, "chat2", False)
+        mine.term_new("t17-mine")
+        theirs.term_new("t17-theirs")
+        wait_for_prompt(app, "t17-mine")
+        send_raw(app, "t17-mine", "echo mm-chat1-only\n", True)
+        check("t17-mine-token", wait_for_text(app, "t17-mine", "mm-chat1-only"), True)
+        theirs.term_input("t17-theirs", "echo mm-chat2-only")
+        theirs.term_input("t17-theirs", "Enter")
+        theirs_id = window_id_of(app.tmux["chat2"]["windows"]["t17-theirs"])
+        check("t17-theirs-token", wait_for(
+            lambda: "mm-chat2-only" in "\n".join(
+                tmux_panes(app)[theirs_id].capture_pane())), True)
+        mine.term_screen("t17-mine")        # cache MY OWN screen
+        # Copy the ENTRY, not the id string: on the new layer that IS the id, and
+        # on the object layer it is the Window object -- so the same line re-points
+        # chat1 at chat2's window in BOTH shapes, which is what lets the
+        # differential show the old code answering the alias with the other chat's
+        # screen (every check below red) instead of crashing on a str.
+        app.tmux["chat1"]["windows"]["t17-mine"] = app.tmux["chat2"]["windows"]["t17-theirs"]
+        alias = mine.term_screen("t17-mine")
+        check("t17-the-alias-does-not-read-the-other-chat", "mm-chat2-only" in alias, False)
+        check("t17-the-alias-says-dead-from-its-own-cache",
+              "INFO: Session dead." in alias, True)
+        check("t17-and-reports-what-it-really-last-saw", "mm-chat1-only" in alias, True)
+        check("t17-the-alias-refuses-input",
+              mine.term_send_keys("t17-mine", "mm-poison", True), False)
+        theirs_after = "\n".join(tmux_panes(app)[theirs_id].capture_pane())
+        check("t17-nothing-was-typed-into-the-other-chat", "mm-poison" in theirs_after, False)
+        check("t17-the-other-chat-s-window-survives", theirs_id in tmux_panes(app), True)
+        check("t17-lsterm-for-chat1-lists-nothing",
+              lsterm.call(app, {}, "chat1"), "No active sessions found!")
+    # The OTHER guard, on its own: a chat whose STAMP is not the listing's server
+    # answers dead for EVERY name -- the whole registry came from a dead server,
+    # even where an id happens to name a window that exists on this one. And
+    # reading it destroys nothing: a name the tool cannot verify is a name it
+    # must not kill.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t17-live")
+        wait_for_prompt(app, "t17-live")
+        send_raw(app, "t17-live", "echo mm-still-live\n", True)
+        check("t17-token-on-the-live-pane", wait_for_text(app, "t17-live", "mm-still-live"), True)
+        live_id = registered_window_id(app, "t17-live")
+        app.tmux["chat1"]["stamp"] = ("999999", "1")      # not the listing's server
+        screen = t.term_screen("t17-live")
+        check("t17-a-wrong-stamp-answers-dead", "INFO: Session dead." in screen, True)
+        check("t17-a-wrong-stamp-does-not-read-the-live-pane",
+              "mm-still-live" in screen, False)
+        check("t17-a-wrong-stamp-refuses-input", t.term_send_keys("t17-live", "x", True), False)
+        check("t17-a-wrong-stamp-lists-nothing",
+              lsterm.call(app, {}, "chat1"), "No active sessions found!")
+        check("t17-and-destroys-nothing-it-cannot-verify", live_id in tmux_panes(app), True)
 finally:
     kill_private_server(SOCKET)
 

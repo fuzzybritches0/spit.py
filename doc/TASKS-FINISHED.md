@@ -221,8 +221,49 @@ from the probe: `Session: d1` / `…first line…` / `…last line…` / `Pane i
 **Left for the next agent** — the state layer (registry keyed by `window_id`, one
 `list-panes -a` per call instead of 6 `tmux` invocations for 45 ms, `window_name=name`
 written into tmux, "no such session" distinct from "session dead"). Measured and
-written up in DECISIONS 69(c); enhancement 9 of the followup-4 list. Ground truth for
-a run: 509 tools and unit 131/33/278/121/119, `unit:terminal` 173, FAIL 0 everywhere.
+written up in DECISIONS 69(c); enhancement 9 of the followup-4 list. **[DONE — it
+landed on this same branch as P0b-followup 1.5, the entry follows below; DECISIONS 70
+is its record. Ground truth moved with it: `unit:terminal` 173 → 220.]**
+
+### P0b-followup 1.5 — the `terminal` state layer: ids not objects, one listing per call (branch `task-terminal-empty-output`)
+
+**What landed.** `app.tmux[chat_id]` became `{server, session, stamp, windows:
+{name → window_id}, last_screen}` — the registry holds the `window_id` strings tmux
+gave, never libtmux objects (69(c) measured a cached object reading `pane_dead '0'`
+after its shell was gone). Every question is answered from ONE narrow
+`tmux list-panes -a` per call, keyed by `window_id`; objects are built from ids
+on demand for capture/send/kill and never read from. `stamp` — the answering
+server's own pid and start time, from that same listing — plus the row's
+`session_id` is what makes an id count as ours: a restarted tmux numbers from
+`$0`/`@0` again, so a stale id can name ANOTHER CHAT's live window; such a name
+answers dead from its cache, is never read, typed into, or killed.
+`window_name=name` makes tmux say what the registry says. The unnamed window tmux
+creates with every session is destroyed once a real window exists, so reporting
+the chat's last dead terminal now ends the session and (on our one-session
+socket) the server — the ordinary path, with the entry rebuilt keeping its
+`Server` object and cache. "No such session" became a distinct answer from
+"session dead": a death that never happened used to be reported as one.
+
+**Measurements.** A capture is EXACTLY two `tmux` invocations (`list-panes` +
+`capture-pane`), ~16-17 ms, where the object layer paid 6 + 2 `display_message`
+(53.4 ms median measured here for the same work); `lsterm` is ONE listing for
+any number of windows; `term_input` 5 (was ~10). Cursor parity proven in five
+states, and the scripted full scenario (prompt, echo, cursor mid-line, wrapped
+200-char line, column 0, screenful, second window, dead report and repeat)
+produced byte-identical `repr()` output old vs new — the only permitted
+difference the unknown-name answer. The burst that replaced t3's ratio: 5
+captures on the loop, 99 ms worst heartbeat gap; the same 5 through the hop,
+22 ms. DECISIONS 70 carries both deviations loudly: the t6 re-word (the handoff
+authorised only its twin t7; they are the same call) and the t3 burst
+re-calibration.
+
+**Tests.** `unit:terminal` 173 → 220 by addition only (`test_screen`
+`t14`-`t17`, `t6` +1, `test_tool_call` `t7` +7, `test_event_loop` `t3` +2; two
+assertions re-worded in place, numbers append-only). Differential against the
+old file: 18 `test_screen` + 2 `test_tool_call` red before, 0 after;
+`test_lsterm`/`test_keys`/`test_event_loop` green on both. Full-suite ground
+truth: tools 509 and unit 131/33/278/121/119 unmoved, `unit:terminal` 220,
+FAIL 0.
 
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)

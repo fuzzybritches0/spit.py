@@ -319,13 +319,23 @@ Would replace 3 with `new_text`. File not modified.
 - `input` (optional): An array of string-of-characters and/or key names to send to the terminal.
 - `delay` (optional): Seconds to wait before capturing the screen after sending input. Default: `1`. Honoured exactly, including `delay: 0` for no wait at all (a non-integer value is ignored and the default applies).
 
-**Output**: The current 24×80 terminal screen with cursor position indicated by `█`. If the session has died: the **last screen it showed**, followed by `INFO: Session dead.` — or, when nothing was ever captured from that name, the session header and a line saying so (never a blank prefix, which read as a truncation). The last screen is cached per session name in `app.tmux[chat_id]["last_screen"]`, which is what lets a later call report it; a name reused by a new session starts with an empty cache, because the dead one's screen is not this one's history (decision 66).
+**Output**: The current 24×80 terminal screen with cursor position indicated by `█`. If the session has died: its **real final screen and exit status** (see Features), followed by `INFO: Session dead.` — or, when nothing was ever captured from it, the last screen cached under that name plus the notice. A name the chat has **never had** is a different answer and says so — `INFO: No such session. … Send input to that name to start one.` — because a reported death is something a model acts on, and no session of that name ever died (decision 70). The last screen is cached per session name in `app.tmux[chat_id]["last_screen"]`, which is what lets a later call report it; a name reused by a new session starts with an empty cache, because the dead one's screen is not this one's history (decision 66).
 
 **Architecture**:
 - Uses `libtmux` to create persistent tmux sessions (one tmux session per chat conversation)
 - Each terminal is a tmux window running a bash shell
 - Sandboxed by default with `bwrap` (bubblewrap) for security
-- Screen captured via `capture_pane()`; cursor position shown via `display_message()`
+- The registry (`app.tmux[chat_id]`) holds **ids, not objects**: window name →
+  `window_id`, plus the session and the server identity (its pid and start time) those
+  ids belong to, and the per-name screen cache. Every call answers liveness, exit
+  status, geometry and cursor from ONE narrow `tmux list-panes -a` snapshot taken on
+  the way in; libtmux `Pane`/`Window` objects are built from ids on demand, only for
+  capturing, sending and killing. A cached libtmux object was measured lying
+  (`pane_dead` still `'0'` after the shell was gone), an id is not (decision 70)
+- Screen captured via `capture_pane()`; the cursor comes from the same snapshot
+  (`cursor_x`/`cursor_y`, measured equal to the old `display_message()` reads), so a
+  capture is now exactly TWO `tmux` invocations (~17 ms) where the object layer paid
+  six plus two `display_message` calls (45 ms documented, 69 ms measured)
 - No scrollback — only the current 24 lines are captured
 
 **Supported Keys**:
@@ -347,6 +357,16 @@ Modifier prefixes: `C-` (Ctrl), `S-` (Shift), `M-` (Alt)
   otherwise report nothing at all. The corpse is then destroyed and its name freed.
 - The sessions live on a tmux socket of spit.py's own (`spit-<pid>`), never on the
   user's default socket, so quitting the app cannot take down the user's tmux
+- A tmux id is only trusted when the listing it came from is from the server the chat
+  belongs to (stamp) AND its row names the chat's own session: a new tmux server
+  numbers from zero again, so an id kept from a dead server can name ANOTHER CHAT's
+  live window — such a name answers "dead from the cache", is never read from, never
+  typed into and never killed (decision 70)
+- Reporting the chat's last dead terminal is also what ends it: killing the last
+  window destroys the session, and on our socket that is usually all the server had,
+  so the server goes too. The chat entry survives with its `server` key and its
+  screen cache, the same `Server` object revives on the next call, and no second
+  server is ever built for a chat
 
 **Limitations**:
 - 24×80 character window with **no scrollback**
@@ -372,10 +392,13 @@ terminal(name="dev", input=["exit", "Enter"])    # close session
 **Output**: List of active session names, or `No active sessions found!`
 
 **Architecture**:
-- Uses `libtmux` to verify which tmux sessions are still alive. Liveness is the pane's
-  `pane_dead` flag, **not** whether tmux still has the window: the windows are created
-  with `remain-on-exit` on, so a dead session's window is still there and a membership
-  test would call it live
+- Uses `libtmux` to verify which tmux sessions are still alive, from ONE
+  `tmux list-panes -a` for the whole listing (not one or two round-trips per window):
+  liveness is the pane's `pane_dead` flag, **not** whether tmux still has the window
+  — the windows are created with `remain-on-exit` on, so a dead session's window is
+  still there and a membership test would call it live. A window is only considered
+  at all when the listing's server is the chat's server and the row names the chat's
+  own session (decision 70)
 - A dead session discovered here is harvested (its real final screen and exit status
   go into the per-name cache, where a later `terminal` call will find them) and its
   window is destroyed, then it is removed from the internal tracking

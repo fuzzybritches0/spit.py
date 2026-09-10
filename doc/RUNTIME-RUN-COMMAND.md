@@ -75,6 +75,32 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
   (`stub_app.py:window_dead`); `window_exists` is now a different question and is
   only for asking whether tmux still has the window. Either way a mutating probe in
   the setup performs the fix and the test passes against broken code (decision 67).
+  Since the state layer (decision 70) the question is asked against ONE
+  `tmux list-panes -a` snapshot per call, never against a cached libtmux object —
+  a cached `Pane` was measured reading `pane_dead '0'` after its shell was gone.
+  The registry holds `name → window_id` strings plus the server identity (pid,
+  start time) the ids belong to; an id counts as ours only when the snapshot's
+  stamp matches the chat's AND its row names the chat's own session, because a
+  restarted tmux numbers from `$0`/`@0` again and a stale id can then name
+  another chat's live window. `retire()` kills only what a fresh listing says is
+  ours, then re-lists: killing the last window destroys the session, and on our
+  own socket the last real window is now the ordinary last window (the unnamed
+  window tmux creates with every session is destroyed once a registered one
+  exists), so the chat's entry is rebuilt — keeping the `Server` object
+  (`actions.py` indexes `chat["server"]` unguarded at exit, and the same object
+  revives tmux on its socket) and the screen cache.
+- Cost, and it is half the reason for the snapshot: `term_screen()` is exactly
+  TWO `tmux` invocations (`list-panes -a` + `capture-pane`, ~16 ms median here)
+  where the object layer paid six plus two `display_message` cursor reads
+  (~53 ms median measured on this box for the same work); `lsterm` over three or
+  four windows is ONE `list-panes`, and `term_input` five invocations. The
+  narrow 13-token format (with `pane_current_command` LAST and a maxsplit parse,
+  because a process name can contain anything) costs ~9 ms where libtmux's own
+  ~125-field listing costs ~12 ms for the same rows. `pane_snapshot()` treats
+  tmux's "no server running"/"error connecting to" as the ANSWER (empty —
+  everything ours is gone) and any OTHER complaint as a RAISE: reading a tmux
+  error as "all dead" would forget every live session in the chat and destroy
+  their windows.
 - Output that scrolls off a live session is lost, so long-lived/verbose processes must
   redirect (`> log 2>&1`). A session dying unattended is no longer one of them: its
   report carries the pane's actual final screen (last 50 lines) and its exit status.
@@ -84,10 +110,15 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
   `tool_call.ToolCall.call()` dispatches it through `await asyncio.to_thread(...)`
   (`d455761`), which is why `delay` (default 1 s) costs the loop a 22 ms worst gap
   and not the second it is often blamed for. Keep it that way: libtmux spawns the
-  `tmux` binary on every round-trip — a plain `term_screen()` is ~46 ms here and,
-  run on the loop, stalls it by about its own duration — so a generator-form
-  `call()` would put the tmux I/O on the UI thread while the sleep it meant to
-  rescue was already off it. DECISIONS 68, pinned by
+  `tmux` binary on every round-trip — a plain `term_screen()` is ~16 ms here
+  (re-measured for decision 70; it was ~46-53 ms before the snapshot layer, and
+  the older claim of ~46 ms predates this box) and, run on the loop, stalls it by
+  about its own duration — so a generator-form `call()` would put the tmux I/O on
+  the UI thread while the sleep it meant to rescue was already off it. One cheap
+  capture is a small stall; a BURST of them is not: five captures back to back on
+  the loop measured a 99 ms worst heartbeat gap against 22 ms through the hop,
+  which is what `test_event_loop.py` t3 now pins (a single ~16 ms capture made the
+  original single-call ratio too tight to mean anything). DECISIONS 68, pinned by
   `tests/unit/terminal/test_event_loop.py`.
 
 ## Where the knowledge lives
@@ -97,13 +128,16 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
   `test_delivery.py`, `test_prompt.py` (PROMPT assertions) - 119 checks, all
   no-Textual via `stub_app.run_as_file(script, home, root, timeout, **kw)`
   returning `(output, leftovers, elapsed)`.
-- Terminal behaviour specs: `spit_app/tests/unit/terminal/` - 119 checks against
+- Terminal behaviour specs: `spit_app/tests/unit/terminal/` - 220 checks against
   a **real tmux on a private socket**. `test_screen.py` the capture and the
-  cross-call cache, `test_keys.py` keys versus literal text (with a control
-  showing literal bytes do NOT interrupt), `test_lsterm.py` the listing
-  surviving dead sessions, `test_tool_call.py` `delay` and the errors `call()`
-  must report rather than raise, `test_event_loop.py` the dispatcher's
-  `to_thread` hop and the event loop's heartbeat through a call (with the control
+  cross-call cache and (t14-t17) the state layer itself — id registry, tmux-side
+  window names, the cost of a call counted in `tmux` invocations, the dead
+  last-terminal teardown, the stale-id alias guard — `test_keys.py` keys versus
+  literal text (with a control showing literal bytes do NOT interrupt),
+  `test_lsterm.py` the listing surviving dead sessions, `test_tool_call.py`
+  `delay` and the errors `call()` must report rather than raise,
+  `test_event_loop.py` the dispatcher's `to_thread` hop and the event loop's
+  heartbeat through a call and through a burst of captures (with the control
   that reproduces the freeze on demand). Needs libtmux, so it needs the test venv:
   `bash spit_app/tests/create_venv.sh` (TRAPS #19, TESTING.md).
 - Commit history worth reading: `fix-run-command-*` branches merged in

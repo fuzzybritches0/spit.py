@@ -10,10 +10,12 @@
 > `unit:terminal` 119 → 173, DECISIONS 69): a dead session now reports its real final
 > screen and its exit status, and the sessions run on a tmux socket of spit.py's own
 > instead of the user's. Its entry is in `TASKS-FINISHED.md`, together with the one
-> piece of follow-up work its measurement uncovered and no commit made yet — the state
-> layer (registry keyed by `window_id`, ONE `list-panes -a` per call instead of 6 `tmux`
-> invocations, `window_name=name` written into tmux, "no such session" distinct from
-> "session dead"). **Followup 2 — the `time.sleep()` in the tool's
+> piece of follow-up work its measurement uncovered — the state layer (registry keyed
+> by `window_id`, ONE `list-panes -a` per call instead of 6 `tmux` invocations,
+> `window_name=name` written into tmux, "no such session" distinct from "session
+> dead") — which is **now done too**, as P0b-followup 1.5 on this branch
+> (`unit:terminal` 173 → 220, DECISIONS 70, its entry directly below followup 1 in
+> `TASKS-FINISHED.md`). **Followup 2 — the `time.sleep()` in the tool's
 > `call()`, said to block the UI event loop — closed as a false premise** and moved
 > to `TASKS-FINISHED.md` (`d6ddc88` checks, `7a3fefc` docs, DECISIONS 68):
 > `tool_call.ToolCall.call()` dispatches a sync `call()` through
@@ -61,13 +63,18 @@ moved since, and they are marked. Nothing else has been done.
 
 **Already done while fixing P0b** (so do not re-do them): the *single
 implementation* half of item 9 — `pane_active()` now exists once in
-`run/terminal.py` and `lsterm` uses it (`c948b3e`); the *namespaced
-windows / fail loudly on an unresolved name* half is still open. Item 8 (process state as first-class output) is mostly done: a dead
-pane reports its REAL final screen and its exit code (followup 1), and
-`pane_pid`, `pane_current_command`, `pane_dead_signal` and
-`pane_dead_time` all exist in libtmux 0.62 (the last two need tmux
->= 3.3). What is left of item 8 is surfacing them as fields on a LIVE
-screen — the state layer named in `TASKS-FINISHED.md` and DECISIONS 69.
+`run/terminal.py` and `lsterm` uses it (`c948b3e`); the *namespaced windows* half
+of item 9 has its foundation now (followup 1.5: tmux itself names the windows,
+the registry resolves by its own names, and an unresolved name answers "no such
+session") — whether the tool should fail *loudly* beyond that answer is still an
+open choice. Item 8 (process state as first-class output) is mostly done: a dead
+pane reports its REAL final screen and its exit code (followup 1), every field
+the snapshot needs already includes `pane_pid`/`pane_current_command`/geometry,
+and the state layer those come from — DECISIONS 69's recommendation and the
+one `list-panes -a` per call — **landed as followup 1.5**; `pane_dead_signal`
+and `pane_dead_time` (tmux >= 3.3) are two more tokens away in that format
+line. What is left of item 8 is surfacing them as fields on a LIVE
+screen — a formatting job now, not a plumbing one.
 
 Once `spit-tui` exists (the Rust front end planned in
 `doc/UI-ROUTE-RATATUI.md` and the engine <-> front-end protocol in
