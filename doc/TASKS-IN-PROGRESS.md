@@ -12,9 +12,18 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **Two entries are open**, both `terminal` followups. The followup *numbers*
-> stay in the headings so that cross-references by number remain true even
-> though 1, 1.5 and 2 are gone: **P0b** and its four siblings
+> **One entry is open**: the ratatui enhancement list, followup 4. The followup
+> *numbers* stay in the headings so that cross-references by number remain true
+> even though 1, 1.5, 2 and 3 are gone — **followup 3 closed as a non-issue on
+> 2026-09-10 by the owner's ruling**: a lone `Esc` swallowing the next character
+> is how a terminal works, tmux does the same thing as the owner's own terminal,
+> and the `terminal` tool's job is to hand the caller a terminal 1:1, so there
+> is nothing to fix and nothing to explain away in the PROMPT. DECISIONS 72 and
+> TRAPS #23; the branch that had been cut for it,
+> `terminal-prompt-esc-limitation` (`f6948ea`, `4fa008a`), is **left unmerged on
+> purpose**. Reopening that question is re-litigating the owner's ruling, so do
+> not: **a pane that behaves like a terminal is not a defect**. What remains:
+> **P0b** and its four siblings
 > (`e699bb4`…`8f65e32`, 98 checks), **followup 1** `remain-on-exit`
 > (`d549b61`…`e5b4fba`, DECISIONS 69), **followup 1.5** the state layer
 > (`8cfd14a`, DECISIONS 70) and **followup 2**, closed as a false premise
@@ -41,43 +50,6 @@ that is not the agent's.
   may `kill-server` freely. A run leaves stale socket *files* under
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
-
-## P0b-followup 3 - tell the model what a lone `Esc` does  [small: one PROMPT sentence; needs the owner's `Go!`]
-
-Measured while writing `test_keys.py`: bash reads a lone `Esc` and then **merges
-the next character into it as Alt-`<char>`**. `Esc` followed immediately by
-`echo mm-after-esc` reached the prompt as `cho mm-after-esc` — the `e` was
-consumed by the escape sequence. This is terminal semantics (readline's
-`keyseq-timeout`), **not** a spit.py defect, and `test_keys.py` t8 deliberately
-asserts only that the key is delivered and its name is not typed.
-
-A model reading today's PROMPT is told `["Esc", "Escape", …]` are supported keys
-and gets a mangled command with no hint why. The change is **one sentence** in
-`terminal`'s PROMPT, under "Key limitations to keep in mind" — something like:
-*a lone `Esc` merges with the character that follows it into Alt-`<char>`; send
-`Esc` alone and let the delay elapse before sending more input.* Do **not**
-"fix" the tool instead: no artificial wait after `Esc`, no splitting the input.
-The pane is a real terminal and readline's semantics are the correct behaviour;
-only the model's expectation is wrong.
-
-### State (crash-recovery record)
-
-- **Branch**: none yet — the code half of this has not been started.
-- **Scope**: `spit_app/tools/terminal.py` (the `PROMPT` string) and, if it
-  complains, `tests/unit/prompt/`, which pins the PROMPT strings of every tool
-  (read out of the sources with `ast`, so no import and no Textual).
-- **Done**: nothing but the measurement, which is above and in the comment on
-  `test_keys.py` t8.
-- **Left**: ask for the `Go!` (one sentence, one file — say so when asking). On
-  `Go!`: add the sentence, run `unit:prompt` then the full suite.
-- **State hazards**: none. Nothing is half-edited; the working tree is clean.
-- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` — every row as
-  TESTING.md has it. `unit:prompt` is expected to stay 33 (the sentence sits
-  inside the PROMPT, so neither the heading-start nor the no-trailing-newline
-  rule is touched) — *verify* that, do not assume it. `unit:terminal` 220 must not
-  move: behaviour is unchanged, only what the model is told.
-
----
 
 ## P0b-followup 4 - what the `terminal` tool still needs *for* the ratatui migration  [enhancement list, picked up piece by piece]
 

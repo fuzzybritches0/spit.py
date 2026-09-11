@@ -136,3 +136,17 @@ matching area.
     to look at, no endpoint to drive a reply) is ceremony, not verification -
     the automated analogue is the verification, and the record must say which
     one it rested on.
+
+23. **A pane that behaves like a terminal is not a defect.** The `terminal`
+    tool's contract is fidelity: it hands the caller a terminal 1:1, so it does
+    what the owner's own terminal does and what any human typing at a keyboard
+    would get (owner's ruling, DECISIONS 72). Forgetting that cost a whole
+    phantom task: a lone `Esc` swallows the next character - in tmux, in the
+    sandbox, and in the owner's terminal alike - it was explained plausibly
+    (readline's `keyseq-timeout`), promoted to a PROMPT change and `Go!`d, and
+    survived only until the owner tried it at their own keyboard. So before
+    opening an entry about pane behaviour, reproduce it in a real terminal; if it
+    reproduces there, what you have found is a human habit, not a bug. And when
+    you do measure, blame what you measured: the `Esc` victim was still gone after
+    3 s in a pane reporting `set keyseq-timeout 500`, so the mechanism everyone
+    reached for was not even the one in play.
