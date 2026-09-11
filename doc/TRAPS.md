@@ -57,8 +57,8 @@ matching area.
 ## Testing
 
 8. **Use distinctive tokens (`mm-one`) in output assertions.** Single letters
-   collide with the transport's own "Running process..." / "exited with code"
-   text and make tests pass on the wrapper instead of the tool.
+   collide with the transport's own "Exit code ..." text and make tests pass on
+   the wrapper instead of the tool.
 9. **Harness `--flag` values are read once: the FIRST occurrence wins.** A
    test must pass the complete arg set on every call; never append an override
    to a shared base string. (`run_tests.sh` wrappers like `dl PATH START END

@@ -24,9 +24,9 @@ running, or what the history looks like after an edit, the protocol is wrong.
    borders and syntax highlighting are the front end's business. This is the
    opposite of "ship styled spans" and it is what keeps the streaming path tiny.
 4. **The model-facing text does not change.** `DECISIONS` 59's `~~~~~` fence
-   language and the `Running process…` / `Process exited with code N.` lines in
-   `run/run.py` stay exactly as they are in the LLM's message. They become
-   *rendering* semantics for the client, not new wire content.
+   language and the `Exit code N ...` line in `run/run.py` stay exactly as they
+   are in the LLM's message. They become *rendering* semantics for the client,
+   not new wire content.
 5. **Forms are data.** Settings screens travel as a schema, not as per-toolkit
    code (see *Forms*). This is the single biggest lever for the GTK4 goal.
 6. **The engine must survive a hostile or stupid client**: unknown message type,
