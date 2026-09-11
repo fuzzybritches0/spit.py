@@ -59,6 +59,7 @@ try:
         app = stub_app(root)
         t = make_terminal(app)
         t.term_new("t2")
+        wait_for_prompt(app, "t2")
         screen = t.term_screen("t2")
         check("t2-cursor-marker-present", "█" in screen, True)
         check("t2-screen-is-not-just-the-header", len(screen) > len("Session: t2\n\n"), True)
