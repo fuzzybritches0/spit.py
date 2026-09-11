@@ -241,7 +241,6 @@ class Run(CommonMixIn):
             cmd_args += [f"/home/{self.user}/.sandbox_env.sh"] + cmd
         else:
             cmd_args = [self.SANDBOX_ENV] + cmd
-        yield "Running process...\n\n"
         # with the script in a file there is nothing to feed in, and the command
         # reads from an empty stdin rather than from what is left of the script
         stdin = asyncio.subprocess.DEVNULL if self.script_as_file else asyncio.subprocess.PIPE
@@ -253,6 +252,7 @@ class Run(CommonMixIn):
                         cwd=self.sandbox_path, start_new_session=True)
         stderr_chunks = []
         stderr_task = None
+        has_output = False
         if self.separate_stderr:
             stderr_task = asyncio.create_task(self._collect(proc.stderr, stderr_chunks))
         if not self.script_as_file:
@@ -263,6 +263,7 @@ class Run(CommonMixIn):
         try:
             async for data in self._stream(proc):
                 yield data.decode("UTF-8", errors="replace")
+                has_output = True
         finally:
             # the file is the command, so it has to outlive the stream, but it
             # is a copy of a command and there is no reason to leave it behind
@@ -275,16 +276,24 @@ class Run(CommonMixIn):
             except asyncio.TimeoutError:
                 stderr_task.cancel()
             errors = b"".join(stderr_chunks).decode("UTF-8", errors="replace")
-            if errors.strip():
-                yield f"\n{STDERR_HEADER}\n{errors}"
         # the drain above can return before the child has been reaped, and
         # returncode is None until it is: comparing None < 0 is a TypeError, which
         # is what the rare flake in the suite was
         await self._command_finished(proc)
         if proc.returncode < 0:
             if self.timeout_reached:
-                yield "\nProcess was terminated due to timeout limit!"
+                yield "\n✗ Process was terminated due to timeout limit!"
             elif self.terminated:
-                yield "\nProcess was terminated by user!"
+                yield "\n✗ Process was terminated by user!"
         else:
-            yield f"\nProcess exited with code {proc.returncode}."
+            if not has_output and not errors.strip():
+                has_output = " (no output)"
+            else:
+                has_output = ""
+            if not proc.returncode == 0:
+                status = f"✗ Exit code {proc.returncode} — command reported an error!{has_output}"
+            else:
+                status = f"✓ Exit code {proc.returncode} — command reported no error.{has_output}"
+            yield f"\n{status}\n"
+            if stderr_task and errors.strip():
+                yield f"\n{STDERR_HEADER}\n{errors}"
