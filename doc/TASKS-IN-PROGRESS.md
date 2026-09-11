@@ -143,6 +143,26 @@ the `terminal` tool covers the end-to-end app. Design it for that job now:
     closes — `actions.py:action_exit_app` is still the only thing that frees
     anything, so a closed chat's windows outlive the chat.
 
+**Why items 2 and 4 are not cosmetics** (learned 2026-09-11, closing the owner's
+217/3 against this box's 220/0 — DECISIONS 73 and the `TASKS-FINISHED.md` entry for
+branch `test-terminal-pane-read-parity`): a suite that cannot set the pane's geometry
+and splices the cursor into the text is a suite whose verdict belongs to the machine.
+Two of those three reds were exactly that. A token that crossed the right edge of an
+80-column pane was on the pane, inside the tool's own report, and invisible to the
+harness's read (fixed by reading with the tool's capture flags, `join_wrapped`
+included, plus a `t18` guard whose own check says a wrap really happened); and a
+capture taken before the shell had drawn anything read as an empty pane, because tmux
+prints the blank rows and libtmux strips them (fixed by waiting for the prompt). Both
+classes are guarded now; neither class is *impossible* now. Item 2 — `cols`/`rows` at
+creation — is what pins the width an assertion depends on instead of inheriting tmux's
+default for a clientless session, and item 4 — cursor as data — removes the splice that
+overwrites the character under the cursor, which is why `t18` has to send its wrapped
+token through `echo` rather than leave it on the command line. The one thing NOT to do
+is "fix" the class by pinning the prompt or substituting a tame shell: DECISIONS 72 is
+that the pane is the user's terminal, warts included, and the fix belongs in how the
+pane is read and synchronised.
+
+
 ### State (crash-recovery record)
 
 - **Branch**: none started. Everything marked landed above is on `main` via

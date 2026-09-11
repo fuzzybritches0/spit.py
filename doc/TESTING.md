@@ -32,7 +32,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 119 |
-| unit:terminal | 220 |
+| unit:terminal | 223 |
 
 ## The test venv (unit:terminal needs it)
 
@@ -93,6 +93,15 @@ because the tool got faster, and the burst measures the hop's real job. The two
 re-worded assertions (`t6`, `t7` — one each, numbers and check-counts kept)
 are the deliberate behaviour changes DECISIONS 70 records: "no such session" is
 now a distinct answer from "session dead".)
+
+(`unit:terminal` is 223 after the two machine-dependent reds the owner reported
+(217/3 there, 220/0 here). +3 `test_screen` `t18`, and no check changed verdict:
+`main` vs branch on this box 220/0 -> 223/0. The two reds were never the tmux
+backend — one capture with no `wait_for_prompt()` in front of it, and a harness
+reading the pane with different capture flags than `live_screen()` uses. The
+whole diagnosis, including the four-way `HOME` decomposition that reproduced the
+owner's exact three check names, is DECISIONS 73 and the `TASKS-FINISHED.md`
+entry for branch `test-terminal-pane-read-parity`.)
 
 `unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
 `Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
@@ -160,13 +169,29 @@ harness **absolute** fixture paths.
   `socket_name`, so a user's own server never gets a window created in it or
   input sent to it). `stub_app.py` supplies the three things `Terminal` asks the
   app for and nothing else, plus `wait_for`-style polling — every timing
-  expectation is a poll with a ceiling, never a fixed sleep. Two traps it had to
+  expectation is a poll with a ceiling, never a fixed sleep. Three traps it had to
   step around: `capture_pane()` returns **lines**, so `token in lines` asks
   whether a line *equals* the token and silently never matches a token sharing
-  its line with a prompt (`screen_of()` joins first); and `pane_active()`
+  its line with a prompt (`screen_of()` joins first); `pane_active()`
   **forgets** a dead window as a side effect, so a test that waits for death by
   polling it has cleaned the registry the code under test needs dirty —
-  `window_dead()` is the non-mutating probe for "has the process exited".
+  `window_dead()` is the non-mutating probe for "has the process exited"; and the
+  harness must capture with the **same flags as `live_screen()`**, `join_wrapped`
+  included — tmux hands a wrapped line back as two rows, so a token that crossed
+  the right edge is on the pane, inside the tool's own report, and in nothing the
+  tests can see (measured: an 80-column pane with a `PS1` of 75-79 columns made
+  `test_keys` t3 red for its whole 15 s ceiling on one machine and green on
+  another; DECISIONS 73). The general form of both, and the reason they are in
+  this file rather than in a comment: **assert on what the tool is able to report,
+  and wait for the pane's state, not for your own clock.** The pane's shell is the
+  user's own bash with the user's own rc files in a window whose width is tmux's
+  default, so neither how fast the prompt appears nor how wide it is belongs to the
+  code under test — which is also how `t2` came to assert on a brand-new window
+  before its shell had drawn anything: an undrawn pane captures as *nothing* (tmux
+  prints the blank rows, libtmux strips them, `capture_pane()` returns `[]`), so
+  `live_screen()` has no row for the cursor marker and the report is the header
+  alone. `t18` is the guard for the flags and it says its own precondition — that a
+  wrap really happened — because without one its assertions would prove nothing.
   `window_exists()` still exists but it asks a different question now — "does tmux
   still hold the window" — and since the windows are made with `remain-on-exit` the
   two answers differ for every dead session, so picking the wrong one is no longer

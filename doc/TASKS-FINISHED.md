@@ -292,6 +292,77 @@ FAIL 0.
 
 **The branch stays unmerged, deliberately**: `terminal-prompt-esc-limitation` (`f6948ea`, a PROMPT bullet plus 14 checks in `test_tool_call.py`, `unit:terminal` 220 → 234; `4fa008a`, its docs, carrying a decision 72 that this line of history uses for the ruling — revive that branch and its entry becomes 73). No code from it is in `main` or in these docs: `terminal`'s PROMPT is the owner's text unchanged, `term_input()`/`term_send_keys()` are untouched, and `unit:terminal` remains **220**. `test_keys.py` keeps asserting the only claim the tool makes about `Esc` — the key is delivered and its name is not typed.
 
+### The two machine-dependent reds in `unit:terminal`: one missing wait, and two readers of one pane (branch `test-terminal-pane-read-parity`: `b2d0021` the wait, `bd37144` the read, and the docs commit that closes the entry)
+
+**Reported as: 217/3 on the owner's machine, 220/0 on this one** — `t3-typed-the-line`,
+`t2-cursor-marker-present`, `t2-screen-is-not-just-the-header`, with the suspicion that
+the owner's different venv caused it. **It did not**, and ruling that out is the first
+thing worth keeping: `libtmux` is 0.62.0 in both venvs and these suites import no
+Textual (TRAPS #19), so `libtmux` and the `tmux` binary are the only things they touch.
+The variable is the **shell inside the pane** — `term_new(sandbox=False)` runs
+`sandbox_env.sh bash`, which reads the user's `~/.bashrc` — so it was reproduced here by
+changing nothing but `HOME`:
+
+| the pane's shell | failing checks | row |
+|---|---|---|
+| `.bashrc` sleeps 0.4 s, ordinary prompt | `t2` x2 | 218/2 |
+| 76-column `PS1`, fast rc | `t3-typed-the-line` | 219/1 |
+| both | all three, the owner's names | **217/3** |
+| two-line `.bashrc` | none | 220/0 |
+
+**`t2` was a missing synchronisation.** It was the only capture in `test_screen.py`
+with no `wait_for_prompt()` before it. Measured mechanism: a pane that has drawn
+nothing yet captures as *nothing* — `tmux capture-pane -p` prints its 24 blank rows,
+libtmux strips them, `capture_pane()` returns `[]` — so `live_screen()`'s splice loop
+has no row to put `█` on and the report stays exactly the 13-character
+`Session: <name>\n\n` header. That is why those two fail as a **pair**. The owner added
+the one line every other section already had (`b2d0021`).
+
+**`t3` was two readers of one pane.** `live_screen()` captures with
+`join_wrapped=True`; `stub_app.screen_of()` — behind ~28 assertions — captured raw.
+tmux wraps at the right edge and returns the wrapped rows as separate lines, so a token
+straddling the edge is on the pane, inside the tool's report, and invisible to every
+test. The failing band is **75-79 prompt columns on an 80-column pane**: 70-74 passes
+(the token lands inside one row) and 80+ passes (the prompt itself wraps, so the text
+starts fresh on row 1). Side by side on the same pane the raw read lacks `abcdef` and
+the joined read has it: **the tool was right throughout**, `run/terminal.py` needed no
+change. The neighbour check passing all along — `t3-cursor-was-at-the-front` — was
+bash's own `bash: Xabcdef: command not found` carrying the token contiguously, which is
+what made this look like one flaky check instead of a reading difference.
+
+**What landed** (`bd37144`): `screen_of()` joins, the two direct `capture_pane()` calls
+in `t17` join, and `test_screen` `t18` (3 checks) pins it — a 200-character token, which
+wraps at any width this socket can meet (the private socket never has a client, and a
+clientless session is tmux's default 80x24, measured), reported whole by the tool, seen
+by the harness, **plus a precondition check that the wrap really happened**, because with
+no wrap the other two prove nothing (TRAPS #18). The token goes through `echo` rather
+than sitting on the command line because the cursor marker *replaces* the character under
+it (decision 66) — that token would have tested the splice, not the read.
+
+**Differential** (`main` vs branch, sequential — each file owns one fixed socket name):
+
+```
+plain shell                 220/0  ->  223/0    no check changed verdict, 3 added
+76-column-prompt shell      219/1  ->  223/0    the red was t3-typed-the-line
+the owner's environment     217/3  ->  223/0    all three names gone
+new check vs main's stub_app:  92/1  t18-harness-reads-the-pane-as-the-tool-does red
+                               alone, its two siblings green on both codes
+```
+
+**Accepted, not fixed** — and said plainly because it is the part a future agent could
+"helpfully" break: the suite still runs the user's own shell with the user's own rc
+files, because handing over a real terminal 1:1 *is* the tool's contract (DECISIONS 72)
+and a pinned fake shell would test less. What was wrong was an assertion whose verdict
+depended on the width of whoever ran it and on how fast their prompt appeared. The
+durable version of that is enhancement 2 (geometry the caller sets) and enhancement 4
+(cursor as data, not a character spliced into the text) of the followup-4 list, which
+are noted there. Full-suite ground truth: tools 127/24/30/119/80/32/68/29 and unit
+131/33/278/121/119 **unmoved**, `unit:terminal` 220 -> 223, FAIL 0 everywhere. Branch
+awaiting the owner's merge; `main` untouched, nothing pushed. **DECISIONS 73** is the
+record, with the re-measurement recipe (`HOME` at a directory holding a chosen
+`.bashrc`) so the class can be re-tested on any machine in one command.
+
+
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)
 
