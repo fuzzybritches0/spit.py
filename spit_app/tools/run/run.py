@@ -286,7 +286,7 @@ class Run(CommonMixIn):
             elif self.terminated:
                 yield "\n✗ Process was terminated by user!"
         else:
-            if not has_output and not errors.strip():
+            if not has_output and (stderr_task and not errors.strip()):
                 has_output = " (no output)"
             else:
                 has_output = ""
