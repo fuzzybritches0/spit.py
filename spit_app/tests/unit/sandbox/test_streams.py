@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory() as root:
                             separate_stderr=True)
     check("t1-no-header", STDERR_HEADER in out, False)
     check("t1-output", "hello" in out, True)
-    check("t1-report", "Process exited with code 0" in out, True)
+    check("t1-report", "Exit code 0 — command reported no error." in out, True)
 
 print()
 print("=== 2. stderr is reported apart, after the output ===")
@@ -75,7 +75,7 @@ with tempfile.TemporaryDirectory() as root:
     home = os.path.join(root, "h")
     os.makedirs(home)
     # distinctive tokens: single letters collide with the boilerplate the
-    # transport adds around the output ("Running process...", "exited with code")
+    # transport adds after the output ("Exit code ...")
     command = "echo mm-one; echo mm-two >&2; echo mm-three"
     out, _, _ = run_as_file(wrap_script(command), home, root, separate_stderr=False)
     check("t4-no-header", STDERR_HEADER in out, False)
@@ -92,7 +92,7 @@ with tempfile.TemporaryDirectory() as root:
     for separate in (True, False):
         out, _, _ = run_as_file(wrap_script("echo x >&2; exit 9"), home, root,
                                 separate_stderr=separate)
-        check(f"t5-rc-{separate}", "Process exited with code 9" in out, True)
+        check(f"t5-rc-{separate}", "Exit code 9 — command reported an error!" in out, True)
 
 print()
 print("==============================")
