@@ -198,14 +198,26 @@ def pane_of(app, name: str):
 
 
 def screen_of(app, name: str) -> str:
-    """The pane as one string.
+    """The pane as one string, read with the flags the tool reads with.
 
     capture_pane() returns a list of lines, and `token in lines` then asks
     whether some line is *exactly* that token -- which silently never matches for
     anything that shares its line with a prompt, the common case for a terminal.
     Everything here matches against the joined screen.
+
+    `join_wrapped=True` is parity, not decoration: `live_screen()` in
+    run/terminal.py captures with it, so what a test can see is what the model is
+    shown. tmux wraps at the right edge of the pane and hands the wrapped rows
+    back as SEPARATE lines, so without the join a token that straddles the edge is
+    on the pane and not in the capture, and an assertion on it waits out its whole
+    ceiling for a string the tool reports intact. Measured here: 80-column pane, a
+    PS1 of 75 to 79 columns, six typed characters captured as "abcd"/"ef" --
+    test_keys t3 red for 15 s while term_screen() said "abcdef". That band belongs
+    to whoever owns the shell (the pane runs the user's own bash, with the user's
+    own PS1, in the directory the suite happened to start in), so a raw read made
+    the suite's verdict a property of the machine instead of the code under test.
     """
-    return "\n".join(pane_of(app, name).capture_pane())
+    return "\n".join(pane_of(app, name).capture_pane(join_wrapped=True))
 
 
 def wait_for(what, timeout: float = 15.0, interval: float = 0.15):

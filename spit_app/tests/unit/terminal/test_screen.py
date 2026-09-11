@@ -21,7 +21,8 @@ import subprocess
 import tempfile
 
 from stub_app import (check, counted_tmux_invocations, kill_private_server,
-                      kill_window, make_terminal, registered_ids_are_all_the_windows,
+                      kill_window, make_terminal, pane_of,
+                      registered_ids_are_all_the_windows,
                       registered_window_id, requested_sockets, send_raw,
                       session_window_ids, stub_app, summary, tmux_panes,
                       tmux_available, tmux_session_ids, tmux_window_names,
@@ -416,7 +417,7 @@ try:
         theirs_id = window_id_of(app.tmux["chat2"]["windows"]["t17-theirs"])
         check("t17-theirs-token", wait_for(
             lambda: "mm-chat2-only" in "\n".join(
-                tmux_panes(app)[theirs_id].capture_pane())), True)
+                tmux_panes(app)[theirs_id].capture_pane(join_wrapped=True))), True)
         mine.term_screen("t17-mine")        # cache MY OWN screen
         # Copy the ENTRY, not the id string: on the new layer that IS the id, and
         # on the object layer it is the Window object -- so the same line re-points
@@ -431,7 +432,7 @@ try:
         check("t17-and-reports-what-it-really-last-saw", "mm-chat1-only" in alias, True)
         check("t17-the-alias-refuses-input",
               mine.term_send_keys("t17-mine", "mm-poison", True), False)
-        theirs_after = "\n".join(tmux_panes(app)[theirs_id].capture_pane())
+        theirs_after = "\n".join(tmux_panes(app)[theirs_id].capture_pane(join_wrapped=True))
         check("t17-nothing-was-typed-into-the-other-chat", "mm-poison" in theirs_after, False)
         check("t17-the-other-chat-s-window-survives", theirs_id in tmux_panes(app), True)
         check("t17-lsterm-for-chat1-lists-nothing",
@@ -458,6 +459,43 @@ try:
         check("t17-a-wrong-stamp-lists-nothing",
               lsterm.call(app, {}, "chat1"), "No active sessions found!")
         check("t17-and-destroys-nothing-it-cannot-verify", live_id in tmux_panes(app), True)
+    print("=== 18. a line wider than the pane is still ONE line to the reader ===")
+    # The harness used to read the pane with capture_pane() and no join_wrapped
+    # while live_screen() reads it WITH the join -- so a token that runs past the
+    # right edge was on the pane, in the tool's report, and not in what the tests
+    # could see. That is how a green suite here went 217/3 on another machine:
+    # measured, an 80-column pane with a PS1 of 75 to 79 columns wraps six typed
+    # characters into "abcd"/"ef", and test_keys t3 polled its whole 15 s ceiling
+    # for a string term_screen() was reporting intact. The band is narrow -- 70-74
+    # and 80+ pass, the latter because the prompt itself wraps and the text starts
+    # fresh on row 1 -- which is what made it look like a machine fault instead of
+    # two readers disagreeing about one pane. The prompt is the user's own PS1 and
+    # the pane's directory is wherever the suite was started: nothing about the
+    # code under test.
+    #
+    # 200 characters wrap at any width the suite can meet, and the width itself is
+    # pinned here rather than assumed: this socket never has a client, and a
+    # clientless session is tmux's default 80x24 (measured). The third check says
+    # a wrap really happened, because without one the first two prove nothing
+    # (TRAPS #18). The token goes through echo rather than sitting on the command
+    # line on purpose: the cursor marker REPLACES the character under it (decision
+    # 66), so a token the cursor is standing on would test that splice, not this.
+    with tempfile.TemporaryDirectory() as root:
+        app = stub_app(root)
+        t = make_terminal(app)
+        t.term_new("t18")
+        wait_for_prompt(app, "t18")
+        token = "mm-" + "x" * 200 + "-end"
+        send_raw(app, "t18", f"echo {token}\n", True)
+        check("t18-harness-reads-the-pane-as-the-tool-does",
+              wait_for_text(app, "t18", token), True)
+        check("t18-tool-reports-the-whole-wrapped-line",
+              token in t.term_screen("t18"), True)
+        pane = pane_of(app, "t18")      # quiescent: nothing else types into t18
+        check("t18-the-line-really-wrapped-on-the-pane",
+              len(pane.capture_pane()) > len(pane.capture_pane(join_wrapped=True)),
+              True)
+
 finally:
     kill_private_server(SOCKET)
 
