@@ -363,6 +363,66 @@ record, with the re-measurement recipe (`HOME` at a directory holding a chosen
 `.bashrc`) so the class can be re-tested on any machine in one command.
 
 
+### WP-A (P8 pipeline) — the anchored container widget: `AnchoredScroll` (branch `task-anchored-scroll-widget`, commits `377d47d`…`d5f3f79`, awaiting the owner's merge)
+
+**What landed**, four commits on a branch cut from `main` (`8819e73`):
+`377d47d` lands the plan docs (the P8 entry, `doc/UI-ONDEMAND-LOADING.md`,
+the two map rows) that sat uncommitted in the working tree — the pipeline's
+canonical state belongs in git ahead of the implementation; `3ad2982` opened
+this WP's in-progress entry; `dd6dac6` the widget; `d5f3f79` the suite.
+
+`spit_app/chat/anchored_scroll.py` — `AnchoredScroll(VerticalScroll)`, the P8
+widget implemented from the proven mechanism, not redesigned: `arm_top_anchor()`
+(one-shot) + `pin()`/`unpin()` (persistent, re-baselined on every landed
+scroll via `watch_scroll_y` → `call_after_refresh`), the direction-agnostic
+`scroll_y` correction inside `process_layout` with exactly the
+`set_reactive(Widget.scroll_y, …)` + `scroll_target_y` +
+`vertical_scrollbar._reactive_position` write Textual's own bottom anchor uses
+(`_compositor.py:609-619`), and disarm-if-anchor-gone. **`ChatView` was not
+touched** (WP-C changes the base class).
+
+**New suite `tests/unit/anchored/` (68 checks)** — the three throwaway probes
+(`probe.py`, `probe6.py`, `probe7.py`) rebuilt as permanent checks, none
+weaker than the measurement tables in P8/the plan: the plain-`VerticalScroll`
+defect as the control (every painted frame shows the jump); 0 jump frames on
+single (15→19) and batched (15→27) mounts above; bottom-anchor coexistence;
+user-scroll re-baseline (21 respected, 0 corrections); late growth above
+(25→29, no shift); unpin returns the defect; **probe-7 eviction**: evict-above
+holds the view and shifts `scroll_y` by exactly the evicted height (30→18 for
+12 rows), evict-below produces zero movement *and zero corrections*,
+remount-below holds, 20× churn keeps the mounted count flat (worst 13 at
+viewport 10 / margin 20 — the window, not the history). The frame-spy
+technique is preserved verbatim: wrap `App._display`, one call is one emitted
+frame, assert no emitted frame shows the tracked widget at the wrong row.
+
+**Deviations from the planned API** (all additions, none renames; the WP
+sketch left the one-shot/pin composition undefined): the two modes share one
+anchor slot and are mutually exclusive — `pin()` absorbs an armed one-shot
+(same anchor, same baseline: the pin's `placement.region.y − offset` and the
+one-shot's `scroll_y + delta` are the same target when captured from the same
+state), `arm_top_anchor()` is a no-op while pinned; a removed anchor behaves
+per mode (one-shot disarms outright, verified by a follow-up mount moving the
+view exactly like the defect control; the pin re-baselines onto the new first
+visible child *after* the frame — regions are stale inside a layout pass);
+public extras: `is_pinned` and the `corrections` counter (test instrument).
+**Consequence for WP-C**: evicting the widget the pin is currently anchored
+to is the one prune that moves the view un-compensated for that frame — the
+prune policy must re-anchor deliberately (the anchor widget is chosen
+viewport-first, so pruning strictly-outside-viewport children never removes
+it).
+
+**Verified.** Suite 68/0 stable over three runs; the FAIL-with-remedy path
+was actually run (`HOME=/tmp/fakehome` → `PASS: 0  FAIL: 1` naming
+`create_venv.sh`, never a silent zero). Full suite green before and after;
+ground truth moved only by the new row: tools 127/24/30/119/80/32/68/29 and
+unit 131/33/278/121/119/223 unmoved, `unit:anchored: 68` added (`dd6dac6`/`d5f3f79` carry the numbers into TESTING.md, which also
+notes PROJECT.md/TRAPS #19's "one venv-dependent suite" statements are now
+two). The root `run_tests.sh` needed no edit — its `unit/*` loop
+auto-discovers any directory holding a `run_tests.sh`; the "suite row"
+requirement is satisfied by the suite's own runner. No sign-off step
+participated (DECISIONS 71); branch awaiting the owner's merge, `main`
+untouched, nothing pushed.
+
 ## Verbatim records kept from the old summary's "Next steps" (they double as
 ## the conventions their follow-up work must respect)
 

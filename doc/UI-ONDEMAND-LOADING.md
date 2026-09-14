@@ -150,7 +150,7 @@ source files (~35–60k incl. suite runs). Each WP: own branch, own `Go!`, full
 **No WP starts until the previous one it depends on is merged to the working
 branch chain** (branches stack; `main` untouched throughout).
 
-### WP-A — the anchored container widget  [depends: none; parallel with B]
+### WP-A — the anchored container widget  [depends: none; parallel with B] — **DONE** 2026-09-14, branch `task-anchored-scroll-widget` (`dd6dac6` widget, `d5f3f79` suite: `AnchoredScroll` + `unit:anchored` 68 checks), resolution in `TASKS-FINISHED.md`; deviations from the sketched API recorded there and in the handoff
 - **Scope**: new `spit_app/chat/anchored_scroll.py` (the P8 widget: one-shot
   `arm_top_anchor()` + persistent `pin()`/`unpin()`; disarm-if-anchor-gone);
   new `spit_app/tests/unit/anchored/` (venv-dependent, FAIL-with-remedy
