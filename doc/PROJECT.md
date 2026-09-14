@@ -19,6 +19,8 @@ development of the project; everything here reflects the repo at
    - `UI-PROTOCOL.md` - the engine <-> front-end contract (the seam; read before
      touching anything that renders or reads input)
    - `UI-ROUTE-RATATUI.md` - the route off Textual, with its gates and measurements
+   - `UI-ONDEMAND-LOADING.md` - windowed message loading on Textual (P8): proven
+     anchor mechanism, work packages A-F, each awaiting its own `Go!`
 5. `TASKS-IN-PROGRESS.md` - is someone's work half-done? Recover it first.
 6. `TASKS-PLANNED.md` - pick up work here.
 7. `TASKS-FINISHED.md` - what is already done (do not redo or "fix" it).

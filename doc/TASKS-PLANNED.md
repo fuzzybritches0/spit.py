@@ -18,6 +18,114 @@ asked for.
 
 ---
 
+## P8 - On-demand message loading with a top-anchored scroll container  [feasibility proven 2026-09-14; implementation awaits the owner's `Go!`]
+
+**Question** (investigation, no repo code touched): `VerticalScroll` keeps its
+`scroll_y` when widgets are mounted above the viewport, so the visible content
+shifts down and the view appears to scroll up — which kills the "load older
+messages on demand" route. Can an alternative scroll container hold its
+*visual* position across top-mounts?
+
+**Answer: yes, with a small `VerticalScroll` subclass; no Textual patch is
+needed** (this amends the parenthetical in DECISIONS 65 that partial loading
+"required a patch to Textual itself" — the public hook was already there in
+8.2.8). Measured headless with the app's own Textual 8.2.8, probes in
+`/tmp/anchor-probe/probe.py` + `probe6.py` (rebuildable from the design below).
+**Full transition plan and work-package split (A–F): `doc/UI-ONDEMAND-LOADING.md`.**
+
+### The mechanism (textual 8.2.8, file:line from `~/.venv-spit`)
+
+- Layout runs *inside compositing*: `Compositor._arrange_root` calls
+  `widget.arrange()` (`_compositor.py:602`), which calls the public hook
+  `widget.process_layout(placements)` (`_arrange.py:96`) **before** the
+  compositor translates placements by `-widget.scroll_offset`
+  (`_compositor.py:631`). A `scroll_y` change made inside `process_layout`
+  therefore lands in the *same drawn frame* — zero intermediate jump frames.
+- This is not a private trick: Textual's own bottom anchor (streaming
+  follow-bottom, already used by `ChatView.__init__` via `self.anchor()`)
+  rewrites `scroll_y` at exactly that point — `_compositor.py:609-619` —
+  with `set_reactive(Widget.scroll_y, v)` + `scroll_target_y` +
+  `vertical_scrollbar._reactive_position`. The subclass mirrors that code,
+  but pins an arbitrary child at its current visual offset instead of the
+  bottom edge.
+- `set_reactive` (not `scroll_to`/`scroll_relative`) is deliberate: every
+  user-scroll path funnels through `Widget._scroll_to`, which calls
+  `release_anchor()` (`widget.py:2750`); the correction must not release the
+  built-in bottom anchor, and it doesn't.
+- Scroll-only reflow (`reflow_visible`, the wheel fast path) reuses the cached
+  arrangement (`Widget.arrange` cache, `widget.py:1347`), so `process_layout`
+  does NOT run on pure scrolling — the pin never fights the user. Layout
+  changes (mount, child resize) invalidate ancestors via
+  `_clear_arrangement_cache()` (`widget.py:4574`), which is what re-runs
+  `process_layout`.
+
+### The design (the whole widget)
+
+```python
+class AnchoredScroll(VerticalScroll):
+    # one-shot mode: arm, then the next layout (e.g. after mounting older
+    # messages) restores the visual position in the same frame.
+    def arm_top_anchor(self):
+        anchor = next((c for c in self.children
+                       if c.region.bottom > self.region.y), None)
+        if anchor is None:
+            return
+        self._anchor_widget = anchor
+        self._anchor_content_y = round(self.scroll_y + anchor.region.y - self.region.y)
+        self._anchor_active = True
+
+    def process_layout(self, placements):
+        if self._anchor_active:
+            for p in placements:
+                if p.widget is self._anchor_widget:
+                    delta = p.region.y - self._anchor_content_y
+                    if delta:
+                        self.set_reactive(Widget.scroll_y, self.scroll_y + delta)
+                        self.set_reactive(Widget.scroll_target_y, self.scroll_y + delta)
+                        if self.show_vertical_scrollbar:
+                            self.vertical_scrollbar._reactive_position = self.scroll_y + delta
+                    self._anchor_active = False
+                    break
+        return placements
+```
+
+A persistent variant (pin re-baselined at the end of each frame via
+`watch_scroll_y` → `call_after_refresh`) also survives content that grows
+*later* above the viewport (images/LaTeX landing after the mount); it is in
+`probe6.py`. If the anchor widget is removed while armed: disarm (skip the
+correction) rather than compensate against a phantom.
+
+### Measurements (headless, `App.run_test`, 20 messages × 3 rows in a 10-row
+viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
+`App._display` records every emitted frame)
+
+| probe | result |
+|---|---|
+| plain `VerticalScroll` | defect: `scroll_y` stays 15, anchor child pushed 4 rows down; **every painted frame shows the jump** — it persists until the user scrolls |
+| `AnchoredScroll`, mount 1 above | `scroll_y` 15→19, anchor stays at viewport top, **0 jump frames** |
+| `AnchoredScroll`, `batch()` mount 3 above | same, 15→27, 0 jump frames |
+| with the built-in bottom anchor also armed (the `ChatView.__init__` state) | correction lands; user scroll released the bottom anchor as usual |
+| after a correction: `scroll_relative`, then append at bottom with `anchor()` | manual scroll exact; follow-bottom still sticks |
+| persistent pin: user scroll / mount above / late growth above / unpin | 21 respected / 21→25 no shift / 25→29 no shift / defect returns — 2 corrections total, 0 jump frames |
+
+### Scope and hazards for the implementation task (separate branch, needs `Go!`)
+
+- `ChatView` becomes the subclass; `load()` arms before the batched mount.
+  Keep follow-bottom (`anchor()`) as is — the compositor applies it *after*
+  `process_layout`, so at the very bottom the bottom anchor wins (top-loads
+  only happen away from the bottom, so in practice they never contend).
+- On-demand loading itself (when to fetch, where the window starts, chat
+  switch, undo/edit interactions) is the real work; the container is the
+  solved half. This is a Textual-side mitigation next to fallback rung 1 of
+  `UI-ROUTE-RATATUI.md` — it does NOT re-open DECISIONS 65 (the whole-tree
+  cost of *mounted* messages stays; the win is mounting fewer of them).
+- A viewport **resize** reflows every message; decide there whether the pin
+  compensates (it will, if armed) — semantics, not a bug.
+- **Verify**: probes rebuilt as a checkable suite + full `bash
+  spit_app/tests/run_tests.sh` green (counts from `doc/TESTING.md` unmoved).
+
+---
+
 ## P7 - MOVED to doc/UI-ROUTE-RATATUI.md — leave Textual for a ratatui front end  [high priority, architecture]
 
 Decided 2026-09-07 (DECISIONS 65). The plan, the gates (M0–M5), the measurements
