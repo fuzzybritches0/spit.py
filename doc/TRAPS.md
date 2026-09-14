@@ -105,9 +105,11 @@ matching area.
 
 19. **System python3 has NO app dependencies** (textual, libtmux...). Scripts
     are stdlib and test directly; modules need the app's runtime. Tests are
-    built to run without Textual at all (`stub_app.py`). One suite cannot avoid
+    built to run without Textual at all (`stub_app.py`). Two suites cannot avoid
     a dependency: `unit:terminal` needs **libtmux** because it drives a real
-    tmux, and the sandbox's `PIP_USER=True` makes a plain `pip install` into a
+    tmux, and `unit:anchored` needs **textual** because it drives a real
+    headless Textual (`App.run_test` - frame accuracy cannot be checked against
+    a stub), and the sandbox's `PIP_USER=True` makes a plain `pip install` into a
     fresh venv fail outright — build the venv with
     `bash spit_app/tests/create_venv.sh` (it unsets both; see TESTING.md, "The
     test venv"). A missing dependency there is a FAIL with the remedy in the

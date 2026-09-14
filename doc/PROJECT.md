@@ -80,8 +80,9 @@ The app's dependencies (`textual`, `libtmux`, ...) are **NOT installed in the
 bare system python3**. The app runs elsewhere (container/venv). Consequences:
 - Test scripts in `spit_app/tests/tools/` and `tests/unit/sandbox/` are built
   to need no Textual (sandbox tests drive `Run` through `stub_app.py`).
-- **One suite needs a dependency and says so**: `tests/unit/terminal/` drives a
-  real tmux through `libtmux`. Build the venv once with
+- **Two suites need a dependency and say so**: `tests/unit/terminal/` drives a
+  real tmux through `libtmux`; `tests/unit/anchored/` drives a real headless
+  Textual (`App.run_test`) for the `AnchoredScroll` container. Build the venv once with
   `bash spit_app/tests/create_venv.sh` (it unsets `PIP_USER`, which this
   environment exports and which a virtualenv refuses). Without it that row
   reports FAIL 1 with the command to run — never a silent zero (TESTING.md).

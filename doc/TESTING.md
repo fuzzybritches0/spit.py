@@ -27,6 +27,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | rename | 68 |
 | diff | 24 |
 | tools total | 509 |
+| unit:anchored | 68 |
 | unit:arguments | 131 |
 | unit:prompt | 33 |
 | unit:render | 278 |
@@ -36,8 +37,9 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 
 ## The test venv (unit:terminal needs it)
 
-`unit:terminal` drives a **real tmux** through `libtmux`, and the bare system
-python3 has no app dependencies (TRAPS #19), so it needs a venv. Build it once:
+`unit:terminal` drives a **real tmux** through `libtmux`, and `unit:anchored`
+drives a **real headless Textual** (`App.run_test`); the bare system python3 has
+no app dependencies (TRAPS #19), so both need a venv. Build it once:
 
 ```
 bash spit_app/tests/create_venv.sh        # -> ~/.venv-spit, everything in requirements.txt
@@ -163,6 +165,25 @@ harness **absolute** fixture paths.
 
 ## Unit suites
 
+- `tests/unit/anchored/` - the `AnchoredScroll` container (68 checks), the P8
+  probes (`/tmp/anchor-probe/`, see `TASKS-PLANNED.md` P8 and
+  `UI-ONDEMAND-LOADING.md` WP-A) rebuilt as permanent checks. Runs a **real
+  headless Textual** (`App.run_test`, the venv - TRAPS #19), so no stubbing:
+  the instrument is a spy on `App._display` - one call is one emitted frame -
+  which is what turns "the correction lands in the same frame" into an
+  assertion (`0 jump frames` == no emitted frame shows the tracked widget at
+  the wrong screen row). `test_oneshot.py`: the plain-`VerticalScroll` defect
+  as the control (every painted frame shows the jump), single + batched
+  mounts above, bottom-anchor (`Widget.anchor`) coexistence, manual scroll /
+  follow-bottom after a correction, disarm-if-anchor-gone. `test_pin.py`: the
+  persistent pin - user-scroll re-baseline, mount above, late growth above,
+  unpin returns the defect, anchor-removed re-baselines without a phantom
+  correction. `test_eviction.py`: the sliding window - evict-above holds the
+  view and shifts `scroll_y` by exactly the evicted height, evict-below moves
+  nothing and corrects nothing, remount-below holds, 20x churn keeps the
+  mounted count flat (worst 13 at viewport 10 / margin 20 - the window, not
+  the history). The shared harness is `anchored_app.py` (not `test_*` on
+  purpose, the `stub_app.py` precedent).
 - `tests/unit/arguments/` - schema coercion, paths, pipeline (131 checks).
 - `tests/unit/terminal/` - the tmux backend and the two tools on it, against a
   **real tmux on a private socket** (`libtmux.Server` is wrapped to pass
