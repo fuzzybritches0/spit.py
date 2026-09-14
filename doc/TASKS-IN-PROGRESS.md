@@ -12,7 +12,8 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **One entry is open**: the ratatui enhancement list, followup 4. The followup
+> **Two entries are open**: WP-A of the on-demand-loading pipeline (its entry
+> is below), and the ratatui enhancement list, followup 4. The followup
 > *numbers* stay in the headings so that cross-references by number remain true
 > even though 1, 1.5, 2 and 3 are gone — **followup 3 closed as a non-issue on
 > 2026-09-10 by the owner's ruling**: a lone `Esc` swallowing the next character
@@ -36,6 +37,48 @@ that is not the agent's.
 > resolution (root causes, coverage, the two accepted limits, and that
 > checklist kept in case anyone still wants to run it by hand) is in
 > `TASKS-FINISHED.md`.
+
+## WP-A (P8 pipeline) - the anchored container widget  [awaiting the owner's `Go!` for the first code change]
+
+Part of the six-package serial pipeline A → B → C → D → E → F implementing
+windowed (on-demand) message loading on Textual; plan and invariants in
+`doc/UI-ONDEMAND-LOADING.md`, the proven mechanism and measurements in the
+P8 entry of `doc/TASKS-PLANNED.md`. Scope: new `spit_app/chat/anchored_scroll.py`
+(the P8 widget: one-shot `arm_top_anchor()` + persistent `pin()`/`unpin()`,
+disarm-if-anchor-gone, direction-agnostic `scroll_y` correction inside
+`process_layout` via `set_reactive`) + new `spit_app/tests/unit/anchored/`
+(the throwaway probes rebuilt as permanent checks, venv-dependent,
+FAIL-with-remedy) + its `run_tests.sh` row. `ChatView` NOT touched.
+
+### State (crash-recovery record)
+
+- **Branch**: `task-anchored-scroll-widget`, first commit `377d47d` (docs only:
+  lands the plan docs that were uncommitted in the working tree). No code
+  commit yet — the entry is at that `Go!` gate.
+- **Scope**: none touched so far; files the entry will add are listed above.
+- **Done**: onboarding read (AGENTS/PROJECT/TRAPS/TESTING/CONVENTIONS, the plan
+  doc, the P8 entry, all three probes); baseline full suite green and matching
+  `doc/TESTING.md` ground truth (tools 127/24/30/119/80/32/68/29, unit
+  131/33/278/121/119/223, FAIL 0); the three probes re-run on this machine with
+  `~/.venv-spit` (textual 8.2.8) and reproduce every measurement table —
+  probe.py verdict PASS incl. defect reproduction, probe6 21-respected/2
+  corrections/0 jump frames, probe7 e1 `scroll_y 30→18` + e2 zero-movement +
+  e4 flat mounted (worst 13) — so the suite is rebuilt from the probes
+  directly, not from the tables alone.
+- **Left**: wait for `Go!`; then write the widget, the suite (`test_oneshot.py`,
+  `test_pin.py`, `test_eviction.py` + shared `anchored_app.py` helper and a
+  `run_tests.sh` with the `unit:terminal` FAIL-with-remedy pattern, `textual`
+  import instead of `libtmux`), the `TESTING.md` row; full suite; close this
+  entry into `TASKS-FINISHED.md`; write the WP-B handoff.
+- **State hazards**: the plan doc is committed (`377d47d`) — later agents read
+  it from the branch, not from an uncommitted tree. The `unit/anchored` runner
+  needs no code change to `spit_app/tests/run_tests.sh`: its `unit/*` loop
+  auto-discovers any directory holding a `run_tests.sh` — the "add the row"
+  requirement is satisfied by the suite's own runner and lands as a new output
+  row; the ground-truth table in `TESTING.md` gets the number when it exists.
+- **Verify**: probes green as checks (`bash spit_app/tests/unit/anchored/run_tests.sh`),
+  full `bash spit_app/tests/run_tests.sh` green with every pre-existing row at
+  its `doc/TESTING.md` number and only the new `unit:anchored` row added.
 
 ## Machine state these entries assume (none of it is in git)
 
