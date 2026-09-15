@@ -164,7 +164,7 @@ branch chain** (branches stack; `main` untouched throughout).
   evict-above holds the view (negative delta), evict-below moves nothing,
   remount-below holds**. Suite otherwise unmoved.
 
-### WP-B — index-accessor refactor, ZERO behaviour change  [depends: none; parallel with A]
+### WP-B — index-accessor refactor, ZERO behaviour change  [depends: none; parallel with A] — **DONE** 2026-09-15, branch `task-index-accessor-refactor` (accessors `a95f27a`…`1703069`, suite `d51e42e`: 168 checks, golden dump of `f201700` reproduced byte-for-byte), resolution in `TASKS-FINISHED.md`; API deviations recorded there and in the handoff
 - **Scope**: the ~30 sites above → `ChatView.widget(index)` / `widget_index()`
   accessors with `window_start = 0` hard-wired (so behaviour is provably
   identical); assertion `len(children) == len(messages) - window_start`.
