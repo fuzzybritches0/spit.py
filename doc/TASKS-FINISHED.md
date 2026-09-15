@@ -363,6 +363,66 @@ record, with the re-measurement recipe (`HOME` at a directory holding a chosen
 `.bashrc`) so the class can be re-tested on any machine in one command.
 
 
+### WP-B (P8 pipeline) — the index-accessor refactor, zero behaviour change (branch `task-index-accessor-refactor`, commits `58fa068`…`d51e42e`, awaiting the owner's merge)
+
+Cut from WP-A's tip `f201700`; owner's `Go!` given. The ~30
+message-index → `chat_view.children[...]` sites of the coupling table (7 files)
+now go through one seam on `ChatView`, with `window_start = 0` hard-wired, so
+every accessor is the identity the indexing it replaced:
+
+- `widget(index)` tolerant (None out of window — an update to an unmounted
+  message is data-only, the widget rebuilds from the dict on re-entry);
+  `require_widget(index)` for the sites that addressed a mounted widget — it
+  raises **IndexError**, the exception `children[index]` raised, so no error
+  path silently became a no-op; `widget_index(widget)` the reverse map;
+  `child_position(index)` for the int `mount(before=)` takes; `last_child()`
+  for the deliberately last-**MOUNTED** intents (`focus_this`, `load()`);
+  `window_consistent()` the invariant instrument.
+- The three `children[-1]` sharp edges now address the **last message by data
+  index** (`action_abort`, `action_submit`) or say they mean last-mounted
+  (`load()`, `focus_this`). This is the shape WP-C puts a `materialize` behind.
+- `undo._remove` asks "is there a mounted widget at this message index" instead
+  of comparing a child count with a data index — a child count answers nothing
+  once either end can be evicted.
+- **Deviation from the sketched API**: the plan's assertion is a *method*, not
+  a runtime assert. `len(children) == len(messages) - window_start` holds at
+  QUIESCENCE only — streaming appends the dict to `chat.messages` and posts the
+  mount afterwards (`work.py`, the endpoints), so mid-stream the data
+  legitimately runs ahead of the widget tree (that gap is what `is_present` is
+  for). An assert in a mutation path could fire in a working app, which is a
+  behaviour change; the invariant is asserted by the suite after every step
+  instead, and `require_widget()` is the runtime guard.
+- **Filed, not fixed** (the WP hazard): `is_present()` is deliberately narrower
+  than `index < len(children)` — the old predicate answered True for a negative
+  index and then indexed the LAST child, the wrong widget (unreachable: every
+  index is a position in `chat.messages`); `ChatView.mount_message()`'s first
+  branch indexes `messages[index]` with `index == len(messages)`, dead code that
+  would raise, now commented as filed; `action_add` appends a message and
+  undoes/mounts/indexes `messages[0]`, correct only because `check_action`
+  requires an empty chat; two chat files (`callback.py`, `message/actions.py`)
+  carry no SPDX header.
+
+**Verified — the differential, not the suite.** New suite
+`tests/unit/chat_smoke/` (168 checks): `smoke_scenario.py` drives a real `Chat`
+headless over a generated fixture (mount, focus, edit_on/off, the message-level
+add next/prev, the three stream signals, undo/redo of insert and remove, abort
+with a fake worker; a second headed run covers `action_add` on an empty chat)
+and dumps plain data per step — roles, per-widget `cnt` keys, rendered `Part`
+text, cots visibility, focus, undo list, the chat JSON written so far, scroll
+position. It uses no new API, so the same script drives `f201700`; **the tip
+reproduces that tree's dump byte-for-byte** (md5 `8ae9d1186a59627d30d05dee95f0ad95`),
+committed as `golden.txt` with the regeneration recipe in the test docstring.
+The probe was believed only after it was falsified (TRAPS #13): reversing
+`load()`'s mount order in a copy of the tree moves the dump.
+`test_chat_smoke.py` adds the accessor contract (window_start 0, the invariant
+at every step, `widget`/`widget_index`/`last_child`/`child_position` agreeing
+with the raw child list, None vs IndexError out of window). Full suite green
+before and after: tools 127/24/30/119/80/32/68/29 and unit 68/131/33/278/121/
+119/223 unmoved, `unit:chat_smoke: 168` added; the FAIL-with-remedy path was run
+(`HOME=/tmp/fakehome` → `PASS: 0  FAIL: 1` naming `create_venv.sh`). No sign-off
+step participated (DECISIONS 71); branch awaiting the owner's merge, `main`
+untouched, nothing pushed.
+
 ### WP-A (P8 pipeline) — the anchored container widget: `AnchoredScroll` (branch `task-anchored-scroll-widget`, commits `377d47d`…`d5f3f79`, awaiting the owner's merge)
 
 **What landed**, four commits on a branch cut from `main` (`8819e73`):

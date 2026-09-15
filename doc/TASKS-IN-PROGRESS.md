@@ -12,10 +12,10 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **Two entries are open**: the ratatui enhancement list, followup 4, and
-> **WP-B of the on-demand-loading pipeline** (opened below, owner's `Go!`
-> given). (WP-A of that pipeline closed into `TASKS-FINISHED.md` on
-> 2026-09-14 — branch `task-anchored-scroll-widget`, awaiting merge.) The followup
+> **One entry is open**: the ratatui enhancement list, followup 4. (WP-A and
+> WP-B of the on-demand-loading pipeline are closed in `TASKS-FINISHED.md`,
+> both on branches awaiting merge; WP-C is the next package and has not been
+> opened yet.) The followup
 > *numbers* stay in the headings so that cross-references by number remain true
 > even though 1, 1.5, 2 and 3 are gone — **followup 3 closed as a non-issue on
 > 2026-09-10 by the owner's ruling**: a lone `Esc` swallowing the next character
@@ -53,49 +53,6 @@ that is not the agent's.
   may `kill-server` freely. A run leaves stale socket *files* under
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
-
-## WP-B (P8 pipeline) — index-accessor refactor, ZERO behaviour change  [owner's `Go!` given 2026-09-14]
-
-Plan: `doc/UI-ONDEMAND-LOADING.md`, section "WP-B". Scope: the ~30
-message-index → `chat_view.children[...]` sites of the coupling table (7 files)
-become `ChatView.widget(index)` / `widget_index()` accessor calls with
-`window_start = 0` hard-wired, so behaviour is provably identical; plus the
-invariant assertion `len(children) == len(messages) - window_start`; plus the
-differential proof (TRAPS #14/#18) that the refactor changed nothing: a
-scripted app-level smoke over a fixture chat (mount/edit/remove/undo/abort),
-byte-identical before/after, as a headless-harness suite.
-
-### State (crash-recovery record)
-
-- **Branch**: `task-index-accessor-refactor`, cut from WP-A's tip
-  `f201700` (branch chain: `main` 8819e73 → `task-anchored-scroll-widget`
-  377d47d…f201700 → this branch). Last commit: this entry.
-- **Scope** (planned): `spit_app/chat/chat_view.py` (the accessors + invariant
-  + its own 4 sites), `callback.py`, `chat.py`, `chat_text_area.py`,
-  `chat_view_actions.py`, `message/actions.py`, `undo.py`; new suite
-  `spit_app/tests/unit/chat_smoke/`; `doc/TESTING.md` row. One commit per
-  file-group (the WP's hazard note).
-- **Done**: baseline measured green at `f201700` (tools
-  127/24/30/119/80/32/68/29, unit 68/131/33/278/121/119/223, FAIL 0); the
-  stub-app harness proven feasible outside the repo (`/tmp/wp-b-probe/`,
-  disposable): a stub `App` (in-memory `read_json`/`write_json`,
-  `endpoint_list`/`endpoint_list_tuple`/`get_endpoint`, a fake `#side-panel`
-  widget — `App.query_one` must NOT be overridden, the DOM needs it) hosts the
-  real `Chat` and drives `load()`/edit_on-off over a fixture with a full
-  `settings` block (endpoint/model/model_settings/tools/prompt or
-  `ChatSettings.on_mount` KeyErrors).
-- **Left**: the accessors in `chat_view.py` (first code commit), then the
-  file-groups in table order, then the smoke suite + golden digest (digest
-  generated from `f201700` via `git worktree` + `PYTHONPATH`), then close.
-- **State hazards**: none yet — no code touched. The differential requires the
-  smoke script to be version-agnostic (old-API surface only): it must run
-  unchanged against both `f201700` and the tip. Anything noticed en route is
-  FILED, not fixed (WP hazard) — candidates so far: `action_add` appends a
-  message but undoes/mounts/indexes at `0`; `is_present` treats a negative
-  index as present.
-- **Verify**: `bash spit_app/tests/run_tests.sh` green; ground truth moves ONLY
-  by the new `unit:chat_smoke` row (TESTING.md); the smoke digest of the tip
-  is byte-identical to the digest of `f201700` (and to the committed golden).
 
 ## P0b-followup 4 - what the `terminal` tool still needs *for* the ratatui migration  [enhancement list, picked up piece by piece]
 

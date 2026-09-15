@@ -29,6 +29,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | tools total | 509 |
 | unit:anchored | 68 |
 | unit:arguments | 131 |
+| unit:chat_smoke | 168 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
@@ -165,6 +166,22 @@ harness **absolute** fixture paths.
 
 ## Unit suites
 
+- `tests/unit/chat_smoke/` - the WP-B differential (168 checks) for the
+  `ChatView` index-accessor seam. `smoke_scenario.py` drives a real `Chat`
+  headless over a generated fixture chat - mount, focus, `edit_on/off`, the
+  message-level add/remove actions, the three stream signals, undo/redo of
+  insert and remove, abort with a fake worker, plus a second headed run for
+  `action_add` (reachable only with an empty chat) - and dumps plain data per
+  step. It uses no new API so it can drive the pre-refactor tree too; the
+  golden dump was generated from `f201700` by the recipe in
+  `test_chat_smoke.py`, which adds the accessor contract (window_start 0, the
+  `len(children) == len(messages) - window_start` invariant at every step, the
+  forward/reverse maps agreeing with the raw child list, None from `widget()`
+  and IndexError from `require_widget()` out of window). The app is a stub (in-
+  memory `read_json`/`write_json`, `endpoint_list*`, a fake `#side-panel`), not
+  `SpitApp` - the real app starts the llama.cpp server and reads the user's own
+  settings and chats, which would make the dump machine-dependent. Venv-
+  dependent, FAIL-with-remedy like `unit:anchored` (TRAPS #19).
 - `tests/unit/anchored/` - the `AnchoredScroll` container (68 checks), the P8
   probes (`/tmp/anchor-probe/`, see `TASKS-PLANNED.md` P8 and
   `UI-ONDEMAND-LOADING.md` WP-A) rebuilt as permanent checks. Runs a **real
