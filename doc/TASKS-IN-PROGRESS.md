@@ -12,11 +12,17 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **Two entries are open**: the ratatui enhancement list, followup 4, and
-> **WP-C of the on-demand-loading pipeline** (entry below this header; branch
-> `task-sliding-window-core`, awaiting the owner's `Go!` for the first code
-> change). WP-A and WP-B are closed in `TASKS-FINISHED.md`, both on branches
-> awaiting merge. The followup
+> **One entry is open**: the ratatui enhancement list, followup 4.
+> **WP-C of the on-demand-loading pipeline closed 2026-09-15**: the window core
+> and its 98-check suite are on `task-sliding-window-core` (`bd0ece0`,
+> `f4328c9`, `594f3f1`), and the session that wrote them crashed mid-close-out —
+> `doc/TESTING.md` left uncommitted and this file's own State fields still saying
+> "Done: nothing yet". The next agent re-measured the full suite rather than
+> trusting those notes (FAIL 0, `unit:chat_window` 98 new, `chat_smoke` 168 with
+> its golden md5 unchanged), and the resolution is in `TASKS-FINISHED.md`. WP-A,
+> WP-B and WP-C are all closed there, on branches awaiting the owner's merge;
+> **WP-D, WP-E and WP-F are not started** — each takes its own branch cut from
+> the chain tip and its own `Go!` (`doc/UI-ONDEMAND-LOADING.md`). The followup
 > *numbers* stay in the headings so that cross-references by number remain true
 > even though 1, 1.5, 2 and 3 are gone — **followup 3 closed as a non-issue on
 > 2026-09-10 by the owner's ruling**: a lone `Esc` swallowing the next character
@@ -54,60 +60,6 @@ that is not the agent's.
   may `kill-server` freely. A run leaves stale socket *files* under
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
-
-## WP-C (P8 pipeline) - the sliding-window core  [on-demand loading, depends: WP-A + WP-B, both closed]
-
-Plan: `doc/UI-ONDEMAND-LOADING.md`, WP-C; the model's rules 1-8 and the
-coupling table are load-bearing. Starts from the tip of
-`task-index-accessor-refactor` (`52cc686`); WP-A's widget is
-`spit_app/chat/anchored_scroll.py`; the regression floor is
-`tests/unit/chat_smoke/` (168, golden of `f201700`, must stay byte-identical —
-the fixture chats there are ≤ 50 messages, so the window must not move them).
-
-**Scope**: `window = (lo, hi)` state on `ChatView`; base class
-`VerticalScroll` -> `AnchoredScroll` (WP-A left this deliberately); `load()` =
-last `INITIAL_WINDOW` (50, constant) + open at bottom; `load_older(count)` /
-`load_newer(count)` with the arm->batch-mount(-disarm) dance; `prune()` per
-rules 1-2 + rule-7 clamp guard + the fact-5 pinned set (focused widget,
-`is_edit` widgets, the streaming tail while `chat.is_working()`);
-`materialize()`; re-entrancy guard; the three `children[-1]` sharp edges
-(`action_abort`, submit, `message_start`) -> explicit last-message handling
-through `materialize`; chat-switch interplay verified (`side_panel.py:86-88`,
-`handlers.py:27-28`) — keep whatever holds today; note UI-ROUTE-RATATUI.md M1
-(the same state/view seam) in the commit, do NOT pre-build the protocol.
-
-### State (crash-recovery record)
-
-- **Branch**: `task-sliding-window-core` (cut from `task-index-accessor-refactor`
-  tip `52cc686`). Last commit: this docs commit (entry opened).
-- **Scope** (planned): `spit_app/chat/chat_view.py` (the window core),
-  `spit_app/chat/chat.py` (`action_abort`), `spit_app/chat/chat_text_area.py`
-  (submit), `spit_app/chat/callback.py` (`message_start`, `on_remove_message`
-  tolerance), new suite `spit_app/tests/unit/chat_window/` (venv,
-  FAIL-with-remedy like `unit:chat_smoke`; reuses its `SmokeApp` stub),
-  `doc/TESTING.md` (new ground-truth row).
-- **Done**: nothing yet — entry opened, baseline measured.
-- **Left**: the owner's `Go!` for the first code change (asked once, in chat,
-  2026-09-15); then implement the core as scoped above.
-- **State hazards**: none yet; working tree clean at this commit.
-- **Decisions taken while scoping** (so the next agent does not re-derive them):
-  `window` is the single window state; `window_start` becomes a property over it
-  so WP-B's accessor block keeps working unchanged; steady-state bounds for
-  `prune()` are the rules 1-2 safe evictions (strictly outside the viewport,
-  >= viewport-height residual kept on the evicted side) + the fact-5 pin set —
-  rule 7 read as the lower bound it is (it guards over-pruning, it does not
-  force deeper eviction); the "is_edit disables prune() entirely" superset of
-  fact 5 stays a WP-D/E `Go`-time decision (WP-C pins per-widget, always).
-- **Verify**: full suite `bash spit_app/tests/run_tests.sh`;
-  `unit:chat_smoke` still **168** byte-identical (no silent re-pin — if a step
-  moves, it is a bug or an intended change stated in the commit); new
-  `unit:chat_window` row added (frame-spy 0-jump checks included, WP-A's
-  `anchored_app.FrameSpy` is the instrument); all other rows unmoved. WP-C
-  Accept: 1k fixture -> <= 50 mounted + bottom; `load_older(25)` -> anchor
-  holds, `lo` -25, JSON untouched; `prune()` after a slide -> mounted back to
-  steady state, evict-above/below per rules 1-2, pinned never evicted;
-  abort-while-scrolled-up materializes the tail then aborts; `materialize(k)`
-  correct at both edges; `ChatView.messages is Chat.messages` asserted.
 
 ## P0b-followup 4 - what the `terminal` tool still needs *for* the ratatui migration  [enhancement list, picked up piece by piece]
 

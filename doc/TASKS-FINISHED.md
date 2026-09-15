@@ -363,6 +363,144 @@ record, with the re-measurement recipe (`HOME` at a directory holding a chosen
 `.bashrc`) so the class can be re-tested on any machine in one command.
 
 
+### WP-C (P8 pipeline) — the sliding-window core (branch `task-sliding-window-core`, commits `5d92bdf`…`594f3f1` + the docs close-out, awaiting the owner's merge)
+
+Cut from WP-B's tip `52cc686`; the owner's `Go!` was given 2026-09-15 before the
+first code change, once, as the entry opened at `5d92bdf` records. Four commits:
+`5d92bdf` the in-progress entry, `bd0ece0` the window core (`chat_view.py`),
+`f4328c9` the three sharp edges (`chat.py`, `chat_text_area.py`, `callback.py`,
+`chat_view_actions.py`), `594f3f1` the suite (`tests/unit/chat_window/`, 98
+checks), then the docs close-out (the `TESTING.md` row and the suite's
+description, TRAPS #24, the map rows, this entry). **The session that wrote them
+crashed between the last commit and the docs commit** — it left `TESTING.md`
+dirty and its own entry's State fields saying "Done: nothing yet"; the close-out
+was made by the agent that picked it up, and every number below was
+**re-measured on this tree**, not copied from the crashed session's notes.
+
+**What landed.** `ChatView` now extends `AnchoredScroll` (the swap WP-A left
+deliberately) and the widget tree is a window `messages[lo, hi)` with **both ends
+free**:
+
+- `lo` is instance state and keeps WP-B's name (`window_start`, so the accessor
+  block needed no edit); **`hi` is derived** — `window_hi = lo + len(children)`,
+  with `window` a property over the pair. **Deviation from the sketched
+  `window: tuple[int, int]`**: a stored tuple is a second source of truth for the
+  one statement the window must keep true (the mounted range is contiguous), and
+  deriving `hi` removes the way it could drift.
+- `load()` mounts the last `INITIAL_WINDOW` (50, a class constant; a settings
+  surface later) and — **deviating from rule 4 as written** — does *not* call
+  `scroll_end()`: `scroll_end` funnels through `Widget._scroll_to`, which calls
+  `release_anchor()` (P8's own finding), so an explicit call at open would strip
+  follow-bottom off every freshly opened chat and change streaming behaviour. The
+  `__init__` bottom anchor held through the batched mount *is* the open-at-bottom
+  UX, and `t1-open-at-bottom` still pins `scroll_y == max_scroll_y`.
+- `_grow_up` is the arm → batch-mount → self-disarm dance, with `lo` moving only
+  **after** the batch so the accessors answer for one consistent range
+  mid-operation; `_grow_down` / `load_newer` need no compensation (rule 2,
+  remount-into-gap is rule 3). One re-entrancy guard (`_window_page_op`) covers
+  the three page operations — a trigger firing mid-operation asks for a page the
+  running operation is already growing, so it is dropped (WP-D's thresholds are
+  what will exercise it).
+- `prune()` releases both ends to the margin: eviction is strictly outside
+  viewport ± `PRUNE_MARGIN_FACTOR` × viewport height (factor 2 — rule 7 demands
+  ≥ 1 as the clamp guard and probe 7 was measured with 2). Evicting above arms the
+  one-shot anchor (rule 1: the same event as a mount above, sign flipped);
+  evicting below moves and corrects nothing (rule 2). The fact-5 pins — `is_edit`,
+  the focused widget (focus can sit inside it), the streaming tail while
+  `chat.is_working()` — **bound each walk**, which is incidentally what keeps
+  every eviction a strict prefix/suffix and the window contiguous. Two guards the
+  plan did not name: a **hidden** chat (`content_region.height <= 0`, and `#main`
+  keeps every opened `Chat` mounted, not destroyed) is never a prune target
+  because its regions are stale, and `prune()` also yields to `is_removing`.
+- `materialize(index, render=True)` grows the window to cover an index and returns
+  its widget. The `render=` half is a **deviation from the sketch**: the stream
+  sites mount a dict whose content the *stream* owns, so they ask for mount-only,
+  while the gap widgets a materialize crosses are history and are always finished
+  from their dicts (fact 5). An index outside the data raises `IndexError`, the
+  exception `children[index]` raised.
+- The three `children[-1]` edges go through it: `action_abort` materializes
+  `len(messages)-1` before the teardown, `action_submit` mounts the new user
+  message through it instead of a bare `mount` (with the bottom pruned, a bare
+  append lands behind the wrong neighbour and breaks the window), `message_start`
+  likewise. The ctrl+up/down focus walk became window-tolerant — out of window the
+  focus stays put — because those actions are synchronous by design; paging under
+  a leaving focus is WP-D's trigger and WP-E's focus-survival decision.
+- `mount_message` learned insertion above the top (widget on the front, `lo`
+  slides down); `on_remove_message` tolerates a removal **below** the window (the
+  streaming-error path removes `messages[-1]`, which may already be evicted — the
+  data shifts, so `lo` slides with it) and picks the focus neighbour through the
+  accessors.
+- `window_consistent()` is now the sliding form: `children[p] is
+  messages[lo+p]`'s widget **by dict identity**, inside the data. WP-B's
+  arithmetic form is this with `lo` 0 and the tail intact; the identity form is
+  what stays true once the bottom is prunable. Quiescence-only for WP-B's recorded
+  reason (the stream's data-ahead gap is what `is_present` answers).
+- The chat-switch interplay the scope asked about (`side_panel.py:86-88`,
+  `handlers.py:27-28`) was **verified and left alone**: opening a chat reuses the
+  mounted `Chat`, they are never stacked twice per id, each `ChatView` keeps its
+  own window. `t9` pins that as it behaves today.
+- UI-ROUTE-RATATUI.md **M1** is noted in `bd0ece0` per the WP read list: this
+  window is the same state/view seam M1 extracts (messages are truth, the widget
+  tree a projection). The protocol was **not** pre-built.
+
+**Left undone on purpose**, at the boundaries the plan drew: the fact-5 superset
+"is_edit disables `prune()` entirely" stays a WP-E `Go`-time decision (WP-C pins
+per widget, always); `watch_scroll_y` triggers and the settled-scroll prune calls
+are WP-D; `undo` / `message/actions.py` across the edges plus focus survival are
+WP-E; the 100/1k/5k measurement table, the mounted-count headline and the
+DECISIONS entry are WP-F — **this WP files no DECISIONS entry**, as WP-A and WP-B
+filed none.
+
+**Verified — `unit:chat_window` 98, and the floor that must not move.** `t1`
+opens a generated 1000-message chat: exactly 50 mounted, window `(950, 1000)`, at
+the bottom, data complete and list-IDENTICAL, no JSON written; `t1b` is its teeth
+(TRAPS #13) — a 120-chat also mounts 50, a number the unwindowed code cannot
+produce. `t2` slides: `load_older(25)` → `lo` −25, +25 mounted, tracked anchor
+holds, **0 jump frames**, exactly one correction, chat-store md5 and write count
+fixed; **`t2c` repeats it with `arm_top_anchor` disarmed and paints the jump**,
+which is what makes `t2`'s zeros evidence. `t3` evicts below with `scroll_y`, the
+view and the correction counter all unmoved, then remounts into the gap holding.
+`t4` prunes at the open state: evicted above back to the margin, `scroll_y`
+shifted by EXACTLY the evicted height clamped at the new max, 0 jump frames,
+mounted under `INITIAL_WINDOW`, and a second `prune()` changes nothing (steady
+state). `t5` the pins: `is_edit` stops the above-walk after evicting the one
+unpinned widget above it (a pin bounds the end, it does not freeze the walk), the
+streaming tail while `is_working()` blocks the below-walk and the same prune
+without the pin evicts, a focused widget below the viewport is unevictable. `t6`
+abort-while-scrolled-up: bottom pruned away first, then `action_abort`
+materializes the tail by data index, cancels, and removes from **both** sides.
+`t7` `materialize` at both edges, same widget when already mounted, `IndexError`
+for −1 and for `len(messages)`. `t8` churn 8 × (`load_older(25)` + `prune()`):
+mounted count flat and ≤ `INITIAL_WINDOW` at every depth — probe 7's headline at
+the `ChatView` level — 0 jump frames and consistency every cycle, store md5 fixed
+and zero writes; `lo` monotonicity is **deliberately not asserted** (a prune at a
+viewport that never moved legitimately reclaims the page just mounted above the
+margin; `lo` only slides when the user scrolls toward it, which is WP-D's
+trigger). `t9` the chat-switch interplay, above. The harness (`window_harness.py`)
+**imports** the stub app and `FakeWork` from `chat_smoke/smoke_scenario.py`
+instead of copying them — a deviation from "each unit suite is self-contained",
+chosen so the two stubs cannot drift — and adds the app's own `spit_app/styles.css`
+because without it the messages lay out at zero height and every viewport
+computation is vacuous: that finding is **TRAPS #24**.
+
+Full suite from the repo root, re-measured at close-out: tools
+127/24/30/119/80/32/68/29 (509) and unit anchored 68, arguments 131, **chat_smoke
+168**, chat_window 98, prompt 33, render 278, run_script 121, sandbox 119,
+terminal 223 — **FAIL 0 everywhere**, i.e. the ground truth moved by exactly the
+one new row. `unit:chat_smoke` is 168 with `golden.txt` still md5
+`8ae9d1186a59627d30d05dee95f0ad95` (generated from `f201700`, untouched in git
+since `d51e42e`) — **no re-pin**: its fixture chats are ≤ 50 messages, so `load()`
+mounts exactly what the old loop mounted and the window does not move them, which
+is what the entry's Verify demanded. The FAIL-with-remedy path was run by the
+suite's author (`HOME=/tmp/fakehome` → `PASS: 0  FAIL: 1` naming
+`create_venv.sh`), and the root `run_tests.sh` needed no edit (its `unit/*` loop
+auto-discovers any directory with a runner).
+
+No sign-off step participated (DECISIONS 71); branch awaiting the owner's merge,
+`main` untouched, nothing pushed. **Next in the chain: WP-D** — load/prune triggers
+and scroll UX — cut from this tip, its own branch, its own `Go!`.
+
+
 ### WP-B (P8 pipeline) — the index-accessor refactor, zero behaviour change (branch `task-index-accessor-refactor`, commits `58fa068`…`d51e42e`, awaiting the owner's merge)
 
 Cut from WP-A's tip `f201700`; owner's `Go!` given. The ~30
