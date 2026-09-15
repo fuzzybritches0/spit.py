@@ -15,7 +15,7 @@ Quick map:
 | `doc/RUNTIME-RUN-COMMAND.md` | The run/sandbox/terminal subsystem |
 | `doc/UI-PROTOCOL.md` | Engine <-> front-end contract (JSONL) — the seam that makes the UI replaceable |
 | `doc/UI-ROUTE-RATATUI.md` | Route off Textual to a ratatui front end: gates M0-M5, measurements, fallbacks |
-| `doc/UI-ONDEMAND-LOADING.md` | Windowed message loading on Textual: proven anchor mechanism, work packages A-F (awaits per-WP `Go!`) |
+| `doc/UI-ONDEMAND-LOADING.md` | Windowed message loading on Textual: proven anchor mechanism, work packages A-F (A, B, C done; D, E, F await per-WP `Go!`) |
 | `doc/DECISIONS.md` | Design decision log — the *why*; append-only |
 | `doc/TASKS-IN-PROGRESS.md` | Check first — half-finished work may need recovery; the agents' own crash-recovery file, and agents close their own entries |
 | `doc/TASKS-PLANNED.md` | Pick up work here |

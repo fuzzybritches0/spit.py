@@ -20,7 +20,8 @@ development of the project; everything here reflects the repo at
      touching anything that renders or reads input)
    - `UI-ROUTE-RATATUI.md` - the route off Textual, with its gates and measurements
    - `UI-ONDEMAND-LOADING.md` - windowed message loading on Textual (P8): proven
-     anchor mechanism, work packages A-F, each awaiting its own `Go!`
+     anchor mechanism, work packages A-F (A, B and C are done; D, E and F each
+     still awaiting its own `Go!`)
 5. `TASKS-IN-PROGRESS.md` - is someone's work half-done? Recover it first.
 6. `TASKS-PLANNED.md` - pick up work here.
 7. `TASKS-FINISHED.md` - what is already done (do not redo or "fix" it).
@@ -62,7 +63,10 @@ spit_app/tools/run/common.py kill_process_group, bwrap args
 spit_app/tools/run/terminal.py  tmux backend for terminal/lsterm
 spit_app/tests/run_tests.sh  runs everything, prints one line per suite
 spit_app/tests/tools/        per-tool shell suites (layout: TESTING.md)
-spit_app/tests/unit/         arguments + sandbox unit suites (pure python)
+spit_app/tests/unit/         unit suites: arguments, sandbox, prompt,
+                             run_script, render (pure python), terminal
+                             (libtmux), anchored / chat_smoke / chat_window
+                             (headless Textual) - see TESTING.md
 ```
 
 ## How to run things
@@ -80,9 +84,11 @@ The app's dependencies (`textual`, `libtmux`, ...) are **NOT installed in the
 bare system python3**. The app runs elsewhere (container/venv). Consequences:
 - Test scripts in `spit_app/tests/tools/` and `tests/unit/sandbox/` are built
   to need no Textual (sandbox tests drive `Run` through `stub_app.py`).
-- **Two suites need a dependency and say so**: `tests/unit/terminal/` drives a
-  real tmux through `libtmux`; `tests/unit/anchored/` drives a real headless
-  Textual (`App.run_test`) for the `AnchoredScroll` container. Build the venv once with
+- **Four suites need a dependency and say so**: `tests/unit/terminal/` drives a
+  real tmux through `libtmux`; `tests/unit/anchored/`, `tests/unit/chat_smoke/`
+  and `tests/unit/chat_window/` drive a real headless Textual (`App.run_test`)
+  for the `AnchoredScroll` container, the `ChatView` accessor differential and
+  the sliding window. Build the venv once with
   `bash spit_app/tests/create_venv.sh` (it unsets `PIP_USER`, which this
   environment exports and which a virtualenv refuses). Without it that row
   reports FAIL 1 with the command to run — never a silent zero (TESTING.md).

@@ -176,7 +176,7 @@ branch chain** (branches stack; `main` untouched throughout).
 - **Hazards**: do not "fix" anything noticed en route — file it; one concern
   per commit means one commit per file-group here.
 
-### WP-C — the sliding-window core  [depends: A + B]
+### WP-C — the sliding-window core  [depends: A + B] — **DONE** 2026-09-15, branch `task-sliding-window-core` (core `bd0ece0`, sharp edges `f4328c9`, suite `594f3f1`: `unit:chat_window` 98 checks), resolution in `TASKS-FINISHED.md`; the deviations from the sketched API (derived `hi`, `materialize(..., render=)`, no `scroll_end` in `load()`, the hidden-chat prune guard) are recorded there
 - **Scope**: `window = (lo, hi)` state; `load()` = last `INITIAL_WINDOW`
   (start 50, constant; settings surface later if wanted) + `scroll_end`;
   `load_older(count)` / `load_newer(count)` with the arm→batch-mount→disarm
