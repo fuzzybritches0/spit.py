@@ -29,7 +29,11 @@ class ChatTextArea(TextArea):
             self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages)-1)
             await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         self.chat.write_chat_history()
-        await self.chat_view.children[-1].finish()
+        # The message just submitted IS the last message, so address it by data
+        # index rather than by `children[-1]` (the last MOUNTED widget - the same
+        # widget only while the window is whole). Submit already scrolls to the
+        # bottom, so WP-C's `materialize` here and that scroll_end fold together.
+        await self.chat_view.require_widget(len(self.messages) - 1).finish()
         self.chat_view.scroll_end(animate=False, immediate=True)
         self.text = ""
         self.chat._work = Work(self.chat)
