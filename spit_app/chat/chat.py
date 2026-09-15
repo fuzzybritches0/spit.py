@@ -115,9 +115,17 @@ class Chat(Vertical):
             self._work.exit_after_busy = True
             return None
         self.work.cancel()
-        async with self.chat_view.children[-1].lock:
-            await self.chat_view.children[-1].remove()
-        del self.chat_view.messages[-1]
+        # The last MESSAGE, addressed by data index - not `children[-1]`, the last
+        # MOUNTED widget: once WP-C can prune the bottom those are different
+        # things, and abort must tear down the streaming tail. With the window
+        # still whole (window_start 0) the two are the same widget, which is what
+        # keeps this refactor behaviour-free; WP-C puts a `materialize` here for
+        # the abort-while-scrolled-away case.
+        index = len(self.chat_view.messages) - 1
+        tail = self.chat_view.require_widget(index)
+        async with tail.lock:
+            await tail.remove()
+        del self.chat_view.messages[index]
         self.refresh_bindings()
 
     def action_settings(self) -> None:
