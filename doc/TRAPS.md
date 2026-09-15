@@ -105,20 +105,33 @@ matching area.
 
 19. **System python3 has NO app dependencies** (textual, libtmux...). Scripts
     are stdlib and test directly; modules need the app's runtime. Tests are
-    built to run without Textual at all (`stub_app.py`). Two suites cannot avoid
+    built to run without Textual at all (`stub_app.py`). Four suites cannot avoid
     a dependency: `unit:terminal` needs **libtmux** because it drives a real
-    tmux, and `unit:anchored` needs **textual** because it drives a real
-    headless Textual (`App.run_test` - frame accuracy cannot be checked against
-    a stub), and the sandbox's `PIP_USER=True` makes a plain `pip install` into a
-    fresh venv fail outright — build the venv with
-    `bash spit_app/tests/create_venv.sh` (it unsets both; see TESTING.md, "The
-    test venv"). A missing dependency there is a FAIL with the remedy in the
-    message, never a `PASS: 0  FAIL: 0`.
+    tmux, and `unit:anchored`, `unit:chat_smoke` and `unit:chat_window` need
+    **textual** because each drives a real headless Textual (`App.run_test` -
+    frame accuracy cannot be checked against a stub), and the sandbox's
+    `PIP_USER=True` makes a plain `pip install` into a fresh venv fail outright -
+    build the venv with `bash spit_app/tests/create_venv.sh` (it unsets both; see
+    TESTING.md, "The test venv"). A missing dependency there is a FAIL with the
+    remedy in the message, never a `PASS: 0  FAIL: 0`.
 20. **Tools are loaded at app startup** - tool code changes need an app
     reload to take effect.
 21. **`["string", "array"]` schema types are not decodable everywhere**;
     `arguments.py` repairs the fallout and filesystem arguments must be listed
     in the tool's `PATH_ARGS` (only those get `~`/`$VAR` expansion).
+24. **A Textual suite that does not mount the app's stylesheet lays everything out
+    at zero height.** The messages' sizing comes from `spit_app/styles.css`, so a
+    stub app that declares no CSS renders every message 0 rows tall - and then
+    `content_region.height`, each child's `region.height` and `max_scroll_y` are
+    all 0, so every viewport computation (margins, what is "outside the viewport",
+    what a correction should shift `scroll_y` by) is **vacuously satisfied**. Found
+    while building `unit:chat_window`, whose whole contract is viewport geometry:
+    its `WindowApp` sets `CSS_PATH` to the repo's `spit_app/styles.css` (absolute,
+    so it resolves from the test module, not a package-relative path) for exactly
+    this reason. The tell is a dump whose `scroll_y` is 0 at every step - which is
+    what `unit:chat_smoke`'s golden has, harmless for a data differential and
+    useless for a scroll check. Mount the real CSS, and show the geometry move at
+    least once (a control that can fail, TRAPS #13) before trusting a zero.
 
 ## Working agreements (who decides what)
 
