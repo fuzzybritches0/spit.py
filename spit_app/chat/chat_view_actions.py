@@ -56,14 +56,24 @@ class ChatViewActionsMixIn:
         self.refresh_bindings()
 
     def action_previous_message(self) -> None:
+        # The walk is window-tolerant: the neighbour exists as a widget only
+        # inside the window, and this action is synchronous (a `materialize`
+        # page-load on the way is WP-D's trigger, not the focus walk's). Out
+        # of window the focus stays put - the answer the data end gives, never
+        # an IndexError: `require_widget` here compiled fine only while the
+        # window was whole.
         index = self.chat.message_index(self.focused_message.message) - 1
         if not index < 0:
-            self.require_widget(index).focus()
+            neighbour = self.widget(index)
+            if neighbour is not None:
+                neighbour.focus()
 
     def action_next_message(self) -> None:
         index = self.chat.message_index(self.focused_message.message) + 1
         if index > 0 and index < len(self.messages):
-            self.require_widget(index).focus()
+            neighbour = self.widget(index)
+            if neighbour is not None:
+                neighbour.focus()
 
     async def action_undo(self) -> None:
         await self.chat.undo.undo()

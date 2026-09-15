@@ -26,11 +26,17 @@ class CallbackMixIn:
                 await message.finish()
 
     async def message_start(self, index: int) -> None:
-        await self.mount(Message(self.chat, self.messages[index]))
-        message = self.widget(index)
-        if message is not None:
-            await message.wait_for_refresh()
-            self.focus_message(index)
+        # The third `children[-1]` sharp edge, addressed by data index: the
+        # streaming message's dict exists but its widget is mounted only here,
+        # and with a sliding window the bottom it lands on may have been
+        # pruned while the model thought. `materialize` closes the gap below
+        # the window (gap widgets are history: rendered from their dicts) and
+        # mounts the TARGET unfinished (`render=False` - the stream owns the
+        # target's content until signal 0). With the window whole this mounts
+        # exactly what the plain `mount(...)` it replaced mounted, nothing more.
+        message = await self.materialize(index, render=False)
+        await message.wait_for_refresh()
+        self.focus_message(index)
 
     def focus_message(self, index: int) -> None:
         message = self.require_widget(index)
