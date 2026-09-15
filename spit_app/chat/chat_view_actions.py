@@ -19,6 +19,9 @@ bindings = [
 
 class ChatViewActionsMixIn:
     def show_cots(self, show: bool = True) -> None:
+        # Iterating the mounted children IS window-only: with window_start 0 that
+        # is every message; once WP-C slides the window the state a child does not
+        # carry has to be replayed at mount (WP-E, `show_cots`/`is_edit` flags).
         for message in self.children:
             if "reasoning" in message.cnt:
                 message.cnt["reasoning"].display = show
@@ -55,12 +58,12 @@ class ChatViewActionsMixIn:
     def action_previous_message(self) -> None:
         index = self.chat.message_index(self.focused_message.message) - 1
         if not index < 0:
-            self.children[index].focus()
+            self.require_widget(index).focus()
 
     def action_next_message(self) -> None:
         index = self.chat.message_index(self.focused_message.message) + 1
         if index > 0 and index < len(self.messages):
-            self.children[index].focus()
+            self.require_widget(index).focus()
 
     async def action_undo(self) -> None:
         await self.chat.undo.undo()
@@ -72,9 +75,9 @@ class ChatViewActionsMixIn:
         self.messages.append({"role": "user", "content": []})
         self.chat.undo.append_undo("insert", self.messages[0], 0)
         await self.mount(Message(self.chat, self.messages[0]))
-        await self.children[0].status.update("")
+        await self.require_widget(0).status.update("")
         self.chat.write_chat_history()
-        self.children[0].focus()
+        self.require_widget(0).focus()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "continue":

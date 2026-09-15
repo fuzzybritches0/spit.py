@@ -84,9 +84,9 @@ class ActionsMixIn:
             self.messages.insert(index, message)
         self.chat.undo.append_undo("insert", self.messages[index], index)
         await self.chat_view.mount_message(index)
-        await self.chat_view.children[index].status.update("")
+        await self.chat_view.require_widget(index).status.update("")
         self.chat.write_chat_history()
-        self.chat_view.children[index].focus()
+        self.chat_view.require_widget(index).focus()
 
     async def action_add_message_next(self) -> None:
         index = self.chat.message_index(self.message) + 1
@@ -120,11 +120,11 @@ class ActionsMixIn:
         self.messages.insert(0, message)
         self.chat.undo.append_undo("insert", self.messages[0], 0)
         await self.chat_view.mount_message(0)
-        await self.chat_view.children[0].status.update("")
+        await self.chat_view.require_widget(0).status.update("")
         if self.role == "tool":
-            await self.chat_view.children[0].finish()
+            await self.chat_view.require_widget(0).finish()
         self.chat.write_chat_history()
-        self.chat_view.children[0].focus()
+        self.chat_view.require_widget(0).focus()
 
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
@@ -135,7 +135,7 @@ class ActionsMixIn:
         index = self.chat.message_index(self.message)
         if len(self.messages)-1 == index:
             return True
-        next_child = self.chat_view.children[index+1]
+        next_child = self.chat_view.require_widget(index+1)
         if self.role == "assistant" and "tool_calls" in self.message and self.message["tool_calls"]:
             if not next_child.role == "tool":
                 return True
