@@ -30,17 +30,20 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:anchored | 68 |
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
+| unit:chat_window | 98 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 119 |
 | unit:terminal | 223 |
 
-## The test venv (unit:terminal needs it)
+## The test venv (four suites need it)
 
-`unit:terminal` drives a **real tmux** through `libtmux`, and `unit:anchored`
-drives a **real headless Textual** (`App.run_test`); the bare system python3 has
-no app dependencies (TRAPS #19), so both need a venv. Build it once:
+`unit:terminal` drives a **real tmux** through `libtmux`; `unit:anchored`,
+`unit:chat_smoke` and `unit:chat_window` drive a **real headless Textual**
+(`App.run_test` - frame and geometry accuracy cannot be checked against a stub).
+The bare system python3 has no app dependencies (TRAPS #19), so all four need a
+venv. Build it once:
 
 ```
 bash spit_app/tests/create_venv.sh        # -> ~/.venv-spit, everything in requirements.txt
@@ -201,6 +204,35 @@ harness **absolute** fixture paths.
   mounted count flat (worst 13 at viewport 10 / margin 20 - the window, not
   the history). The shared harness is `anchored_app.py` (not `test_*` on
   purpose, the `stub_app.py` precedent).
+- `tests/unit/chat_window/` - the WP-C **sliding window** (98 checks): a real
+  headless `Chat` over a **generated** 1000-message fixture, asserting the window
+  and never the data (`Chat.messages is ChatView.messages` is a check). `t1` open:
+  exactly `INITIAL_WINDOW` (50) mounted, window `(950, 1000)`, at the bottom, no
+  JSON written; `t1b` gives it teeth (a 120-message chat also mounts 50 - without
+  windowing the number is unreachable). `t2` slide: `load_older(25)` moves `lo` by
+  −25, the tracked anchor holds, **0 jump frames**, exactly one correction; **`t2c`
+  is its control** - the same operation with `arm_top_anchor` disarmed paints the
+  jump and leaves `scroll_y` alone, which is what makes `t2`'s zeros evidence
+  rather than an accident (TRAPS #13). `t3` evict-below moves neither `scroll_y`
+  nor the correction counter, and `load_newer` remounts into the gap holding (rules
+  2-3). `t4` `prune()` at the open state evicts above back to the margin with
+  `scroll_y` shifting by exactly the evicted height clamped at the new max, 0 jump
+  frames, and a second `prune()` is a no-op (steady state). `t5` the fact-5 pins
+  bound each walk (an `is_edit` widget stops the above-walk after the one unpinned
+  widget above it; the streaming tail while `is_working()`, and a focused widget
+  below the viewport, block the below-walk). `t6` abort-while-scrolled-up
+  materializes the tail and removes it from **both** sides. `t7` `materialize()` at
+  both edges, `IndexError` for −1 and for `len(messages)`. `t8` 8× churn: mounted
+  count flat and ≤ `INITIAL_WINDOW` at every depth, 0 jump frames, chat-JSON md5
+  fixed and zero writes. `t9` the chat-switch interplay pinned as it works today:
+  every opened `Chat` stays mounted in `#main` (hidden, never stacked twice), each
+  `ChatView` keeps its own window, and a **hidden** chat is never a prune target.
+  Two harness facts worth knowing before writing another UI suite here: the stub app
+  and `FakeWork` are **imported from `chat_smoke/smoke_scenario.py`** rather than
+  copied, so the two suites' stubs cannot drift (cross-suite import is new, and the
+  close-out says so), and `WindowApp` adds the app's own `spit_app/styles.css`
+  because **without the stylesheet the messages lay out at zero height and every
+  viewport computation goes vacuous** - TRAPS #24.
 - `tests/unit/arguments/` - schema coercion, paths, pipeline (131 checks).
 - `tests/unit/terminal/` - the tmux backend and the two tools on it, against a
   **real tmux on a private socket** (`libtmux.Server` is wrapped to pass
