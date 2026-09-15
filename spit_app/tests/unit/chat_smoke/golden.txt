@@ -1,0 +1,693 @@
+=== STEP 01-load
+  children=5
+  data_list_identity=True
+  exit_after_busy=None
+  focused=chat-view
+  focused_message=-1
+  messages=5
+  messages_md5=d2b3b506a290f37f0cbfc294eb55d6a8
+  child[0] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[1] cnt=['content', 'reasoning'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[2] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[3] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[4] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["user", "assistant", "user", "assistant", "tool"]
+  scroll_y=0
+  store_md5=33e85843731a7c9e92a78146068cc640
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[]
+  view_is_edit=False
+  view_is_removing=False
+  work_cancelled=None
+  writes=2
+=== STEP 02-focus-view
+  children=5
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[4]
+  focused_message=4
+  messages=5
+  messages_md5=d2b3b506a290f37f0cbfc294eb55d6a8
+  child[0] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[1] cnt=['content', 'reasoning'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[2] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[3] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[4] cnt=['content'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["user", "assistant", "user", "assistant", "tool"]
+  scroll_y=0
+  store_md5=33e85843731a7c9e92a78146068cc640
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[]
+  view_is_edit=False
+  view_is_removing=False
+  work_cancelled=None
+  writes=2
+=== STEP 03-edit-on
+  children=5
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[4]
+  focused_message=4
+  messages=5
+  messages_md5=d2b3b506a290f37f0cbfc294eb55d6a8
+  child[0] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[1] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[2] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[3] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[4] cnt=['content'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["user", "assistant", "user", "assistant", "tool"]
+  scroll_y=0
+  store_md5=33e85843731a7c9e92a78146068cc640
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=2
+=== STEP 04-focus-next
+  children=5
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[4]
+  focused_message=4
+  messages=5
+  messages_md5=d2b3b506a290f37f0cbfc294eb55d6a8
+  child[0] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[1] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[2] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[3] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[4] cnt=['content'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["user", "assistant", "user", "assistant", "tool"]
+  scroll_y=0
+  store_md5=33e85843731a7c9e92a78146068cc640
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=2
+=== STEP 05-focus-prev
+  children=5
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[3]
+  focused_message=3
+  messages=5
+  messages_md5=d2b3b506a290f37f0cbfc294eb55d6a8
+  child[0] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[1] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[2] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[3] cnt=['content', 'tool_calls'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[4] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["user", "assistant", "user", "assistant", "tool"]
+  scroll_y=0
+  store_md5=33e85843731a7c9e92a78146068cc640
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=2
+=== STEP 06-add-message-next
+  children=6
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[3]
+  focused_message=3
+  messages=6
+  messages_md5=c8a71001f4071d9fea6e2c1eece206f9
+  child[0] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[1] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[2] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[3] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[4] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[5] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["user", "assistant", "user", "assistant", "assistant", "tool"]
+  scroll_y=0
+  store_md5=9859197218689e457a36f3b939e55d30
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=0
+  undo_list=[["insert", 3]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=3
+=== STEP 07-add-message-prev
+  children=7
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[0]
+  focused_message=0
+  messages=7
+  messages_md5=3fd6e9f0548a99eb2b0fd0c581802a8c
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool"]
+  scroll_y=0
+  store_md5=bcca99576cfa5c18ec353e49417041f3
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=1
+  undo_list=[["insert", 3], ["insert", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=4
+=== STEP 08-stream-start
+  children=8
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[7]
+  focused_message=7
+  messages=8
+  messages_md5=8e953e29277ad8b4a2c3a473cf18a684
+  child[0] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[7] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=bcca99576cfa5c18ec353e49417041f3
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=1
+  undo_list=[["insert", 3], ["insert", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=4
+=== STEP 09-stream-process
+  children=8
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[7]
+  focused_message=7
+  messages=8
+  messages_md5=12e5b4de4c13a00e794f0f0a07cd5022
+  child[0] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[7] cnt=['content'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=bcca99576cfa5c18ec353e49417041f3
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=1
+  undo_list=[["insert", 3], ["insert", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=4
+=== STEP 10-stream-finish
+  children=8
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[7]
+  focused_message=7
+  messages=8
+  messages_md5=12e5b4de4c13a00e794f0f0a07cd5022
+  child[0] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[7] cnt=['content', 'reasoning'] cots=True has_focus=True is_edit=0 is_removing=False reasoning_text=musing role=assistant text=streamed tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=5
+=== STEP 11-undo-insert
+  children=7
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[6]
+  focused_message=6
+  messages=7
+  messages_md5=3fd6e9f0548a99eb2b0fd0c581802a8c
+  child[0] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool"]
+  scroll_y=0
+  store_md5=bcca99576cfa5c18ec353e49417041f3
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=1
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=6
+=== STEP 12-redo-insert
+  children=8
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[7]
+  focused_message=7
+  messages=8
+  messages_md5=12e5b4de4c13a00e794f0f0a07cd5022
+  child[0] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[7] cnt=['content', 'reasoning'] cots=True has_focus=True is_edit=0 is_removing=False reasoning_text=musing role=assistant text=streamed tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=7
+=== STEP 13-remove-tool
+  children=7
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[6]
+  focused_message=6
+  messages=7
+  messages_md5=3fd6e9f0548a99eb2b0fd0c581802a8c
+  child[0] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool"]
+  scroll_y=0
+  store_md5=bcca99576cfa5c18ec353e49417041f3
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=3
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 7]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=8
+=== STEP 14-undo-remove
+  children=8
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[7]
+  focused_message=7
+  messages=8
+  messages_md5=12e5b4de4c13a00e794f0f0a07cd5022
+  child[0] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[7] cnt=['content', 'reasoning'] cots=True has_focus=True is_edit=0 is_removing=False reasoning_text=musing role=assistant text=streamed tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 7]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=9
+=== STEP 15-remove-first
+  children=7
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[0]
+  focused_message=0
+  messages=7
+  messages_md5=541f83252499f0045db2516d98019c6c
+  child[0] cnt=['content'] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[1] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[2] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[3] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[4] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[5] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[6] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=musing role=assistant text=streamed tool_calls_text=
+  roles=["user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=390d0e48cdc1dfda73a84dcd58969e1a
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=3
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=10
+=== STEP 16-undo-remove-first
+  children=8
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[0]
+  focused_message=0
+  messages=8
+  messages_md5=12e5b4de4c13a00e794f0f0a07cd5022
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[7] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=musing role=assistant text=streamed tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=11
+=== STEP 17-abort-busy
+  children=8
+  data_list_identity=True
+  exit_after_busy=True
+  focused=message[0]
+  focused_message=0
+  messages=8
+  messages_md5=12e5b4de4c13a00e794f0f0a07cd5022
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  child[7] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=musing role=assistant text=streamed tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool", "assistant"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=0
+  writes=11
+=== STEP 18-abort
+  children=7
+  data_list_identity=True
+  exit_after_busy=True
+  focused=message[0]
+  focused_message=0
+  messages=7
+  messages_md5=3fd6e9f0548a99eb2b0fd0c581802a8c
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=1
+  writes=11
+=== STEP 19-focus-after-abort
+  children=7
+  data_list_identity=True
+  exit_after_busy=True
+  focused=message[0]
+  focused_message=0
+  messages=7
+  messages_md5=3fd6e9f0548a99eb2b0fd0c581802a8c
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=True has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=1
+  writes=11
+=== STEP 20-edit-off
+  children=7
+  data_list_identity=True
+  exit_after_busy=True
+  focused=message[0]
+  focused_message=0
+  messages=7
+  messages_md5=3fd6e9f0548a99eb2b0fd0c581802a8c
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[1] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=one tool_calls_text=
+  child[2] cnt=['content', 'reasoning'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text=thinking role=assistant text=two tool_calls_text=
+  child[3] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=user text=three tool_calls_text=
+  child[4] cnt=[] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text= tool_calls_text=
+  child[5] cnt=['content', 'tool_calls'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=assistant text=four tool_calls_text=
+### function: `read_files`
+#### arguments:
+
+  child[6] cnt=['content'] cots=False has_focus=False is_edit=0 is_removing=False reasoning_text= role=tool text=  tool_calls_text=
+  roles=["assistant", "user", "assistant", "user", "assistant", "assistant", "tool"]
+  scroll_y=0
+  store_md5=a0cdbc05dc2096af19ebc12c4a61ce66
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=2
+  undo_list=[["insert", 3], ["insert", 0], ["insert", 7], ["remove", 0]]
+  view_is_edit=False
+  view_is_removing=False
+  work_cancelled=1
+  writes=11
+=== STEP E1-load-empty
+  children=0
+  data_list_identity=True
+  exit_after_busy=None
+  focused=chat-view
+  focused_message=-1
+  messages=0
+  messages_md5=d751713988987e9331980363e24189ce
+  roles=[]
+  scroll_y=-8
+  store_md5=8015f3e2bc670f205b659cdd43fe4bfc
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[]
+  view_is_edit=False
+  view_is_removing=False
+  work_cancelled=None
+  writes=2
+=== STEP E2-edit-on-empty
+  children=0
+  data_list_identity=True
+  exit_after_busy=None
+  focused=chat-view
+  focused_message=-1
+  messages=0
+  messages_md5=d751713988987e9331980363e24189ce
+  roles=[]
+  scroll_y=-12
+  store_md5=8015f3e2bc670f205b659cdd43fe4bfc
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=2
+=== STEP E3-add
+  children=1
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[0]
+  focused_message=0
+  messages=1
+  messages_md5=dcb533be94349b9db1536bf5982972c9
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=user text= tool_calls_text=
+  roles=["user"]
+  scroll_y=0
+  store_md5=7ff3f56cbeca2fe8be01afb4e8ee1eb0
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=0
+  undo_list=[["insert", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=3
+=== STEP E4-undo-add
+  children=0
+  data_list_identity=True
+  exit_after_busy=None
+  focused=chat-view
+  focused_message=-1
+  messages=0
+  messages_md5=d751713988987e9331980363e24189ce
+  roles=[]
+  scroll_y=-12
+  store_md5=8015f3e2bc670f205b659cdd43fe4bfc
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=-1
+  undo_list=[["insert", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=4
+=== STEP E5-redo-add
+  children=1
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[0]
+  focused_message=0
+  messages=1
+  messages_md5=dcb533be94349b9db1536bf5982972c9
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=user text= tool_calls_text=
+  roles=["user"]
+  scroll_y=0
+  store_md5=7ff3f56cbeca2fe8be01afb4e8ee1eb0
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=0
+  undo_list=[["insert", 0]]
+  view_is_edit=True
+  view_is_removing=False
+  work_cancelled=None
+  writes=5
+=== STEP E6-edit-off-empty
+  children=1
+  data_list_identity=True
+  exit_after_busy=None
+  focused=message[0]
+  focused_message=0
+  messages=1
+  messages_md5=dcb533be94349b9db1536bf5982972c9
+  child[0] cnt=[] cots=False has_focus=True is_edit=0 is_removing=False reasoning_text= role=user text= tool_calls_text=
+  roles=["user"]
+  scroll_y=0
+  store_md5=7ff3f56cbeca2fe8be01afb4e8ee1eb0
+  text_area_text=
+  text_area_was_focused=False
+  undo_index=0
+  undo_list=[["insert", 0]]
+  view_is_edit=False
+  view_is_removing=False
+  work_cancelled=None
+  writes=5
