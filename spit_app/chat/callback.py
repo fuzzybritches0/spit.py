@@ -6,34 +6,46 @@ class CallbackMixIn:
         self.post_message(StreamCallback(message_index, signal))
 
     def is_present(self, index: int) -> bool:
-        if index < len(self.children):
-            return True
-        return False
+        """Does message `index` have a widget? The window-aware question, and the
+        only place the answer comes from: `widget()` (UI-ONDEMAND-LOADING.md WP-B).
+
+        The pre-window form was `index < len(self.children)`, which answered True
+        for a NEGATIVE index and then indexed the last child - the wrong widget.
+        A negative index is not a message: every index that reaches here is a
+        position in `chat.messages`. Filed in the WP-B entry; the one place where
+        the accessor is deliberately narrower than the indexing it replaced.
+        """
+        return self.widget(index) is not None
 
     async def message_finish(self, index: int) -> None:
         self.chat.write_chat_history()
         self.chat.undo.append_undo("insert", self.chat.messages[index], index)
-        if self.is_present(index):
-            async with self.children[index].lock:
-                await self.children[index].finish()
+        message = self.widget(index)
+        if message is not None:
+            async with message.lock:
+                await message.finish()
 
     async def message_start(self, index: int) -> None:
         await self.mount(Message(self.chat, self.messages[index]))
-        if self.is_present(index):
-            await self.children[index].wait_for_refresh()
+        message = self.widget(index)
+        if message is not None:
+            await message.wait_for_refresh()
             self.focus_message(index)
 
     def focus_message(self, index: int) -> None:
+        message = self.require_widget(index)
         if self.chat.display:
-            self.children[index].focus(scroll_visible=False)
+            message.focus(scroll_visible=False)
         else:
-            self.children[index].on_focus()
+            message.on_focus()
 
     async def message_process(self, index: int) -> None:
-        if self.is_present(index):
-            async with self.children[index].lock:
-                if self.display and (self.children[index].has_focus or self.children[index].has_focus_within):
-                    await self.children[index].process()
+        message = self.widget(index)
+        if message is None:
+            return None
+        async with message.lock:
+            if self.display and (message.has_focus or message.has_focus_within):
+                await message.process()
 
     async def on_stream_callback(self, message: StreamCallback) -> None:
         if message.signal == 0:

@@ -15,10 +15,11 @@ class Undo:
         temp_message = deepcopy(self.messages[index])
         self.messages[index] = deepcopy(message)
         self.undo_list[self.undo_index] = [operation, deepcopy(temp_message), index]
-        self.chat_view.children[index].message = self.messages[index]
-        await self.chat_view.children[index].reset()
-        await self.chat_view.children[index].finish()
-        self.chat_view.children[index].focus()
+        message_widget = self.chat_view.require_widget(index)
+        message_widget.message = self.messages[index]
+        await message_widget.reset()
+        await message_widget.finish()
+        message_widget.focus()
 
     async def _insert(self, message: dict, index: int) -> None:
         if index == len(self.messages):
@@ -26,18 +27,24 @@ class Undo:
             await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         else:
             self.messages.insert(index, deepcopy(message))
-            await self.chat_view.mount(Message(self.chat, self.messages[index]), before=index)
-        await self.chat_view.children[index].finish()
-        self.chat_view.children[index].focus()
+            await self.chat_view.mount(Message(self.chat, self.messages[index]),
+                before=self.chat_view.child_position(index))
+        inserted = self.chat_view.require_widget(index)
+        await inserted.finish()
+        inserted.focus()
 
     async def _remove(self, index: int) -> None:
         del self.messages[index]
-        await self.chat_view.children[index].remove()
+        await self.chat_view.require_widget(index).remove()
         if self.chat_view.children:
-            if len(self.chat_view.children)-1 >= index:
-                self.chat_view.children[index].focus()
-            else:
-                self.chat_view.children[index-1].focus()
+            # the message that followed took the vacated position; removing the
+            # tail leaves the neighbour before it. `widget(index)` is that test
+            # now - "is there a mounted widget at this message index" - because a
+            # child count answers nothing once either end can be evicted.
+            neighbour = self.chat_view.widget(index)
+            if neighbour is None:
+                neighbour = self.chat_view.require_widget(index - 1)
+            neighbour.focus()
 
     async def undo(self) -> None:
         if self.undo_index >= 0:
