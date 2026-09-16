@@ -12,7 +12,10 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **One entry is open**: the ratatui enhancement list, followup 4.
+> **Two entries are open**: the ratatui enhancement list, followup 4, and
+> **WP-D of the on-demand-loading pipeline** (its entry is below; branch
+> `task-scroll-load-prune-triggers`, the owner's `Go!` given 2026-09-16 before
+> the first edit).
 > **WP-C of the on-demand-loading pipeline closed 2026-09-15**: the window core
 > and its 98-check suite are on `task-sliding-window-core` (`bd0ece0`,
 > `f4328c9`, `594f3f1`), and the session that wrote them crashed mid-close-out —
@@ -21,7 +24,7 @@ that is not the agent's.
 > trusting those notes (FAIL 0, `unit:chat_window` 98 new, `chat_smoke` 168 with
 > its golden md5 unchanged), and the resolution is in `TASKS-FINISHED.md`. WP-A,
 > WP-B and WP-C are all closed there, on branches awaiting the owner's merge;
-> **WP-D, WP-E and WP-F are not started** — each takes its own branch cut from
+> **WP-E and WP-F are not started** — each takes its own branch cut from
 > the chain tip and its own `Go!` (`doc/UI-ONDEMAND-LOADING.md`). The followup
 > *numbers* stay in the headings so that cross-references by number remain true
 > even though 1, 1.5, 2 and 3 are gone — **followup 3 closed as a non-issue on
@@ -60,6 +63,107 @@ that is not the agent's.
   may `kill-server` freely. A run leaves stale socket *files* under
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
+
+## WP-D (P8 pipeline) - load/prune triggers and scroll UX  [depends: WP-C, closed; parallel with WP-E]
+
+Plan: `doc/UI-ONDEMAND-LOADING.md`, WP-D. The window core is
+`spit_app/chat/chat_view.py` as of `task-sliding-window-core` (`154e4fc`);
+`unit:chat_window` (98) is the regression floor for the window itself,
+`unit:chat_smoke` (168, golden of `f201700`) the floor for everything else.
+The owner's `Go!` was given 2026-09-16, before the first edit.
+
+**Scope**: a `watch_scroll_y` override on `ChatView` that (a) re-arms ONE debounce
+timer whose callback runs `prune()` (Textual 8.2.8 has no `scroll_ended` hook —
+`is_scrolling` is a 0.1 s "ended very recently" window), and (b) near a window
+edge runs the page operation (`load_older` / `load_newer`) through
+`call_after_refresh` so it never re-enters a layout pass. Thresholds in ROWS of
+REAL child regions, `TRIGGER_MARGIN_FACTOR = 1` viewport, strictly below
+`PRUNE_MARGIN_FACTOR = 2` — the anti-oscillation invariant. Page size estimated
+from the MEAN mounted height, clamped `[1, INITIAL_WINDOW]`. Frozen while
+`_window_page_op / is_removing / is_edit / chat.is_working() / not is_mounted`,
+and while `content_region.height <= 0` (the hidden-Chat-in-#main case, TRAPS
+#24). `anchor()` untouched except one deliberate `release_anchor()` inside
+`load_newer` when the page will NOT reach the tail. New suite file
+`test_window_triggers.py` in `unit:chat_window`.
+
+### Measured facts this entry is written against (probes `/tmp/wp-d-probe-*.py`)
+
+At size (80,24) in the WP-C `WindowApp`: viewport 17 rows, fixture message 7
+rows, `app.scroll_sensitivity_y` 2.0, wheel events deliverable headless with
+`app.screen._forward_event(MouseScrollUp(view, x, y, 0, -1, 0, False, False,
+False))` inside `view.region`.
+
+* **A correction written with `set_reactive` does not fire `watch_scroll_y` at
+  all** (`dom.py:249`, "without invoking validators or watchers") — measured:
+  `load_older(20)` = 1 correction, 0 watch calls; and `load()`'s
+  follow-bottom writes = 0 watch calls. So the trigger only ever sees USER
+  motion, and the pin's re-baseline still needs `super().watch_scroll_y`.
+* **Child regions are one frame stale at watch time**: measure inside the
+  `call_after_refresh` callback, not in the watcher (probe: the decision taken
+  at watch time says `need None` at a stale viewport, `older`/`newer` once the
+  frame lands).
+* **The wheel does not fire the watcher at a scroll limit**: at
+  `scroll_y == max_scroll_y` (mid-history window bottom, follow-bottom re-armed
+  by `_check_anchor`) a wheel-down is a no-op — measured 0 watch calls, so a
+  trigger driven only by scroll deltas starves there. Handled by re-checking
+  the edge in the settled callback (after the prune), which is where a settled
+  prune can also clamp the view to the new window bottom.
+* `max_scroll_y` is the WINDOW's, not the history's, so "at the bottom" and
+  "at the tail" are different states: measured `scroll_home`/wheel at a pruned
+  window bottom holds at (350,357) with 240 messages unmounted below.
+* The follow-bottom interaction (WP-D's "verify the release semantics
+  interact"), measured both ways: anchor armed at the window bottom +
+  `load_newer(10)` that does not reach the tail → `release_anchor()` first →
+  scroll 39 → 39 (HELD); a page that DOES reach the tail → no release →
+  39 → 383 == new max (PULLED, which is the chat's tail-following intent).
+* The arithmetic identity above/below the viewport is NOT `scroll_y` /
+  `max_scroll_y - scroll_y` (margins): measured `scroll_y` 352 vs
+  whole-children-above 308, `max-scroll_y` 191 vs below 168. Rule 7 and the
+  trigger thresholds are therefore checked on real regions.
+* Steady state holds: 60-message chat, 120 wheel-ups, then two settles —
+  window, mounted count, `scroll_y` and `corrections` identical across the two
+  settles (the anti-oscillation check), and the 1k walk keeps the mounted count
+  flat (11-13) with `lo` sliding and `hi` shrinking.
+* The floor is untouched: `chat_smoke`'s dump through the prototype is
+  md5-identical to `golden.txt` (`8ae9d1186a59627d30d05dee95f0ad95`) — those
+  fixtures are <= 50 messages, so the triggers never fire there.
+
+### State (crash-recovery record)
+
+- **Branch**: `task-scroll-load-prune-triggers` (cut from
+  `task-sliding-window-core` tip `154e4fc`). Last commit: this entry opened.
+- **Scope** (planned): `spit_app/chat/chat_view.py` (module constants
+  `TRIGGER_MARGIN_FACTOR`, `SCROLL_SETTLE_DELAY`; `watch_scroll_y`,
+  `_triggers_frozen`, `_page_edge`, `_page_count`, `_page_at_edge`,
+  `_arm_settle_prune`, `_scroll_settled`; the `release_anchor()` in
+  `load_newer`), new suite `spit_app/tests/unit/chat_window/test_window_triggers.py`
+  (+ the two helpers it needs in `window_harness.py`: a wheel-event builder and a
+  `watch_call_count`-style spy), `doc/TESTING.md` (the `unit:chat_window` row goes
+  UP — the runner globs `test_*.py`), then the map rows and the close-out.
+- **Done**: baseline re-measured green (tools 127/24/30/119/80/32/68/29, unit
+  anchored 68 / arguments 131 / chat_smoke 168 / chat_window 98 / prompt 33 /
+  render 278 / run_script 121 / sandbox 119 / terminal 223, FAIL 0; golden md5
+  `8ae9d1186a59627d30d05dee95f0ad95`); the design measured end-to-end with a
+  monkeypatch prototype (`/tmp/wp-d-probe-design2.py`,
+  `/tmp/wp-d-probe-release.py`) — the repo is untouched so far.
+- **Left**: implement the trigger in `chat_view.py`; write
+  `test_window_triggers.py` (up-walk, down-walk with honest widget tracking,
+  true ends, streaming stickiness, `is_edit` freeze, page-op-in-flight drop,
+  hidden chat, debounce, two-settles oscillation — each zero with a control);
+  re-run the FULL suite and re-check the golden md5; then the docs.
+- **State hazards**: none yet, working tree clean apart from this entry. Two
+  probe bugs were found and are worth knowing so nobody re-derives them: a
+  prototype that wraps `load_newer` and *also* sets `_window_page_op`
+  self-deadlocks on the guard (the wrapper looks like a design failure), and a
+  probe that re-tracks the widget it is measuring invents "view jumps" — the
+  suite must say which widget it tracks and re-track only on a real eviction.
+- **Verify**: `bash spit_app/tests/run_tests.sh` — `unit:chat_window` up by the
+  new file's checks, FAIL 0 everywhere, `unit:chat_smoke` still 168 byte-identical
+  (golden md5 unchanged), all other rows unmoved. WP-D Accept (the plan):
+  continuous wheel up through a 1k fixture loads pages AND prunes the bottom,
+  mounted count flat at every depth, 0 jump frames; scroll back down reloads
+  symmetrically; keyboard scroll at the true ends does nothing; streaming append
+  still sticks to the bottom.
 
 ## P0b-followup 4 - what the `terminal` tool still needs *for* the ratatui migration  [enhancement list, picked up piece by piece]
 
