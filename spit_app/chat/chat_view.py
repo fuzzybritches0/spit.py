@@ -335,9 +335,46 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         A consequence recorded from WP-A: the anchor is chosen viewport-first
         and evictions are strictly outside the viewport, so prune never removes
         the widget the pin is anchored to.
+
+        WP-D: it TAKES the re-entrancy guard, it does not only ask for it. WP-C
+        could get away with checking it, because there prune was only ever the
+        second half of an explicit sequence; WP-D runs it from the settled-scroll
+        `set_timer` callback, which is a different asyncio task from the
+        `call_after_refresh` page operation, so the two interleave at prune's
+        `await child.remove()` points. That is not a cosmetic overlap: `_grow_up`
+        writes lo ABSOLUTELY (`window_start = lo - count`, from the value it
+        read) while prune adds to it afterwards
+        (`window_start += len(evict_above)`), so a page-above landing inside the
+        removal batch leaves the eviction count added to the wrong base and the
+        mounted range keeps a hole in the middle of the history - a state every
+        accessor then reads wrong, not a transient. Measured: the interleave
+        forced at that point corrupts the window 2 times out of 3
+        (/tmp/wp-d3-probe-interleave4.py); with the guard taken, the page
+        operation drops and the window survives.
         """
         if self._window_page_op or self.is_removing or not self.children:
             return None
+        self._window_page_op = True
+        try:
+            await self._release_outside_the_margin()
+        finally:
+            self._window_page_op = False
+
+    async def _release_outside_the_margin(self) -> None:
+        """`prune()`'s walk and batch, run under the guard.
+
+        Split out because the guard has to cover the whole removal batch - the
+        await points inside it are exactly where a page operation would interleave
+        - and because `prune()`'s own first line asks the guard, so the setter
+        cannot live in the same body as the question.
+
+        `window_start` moves only AFTER the batch, for the same reason the mount
+        batches do: mid-operation the accessors keep answering for the old,
+        still-consistent range. The pair (batch, then lo) is what must not be
+        interrupted, and since WP-D the guard is what guarantees it: the two
+        `window_start` writes are of different kinds - this one ADDS to the value
+        the batch started from, `_grow_up` ASSIGNS an absolute one.
+        """
         viewport = self.content_region
         if viewport.height <= 0:
             # Not laid out (a hidden Chat in #main, or never shown): the
