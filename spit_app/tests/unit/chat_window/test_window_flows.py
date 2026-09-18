@@ -28,7 +28,8 @@ import asyncio
 import json
 
 from window_harness import (FakeWork, FrameSpy, WindowApp, big_fixture, check,
-                            first_visible, settle, store_md5, summary)
+                            first_visible, freeze_triggers, settle, store_md5,
+                            summary)
 
 
 async def t6_abort_scrolled_up():
@@ -38,6 +39,7 @@ async def t6_abort_scrolled_up():
         chat = app.chat
         view = chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         view.scroll_to(0, 0, animate=False)   # scrolled up (releases follow-bottom)
         await settle(pilot)
@@ -66,6 +68,7 @@ async def t7_materialize_edges():
         chat = app.chat
         view = chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         anchor = first_visible(view)
         row = anchor.region.y
@@ -115,6 +118,7 @@ async def t8_churn_flat_and_json_untouched():
         chat = app.chat
         view = chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         md5_before, writes_before = store_md5(app), len(app.writes)
         # The churn is probe 7's cycle at the ChatView level: load a page,
@@ -154,6 +158,7 @@ async def t9_chat_switch_interplay():
         await settle(pilot)
         chat_a = app.chat
         await chat_a.chat_view.load()
+        freeze_triggers(chat_a.chat_view)
         await settle(pilot)
         window_a = chat_a.chat_view.window
         # what side_panel.option_selected does for a not-yet-open chat: mount
@@ -165,6 +170,7 @@ async def t9_chat_switch_interplay():
         await main.mount(Chat("chat-b"))
         chat_b = app.query_one("#chat-b")
         await chat_b.chat_view.load()
+        freeze_triggers(chat_b.chat_view)
         await settle(pilot)
         # hide-all-show-one, the side_panel loop:
         for cont in main.children:

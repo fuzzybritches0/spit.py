@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: GPL-2.0
 """The window itself: open, slide, prune (WP-C Accept, first half).
 
+Every check here calls `freeze_triggers(view)` after the load: since WP-D the
+widget's own scroll triggers are live, and a setup `scroll_to` now also pages
+history in and prunes at the settle - which would rewrite the page-operation
+arithmetic these checks measure (the combined walk is t10's subject). The window
+core itself is driven EXPLICITLY here, one operation per check.
+
   t1  open a 1k fixture -> exactly INITIAL_WINDOW mounted, window (950, 1000),
       open at the bottom, data complete, JSON untouched (load never writes),
       `view.messages is chat.messages` (the plan's standing hazard: nothing may
@@ -30,7 +36,8 @@
 import asyncio
 
 from window_harness import (BIG_N, FakeWork, FrameSpy, WindowApp, big_fixture,
-                            check, first_visible, settle, store_md5, summary)
+                            check, first_visible, freeze_triggers, settle,
+                            store_md5, summary)
 
 
 async def t1_open():
@@ -44,6 +51,7 @@ async def t1_open():
         # the reason the write count is measured as a DELTA, never absolute).
         md5_before, writes_before = store_md5(app), len(app.writes)
         await chat.chat_view.load()
+        freeze_triggers(chat.chat_view)
         await settle(pilot)
         check("t1-mounted-is-the-initial-window", len(view.children), view.INITIAL_WINDOW)
         check("t1-window", view.window, (BIG_N - view.INITIAL_WINDOW, BIG_N))
@@ -61,6 +69,7 @@ async def t1_open():
     async with app2.run_test(size=(80, 24)) as pilot:
         await settle(pilot)
         await app2.chat.chat_view.load()
+        freeze_triggers(app2.chat.chat_view)
         await settle(pilot)
         check("t1b-teeth-120-mounts-only-50", len(app2.chat.chat_view.children), 50)
         check("t1b-teeth-120-lo", app2.chat.chat_view.window_start, 70)
@@ -73,6 +82,7 @@ async def t2_load_older():
         chat = app.chat
         view = chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         md5_before, writes_before = store_md5(app), len(app.writes)
         # the state a page-load above really happens in: the user scrolled,
@@ -109,6 +119,7 @@ async def t2c_control_no_anchor():
         await settle(pilot)
         view = app.chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         view.scroll_to(0, round(view.max_scroll_y / 2), animate=False)
         await settle(pilot)
@@ -132,6 +143,7 @@ async def t3_prune_below_and_load_newer():
         chat = app.chat
         view = chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         view.scroll_to(0, 0, animate=False)  # top of the WINDOW; bottom far below
         await settle(pilot)
@@ -169,6 +181,7 @@ async def t4_prune_above_at_bottom():
         chat = app.chat
         view = chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         scroll_before = round(view.scroll_y)
         lo_before = view.window_start
@@ -214,6 +227,7 @@ async def t5_pins():
         chat = app.chat
         view = chat.chat_view
         await view.load()
+        freeze_triggers(view)
         await settle(pilot)
         # is_edit pin at the TOP: scroll to the bottom of a fresh window so
         # messages 950/951 are far above the viewport; pin 951; the above-walk
