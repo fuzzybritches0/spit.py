@@ -363,6 +363,143 @@ record, with the re-measurement recipe (`HOME` at a directory holding a chosen
 `.bashrc`) so the class can be re-tested on any machine in one command.
 
 
+### WP-D (P8 pipeline) — the load/prune triggers and scroll UX (branch `task-scroll-load-prune-triggers`, commits `c8aab52`…`5c47bf7` + this close-out, awaiting the owner's merge)
+
+Cut from WP-C's tip `154e4fc`; the owner's `Go!` was given 2026-09-16 before the
+first edit, once, when the entry was opened at `f40bce8`. Five commits: `c8aab52`
+the harness instruments plus the WP-C files' `freeze_triggers()`, `8a623ac` the
+triggers in `chat_view.py`, `2091482` **`prune()` takes the page-op guard** (a real
+bug this WP introduced the conditions for and its suite found), `5281fe4` the
+trigger suite (172 checks), `5c47bf7` the docs, then this entry. Landed in that
+order deliberately: the freeze edits are inert before the code exists, so **no
+intermediate commit of the branch carries a red suite**. Two earlier sessions on this
+branch died on the token limit; everything below was re-measured on this tree.
+
+**What landed.** `ChatView.watch_scroll_y` is now the thing that pages: `super()`
+first (the container decides about the scroll before the window does), sub-row
+jitter dropped, then ONE debounce timer re-armed by every scroll (`SCROLL_SETTLE_DELAY`
+0.15 s — Textual 8.2.8 has no `scroll_ended` hook at all: `Widget.is_scrolling` is a
+0.1 s "ended very recently" window) and a page operation posted through
+`call_after_refresh` so a mount never re-enters the layout pass that is reporting the
+scroll. Five deviations from the sketch, each measured, each pinned:
+
+- **(a) `load()` and `materialize()` hold the guard too**, by save/restore rather
+  than clearing — they are the two entry points that must never be dropped (opening a
+  chat; the stream sites addressing the last MESSAGE by data index), and a trigger
+  landing in the middle of either would run a second mount batch over the same range.
+  A caller that already holds the guard must not have it released under it (`t18`).
+- **(b) the page operation prunes INLINE and does not re-arm the settle.** The
+  re-arm used to be how a page got its prune; what it also did was chain
+  settle → prune → page in → re-arm → settle, and one 30-notch burst unwound **11** of
+  those against **1** for the shipped code (`/tmp/wp-d3-probe-design.py`). Only a
+  SCROLL arms a settle. The inline prune is what bounds an unbroken burst, because an
+  unbroken burst never settles: **15 mounted and flat** with it, **18 → 63** with the
+  prune stubbed, past `INITIAL_WINDOW` (`t12`, both arms walked into the same sliding
+  state, both with the debounce removed).
+- **(c) `_scroll_settled()` re-checks the edges after its prune.** `max_scroll_y` is
+  the WINDOW's, so a settled prune can clamp the reader to a mid-history window
+  bottom, and at a scroll limit a wheel notch moves nothing and therefore fires no
+  watcher at all (measured: 0 watch calls with 240 messages unmounted below). The
+  settle is the last event that ever fires in that state — which is the starvation
+  `t15` closes, with the defect itself (prune alone) as its control.
+- **(d) the edge is decided IN THE CALLBACK, not in the watcher**: child regions are
+  one frame stale while a scroll is being reported, so a decision taken at watch time
+  is a decision on the previous frame (measured `None` at watch time, `older` once the
+  frame lands).
+- **(e) `prune()` TAKES the guard instead of only asking for it.** WP-C could ask,
+  because prune was then only the second half of an explicit sequence; the settle runs
+  it from a `set_timer` callback while the page operation is a `call_after_refresh`
+  callback — two asyncio tasks, and prune's removal batch is nothing but await points.
+  The overlap is not cosmetic: `_grow_up` **assigns** `lo` absolutely while prune
+  **adds** its eviction count to whatever is there when the batch finishes, so a
+  page-above landing between the last `child.remove()` and that addition leaves the
+  count on the wrong base and the mounted range keeps a **hole** — not a transient,
+  because `window_hi` is derived from the child count and every accessor keys off
+  `window_start`. Forced at that exact point on the pre-fix tree: **2 runs of 3 ended
+  with `window_consistent()` False** (`/tmp/wp-d3-probe-interleave4.py`); the same
+  runs with the guard taken drop the page and stay consistent (`/tmp/wp-d3-probe-fix.py`).
+  The walk moved to `_release_outside_the_margin()` so the guard covers the whole
+  batch; unlike `load()`/`materialize()` prune CLEARS rather than restores, because
+  nothing nests inside it — if a page operation is in flight its answer is to do
+  nothing.
+
+Follow-bottom is untouched except the one deliberate release inside `load_newer`,
+verified both ways as the plan asked: Textual re-arms the anchor whenever the view
+sits at `max_scroll_y`, so a reader parked at the bottom of a mid-history window would
+be dragged down by any mount below. Release first **only when the page will not reach
+the tail** — a page that does reach it IS the tail: not-reach **39 → 39 HELD**,
+reach **39 → 383 PULLED** (== the new max, one correction, no intermediate frame), and
+an already-released anchor is never released a second time. Thresholds are rows of
+REAL child region (`TRIGGER_MARGIN_FACTOR` 1 viewport, strictly below
+`PRUNE_MARGIN_FACTOR` 2 — the anti-oscillation fixed point `t19` pins as a parked view
+that does not move, settle after settle, at either window edge and at the true top);
+page size from the MEAN mounted height, clamped `[1, INITIAL_WINDOW]`. Frozen while
+`_window_page_op / is_removing / is_edit / chat.is_working() / not is_mounted`, and
+while `content_region.height <= 0` (the hidden-`Chat`-in-`#main` case, TRAPS #24).
+
+**Measured facts worth keeping.** A `scroll_y` correction written with
+`DOM.set_reactive` does not invoke watchers (dom.py:249), so the trigger never sees
+its own work — measured `load_older(20)` = 1 correction, 0 watch calls, and `load()`'s
+follow-bottom writes = 0 watch calls. `scroll_y` is WINDOW-relative: "did the reader
+move" is always the top MESSAGE index, never `scroll_y` (measured 352 against 308 rows
+of content above the viewport). Settled mid-history window **11–15** children, at the
+tail **8** — two constants, asserted separately, never averaged. **66–71 ms** per
+headless notch against the 0.15 s wall-clock settle, which is why a burst is not
+controllable by timing: 17 settles inside one 200-notch burst, 3 inside a 30-notch
+burst taken where every notch mounts, and a chained page-op re-arm turned one 30-notch
+burst into 11 settles. Page = 5–6 messages on this fixture (mean 7 rows, margin 34);
+travel inside `load()`'s 50 messages ≈ 170 notches.
+
+**Verified — `unit:chat_window` 98 → 270, and the floor that must not move.** 172 new
+checks in `test_window_triggers.py`, every zero read against a control (TRAPS #13):
+`t10`'s frozen triggers leave the same 200 notches moving nothing; `t12`'s control
+stubs the prune alone and the count grows past `INITIAL_WINDOW`; `t15`'s control IS the
+defect; `t16`'s control is the same call at the other edge, where it is a page; `t17`'s
+controls are the same calls with the freeze lifted; `t20`'s control is the same
+`load_older` outside a prune, which pages. Three instrument lessons are written into
+the file because each was a bug in an earlier draft rather than a style choice: build
+the state and then assert it (`build_an_edge`; `walk_into_the_sliding_region` driven to
+the STATE with a ceiling — the fixed-8-burst version asserted `window_start < 940` at a
+depth where it reads 953); replace machine-dependent constants with mechanisms and
+ratios (`arms == watches`, `settles * 20 <= watches`); sample invariants only at rest,
+and spend the arrival sample (`t13`'s tail constant is taken after the burst that
+reached the tail — measured arrival 12 mounted then 8, 8, 8, and five more settles
+leave (992, 1000)/8 untouched; `t20`'s state moved from `scroll_to(0,0)` to mid-mount,
+because at the window top prune's above-side walk is empty — `above=0`,
+`evict_above=0`, 383 rows BELOW — so `lo` has no way to move and the check proved
+nothing).
+
+Full suite from the repo root, re-measured at close-out: tools
+127/24/30/119/80/32/68/29 (509) and unit anchored 68, arguments 131, **chat_smoke
+168** with `golden.txt` still md5 `8ae9d1186a59627d30d05dee95f0ad95` (no re-pin: its
+fixture chats are ≤ 50 messages, so `load()` mounts exactly what the old loop mounted
+and the triggers never fire there), **chat_window 270**, prompt 33, render 278,
+run_script 121, sandbox 119, terminal 223 — **FAIL 0 everywhere**, and **three
+consecutive full runs byte-identical**, which is what a suite with a wall-clock timer
+in it has to show. Two crashes hid inside that row and were found only by running the
+files: `test_window_flows.py` called `freeze_triggers` without importing it (NameError,
+the whole file dead) and `t13` did `max()` on an empty list; the outer `run_tests.sh`
+printed `unit:chat_window: PASS: 54 FAIL: 0` over both. That failure mode of the
+runner is now written into TESTING.md.
+
+**What the verification rested on**: the automated headless suites — there is no
+screen in this environment, so nothing here was confirmed by eye (TRAPS #22). The
+frame instrument (`FrameSpy` on `App._display`) is what stands in for the eye for the
+jump-frame claims, and `unit:chat_smoke`'s unchanged golden dump is what shows the
+streaming and edit paths still behave as before.
+
+**Left for WP-E / WP-F**, as the plan drew it: `undo._insert/_change/_remove` and
+`message/actions.py` across the window edges, focus survival when the focused widget
+leaves the window, the `show_cots`/`reset_message_edit` replay on materialize, and the
+`is_edit`-disables-unloading `Go`-time decision (E); the 100/1k/5k measurement table,
+the mounted-count headline and the DECISIONS entry closing P8 (F). **WP-D files no
+DECISIONS entry**, as A, B and C filed none.
+
+No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
+`main` untouched, nothing pushed. **Next in the chain: WP-E** — edits, undo and
+removal across the window edges — cut from this tip, its own branch, its own `Go!`.
+
+
 ### WP-C (P8 pipeline) — the sliding-window core (branch `task-sliding-window-core`, commits `5d92bdf`…`594f3f1` + the docs close-out, awaiting the owner's merge)
 
 Cut from WP-B's tip `52cc686`; the owner's `Go!` was given 2026-09-15 before the
