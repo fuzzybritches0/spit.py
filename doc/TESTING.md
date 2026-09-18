@@ -10,6 +10,17 @@ Part of the spit.py documentation set (see `PROJECT.md`).
 - One unit file: `cd ~/spit.py/spit_app/tests/unit/<suite> && python3 test_x.py`
   (each test file runs directly; its directory is on `sys.path`)
 
+**The outer runner's one line per suite is `| tail -n 1`, and that hides a crashing
+file.** A file that dies mid-run prints its traceback and no `PASS:` line, so the
+suite's row simply counts the files that survived: the run of 2026-09-17 printed
+`unit:chat_window: PASS: 54 FAIL: 0` while **two of its three files were dead** (a
+missing import in one, `max()` on an empty list in another) - FAIL 0, and the
+tracebacks only visible because stderr went to the terminal and not into the row. So
+read the table above as a FLOOR and compare every row with it: a count that goes
+down without tests being deleted is a crash (TRAPS #18), never a rounding. When a
+suite has more than one file, run the files (or redirect the whole output somewhere
+and read it) instead of trusting the row.
+
 Tests run WITHOUT the app and without Textual. Tool *scripts* are pure
 stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 (StubApp/StubChat/StubMain - the three things the app would provide).
@@ -30,7 +41,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:anchored | 68 |
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
-| unit:chat_window | 98 |
+| unit:chat_window | 270 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
@@ -61,6 +72,11 @@ missing dependency is a FAIL, not a skip**. A suite that prints
 ran and passed, which is the mistake `39ceb2f` fixed for discarded failures; this
 row goes red and names the command that fixes it. Every suite here still passes
 on a machine with the venv and no app runtime.
+
+(`unit:chat_window` was re-measured 2026-09-17 at **270** - the WP-D file
+`test_window_triggers.py` (172 checks) added to WP-C's 98 by addition alone, the two
+WP-C files changed only by a `freeze_triggers()` call each, every other row
+byte-for-byte where WP-C left it, and three consecutive full runs byte-identical.)
 
 (The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
 the failure-counting fix raised it; the table lagged. Counts only ever go
@@ -233,6 +249,46 @@ harness **absolute** fixture paths.
   close-out says so), and `WindowApp` adds the app's own `spit_app/styles.css`
   because **without the stylesheet the messages lay out at zero height and every
   viewport computation goes vacuous** - TRAPS #24.
+- `tests/unit/chat_window/test_window_triggers.py` - the **WP-D scroll triggers**
+  (172 checks, so `unit:chat_window` is 98 + 172 = 270): a real wheel notch
+  (`window_harness.wheel_event`, forwarded with `app.screen._forward_event`) drives
+  `watch_scroll_y`, never a `scroll_to`. `t10` the headline - 200 notches up through
+  the 1k fixture page history in **and** prune the bottom, mounted count flat, 0 jump
+  frames per settle, with the frozen-triggers control that makes the flatness
+  evidence (TRAPS #13); `t11` the debounce as a mechanism (`arms == watches`) and as
+  a ratio, not as a constant; `t12` the prune **behind every load**, both arms walked
+  into the same sliding state and both with the settle taken away, so the only prune
+  left is the one each page operation runs (15 mounted, flat; control with the prune
+  stubbed: 18 → 63, past `INITIAL_WINDOW`); `t13` the walk back down, driven to the
+  STATE with a ceiling rather than for a fixed number of bursts; `t14` the
+  follow-bottom release measured three ways; `t15` the parked-at-the-window-bottom
+  starvation the settle's edge re-check exists to close, with the defect itself as
+  the control; `t16` the true ends; `t17` the freezes (`is_edit`, a working chat, a
+  page operation in flight); `t18` the guard save/restore on `materialize()`; `t19`
+  the anti-oscillation fixed point; `t20` **`prune()` takes the page-op guard** -
+  asked from inside the removal batch, which is where the settled `set_timer` task
+  and the `call_after_refresh` page operation interleave, and the one check that
+  pins a real code bug (without the guard the two `window_start` writes - `_grow_up`
+  assigning absolutely, prune adding the eviction count - corrupt the mounted range:
+  2 of 3 forced runs inconsistent). The two WP-C files now call
+  **`freeze_triggers(view)`** after their `load()`: the triggers are live on every
+  `ChatView`, so a setup `scroll_to` would page and prune on its own account and
+  rewrite the page-operation arithmetic those checks measure (the combined walk is
+  `t10`'s subject).
+
+  Two instruments were added to `window_harness.py` for this file, and both are the
+  same lesson `unit:terminal` wrote down - **wait for the widget's state, not for
+  your own clock**. `SCROLL_SETTLE_DELAY` is a 0.15 s **wall-clock** timer while a
+  headless notch costs a frame plus the pump (measured 66-71 ms), so burst timing is
+  not a thing a suite can control: a 200-notch burst fired **17 settles** and a
+  30-notch burst taken where every notch mounts fired **3**. `freeze_settle` /
+  `thaw_settle` therefore remove the debounce so "this burst never settles" is a fact
+  about the widget (that is `t12`'s premise, asserted as
+  `t12-the-burst-really-never-settled`), and `rest(pilot, view)` / `at_rest(view)`
+  wait for quiescence before any invariant is sampled, because
+  `window_consistent()` is an invariant of QUIESCENCE - sampled mid-page-operation
+  it read False 231 times in four walks and **zero** times sampled at rest, with
+  nothing wrong either time.
 - `tests/unit/arguments/` - schema coercion, paths, pipeline (131 checks).
 - `tests/unit/terminal/` - the tmux backend and the two tools on it, against a
   **real tmux on a private socket** (`libtmux.Server` is wrapped to pass

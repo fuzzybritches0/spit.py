@@ -199,7 +199,10 @@ branch chain** (branches stack; `main` untouched throughout).
   abort-while-scrolled-up materializes the tail then aborts; `materialize(k)`
   correct at both edges.
 
-### WP-D — load/prune triggers and scroll UX  [depends: C; parallel with E]
+### WP-D — load/prune triggers and scroll UX  [depends: C; parallel with E] — **DONE** 2026-09-17, branch `task-scroll-load-prune-triggers` (code + suite + docs, awaiting the owner's merge; `unit:chat_window` 98 → **270**), resolution in `TASKS-FINISHED.md`; the five deviations from the sketch are listed there and under the header line below
+- **Header line**: the reader scrolls, the window answers — one debounce timer,
+  a page in at either window edge, a prune after every load AND after every
+  settled scroll, and the page-op guard held by every operation that moves `lo`.
 - **Scope**: `watch_scroll_y` thresholds → `load_older` near the window top /
   `load_newer` near its bottom; `prune()` after every settled scroll (and
   after every load); stop cleanly at `lo == 0` / `hi == len(messages)`; no
@@ -207,11 +210,51 @@ branch chain** (branches stack; `main` untouched throughout).
   (`anchor()`) untouched — verify the release semantics interact (P8: wheel
   release path is `scroll()`).
 - **Read list**: P8 measurements + this doc's invariants; `chat_view.py` after C.
-- **Accept**: scripted pilot: continuous wheel-scroll up through a 1k fixture
+- **Accept** (met, all of it by automated headless checks — there is no screen
+  here, TRAPS #22): scripted pilot: continuous wheel-scroll up through a 1k fixture
   loads pages **and prunes the bottom**, mounted count **flat at every depth**
   (probe-7 churn as a ChatView check), 0 jump frames throughout; scroll back
   down reloads symmetrically; keyboard scroll at true ends does nothing;
   streaming append still sticks to bottom.
+- **Deviations from the sketch** (each measured, each pinned by a check):
+  (a) `load()` and `materialize()` **hold the guard too**, and hold it by
+      save/restore rather than clearing — they are the two entry points that must
+      never be dropped (`t18`);
+  (b) the page operation runs the prune **inline** and does **not** re-arm the settle
+      timer. The re-arm used to be how a page got its prune; what it also did was
+      chain settle → prune → page in → re-arm → settle, and one 30-notch burst
+      unwound **11** of those against **1** for the shipped code — a tail of layout
+      passes running for seconds after the user stopped. Only a SCROLL arms a settle;
+  (c) `_scroll_settled()` re-checks the edges after the prune. A settled prune can
+      clamp the view to the new **window** bottom, and at a scroll limit a wheel notch
+      changes nothing, so it fires no watcher at all (measured: 0 watch calls with 240
+      messages unmounted below) — the settle is the last event that ever fires in that
+      state, which is the starvation `t15` closes with the defect as its control;
+  (d) the edge decision is taken **in the callback, not in the watcher**: child
+      regions are one frame stale while a scroll is being reported, so a decision at
+      watch time is a decision on the previous frame;
+  (e) **`prune()` takes the guard** instead of only asking for it. WP-C could ask,
+      because prune was then only the second half of an explicit sequence; WP-D runs
+      it from the settle's `set_timer` callback, a different asyncio task from the
+      page operation's `call_after_refresh`, and the two `window_start` writes are of
+      different kinds (`_grow_up` ASSIGNS an absolute `lo`, prune ADDS the eviction
+      count). Interleaved, the eviction count lands on the wrong base and the mounted
+      range keeps a **hole** every accessor then reads wrong — forced at the hazard
+      point on the pre-fix tree, 2 runs of 3 came back inconsistent (`t20`).
+- **The numbers the design is held to**: `TRIGGER_MARGIN_FACTOR` 1 viewport strictly
+  below `PRUNE_MARGIN_FACTOR` 2 (the anti-oscillation fixed point, `t19`); page size
+  from the MEAN mounted height, clamped `[1, INITIAL_WINDOW]`; `SCROLL_SETTLE_DELAY`
+  0.15 s, above Textual's 0.1 s `is_scrolling` window. Measured at (80,24) on the 1k
+  fixture: settled mid-history window **11–15** children, at the tail **8** (a
+  different constant, asserted separately), burst bound **15 flat** with the inline
+  prune against **18 → 63** with the prune stubbed, travel inside `load()`'s 50 ≈ 170
+  notches, **66–71 ms** per headless notch — which is why the suite waits for the
+  widget's state (`window_harness.rest`) and removes the debounce
+  (`freeze_settle`) instead of waiting on its own clock: an unbroken burst is NOT
+  producible by not waiting (17 settles inside one 200-notch burst).
+- **Left for WP-E/F** (untouched, as planned): `undo` / `message/actions.py` across
+  the edges and focus survival (E); the 100/1k/5k table and the DECISIONS entry (F).
+  **WP-D files no DECISIONS entry**, as A, B and C filed none.
 
 ### WP-E — edits, undo, removal across the window edges  [depends: C; parallel with D]
 - **Scope**: `undo._insert/_change/_remove` and `message/actions.py`

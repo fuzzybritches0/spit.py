@@ -20,7 +20,7 @@ development of the project; everything here reflects the repo at
      touching anything that renders or reads input)
    - `UI-ROUTE-RATATUI.md` - the route off Textual, with its gates and measurements
    - `UI-ONDEMAND-LOADING.md` - windowed message loading on Textual (P8): proven
-     anchor mechanism, work packages A-F (A, B and C are done; D, E and F each
+     anchor mechanism, work packages A-F (A, B, C and D are done; E and F each
      still awaiting its own `Go!`)
 5. `TASKS-IN-PROGRESS.md` - is someone's work half-done? Recover it first.
 6. `TASKS-PLANNED.md` - pick up work here.
