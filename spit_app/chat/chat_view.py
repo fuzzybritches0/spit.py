@@ -7,6 +7,17 @@ from ..modal_screens import LoadingScreen
 from .callback import CallbackMixIn
 from .chat_view_actions import ChatViewActionsMixIn, bindings
 
+
+# The settled-scroll debounce (WP-D). Textual 8.2.8 has no `scroll_ended` /
+# `scroll_scheduled` hook at all: `Widget.is_scrolling` (widget.py:2586) is a
+# 0.1 s "ended very recently" window, `_last_scroll_time` is the only other
+# thing there is, so "the user stopped scrolling" has to be a timer of ours.
+# 0.15 s sits above that window (a scroll still in flight never prunes) and is
+# short enough to read as immediate; the suite's `settle()` costs 0.187 s, so
+# one settle is enough to see it fire.
+SCROLL_SETTLE_DELAY = 0.15
+
+
 class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
     BLANK = True
     BINDINGS = bindings
@@ -23,6 +34,18 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
                               # = factor x viewport height. Rule 7 demands
                               # factor >= 1 (the clamp-zone guard); probe 7 was
                               # measured with 2 and held with zero jump frames.
+    TRIGGER_MARGIN_FACTOR = 1  # the scroll triggers: rows of REAL mounted child
+                              # region on a side, below which that side is "at
+                              # the window edge" and history is paged in. It is
+                              # STRICTLY below PRUNE_MARGIN_FACTOR, which is the
+                              # anti-oscillation invariant: a settled prune
+                              # always leaves more history mounted on a side
+                              # than a trigger asks for, so a page-in and a
+                              # prune cannot chase each other across frames.
+                              # Measured in rows of child regions, never in
+                              # scroll_y / max_scroll_y - those are margins, not
+                              # rows of content (rule 7's arithmetic identity
+                              # does not hold: scroll_y 352 against 308 rows).
 
     def __init__(self, chat) -> None:
         super().__init__()
@@ -39,10 +62,21 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         # stored; hi is derived, so it cannot drift from the widget tree (a
         # stored (lo, hi) tuple would be a second source of truth).
         self.window_start = 0
-        # Re-entrancy guard for the page operations (load_older/load_newer and
-        # prune). A trigger that fires while one is in flight asks for a page
-        # the running operation is already growing; the answer is to drop it.
+        # Re-entrancy guard for the page operations: load_older/load_newer and
+        # prune, and - since WP-D - load() and materialize() as well. A scroll
+        # trigger that fires while one is in flight asks for a page the running
+        # operation is already growing, and the answer is to DROP the trigger
+        # (it asks again on the next notch, or at the settle). The two entry
+        # points that must never be dropped - opening a chat, and the stream
+        # sites that address the last MESSAGE by data index - SAVE and RESTORE
+        # the flag instead of clearing it, so they neither re-enter a page
+        # operation nor let a trigger interleave a second mount batch with
+        # their own.
         self._window_page_op = False
+        # The settled-scroll debounce (WP-D): ONE timer, re-armed by every
+        # scroll, whose callback prunes and re-checks the edges. None when no
+        # settle is pending.
+        self._settle_timer = None
 
     # --------------------------------------------------------------- accessors
     # The single seam between a MESSAGE index (a position in chat.messages, the
@@ -202,11 +236,30 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
 
     async def load_newer(self, count: int) -> None:
         """A page of history below the window (the remount side of an evicted
-        bottom - rule 3: holds, same frame)."""
+        bottom - rule 3: holds, same frame).
+
+        The one deliberate touch on follow-bottom in this whole WP, and the
+        reason it needs a paragraph: `anchor()` is never armed or disarmed
+        here, but Textual RE-ARMS it whenever the view sits at `max_scroll_y`
+        (`Widget._check_anchor`, widget.py:823) - and `max_scroll_y` is the
+        WINDOW's bottom, not the chat's tail. So a reader parked at the bottom
+        of a mid-history window has the anchor armed, and mounting below pulls
+        the view down to the new bottom (measured: 39 -> 239 == the new max,
+        one correction, no intermediate frame) - which would drag away anyone
+        who was not reading the tail at all. Release first, therefore, but
+        ONLY when this page will not reach the tail: a page that does reach it
+        IS the tail, and following the tail is exactly what the anchor is for
+        (measured both ways: not-reach 39 -> 39 HELD, reach 39 -> 383 PULLED).
+        Nothing is stranded by the release - the compositor re-arms the moment
+        the view lands on the true tail again.
+        """
         if self._window_page_op:
             return None
         self._window_page_op = True
         try:
+            if (self._anchored and not self._anchor_released
+                    and self.window_hi + count < len(self.messages)):
+                self.release_anchor()
             await self._grow_down(count)
         finally:
             self._window_page_op = False
@@ -232,10 +285,22 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
             raise IndexError(
                 f"message {index} does not exist "
                 f"({len(self.messages)} messages)")
-        if index < self.window_start:
-            await self._grow_up(self.window_start - index, render)
-        else:
-            await self._grow_down(index - self.window_hi + 1, render)
+        # From here the window really grows, so it holds the page-op guard.
+        # Save/restore rather than clear: this is called from the stream sites
+        # (abort, submit, message_start) and a scroll trigger landing in the
+        # middle of it would run a SECOND mount batch over the same range. The
+        # save half matters as much as the set half - a caller that already
+        # holds the guard must not have it released under it, because the
+        # trigger that would have been dropped then gets through.
+        was_page_op = self._window_page_op
+        self._window_page_op = True
+        try:
+            if index < self.window_start:
+                await self._grow_up(self.window_start - index, render)
+            else:
+                await self._grow_down(index - self.window_hi + 1, render)
+        finally:
+            self._window_page_op = was_page_op
         return self.require_widget(index)
 
     def _prune_pinned(self, child: Message) -> bool:
@@ -311,6 +376,175 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
                 async with child.lock:
                     await child.remove()
         self.window_start += len(evict_above)
+
+    # ------------------------------------------------------------ scroll triggers
+    # WP-D: the view asks for history, the window answers. Two events drive it -
+    # a scroll that lands NEAR A WINDOW EDGE pages history in, and a scroll that
+    # SETTLES prunes the far end back to the margin.
+    #
+    # Why a timer for "settled": Textual 8.2.8 has no scroll_ended hook at all
+    # (SCROLL_SETTLE_DELAY above). Why the page operation goes through
+    # `call_after_refresh`: a mount must never re-enter the layout pass that is
+    # reporting the scroll, and an async callback posted there IS awaited.
+    #
+    # Why the trigger can never see its own work: a scroll_y correction - ours
+    # and the compositor's follow-bottom - is written with `DOM.set_reactive`,
+    # which does not invoke watchers (dom.py:249). Measured: `load_older(20)` is
+    # 1 correction and 0 watch calls; `load()`'s follow-bottom writes are 0
+    # watch calls. So `watch_scroll_y` only ever sees USER motion, and the
+    # guards in `_triggers_frozen` are about the app's other mutations, not
+    # about feedback from this one.
+
+    def watch_scroll_y(self, old_value: float, new_value: float) -> None:
+        # super() FIRST and always: AnchoredScroll.watch_scroll_y re-baselines
+        # the pin after a landed scroll and Widget.watch_scroll_y is what
+        # re-arms follow-bottom. Whatever the window decides about this scroll,
+        # the container has already decided about it.
+        super().watch_scroll_y(old_value, new_value)
+        if round(old_value) == round(new_value):
+            return                     # sub-row jitter: nothing moved
+        if self._triggers_frozen():
+            return
+        self._arm_scroll_settle()
+        # Deliberately no edge test HERE, and the callback takes no argument:
+        # the children's regions are one frame STALE while a scroll is being
+        # reported, so a decision taken at watch time is a decision taken on
+        # the previous frame (measured - the fresh-looking numbers say `None`
+        # and the answer is `older` once the frame lands). Posting unconditionally
+        # and measuring in the callback is also what keeps the true window
+        # bottom from starving: at a scroll LIMIT the wheel does not move
+        # scroll_y at all, so it never reaches here, and the settle's own
+        # re-check is then the only thing that can page history back in.
+        self.call_after_refresh(self._load_at_edge)
+
+    def _triggers_frozen(self) -> bool:
+        """True while a scroll event must not touch the window.
+
+        A page operation already in flight (the trigger would ask for a page the
+        running operation is growing); a removal in progress; an edit, where
+        fact 5 puts unloading out of reach entirely; the chat working, where the
+        streaming tail must not be evicted and the bottom of the window is
+        moving anyway; and the two ways a view has no geometry to measure
+        against - not mounted, or laid out at zero height, which is the hidden
+        Chat in #main (TRAPS #24: there, every viewport computation is
+        vacuous, so the only safe answer is to do nothing).
+        """
+        if self._window_page_op or self.is_removing or self.is_edit:
+            return True
+        if self.chat.is_working():
+            return True
+        if not self.is_mounted or self.content_region.height <= 0:
+            return True
+        return False
+
+    def _page_edge(self) -> str | None:
+        """Which page operation the geometry asks for, or None.
+
+        Thresholds in ROWS OF REAL CHILD REGION outside the viewport, never in
+        `scroll_y` / `max_scroll_y - scroll_y`: those are margins of the WINDOW,
+        and they disagree with the row counts by dozens of rows (measured 352
+        against 308). Each side is asked only while it still HAS history, so
+        the true ends stop cleanly instead of mounting nothing forever.
+        """
+        if self.window_start == 0 and self.window_hi >= len(self.messages):
+            return None                      # the whole history is mounted
+        viewport = self.content_region
+        trigger = self.TRIGGER_MARGIN_FACTOR * viewport.height
+        if self.window_start > 0:
+            above = sum(child.region.height for child in self.children
+                        if child.region.bottom <= viewport.y)
+            if above < trigger:
+                return "older"
+        if self.window_hi < len(self.messages):
+            below = sum(child.region.height for child in self.children
+                        if child.region.y >= viewport.bottom)
+            if below < trigger:
+                return "newer"
+        return None
+
+    def _page_count(self) -> int:
+        """How many messages a page holds: enough of them to cover the PRUNE
+        margin, estimated from the MEAN mounted height, clamped to
+        [1, INITIAL_WINDOW].
+
+        The mean is the estimate because a page must refill what a settle
+        releases, and what a settle releases is measured in rows. The upper
+        clamp is the batch size the app already proved it could mount at open;
+        the lower one means a chat of very tall messages still pages (slowly)
+        rather than asking for zero messages and starving at the edge.
+        """
+        heights = [child.region.height for child in self.children]
+        total = sum(heights)
+        if not heights or total <= 0:
+            return self.INITIAL_WINDOW // 2
+        mean_height = total / len(heights)
+        margin = self.PRUNE_MARGIN_FACTOR * self.content_region.height
+        return max(1, min(self.INITIAL_WINDOW, int(margin / mean_height) + 1))
+
+    async def _load_at_edge(self) -> None:
+        """Page history in on whichever side the LANDED frame is short of, if any.
+
+        The frozen state is re-checked here and not trusted from the watcher: a
+        refresh is an eternity in this app, and a work run, an edit or a removal
+        may well have started in it. Arming the settle afterwards is what gives
+        a page that came in for a single wheel notch its prune.
+        """
+        if self._triggers_frozen():
+            return
+        edge = self._page_edge()
+        if edge is None:
+            return
+        count = self._page_count()
+        if edge == "older":
+            await self.load_older(count)
+        else:
+            await self.load_newer(count)
+        # Prune after every LOAD, and NOT another settle timer - both halves of
+        # that are load-bearing.
+        #
+        # The prune: the settle timer is re-armed by EVERY notch, so a scroll that
+        # never stops never settles, and its page operations would mount forever
+        # (measured: 200 uninterrupted wheel-ups with the settle as the only prune
+        # reach 58 mounted widgets and still climbing, against 11-15 with this -
+        # the mounted count is a function of the viewport, never of how long the
+        # wheel keeps turning). This is the plan's "prune() after every load".
+        # The anti-oscillation invariant makes it safe rather than a chase: a
+        # settled side keeps 2 viewports of rows and a trigger asks for 1, so the
+        # page that just arrived is exactly what the prune refuses to evict.
+        #
+        # Not re-arming the settle: the only reason a page operation used to re-arm
+        # it was to give the page its prune, and it now has that prune inline. What
+        # re-arming instead did was chain: settle -> prune -> page in -> re-arm ->
+        # settle, and a single 30-notch burst unwound 18 of those (measured, t11 of
+        # the suite) - a tail of prunes running for seconds after the user stopped,
+        # each one a layout pass. Only a SCROLL arms a settle.
+        await self.prune()
+
+    def _arm_scroll_settle(self) -> None:
+        """(Re-)arm the ONE settle timer: a scroll in flight prunes ONCE, after
+        its last notch, not once per notch."""
+        if self._settle_timer is not None:
+            self._settle_timer.stop()
+        self._settle_timer = self.set_timer(SCROLL_SETTLE_DELAY, self._scroll_settled)
+
+    async def _scroll_settled(self) -> None:
+        """The scroll stopped: release both ends to the margin, then look at the
+        edges again.
+
+        The second half is not redundant with the watcher, and the reason is a
+        measured starvation. A settled prune can leave the view CLAMPED at the
+        new window bottom - `max_scroll_y` is the window's, not the history's -
+        and from there the wheel cannot ask for anything: at a scroll limit a
+        notch does not change `scroll_y`, so it fires no watcher at all
+        (measured: 0 watch calls at a pruned window bottom with 240 messages
+        unmounted below). The settle is the last event that ever fires in that
+        state, so it is where the re-check has to live.
+        """
+        self._settle_timer = None
+        if self._triggers_frozen():
+            return
+        await self.prune()
+        await self._load_at_edge()
 
     # ----------------------------------------------------------------- mounting
 
@@ -398,12 +632,23 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         The window slides from here: `window_start` is the first mounted
         message, and the older history is a `load_older` away.
         """
-        if self.messages:
-            loading_screen = LoadingScreen()
-            await self.app.push_screen(loading_screen)
-            self.window_start = max(0, len(self.messages) - self.INITIAL_WINDOW)
-            async with self.batch():
-                for message in self.messages[self.window_start:]:
-                    await self.mount(Message(self.chat, message))
-                    await self.last_child().finish()
-            loading_screen.dismiss()
+        # Guarded like a page operation, and for the WP-D reason: the mount
+        # below is the biggest batch the widget ever takes, and a scroll that
+        # arrives while it runs must not interleave a trigger's page op with
+        # it. Save/restore, not clear: `load()` is called from the chat-open
+        # path, which is not itself a page operation and must be left as it was
+        # found.
+        was_page_op = self._window_page_op
+        self._window_page_op = True
+        try:
+            if self.messages:
+                loading_screen = LoadingScreen()
+                await self.app.push_screen(loading_screen)
+                self.window_start = max(0, len(self.messages) - self.INITIAL_WINDOW)
+                async with self.batch():
+                    for message in self.messages[self.window_start:]:
+                        await self.mount(Message(self.chat, message))
+                        await self.last_child().finish()
+                loading_screen.dismiss()
+        finally:
+            self._window_page_op = was_page_op
