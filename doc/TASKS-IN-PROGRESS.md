@@ -13,10 +13,12 @@ changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
 > **TWO entries are open** while WP-E is in flight: the ratatui enhancement list,
-> followup 4, and **WP-E of the on-demand-loading pipeline**, which is open
-> **awaiting its `Go!`** — its branch is cut, its measurements are recorded in its
-> entry below, and NO code has been edited (DECISIONS 71 gates the first edit, not
-> the entry). Back to ONE entry when WP-E closes.
+> followup 4, and **WP-E of the on-demand-loading pipeline**. **WP-E's `Go!` was
+> GIVEN by the owner on 2026-09-19 together with its ruling — "`refuse in
+> prune()`": `prune()` itself returns while the view's `is_edit` is set** — so the
+> next agent may edit code. Its branch is cut, its measurements are recorded in
+> its entry below, and NO code has been edited yet. Back to ONE entry when WP-E
+> closes.
 > **WP-D of the on-demand-loading pipeline closed 2026-09-17**: the scroll triggers,
 > the `prune()`-takes-the-guard fix and the 172-check trigger suite are on
 > `task-scroll-load-prune-triggers` (`c8aab52`, `8a623ac`, `2091482`, `5281fe4`,
@@ -78,7 +80,7 @@ that is not the agent's.
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
 
-## WP-E — edits, undo and removal across the window edges  [**AWAITING THE `Go!`** — no code touched]
+## WP-E — edits, undo and removal across the window edges  [`Go!` GIVEN 2026-09-19 — code not started]
 
 The fifth work package of `doc/UI-ONDEMAND-LOADING.md` (the sliding window):
 `undo._insert/_change/_remove`, the message-level add/remove flows and the focus
@@ -90,7 +92,8 @@ history. Scope, Accept and the coupling-table row (`chat/message/actions.py`
 
 - **Branch**: `task-edit-undo-removal-across-window-edges`, cut from the chain tip
   `5d36627` (= `task-scroll-load-prune-triggers`, itself unmerged; the chain is
-  A → B → C → D → E, `main` `8819e73` untouched). Last commit: this entry.
+  A → B → C → D → E, `main` `8819e73` untouched). Last commit: `git log -1` on it —
+  DOCS ONLY so far (this entry plus the ruling), i.e. **no code commit exists**.
 - **Scope**: NOTHING edited. Planned: `spit_app/chat/undo.py`,
   `spit_app/chat/chat_view.py` (`mount_message`, `on_remove_message`, possibly
   `prune`), `spit_app/chat/message/actions.py`,
@@ -179,14 +182,21 @@ history. Scope, Accept and the coupling-table row (`chat/message/actions.py`
     gap-widget case is NOT covered by that row and gets its own check in the
     suite.) WP-E's only code debt in `chat_view_actions.py` is therefore the stale
     comment saying this state "has to be replayed at mount (WP-E)": it already is.
-- **The question the `Go!` is asked with** (one decision, recommendation stated):
-  should `prune()` ITSELF refuse while `is_edit` — unloading disabled at the
-  invariant's own definition rather than inherited from its two callers, at the
-  cost that a grown window is released only at edit-off (19 held until the first
-  prune after edit_off) — or keep today's per-widget pins and leave `prune()`
-  mode-blind? Recommendation: **refuse in `prune()`**, and pin both halves with a
-  control (the same call with the mode off evicting 19→10).
-- **Left**: (1) the `Go!`; (2) code, one concern per commit — window-aware
+- **THE `Go!` WAS GIVEN, WITH THE RULING** (owner, 2026-09-19): of the one real
+  question — should `prune()` ITSELF refuse while `is_edit` (unloading disabled at
+  the invariant's own definition rather than inherited from its two callers, at the
+  cost that a grown window is released only at edit-off, 19 held until the first
+  prune after edit_off), or keep the per-widget pins and leave `prune()`
+  mode-blind? — the owner ruled: **"I go with your recommendation: refuse in
+  `prune()`."** So `prune()` returns without evicting while `view.is_edit` is set,
+  AND the per-widget pins of fact 5 stay as they are; both halves get a control
+  (the same call with the mode off evicting 19→10). The ruling does not dissolve
+  fact 5's per-widget set either: the mode is per-VIEW and the pin is per-CHILD, and
+  with `prune()` refusing there is no walk left to pin while editing — the pins are
+  what `t5` already measures and what protects the tail at edit-OFF. Accepted cost,
+  restated so nobody rediscovers it: a window that grew during an edit is released
+  only by the first prune after edit_off (measured 19 → 10).
+- **Left**: (1) code, one concern per commit — window-aware
   `undo._insert/_change/_remove` (query with `widget()`, `materialize()` where the
   flow needs the widget, slide `lo` +1 on an insert below the window top / −1 on a
   removal below it, mirroring `on_remove_message`, and take the guard the way
