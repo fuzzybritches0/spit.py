@@ -19,9 +19,20 @@ bindings = [
 
 class ChatViewActionsMixIn:
     def show_cots(self, show: bool = True) -> None:
-        # Iterating the mounted children IS window-only: with window_start 0 that
-        # is every message; once WP-C slides the window the state a child does not
-        # carry has to be replayed at mount (WP-E, `show_cots`/`is_edit` flags).
+        # Iterating the mounted children is window-only, and WP-E measured that
+        # this is COMPLETE, not lossy - there is nothing to replay on remount:
+        # the mode is inherited AT MOUNT (`Message.maybe_mount_content` reads
+        # `chat_view.is_edit`), so a widget materialized later shows its CoT or
+        # hides it according to the mode of the moment it enters the window -
+        # measured with a fixture carrying reasoning: materializing the same
+        # index below the window gives `cnt["reasoning"].display` False with the
+        # mode off and True with it on, and a widget already mounted flips
+        # False->True on `action_edit_on` and back on `action_edit_off`. An
+        # already-mounted child is what this loop is for. The per-WIDGET edit
+        # state (`child.is_edit`, which `reset_message_edit` below clears) can
+        # never be evicted anyway: `_prune_pinned` pins it, and `prune()` now
+        # refuses while the mode is on. So the only debt here was this comment.
+        # (/tmp/wp-e-probe-inherit.py; the suite check is t28.)
         for message in self.children:
             if "reasoning" in message.cnt:
                 message.cnt["reasoning"].display = show
