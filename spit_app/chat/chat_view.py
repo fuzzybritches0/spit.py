@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
+from contextlib import asynccontextmanager
+
 from textual.events import Focus
 from .anchored_scroll import AnchoredScroll
 from .textual_message import RemoveMessage
@@ -351,8 +353,30 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         forced at that point corrupts the window 2 times out of 3
         (/tmp/wp-d3-probe-interleave4.py); with the guard taken, the page
         operation drops and the window survives.
+
+        WP-E, the owner's ruling (2026-09-19): `prune()` REFUSES while the view
+        is in edit mode, so unloading is disabled at the invariant's own
+        definition (fact 5, "the simplest safe superset") rather than only
+        inherited from its callers. The mode is per-VIEW and the fact-5 pins are
+        per-CHILD, so both stand: the pins are what bounds a walk at edit-OFF,
+        and with the mode on there is no walk left to pin.
+
+        Why it still matters when both callers are already frozen: `prune()`
+        has exactly two callers in the app (`_load_at_edge` and
+        `_scroll_settled`), and `_triggers_frozen()` already refuses on
+        `is_edit`, so this closes the latent direct-call hole rather than a
+        live one. It was measured open: a grown window (938, 957) with 19
+        children evicted down to (947, 957) with 10 while `is_edit` was True,
+        row for row identical to the same call with the mode off - and the same
+        grown window with ONE widget carrying `is_edit` evicted nothing (19 ->
+        19), because the per-widget pin bounds the whole walk
+        (/tmp/wp-e-probe-isedit.py).
+
+        The accepted cost of the ruling, restated so nobody rediscovers it: a
+        window that grew during an edit is released only by the first prune
+        after edit_off (measured 19 held, then 19 -> 10 on the next call).
         """
-        if self._window_page_op or self.is_removing or not self.children:
+        if self._window_page_op or self.is_removing or self.is_edit or not self.children:
             return None
         self._window_page_op = True
         try:
@@ -584,21 +608,141 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         await self._load_at_edge()
 
     # ----------------------------------------------------------------- mounting
+    #
+    # The two sites that change the DATA and expect the widget tree to follow
+    # (`mount_message` for an insertion, `on_remove_message` for a removal) are
+    # the seam WP-E is about: both used to ask `children[...]`-shaped questions
+    # of a tree that is no longer the whole history.
 
-    async def mount_message(self, index: int) -> None:
-        if index == len(self.messages):
-            # Unreachable and broken as it stands: messages[index] with
-            # index == len(messages) is an IndexError. Both callers insert the
-            # dict first, so index < len(messages); filed in WP-B, untouched.
-            await self.mount(Message(self.chat, self.messages[index]))
-        elif index < self.window_start:
-            # A windowed insertion above the top: the widget goes on the front
-            # and lo slides down, so the mounted range stays contiguous.
-            await self.mount(Message(self.chat, self.messages[index]), before=0)
-            self.window_start -= 1
-        else:
-            await self.mount(Message(self.chat, self.messages[index]),
-                             before=self.child_position(index))
+    @asynccontextmanager
+    async def page_operations_held(self):
+        """Hold the re-entrancy guard across someone else's awaits.
+
+        `load()`, `materialize()` and `prune()` hold `_window_page_op` over
+        their own batches; this is the same save/restore shape for the callers
+        OUTSIDE this class whose awaits let a settled-scroll prune or a page
+        operation interleave with a widget they are in the middle of mounting,
+        finishing or focusing (WP-E: the undo primitives). Save/restore rather
+        than clear, for WP-D's reason: a caller that already holds the guard
+        must find it held when the block ends.
+
+        It is a method because the flag is this class' invariant: an outsider
+        writing it directly is the thing the guard exists to prevent.
+        """
+        was_page_op = self._window_page_op
+        self._window_page_op = True
+        try:
+            yield
+        finally:
+            self._window_page_op = was_page_op
+
+    async def mount_message(self, index: int) -> Message:
+        """Mount the widget of `messages[index]` and return it, UNFINISHED.
+
+        PRECONDITION: the dict is already in `messages[index]` - both callers
+        insert first and then ask for the widget. That is what makes `index` a
+        DATA index in every branch below, and what makes `index ==
+        len(messages)` not a case of its own: it raises IndexError like any
+        other index outside the data, which is all that branch ever did (it
+        indexed `messages[index]` after being told index == len(messages)).
+
+        `render=False` is the contract this site has always had: the CALLER
+        finishes, status-updates and focuses the widget it asked for. Widgets
+        the window has to grow over to reach it are history, and they are
+        finished from their dicts on the way (fact 5).
+        """
+        # The data is asked before the window is touched. Without this line the
+        # below-the-top branch had already written `window_start += 1` when the
+        # `materialize` it delegates to raised IndexError for an index outside
+        # the data, so a caller bug left the mounted range projecting the wrong
+        # slice of history - a corrupt window from an index that mounted
+        # nothing. (Found by t21: `mount_message(-1)` moved lo and then raised.)
+        if not 0 <= index < len(self.messages):
+            raise IndexError(
+                f"message {index} does not exist "
+                f"({len(self.messages)} messages)")
+        if index < self.window_start:
+            # An insert BELOW the top shifts every mounted widget's data index
+            # by +1, so the answer is `window_start += 1` - the mirror of
+            # `on_remove_message`'s -1 - and never a mount at the front. The
+            # front mount that stood here was wrong in DIRECTION, not just at
+            # the gap: measured at (150, 157) it put the new widget in front of
+            # a window that then projected a one-message HOLE even for the
+            # ADJACENT index (lo-1), and left lo pointing one below the widget
+            # it had just mounted.
+            #
+            # The compensation comes FIRST so the window is consistent again
+            # before anything looks anything up; `materialize` then mounts the
+            # new widget AND the gap above the window, arms the top anchor,
+            # takes the guard, and with `render=False` leaves the target for the
+            # caller.
+            self.window_start += 1
+            return await self.materialize(index, render=False)
+        if index >= self.window_hi:
+            # At or above the bottom: `materialize` closes a pruned bottom
+            # instead of appending behind the wrong neighbour. Measured at the
+            # open window (950, 1000) the bare `mount` that stood here appended
+            # the widget at the TAIL, the caller's `require_widget(index)`
+            # raised IndexError, and the window came back inconsistent with the
+            # data changed and nothing persisted.
+            #
+            # `index == window_hi` is NOT a special case any more: it used to
+            # work by luck (child_position == len(children), so the append
+            # happened to be the right neighbour); `materialize` makes it the
+            # ordinary answer, and an index the data does not have raises.
+            return await self.materialize(index, render=False)
+        # Inside the window: the neighbour mount, unchanged. DO NOT delegate
+        # this branch to `materialize()` - the dict is already in the data, so
+        # `widget(index)` is NOT None here: it is the message's RIGHT-HAND
+        # NEIGHBOUR after the insert, and materialize would answer "already
+        # mounted" and hand back the wrong widget without mounting anything.
+        await self.mount(Message(self.chat, self.messages[index]),
+                         before=self.child_position(index))
+        return self.require_widget(index)
+
+    def focus_after_removal(self, index: int, widget_was_removed: bool) -> None:
+        """Where the focus goes when `messages[index]` has just been removed.
+
+        The ONE rule both removal sites answer with (`on_remove_message` and
+        `undo._remove`), so the two can never disagree about where the cursor
+        goes after a message disappears.
+
+        `widget_was_removed` is the first question, and it is the whole rule:
+        the reader's view changed only if the removal took a WIDGET out of the
+        tree. When it did, the vacated position is inside the mounted range and
+        a neighbour answers; when it did not, the position is outside it and
+        nothing the reader can see has changed, so focus stays put.
+
+        Why the neighbour question is not simply `widget(index) or
+        widget(index - 1)` for every removal (the shape this rule was designed
+        with, and the deviation is recorded in the WP-E entry): with the bottom
+        pruned and focus mid-window, the streaming-error path's
+        `RemoveMessage(len(messages) - 1)` lands AT `index == window_hi`, where
+        `widget(index - 1)` IS the last mounted widget - asking the neighbour
+        without asking whether a widget went would reproduce the exact defect
+        the rule exists to prevent (measured: focus child[1] dragged to
+        child[6], about five messages from where the reader was). The old code
+        reached the same place through `or self.last_child()`, which drags for
+        a removal at ANY index above the window.
+        """
+        if not self.messages:
+            if self.is_edit:
+                self.focus()
+            else:
+                self.chat.text_area.focus()
+            return
+        if not widget_was_removed:
+            return
+        if not self.children:
+            # The removal emptied the tree while the data outlives it (a pruned
+            # window whose every widget was removed one by one): the ChatView
+            # is the only thing left to hold the cursor, and `focus_this()`
+            # no-ops on an empty child list.
+            self.focus()
+            return
+        neighbour = self.widget(index) or self.widget(index - 1)
+        if neighbour is not None:
+            neighbour.focus(scroll_visible=False)
 
     async def on_remove_message(self, message: RemoveMessage) -> None:
         self.chat.undo.append_undo("remove", self.messages[message.index], message.index)
@@ -609,22 +753,13 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         elif message.index < self.window_start:
             # A removal BELOW the window (the streaming-error path removes
             # `messages[-1]`, which may already have been evicted): the data
-            # shifts under the window, so lo slides with it.
+            # shifts under the window, so lo slides with it. Nothing mounted
+            # moved, so the focus does not move either - see
+            # `focus_after_removal`.
             self.window_start -= 1
         del self.messages[message.index]
         self.chat.write_chat_history()
-        if self.messages:
-            if message.index == 0:
-                index = 0
-            else:
-                index = message.index - 1
-            neighbour = self.widget(index) or self.last_child()
-            if neighbour is not None:
-                neighbour.focus(scroll_visible=False)
-        elif not self.messages and not self.is_edit:
-            self.chat.text_area.focus()
-        else:
-            self.focus()
+        self.focus_after_removal(message.index, child is not None)
         self.is_removing = False
 
     def on_focus(self, event: Focus) -> None:
