@@ -83,10 +83,18 @@ class ActionsMixIn:
         else:
             self.messages.insert(index, message)
         self.chat.undo.append_undo("insert", self.messages[index], index)
-        await self.chat_view.mount_message(index)
-        await self.chat_view.require_widget(index).status.update("")
+        # The dict goes into the data first, then `mount_message` is asked for
+        # the widget and hands it back: at either window edge that is a
+        # `materialize` (an insert below the top slides lo +1, an insert at or
+        # above the bottom closes a pruned end), where the bare mount that stood
+        # here appended behind the wrong neighbour and the `require_widget`
+        # after it raised with the data already changed. Taking the returned
+        # widget instead of looking the same index up twice is WP-E's deviation
+        # from the plan's wording: the guarantee and the lookup are one call.
+        widget = await self.chat_view.mount_message(index)
+        await widget.status.update("")
         self.chat.write_chat_history()
-        self.chat_view.require_widget(index).focus()
+        widget.focus()
 
     async def action_add_message_next(self) -> None:
         index = self.chat.message_index(self.message) + 1
@@ -119,12 +127,17 @@ class ActionsMixIn:
             message = {"role": "assistant", "content": []}
         self.messages.insert(0, message)
         self.chat.undo.append_undo("insert", self.messages[0], 0)
-        await self.chat_view.mount_message(0)
-        await self.chat_view.require_widget(0).status.update("")
+        # Same as `add_message_next`: `mount_message(0)` guarantees a widget at
+        # 0 whatever the window looked like. `check_action` only lets this
+        # binding run with `message_index == 0`, so the widget it is bound to is
+        # mounted and lo is 0 - the in-window neighbour mount; the branch is
+        # still written for the window, not for that argument.
+        widget = await self.chat_view.mount_message(0)
+        await widget.status.update("")
         if self.role == "tool":
-            await self.chat_view.require_widget(0).finish()
+            await widget.finish()
         self.chat.write_chat_history()
-        self.chat_view.require_widget(0).focus()
+        widget.focus()
 
     def has_reasoning(self) -> bool:
         if self.message["role"] == "assistant" and self.message["reasoning"]:
@@ -132,19 +145,31 @@ class ActionsMixIn:
         return False
 
     def maybe_add_message_next(self) -> None:
+        # The NEXT MESSAGE'S ROLE, read from the data. The old line was
+        # `require_widget(index+1)`, and this runs from `check_action` - which
+        # `refresh_bindings` calls with nobody pressing anything - so once the
+        # bottom had been pruned and focus sat on the last mounted widget the
+        # whole binding pass raised IndexError out of Textual's machinery
+        # (measured: window (950, 957) with focus on child[6], widget(158) is
+        # None, `check_action("add_message_next")` -> IndexError).
+        # `refresh_bindings` runs on every worker-state change, so this was a
+        # crash with NO keypress. The question was never about a widget - it
+        # asks what role the message AFTER this one has - and the line above
+        # already proved `index` is not the last message, so the data has it.
+        # The answer is now the SAME whether or not the neighbour is mounted.
         index = self.chat.message_index(self.message)
         if len(self.messages)-1 == index:
             return True
-        next_child = self.chat_view.require_widget(index+1)
+        next_role = self.messages[index + 1]["role"]
         if self.role == "assistant" and "tool_calls" in self.message and self.message["tool_calls"]:
-            if not next_child.role == "tool":
+            if not next_role == "tool":
                 return True
         elif self.role == "assistant":
-            if not next_child.role == "user":
+            if not next_role == "user":
                 return True
-        elif self.role == "tool" and not next_child.role == "assistant":
+        elif self.role == "tool" and not next_role == "assistant":
             return True
-        elif self.role == "user" and not next_child.role == "assistant":
+        elif self.role == "user" and not next_role == "assistant":
             return True
         return False
 
