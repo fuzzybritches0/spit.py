@@ -363,6 +363,101 @@ record, with the re-measurement recipe (`HOME` at a directory holding a chosen
 `.bashrc`) so the class can be re-tested on any machine in one command.
 
 
+### WP-E (P8 pipeline) — edits, undo and removal across the window edges (branch `task-edit-undo-removal-across-window-edges`, awaiting the owner's merge)
+
+Cut from WP-D's tip `5d36627`; the chain is A → B → C → D → E and `main` `8819e73`
+is untouched throughout. **The owner's `Go!` was GIVEN 2026-09-19 together with the
+one `Go`-time ruling the WP existed to ask** (DECISIONS 71 (c): once per task, not
+asked again): **"refuse in `prune()`"** — `prune()` itself returns while
+`view.is_edit` is set, so unloading is disabled at fact 5's own definition rather
+than only inherited from the trigger paths, and the per-CHILD pins of fact 5 stay as
+they are (the mode is per-VIEW, the pin per-CHILD; with `prune()` refusing there is
+no walk left to pin while editing). Accepted cost, measured: a window that grew
+during an edit is released only by the first prune after `edit_off` — 19 held, then
+19 → 10 — and the mode-off and mode-on runs of the same walk land on the SAME window
+once the edit is off. What an edit defers is the release, not the release's size.
+
+**What landed.**
+
+- `chat_view.py` — `page_operations_held()`, the save/restore guard as an async
+  context manager for callers OUTSIDE the class (the flag stays the class's
+  invariant; an outsider never assigns it). `mount_message()` bounds-checks the
+  **data** first, then `index < lo` → `window_start += 1` FIRST and
+  `materialize(index, render=False)`, `index >= hi` → `materialize`, in-window →
+  the neighbour mount, and it **returns the widget**. The old below-the-top branch
+  was wrong in DIRECTION, not just at the gap: an insert at any `index <= lo`
+  shifts every mounted widget's data index by +1, so the answer is the mirror of
+  the removal's −1 and never a front mount — the front mount that stood there left
+  a one-message HOLE even for the ADJACENT index `lo-1` (found by `t21`). The
+  in-window branch must NOT delegate: between the caller's insert and the mount,
+  `widget(index)` is the message's right-hand neighbour, so `materialize` would
+  answer "already mounted" and hand back the wrong widget.
+- `chat_view.py` — `focus_after_removal(index, widget_was_removed)`, the ONE rule
+  both removal sites answer with. `widget_was_removed` is the first question and it
+  is the whole rule: no widget left the tree → nothing the reader can see changed →
+  focus stays. Asking the neighbour for every removal reproduces the defect at
+  `index == window_hi` (the streaming-error path's shape), where
+  `widget(index - 1)` IS the last mounted widget; measured, focus child[1] dragged
+  to child[6] about five messages from the reader. Empty data → the text area, or
+  the ChatView while the mode is on.
+- `undo.py` — the three primitives are DECIDE-FIRST: `_insert` puts the dict in the
+  data then takes the guard around `mount_message` + `finish` + `focus`; `_remove`
+  asks the WINDOW before it deletes (below → `window_start -= 1`, inside → the
+  widget goes under its own lock, above → nothing moves) because
+  `del self.messages[index]` used to run first and the accessor then raised,
+  leaving the data shorter than the tree with nothing persisted; `_change`'s data
+  and undo-entry writes stay window-blind and the widget half runs only if a widget
+  exists — and with NO `focus()` when it does not, because a focus there drags the
+  reader across the history to a message they were not looking at.
+- `chat/message/actions.py` — `maybe_add_message_next` answers from
+  `messages[index + 1]["role"]`. The old `require_widget(index+1)` ran from
+  `check_action`, which is what `refresh_bindings` runs: with the bottom pruned and
+  focus on the last mounted widget the whole binding pass raised IndexError with
+  **NO keypress** (`refresh_bindings` fires on every worker-state change). Both add
+  sites now take the widget `mount_message` returns (recorded deviation).
+- `chat_view_actions.py` — no behaviour code. `show_cots`'s window-only loop is
+  COMPLETE, not lossy: the mode is inherited **at mount** (`maybe_mount_content`
+  reads `chat_view.is_edit`), verified for the target AND for the gap widgets a
+  materialize mounts on the way, and a widget carrying per-widget edit state can
+  never be evicted to be missed by `reset_message_edit` because `_prune_pinned`
+  pins it. The stale "has to be replayed at mount (WP-E)" comment is replaced by
+  that measurement.
+
+**The suite.** `tests/unit/chat_window/test_window_edits.py`, 298 checks (t21–t29),
+`unit:chat_window` 270 → **568**. Two of its reds were about the INSTRUMENT and are
+worth the words because they are the general form: **the setup's `freeze_triggers`
+is part of the state a later row reads** — a row that exercises a trigger path must
+`thaw_triggers` and assert the triggers live first, or the harness answers for the
+thing under test and a "dropped" green is about nothing (t27-live, t29 both measured
+`frozen=True` at every moment, paged staying `[]` for reasons that had nothing to do
+with the guard); and **an undo "change" entry holds the PREVIOUS state**, so a setup
+that records the CURRENT dict asks `_change` to write the current state over the
+current state — "no change", three reds, nothing wrong with the code. Six of the
+nine original reds were bad claims/setups of exactly these two kinds and were fixed
+by probing the state, not by widening anything.
+
+Full suite from the repo root, re-measured at close-out and run **twice**, both runs
+byte-identical, plus every `chat_window` file individually: tools
+127/24/30/119/80/32/68/29 (509), anchored 68, arguments 131, **chat_smoke 168** with
+`golden.txt` still md5 `8ae9d1186a59627d30d05dee95f0ad95` (the differential is
+intact), **chat_window 568**, prompt 33, render 278, run_script 121, sandbox 119,
+terminal 223 — **FAIL 0 everywhere**, every row but `unit:chat_window` unmoved.
+
+**What the verification rested on**: the automated headless suites — there is no
+screen in this environment, so nothing here was confirmed by eye (TRAPS #22).
+
+**Left for WP-F**, as the plan drew it: the DECISIONS-65-style table at 100/1k/5k
+messages, the mounted-count headline and the DECISIONS entry closing P8. **WP-E
+files no DECISIONS entry**, as A, B, C and D filed none; the owner's ruling is
+recorded here and in `UI-ONDEMAND-LOADING.md`'s WP-E entry, not as a decision of the
+agent's.
+
+No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
+`main` untouched, nothing pushed. **Next in the chain: WP-F** — measurements,
+numbers, decision record, close P8 — cut from this tip, its own branch, its own
+`Go!`.
+
+
 ### WP-D (P8 pipeline) — the load/prune triggers and scroll UX (branch `task-scroll-load-prune-triggers`, commits `c8aab52`…`5c47bf7` + this close-out, awaiting the owner's merge)
 
 Cut from WP-C's tip `154e4fc`; the owner's `Go!` was given 2026-09-16 before the

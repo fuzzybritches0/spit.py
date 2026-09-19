@@ -41,7 +41,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:anchored | 68 |
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
-| unit:chat_window | 270 |
+| unit:chat_window | 568 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
@@ -77,6 +77,13 @@ on a machine with the venv and no app runtime.
 `test_window_triggers.py` (172 checks) added to WP-C's 98 by addition alone, the two
 WP-C files changed only by a `freeze_triggers()` call each, every other row
 byte-for-byte where WP-C left it, and three consecutive full runs byte-identical.)
+
+(`unit:chat_window` is **568** since WP-E: the new file `test_window_edits.py`
+(298 checks) added by addition alone - the three WP-C/WP-D files untouched, every
+other row byte-for-byte (tools 509, anchored 68, arguments 131, chat_smoke 168,
+prompt 33, render 278, run_script 121, sandbox 119, terminal 223), two consecutive
+full runs identical, and the chat_smoke `golden.txt` md5
+`8ae9d1186a59627d30d05dee95f0ad95` unmoved: the WP-B differential is intact.)
 
 (The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
 the failure-counting fix raised it; the table lagged. Counts only ever go
@@ -289,6 +296,37 @@ harness **absolute** fixture paths.
   `window_consistent()` is an invariant of QUIESCENCE - sampled mid-page-operation
   it read False 231 times in four walks and **zero** times sampled at rest, with
   nothing wrong either time.
+- `tests/unit/chat_window/test_window_edits.py` - the **WP-E edits/undo/focus across
+  the window edges** (298 checks, so `unit:chat_window` is 98 + 172 + 298 = 568):
+  `t21` `mount_message` at every index class (the insert-below-the-top branch is
+  `window_start += 1` + a `materialize`, never a front mount - the pre-WP-E front
+  mount left a one-message HOLE even for the adjacent index; the in-window branch
+  is the neighbour mount and is pinned as NOT delegable, because between the insert
+  and the mount `widget(index)` is the right-hand neighbour); `t22` the crash with
+  no keypress - `check_action("add_message_next")` asked a widget for the next
+  message's role and raised out of `refresh_bindings` with the bottom pruned; it
+  answers from the data now, and the row asks the same question pruned and mounted
+  in both answer directions. `t23`/`t24` the undo insert/remove primitives at every
+  edge class and through the real `append_undo` + `action_undo`/`action_redo` path
+  (the chat is WRITTEN now - a DELTA, never absolute - and a below-window removal
+  tracks the reader as a WIDGET, since lo sliding renumbers every index); `t25`
+  `_change` data-first with the entry holding the PREVIOUS state (the setup lesson:
+  an entry built from the CURRENT dict writes the current state over the current
+  state - "no change", three reds, nothing wrong with the code); `t26` the ONE
+  focus rule both removal sites use, with the `widget_was_removed` question pinned
+  (a bare `widget(index) or widget(index-1)` drags focus for the streaming-error
+  path's removal at `index == window_hi`); `t27` the owner's ruling - `prune()`
+  REFUSES while `is_edit`, held live through `action_edit_on`, released by the first
+  settle after `edit_off`, measured by **lo** because a settled settle is prune PLUS
+  the edge re-check and the parked reader gets a page back below; `t28` the mode is
+  inherited AT MOUNT (target and gap widgets), so `show_cots`/`reset_message_edit`
+  need no replay code; `t29` the undo primitives hold the page-op guard and give
+  back what they found. Two instrument lessons from this file, both reds that
+  blamed the code and were about the harness: **the setup's `freeze_triggers` is
+  part of the state a later row reads** - a row exercising a trigger path must
+  `thaw_triggers` and assert the triggers LIVE first, or the harness answers for
+  the thing under test and a "dropped" green is about nothing (t27-live, t29) - and
+  **an undo "change" entry holds the PREVIOUS state** (t25).
 - `tests/unit/arguments/` - schema coercion, paths, pipeline (131 checks).
 - `tests/unit/terminal/` - the tmux backend and the two tools on it, against a
   **real tmux on a private socket** (`libtmux.Server` is wrapped to pass

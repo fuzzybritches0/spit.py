@@ -121,7 +121,8 @@ stated goal. Each rule is arithmetic or measured:
    UX unchanged); from there the window slides both ways.
 5. **Never evict**: the focused widget, any widget with `is_edit`, and — while
    `chat.is_working()` — the last message (fact 5). Simplest safe superset:
-   `is_edit` disables `prune()` entirely (a `Go`-time decision, WP-E).
+   `is_edit` disables `prune()` entirely — the `Go`-time decision, RULED by the
+   owner 2026-09-19 ("refuse in `prune()`") and IMPLEMENTED in WP-E.
 6. `is_edit`/show-cots state is applied at mount time already
    (`Message.maybe_mount_content` reads `chat_view.is_edit`), so a persisted
    per-view flag replay is all `materialize` needs for edit-mode children —
@@ -256,17 +257,56 @@ branch chain** (branches stack; `main` untouched throughout).
   the edges and focus survival (E); the 100/1k/5k table and the DECISIONS entry (F).
   **WP-D files no DECISIONS entry**, as A, B and C filed none.
 
-### WP-E — edits, undo, removal across the window edges  [depends: C; parallel with D]
+### WP-E — edits, undo, removal across the window edges  [depends: C; parallel with D] — **DONE** 2026-09-19, branch `task-edit-undo-removal-across-window-edges` (`unit:chat_window` 270 → **568**), resolution in `TASKS-FINISHED.md`; the deviations from the sketched API are listed under the header line below
+- **Header line**: the sites that change the DATA and expect the widget tree to
+  follow answer with the window's own vocabulary — `mount_message` bounds-checks
+  the data, slides `lo` and returns the widget it mounted; the three undo
+  primitives decide against the WINDOW before they delete, hold the page-op guard
+  across their awaits, and leave an unmounted message data-only, with one focus
+  rule shared by both removal sites and `prune()` refusing while `is_edit`.
 - **Scope**: `undo._insert/_change/_remove` and `message/actions.py`
   add/remove flows → `widget()`/`materialize()`; focus survival when the
   focused widget leaves the window (focus ChatView or nearest);
   `show_cots`/`reset_message_edit` replay on materialize; the `is_edit`
   interaction (editing should pin a window that covers the edit — a `Go`-time
-  decision: simplest is `is_edit` disables unloading entirely).
+  decision: simplest is `is_edit` disables unloading entirely). **Ruled at
+  `Go`-time by the owner (2026-09-19): "refuse in `prune()`"** — `prune()` itself
+  returns while `view.is_edit` is set, and the per-child pins of fact 5 stay.
 - **Read list**: `undo.py`, `message/actions.py`, `chat_view_actions.py`, C's API.
-- **Accept**: scripted checks: undo-insert an old (out-of-window) message → it
+- **Accept** (met, all of it by automated headless checks — there is no screen
+  here, TRAPS #22): scripted checks: undo-insert an old (out-of-window) message → it
   materializes at the right index and the view does not jump; remove at edge;
   edit_on/off round-trip with a grown window.
+- **Deviations from the sketch** (each measured, each pinned by a check):
+  (a) **`mount_message` RETURNS the widget** and the caller stops looking the
+      index up a second time — the guarantee and the lookup are one call, so the
+      double `mount()` + `require_widget()` that had stood at both add sites in
+      `message/actions.py` is dropped (`t21`);
+  (b) `mount_message` **bounds-checks the DATA before it touches the window**.
+      The below-the-top branch writes `window_start += 1` and only then delegates
+      to `materialize`, so an index outside the data moved `lo` and THEN raised —
+      a corrupt window from an index that mounted nothing. Found by `t21`
+      (`mount_message(-1)`), not by a user path: it is a caller-bug shape;
+  (c) the focus rule takes **`widget_was_removed`** as its first question rather
+      than asking who is next door for every removal. The sketched shape
+      (`widget(index) or widget(index - 1)`) drags the cursor to the window tail
+      for the streaming-error path's `RemoveMessage(len(messages) - 1)`, which
+      lands AT `index == window_hi` where `widget(index - 1)` IS the last mounted
+      widget — the same defect the rule exists to prevent (measured: focus
+      child[1] → child[6], ~5 messages from the reader). Nothing the reader can
+      see changed when no widget left the tree, so focus stays (`t26`);
+  (d) the undo primitives take the guard through a new **`page_operations_held()`**
+      async context manager on the ChatView, rather than writing `_window_page_op`
+      themselves. Save/restore, not clear, for WP-D's reason: a caller that already
+      holds the guard must find it held. The flag stays the class's invariant and
+      an outsider never assigns it (`t29`);
+  (e) the accepted cost of the ruling, stated as a measurement: a window that grew
+      during an edit is released only by the first prune after `edit_off` —
+      **19 held, then 19 → 10** on the next call, and the two runs (mode off, mode
+      on) land on the SAME window once the edit is off. What an edit defers is the
+      release, not the release's size (`t27`).
+- **Left for WP-F** (untouched, as planned): the 100/1k/5k table and the DECISIONS
+  entry. **WP-E files no DECISIONS entry**, as A, B, C and D filed none.
 
 ### WP-F — measurements, numbers, decision record, close P8  [depends: C+D+E]
 - **Scope**: DECISIONS-65-style table at 100/1k/5k messages: windowed mount
