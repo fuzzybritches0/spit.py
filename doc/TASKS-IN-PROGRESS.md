@@ -11,8 +11,56 @@ only by the checks the task added, write the resolution into
 (DECISIONS 71, TRAPS #22) — the owner's gate is the `Go!` asked **before**
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
+> **WP-F of the on-demand-loading pipeline is IN PROGRESS** (opened by the agent
+> that recovered it, 2026-09-20): branch `task-window-measurement-numbers-close-p8`,
+> cut from the WP-E tip `074e55d`. It is the last package of the chain
+> A → B → C → D → E → F and it changes **no repo code** — measurements, the
+> DECISIONS entry, and the close of P8. The session that held it before died on
+> the token limit at 2026-09-19 20:53 with no branch, no entry and no doc edit;
+> only its `/tmp` probes and logs survived. See its own entry below.
 
-> **ONE entry is open**: the ratatui enhancement list, followup 4.
+## WP-F (P8 pipeline) — the measurements, the numbers, the decision record, close P8
+
+**Recovered entry.** The crashed session left fourteen probes
+(`/tmp/wp-f-probe-{calib,calib2,walk1k,burst,balloon,wholo,queued,table,table2,flat,edge,full5k,full5k2,pagedown}.py`)
+and ten logs, and nothing in git. Its artefacts were copied to
+`/tmp/wp-f-crash/` **before** any re-run, so the crashed run and the recovery run
+are two independent measurements and neither one is quoted alone. Nothing in the
+repo was dirty when this entry was opened; the chain tip was `074e55d`
+(`unit:chat_window` 568, full suite FAIL 0 — re-measured on this tree at 2026-09-20
+00:24, all seventeen rows at their TESTING.md values).
+
+- **Branch**: `task-window-measurement-numbers-close-p8`, cut from the WP-E tip
+  `074e55d`. This entry is its first commit.
+- **Scope**: **documentation only.** No `spit_app/` file is touched — the window
+  itself is WP-A…E and is on the chain already. The probes are throwaway
+  measurement scripts and live in `/tmp` (committing them is `spit_app/tests/`
+  CODE and is therefore NOT part of this WP without its own `Go!`).
+- **Done**: the six table cells (`/tmp/wp-f-probe-table2.py`, one process per
+  cell, run alone) re-run end to end and cross-checked against the crashed
+  session's run; the page-op-at-a-real-edge rows and the 1k `materialize` cell
+  (the crashed session left those two unlogged); a second flatness walk at 1k and
+  a deep capped one at 5k; the one-notch-versus-batched instrument re-run. All of
+  it agrees with the crashed session on every COUNT and every RSS figure; the
+  milliseconds move with the box, so the docs quote both runs as a range.
+- **Left**: none in this file — the numbers, the DECISIONS entry and the P8 close
+  are in the commits this entry is followed by; if this entry is ever found
+  without them, finish by writing `/tmp/wpf-recover-*.log` and
+  `/tmp/wp-f-crash/` into `TASKS-FINISHED.md`, `UI-ONDEMAND-LOADING.md`,
+  `TASKS-PLANNED.md` and a DECISIONS entry **76** (74 is reserved for the
+  unmerged `terminal-prompt-esc-limitation` branch, 75 is `alternative-markdown-
+  widget`'s).
+- **State hazards**: none in the repo. In `/tmp`: the probes and both runs' logs;
+  `/tmp/wp-f-crash/` is the crashed session's copy and must not be re-run over.
+- **Verify**: `bash spit_app/tests/run_tests.sh` from the repo root, FAIL 0 and
+  **every row unmoved** (no code change, so no count may move — the run at the
+  close-out is the proof of that, not of the numbers); the numbers themselves rest
+  on the headless instruments, there is no screen here (TRAPS #22).
+
+> **TWO entries are open**: WP-F of the on-demand-loading pipeline (the
+> measurements and the P8 close — no code change), and the ratatui enhancement
+> list, followup 4. WP-F was the last unstarted package of that pipeline; A, B,
+> C, D and E are closed in `TASKS-FINISHED.md`.
 > **WP-E of the on-demand-loading pipeline closed 2026-09-19**: the window-aware
 > `mount_message` (returns the widget; bounds-checks the DATA before touching the
 > window; `window_start += 1` for an insert below the top — the front mount that
