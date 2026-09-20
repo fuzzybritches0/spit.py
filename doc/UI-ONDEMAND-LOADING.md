@@ -308,7 +308,11 @@ branch chain** (branches stack; `main` untouched throughout).
 - **Left for WP-F** (untouched, as planned): the 100/1k/5k table and the DECISIONS
   entry. **WP-E files no DECISIONS entry**, as A, B, C and D filed none.
 
-### WP-F — measurements, numbers, decision record, close P8  [depends: C+D+E]
+### WP-F — measurements, numbers, decision record, close P8  [depends: C+D+E] — **DONE** 2026-09-20, branch `task-window-measurement-numbers-close-p8` (docs only — no code, no suite, no count moved), resolution in `TASKS-FINISHED.md`, the numbers and the instrument lessons in **DECISIONS 76**; the limits it found are below and one of them is filed as **P9**
+- **Header line**: the window was measured against the same tree with the window
+  widened off, twice, and the count is flat — **7–15 mounted messages at every
+  scroll depth of a 1k and of a 5k chat** — which is the goal this plan was written
+  for; everything else (mount, page-down, RSS) follows from that one number.
 - **Scope**: DECISIONS-65-style table at 100/1k/5k messages: windowed mount
   time + page-down + **mounted widget count at every scroll depth (the
   headline number — must be flat in history length; this is the goal the
@@ -317,8 +321,46 @@ branch chain** (branches stack; `main` untouched throughout).
   a DECISIONS entry recording this as the Textual-side bridge (does NOT
   re-open DECISIONS 65 — the ratatui route stands; M1's state extraction now
   has a working precedent to reuse).
-- **Accept**: numbers in the docs, mounted count demonstrated flat at 1k and
-  5k depths; full suite green; P8 entry closed.
+- **Accept** (met): numbers in the docs (DECISIONS 76 (a) and the `TASKS-FINISHED.md`
+  WP-F entry), mounted count demonstrated flat at 1k and 5k depths — **two uncapped
+  walks per N, four round trips**: 1k grid 4, 400 samples over 8,000 notches in each
+  run; 5k grid 25, 475 and 426 samples over ~40,000 notches (triggers live and
+  their liveness printed, every one of the 1,701 samples at rest and
+  `window_consistent()`, the 7 at depth 0 and the 8 at the open tail read in both
+  runs at each N, plus the frozen-triggers control that makes a flat reading prove
+  something; the recovery's first 5k re-walk was CAPPED at 8,020 notches and is
+  superseded — see DECISIONS 76 (b)); full suite green
+  with **every row unmoved** — which, for a WP that changes no code, is the proof
+  that no code changed rather than a proof of the numbers; P8 closed in
+  `TASKS-PLANNED.md`.
+- **What the numbers said** (both runs quoted as a range; the crashed session's
+  measurement of 2026-09-19 and the recovery re-run of 2026-09-20, with a third pass
+  the same day for the two rows the recovery had taken from the crashed artefacts
+  alone — the 5k `materialize` cell and the walk extremes, `/tmp/wpf-continue-run.log`
+  and DECISIONS 76 (b)): at 5,000 one-line
+  messages, windowed against full mount — **open 0.95–1.47 s against 115.28–187.02 s
+  (121–127×)**, **page-down ~80–88 ms at every depth against 5.7–6.9 s (81–82×)**,
+  **one page of wheel 613–651 ms against 20.1–23.9 s**, **RSS at rest 96.2–96.6 MB
+  against 1099.3–1105.6 MB (11.5×)**, **300 widgets against 30,000 (100×)**. At 100
+  messages the two arms cost the same (the window pays only for history it does not
+  mount), and the table says so.
+- **Deviations from the plan of measurement** (each forced by a measurement, each
+  recorded in DECISIONS 76): (a) the FULL-MOUNT arm is *this* tree with
+  `INITIAL_WINDOW` widened past N and the WP-D triggers frozen, not a `main` export —
+  `main` has no triggers and no prune, so measuring it would compare two different
+  widgets rather than windowed-against-unwindowed; (b) the instrument is
+  `pilot.pause()`'s own three steps with the 30 s `_wait_for_screen` ceiling raised to
+  900 s, because a whole-history 5k mount outlives Textual's own harness patience —
+  validated against the real pilot on the 1k cells of both arms; (c) the wall-clock
+  rows are ranges from two runs, because they are not reproducible (the same 5k
+  whole-history mount measured 115.28 s and 187.02 s); the counts and the RSS are.
+- **Limits it found, filed rather than fixed** (WP-B's rule): a burst of N wheel
+  events delivered **between two frames** queues N page operations and `_page_count()`
+  sizes each from a mean mounted height of ~0.7 rows (the regions of a just-mounted
+  batch are not laid out yet), so each saturates at `INITIAL_WINDOW` — measured 10
+  events in one frame carrying the window to 339 children, with `at_rest()` reading
+  True in the gaps between them. Every number above is taken with **one notch per
+  pause**, which queues exactly one. Filed as **P9** with its measurements.
 
 Parallelism summary: **A ∥ B → C → D ∥ E → F** (6 packages; ≤ 6 agents, or
 3–4 agents taking two each — A+B and D+E pair well for one head each).

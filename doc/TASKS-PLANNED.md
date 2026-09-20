@@ -18,7 +18,22 @@ asked for.
 
 ---
 
-## P8 - On-demand message loading with a top-anchored scroll container  [feasibility proven 2026-09-14; implementation awaits the owner's `Go!`]
+## P8 - DONE - On-demand message loading with a top-anchored scroll container
+
+**Implemented and measured 2026-09-14 → 2026-09-20** as the six-package pipeline
+`doc/UI-ONDEMAND-LOADING.md` (WP-A…WP-F): `AnchoredScroll`, the index-accessor
+seam, the sliding window `messages[lo, hi)`, the scroll triggers and the settle
+prune, the edits/undo/removal sites across the edges, and the measurement pass that
+closes it. Branch chain `task-anchored-scroll-widget` →
+`task-index-accessor-refactor` → `task-sliding-window-core` →
+`task-scroll-load-prune-triggers` → `task-edit-undo-removal-across-window-edges` →
+`task-window-measurement-numbers-close-p8`, all awaiting the owner's merge, `main`
+untouched. **Resolution: `TASKS-FINISHED.md`** (the WP entries, and WP-F's numbers:
+7–15 mounted at every scroll depth at 1k and at 5k, 121–127× faster to open a
+5,000-message chat, 81–82× faster to page down, 11.5× less memory) **and DECISIONS
+76**. The question and the proven mechanism stay below verbatim: they are the reason
+the pipeline was started, and the mechanism paragraph is still the only place the
+`process_layout` seam is written down.
 
 **Question** (investigation, no repo code touched): `VerticalScroll` keeps its
 `scroll_y` when widgets are mounted above the viewport, so the visible content
