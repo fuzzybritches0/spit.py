@@ -122,10 +122,9 @@ that is not the agent's.
 The list below was written during P0b and is **verbatim from it except for the
 framing**, which named a migration plan the owner retired on 2026-09-20
 (DECISIONS 77). The items and their measurements survive that retirement
-untouched, because none of them is about one toolkit: they are about what a pane
-can report. Four items
-have moved since — 8, 9, 10 and 12 — and each is marked **where it is marked
-done, never where it is still open**. Nothing else has been done, re-checked
+untouched: none of them is about one toolkit, they are about what a pane can
+report. Four items have moved since — 8, 9, 10 and 12 — and each is marked
+**where it is marked done, never where it is still open**. Nothing else has been done, re-checked
 against the source 2026-09-10: `spit_app/tools/terminal.py` still accepts
 exactly `name`, `input` and `delay`, so items 1-7 and 11 have no code behind
 them at all.
@@ -145,12 +144,14 @@ and `pane_dead_time` (tmux >= 3.3) are two more tokens away in that format
 line. What is left of item 8 is surfacing them as fields on a LIVE
 screen — a formatting job now, not a plumbing one.
 
-Any front end that is not the Textual one in the process arrives as **a program
-running in a real pty**, and for that job this tool stops being a convenience and
-becomes **the only harness that can see it**: a front end's own widget-level test
-backend covers its widgets, the `terminal` tool covers the end-to-end app — does
-it start, stream, scroll, paste, and die cleanly. The headless `App.run_test`
-suites cannot do that for anything that is not Textual. Design it for that job:
+Any front end that is not the Textual one running in-process arrives as **a
+program in a real pty**, and for that job this tool stops being a convenience
+and becomes **the only harness that can see it**: a front end's own widget-level
+test backend covers its widgets, the `terminal` tool covers the end-to-end app —
+does it start, stream, scroll, paste, and die cleanly. The `App.run_test` suites
+drive Textual in-process and cannot reach a program that is not Textual, so
+this tool is the only way to assert on that end-to-end behaviour. Design it for
+that job:
 
 1. **`command`, not hardcoded `bash`.** Launch arbitrary argv in the pane
    (`command=["python3", "main.py"]`, plus `env={}`, `cwd=`) — "start the UI
