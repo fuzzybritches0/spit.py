@@ -209,6 +209,19 @@ words instead of misbehaving. Textual remains an optional extra until M5.
 
 ## Fallback ladder (in order, each measured)
 
+**Rung 0, taken 2026-09-20 — do not mount what is not on screen.** Before any of
+the rungs below, the `ChatView` widget tree became a **sliding window** over the
+message data (`doc/UI-ONDEMAND-LOADING.md`, WP-A…F): it holds `messages[lo, hi)`
+around the viewport, pages in at an edge and releases behind, so **the mounted count
+is a function of the viewport instead of the history** — measured **7–15 mounted at
+every scroll depth of a 1k and of a 5k chat**, which at 5k is 121–127× faster to
+open, 81–82× faster to page down and 11.5× less memory than the same tree with the
+window widened off (DECISIONS 76). This changes none of what this route says: the
+per-mounted-message cost — the thing the numbers at the top of this doc are about —
+is untouched, only the number of mounted messages is bounded, and the scrollbar now
+describes the window. It IS the precedent M1 wants: the data is the truth, the tree
+a disposable projection, and `ChatView.widget/window/materialize` already answer in
+data indices.
 1. **Stay on Textual, cut the widget count.** Replace `Part(Markdown)` with our
    own line-based renderer: 4.6 s → 0.7 s per page-down at 1,000 messages
    (measured). About a day, keeps everything, and still scales with the total
