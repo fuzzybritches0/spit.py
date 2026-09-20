@@ -145,6 +145,28 @@ Test-count ground truth: see TESTING.md.
   thread is held per call for the duration of `delay` (`min(32, cpu+4)` default
   executor) — occupancy, not a frozen UI. Owner confirmed the reading before the docs
   landed. No tool code changed; main untouched, nothing pushed.
+- **P8: the chat's widget tree is now a WINDOW over the message data** (the chain
+  `task-anchored-scroll-widget` → `task-index-accessor-refactor` →
+  `task-sliding-window-core` → `task-scroll-load-prune-triggers` →
+  `task-edit-undo-removal-across-window-edges` → `task-window-measurement-numbers-close-p8`,
+  all six awaiting the owner's merge; `main` untouched throughout). `ChatView`
+  extends the one-shot-anchored `AnchoredScroll`, mounts `messages[lo, hi)` with
+  **both ends free**, pages in at a window edge on the scroll trigger and releases
+  back to the margin behind it, so **the mounted widget count is a function of the
+  viewport and not of the history**: measured 7–15 mounted at every scroll depth of
+  a 1,000- and of a 5,000-message chat, against 5,000 messages / 30,000 widgets for
+  the whole-history tree, i.e. at 5k **121–127× faster to open, 81–82× faster to
+  page down, 11.5× less memory**. The data layer never moved:
+  `Chat.messages is ChatView.messages` is an asserted identity and the JSON is
+  untouched by a walk. `doc/UI-ONDEMAND-LOADING.md` is the plan with each package's
+  deviations from the sketch; `unit:chat_window` is the 568 checks that keep it
+  honest and `unit:anchored` the 68 under it; **DECISIONS 76** is the numbers and
+  the instrument lessons, and it says out loud what the window does *not* buy (the
+  scrollbar now describes the window, `materialize` will still buy the whole
+  history, and DECISIONS 65's route is unchanged — this is the Textual-side bridge,
+  and M1's state extraction has a shipped precedent in
+  `ChatView.widget/window/materialize`). Verification rested on the automated
+  headless suites: there is no screen here (TRAPS #22).
 
 ### P0b-followup 1 — `remain-on-exit`: a dead session reports its real last screen (branch `task-terminal-empty-output`, commits `d549b61`…`e5b4fba`)
 
@@ -361,6 +383,178 @@ are noted there. Full-suite ground truth: tools 127/24/30/119/80/32/68/29 and un
 awaiting the owner's merge; `main` untouched, nothing pushed. **DECISIONS 73** is the
 record, with the re-measurement recipe (`HOME` at a directory holding a chosen
 `.bashrc`) so the class can be re-tested on any machine in one command.
+
+
+### WP-F (P8 pipeline) — the measurements, the flat count, and P8 closed (branch `task-window-measurement-numbers-close-p8`, awaiting the owner's merge)
+
+Cut from the WP-E tip `074e55d`; the chain is A → B → C → D → E → **F** and `main`
+`8819e73` is untouched throughout. **This WP changed no repo code, so no `Go!` was
+asked**: the gate the plan hangs on every package is the gate on a *code* change
+(DECISIONS 71 (c), TRAPS #22), and WP-F is the measurement pass plus the docs. What
+that leaves open is named, not hidden: the measurement probes are in `/tmp` and are
+NOT in git — committing them as `spit_app/tests/probes/window/` (the
+`alternative-markdown-widget` branch's `tests/probes/markdown/` is the precedent)
+would be tests code and needs its own `Go!`. Every number below is reproducible
+from the scripts named at the end of this entry.
+
+**The crash it recovered from, because that is the recoverable part.** The session
+that held WP-F died on its token limit on 2026-09-19 at 20:53 having written **no
+branch, no entry in `TASKS-IN-PROGRESS.md`, and no doc edit** — everything it knew
+was fourteen probe scripts and ten logs in `/tmp`. Two things saved it: the probes
+carry their reasoning in their header comments (why each instrument exists, which
+earlier probe each one answers), and their logs are JSON. Those artefacts were
+copied to `/tmp/wp-f-crash/` before anything was re-run, so the recovery is a
+second independent measurement rather than a restatement. **The rule this
+close-out followed, from WP-C's identical accident: an artefact of a crashed
+session is a hypothesis, not a citation** — every figure in DECISIONS 76 and in
+this entry was re-measured on this tree, and the two runs are quoted as a range.
+**Two figures got through the first pass breaking that rule, and a third pass on
+2026-09-20 (`/tmp/wpf-continue-run.sh` → `/tmp/wpf-continue-run.log`) is what
+caught them**: the 5k `materialize` row and the extremes of the 5k walk, both of
+which the recovery had taken from the crashed artefacts alone because its own 5k
+walk was CAPPED at 8,020 notches each way and so never reached the true top or the
+open tail. Both were re-run uncapped with the same instruments; where a figure now
+reads as a pair of runs, one of them is that third pass. The lesson is the rule's
+own, sharpened: **a capped re-measurement is not a re-measurement of what the cap
+excludes**, and a range whose two endpoints come from one instrument in one
+sitting is one measurement wearing two hats.
+
+**What the numbers say** (headless Textual 8.2.8, (80,24), the app's own
+`spit_app/styles.css`, corpus `window_harness.big_fixture(n)` — one-line
+alternating messages, **6 widgets per message**; the FULL-MOUNT arm is this same
+tree with `INITIAL_WINDOW` past N and the WP-D triggers frozen, i.e. what `main`'s
+`load()` does). DECISIONS 76 carries the table and the four instrument lessons;
+the two rows worth having here are:
+
+| arm | N | open a chat: `load()` + drain (s) | page-down ms, mid-history | one page of wheel: 8 notches (ms) | RSS at rest (MB) | mounted after `load()` | mounted at every depth (the walk) |
+|---|---|---|---|---|---|---|---|
+| windowed | 100 | 1.22–1.34 + 0.34–0.63 | 81–83 | 619–622 | 89.7 | 50 of 100 | 13–15 (no walk at 100: the table's page-down depths only) |
+| windowed | 1,000 | 0.92–1.41 + 0.37–0.48 | 80–81 | 539–612 | 91.3 | 50 of 1,000 | 7–15 |
+| windowed | 5,000 | 0.95–1.47 + 0.36–0.51 | 80–81 | 613–651 | 96.2–96.6 | **50 of 5,000** | **7–15** (40,000 notches) |
+| full | 100 | 1.77–2.41 + 0.65–0.92 | 161–162 | 590–694 | 101.3 | 100 of 100 | 100 |
+| full | 1,000 | 19.72–31.78 + 8.09–10.75 | 851–1138 | 3880–5049 | 286.0–287.4 | 1,000 of 1,000 | 1,000 |
+| full | 5,000 | 115.28–187.02 + 39.6–46.04 | 6504–6673 | 20128–23920 | 1099.3–1105.6 | **5,000 of 5,000** | **5,000** |
+
+i.e. at 5,000 messages: **121–127× faster to open, 81–82× faster to page down,
+11.5× less memory, 100× fewer widgets** — and the widget count is the point,
+because the other three follow from it. The milliseconds are quoted as a range
+between the two runs precisely because they are *not* reproducible (the same
+whole-history 5k mount: 115.28 s and 187.02 s); the counts and the RSS are.
+
+**The headline, which is the walk — four uncapped round trips, two per N.** One
+real wheel notch per `pilot.pause()`, the sample taken only after `rest()`,
+triggers LIVE and their liveness printed on every line. 1k, grid 4, 400 samples
+over 8,000 notches: 2026-09-19 (`/tmp/wp-f-crash/wp-f-flat-1000.json`, 299.2 s up
+/ 323.2 s down) and 2026-09-20 (`/tmp/wp-f-continue-flat-1000.json`, 307.2 s /
+329.6 s). 5k, grid 25, 475 and 426 samples over ~40,000 notches: 2026-09-19
+(`/tmp/wp-f-crash/wp-f-flat-5000.json`, 1,365.4 s / 1,461.5 s) and 2026-09-20
+(`/tmp/wp-f-continue-flat-5000.json`, cap 40,000, 1,405.1 s / 1,482.7 s). Mounted
+**7–15 at both N and in all four runs**, 96.3 % and 99.3 % of the 1k samples and
+98.5 % and 99.3 % of the 5k ones in 10–13 — what moves between runs is only how
+often the band's edge is touched (13 samples at 15 in one 1k run, 1 in the other),
+never where the band is. The two extremes are constants of the design and the
+2026-09-20 runs read them again at the same depths and windows: **7 at the true
+top** (depth 0, window `[0, 7]`, both N) and **8 at the open tail** (depth 4,997
+`[4,992, 5,000]` at 5k, depth 997 `[992, 1,000]` at 1k). `window_consistent()` and
+`at_rest` True at **every one of the 1,701 samples of the four walks**. The control
+is the same transport with the triggers frozen: 200 notches move neither the window
+nor the count (5k: `[4,992, 5,000]` and 8 before and after). RSS grows ~29 MB at 1k
+and ~33 MB at 5k across a whole round trip and does not come back — the allocator
+holding freed widgets, not the window — so RSS is a band, and 10× under the
+full-mount arm anyway.
+
+**What the recovery's first walk cannot be cited for.** Its 5k re-walk ran at grid
+250 with a cap of 8,000 notches (`/tmp/wpf-recover-flat-5000.json`, 16 samples,
+depths 2,998–4,751) and its 1k at grid 200 (`/tmp/wpf-recover-flat-1000.json`, 10
+samples). Neither is part of the band claim: capped at 8,020 notches each way the
+5k walk never reached the true top or the open tail, so it never had the chance to
+read the 7 or the 8, and until the uncapped run above those two numbers rested on
+the crashed session alone. The capped artefacts are kept — byte-identical to the
+`/tmp/wp-f-keep-recovery-flat-*.json` copies taken before the re-run — as the record
+of what a bounded sitting reaches.
+
+**Two rows the crashed session left unlogged and this WP took.** The window's own
+page operation timed at a REAL edge (park at the opposite end under the freeze,
+prune, move to the edge, release, call it once): **5 messages paged in 43–67 ms**,
+at 1k and at 5k alike, page 5 every time (`_page_count()` = margin 34 rows / mean
+7 rows, clamped). That row is **one run** (`/tmp/wpf-recover-edge.log`, four cells
+at each N, 61/63/67/65 ms at 1k and 49/46/46/43 ms at 5k) — it is not a range, and
+it is quoted as a band of four cells of one sitting, not as two independent runs.
+`materialize(3)` from the open window, the explicit API's worst case, is the pair
+the third pass was needed for: **1k 15.3 s and 20.4 s, 50 → 997 mounted, 5,982
+widgets, RSS 91.4/91.5 → 279.1/279.2 MB (+188 MB); 5k 136.2 s and 151.7 s, 50 →
+4,997 mounted, 29,982 widgets, RSS 96.6/96.8 → 1074.7/1080.9 MB (~1 GB, +978/984
+MB)** — every cell `at_rest=True` and `consistent=True` with the window open at
+`[3, N]`. The counts reproduce exactly and the RSS to 0.6 %; the wall clock is
+1.3× apart at 1k and 1.1× at 5k. The window is a policy the triggers keep, not a
+limit the widget imposes, and that is the number to know before anything builds
+a "jump to the top" out of `materialize`.
+
+**One accepted limit, filed rather than fixed** (WP-B's rule: file what you find,
+do not "fix" it on the way past). A burst of N wheel events delivered **between two
+frames** queues one `_load_at_edge` per event, and `_page_count()` sizes each page
+from the MEAN mounted height, which reads ~0.7 rows for a batch whose regions have
+not been laid out yet, so every one of those pages saturates at `INITIAL_WINDOW`:
+measured, 10 events in one frame carried the window to (603, 942) with **339
+children**, and `at_rest()` reads True in the gaps between the queued callbacks, so
+the predicate is not a quiescence oracle for a queued burst. One notch per pause —
+what the WP-D suite uses and what this table therefore measures — queues exactly
+one, verified at batch sizes 1/2/5/10/40 (0 callbacks still queued when `at_rest`
+first read True). Filed as **P9** in `TASKS-PLANNED.md` with the measurements: the
+page estimator should not read regions a page operation has not laid out, and the
+flatness claim should be re-measured after it does.
+
+**Which verification each claim rests on** (the form the file's protocol asks for).
+**Counts and mounted/widget numbers** — two headless runs per cell, reproduced
+exactly, and the walk's counts from two uncapped walks per N. **RSS** — the same
+two runs, agreeing to 0.6 %, quoted as a pair of values; RSS is per-process, so a
+cell measured in a shared process would be inflated and none is. **Milliseconds**
+— ranges, never point values, because the box moves and the same cell measured
+115.28 s and 187.02 s (1.6×) on one tree; a single millisecond from one run is not
+evidence of anything. **Anything about the screen** — nothing: there is no screen in
+this environment (TRAPS #22), no frame was looked at by an eye, and the geometry and
+frame claims are `unit:chat_window`'s and `unit:anchored`'s, not a sighting. **That
+no code changed** — the suite's seventeen rows unmoved, before and after.
+
+**Verified.** `bash spit_app/tests/run_tests.sh` from the repo root, run before
+anything was touched (2026-09-20 00:24) and again after the docs landed: **every
+row at its TESTING.md value with FAIL 0 — tools 127/24/30/119/80/32/68/29 (509),
+anchored 68, arguments 131, chat_smoke 168, chat_window 568, prompt 33, render 278,
+run_script 121, sandbox 119, terminal 223.** Nothing moved, which is exactly what a
+WP that changes no code has to show: the count-unchanged run is the proof that no
+code changed, not a proof of the numbers. The numbers themselves rest on the
+headless instruments — there is no screen in this environment (TRAPS #22), so
+nothing here was confirmed by eye, and the frame/geometry claims are the
+`unit:chat_window` and `unit:anchored` suites' rather than a sighting.
+
+**Probes, if they are ever re-run** (all in `/tmp`, all `~/.venv-spit/bin/python`):
+`wp-f-probe-table2.py <windowed|full> <100|1000|5000>` — one cell per process, run
+alone, six cells sequentially; `wp-f-probe-edge.py <pageop|materialize> <n>`;
+`wp-f-probe-flat.py <n> [grid]` (the crashed session's instrument, overwrites
+`/tmp/wp-f-flat-<n>.json` — the originals live in `/tmp/wp-f-crash/`);
+`/tmp/wpf-recover-walk.py <n> <grid> <notch-cap>` (the crashed walk's own copy,
+changed in two lines only — output path and a cap argument — so the recovery could
+not clobber the artefact it was re-measuring; it is the instrument the 2026-09-20
+uncapped runs used too, at `grid 25/4 cap 40000`); `/tmp/wpf-continue-run.sh`
+(the third pass: both `materialize` cells and both uncapped walks, copying the
+recovery's JSONs to `/tmp/wp-f-keep-recovery-flat-*.json` first and restoring them
+after, so no prior artefact is overwritten); `wp-f-probe-queued.py` (the burst
+hole). **Where each walk JSON lives**: crashed run `/tmp/wp-f-crash/wp-f-flat-*.json`,
+recovery's capped runs `/tmp/wpf-recover-flat-*.json` (grid 250/200, cap 8000/6000 —
+restore these from `/tmp/wp-f-keep-recovery-flat-*.json` if a re-run overwrites
+them), uncapped 2026-09-20 runs `/tmp/wp-f-continue-flat-*.json`. Superseded, kept
+for the reasoning in their headers: `calib`, `calib2`, `walk1k`, `burst`, `balloon`,
+`wholo`, `table`, `full5k`, `full5k2`, `pagedown`.
+
+No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
+`main` untouched, nothing pushed. **The P8 pipeline is complete**: A
+(`task-anchored-scroll-widget`) → B (`task-index-accessor-refactor`) →
+C (`task-sliding-window-core`) → D (`task-scroll-load-prune-triggers`) →
+E (`task-edit-undo-removal-across-window-edges`) → F (this branch). The merge is the
+owner's and is the only part of finishing that is not the agent's; the followups the
+pipeline leaves for whoever next works on the UI are P9 here and, on the ratatui
+side, M1 — whose state extraction now has a shipped precedent in
+`ChatView.widget/window/materialize`.
 
 
 ### WP-E (P8 pipeline) — edits, undo and removal across the window edges (branch `task-edit-undo-removal-across-window-edges`, awaiting the owner's merge)
