@@ -126,6 +126,47 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
 
 ---
 
+## P9 - Burst page-in: `_page_count()` sizes a page from regions that are not laid out yet  [found by WP-F 2026-09-20; needs its own `Go!`]
+
+- **The gap** (measured, not theorised): N wheel events delivered **between two
+  frames** queue N `_load_at_edge` callbacks through `call_after_refresh`, and each
+  sizes its own page from `_page_count()` — the prune margin divided by the MEAN
+  mounted height — while the regions of a just-mounted batch have not been laid out,
+  so the mean reads ~0.7 rows and `int(margin / mean) + 1` saturates at
+  `INITIAL_WINDOW` (50). Measured at 1k: **10 events fired inside one frame carried
+  the window to (603, 942) with 339 mounted children**, against the 10–13 every
+  settled sample of the same fixture reads. The next settle's prune releases it and
+  `window_consistent()` held in every sample, so this is a transient cost, not a
+  broken window. Found while choosing the transport for the WP-F walk
+  (`/tmp/wp-f-probe-{burst,balloon,wholo,queued}.py`), which is why every number in
+  DECISIONS 76 is taken with **one notch per pause** — that shape queues exactly one
+  page operation per frame, verified at batch sizes 1/2/5/10/40: zero callbacks still
+  queued when `at_rest()` first reads True.
+- **Also open, same root**: `at_rest()` (`not _window_page_op and _settle_timer is
+  None`) is not a quiescence oracle across a queued burst — the flag is False in the
+  gaps between the queued callbacks, so `rest()` can sample twice inside two gaps.
+  Any fix should make the predicate ask about queued page operations, not only about
+  the one in flight.
+- **The question to answer before writing code**: can a real front end deliver more
+  than one wheel event per frame? Unmeasured here — this environment has no real
+  terminal to drive (TRAPS #22). If a hand's flick can, the fix is to size a page
+  from LAID-OUT regions only (fall back to a constant when the mean is implausible,
+  e.g. below one row per message) and/or coalesce the queued `_load_at_edge`
+  callbacks per frame; if it cannot, this becomes a documented limit and the transport
+  note above is the reason the shipped numbers are trustworthy.
+- **Verify**: new checks in `tests/unit/chat_window/` (append-only numbers, TRAPS #15)
+  driven by a burst transport, asserting a bound on the settled mounted count and
+  that `at_rest()` does not read True while page operations are still queued; then
+  re-run the WP-F walk and confirm the 7–15 band is unchanged, and re-measure the
+  DECISIONS 76 table if anything about the page size moves.
+- **Gotchas**: TRAPS #24 (mount `spit_app/styles.css` or every viewport computation
+  is vacuous), TRAPS #13 (every zero needs a control that can fail — here it is the
+  same burst with the page count pinned to a constant), and WP-E's instrument lesson
+  (a row that exercises a trigger must `thaw_triggers` and assert the triggers live
+  first, or the harness answers for the thing under test).
+
+---
+
 ## P7 - MOVED to doc/UI-ROUTE-RATATUI.md — leave Textual for a ratatui front end  [high priority, architecture]
 
 Decided 2026-09-07 (DECISIONS 65). The plan, the gates (M0–M5), the measurements
