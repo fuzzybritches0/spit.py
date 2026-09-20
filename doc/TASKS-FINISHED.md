@@ -103,7 +103,7 @@ Test-count ground truth: see TESTING.md.
   TASKS-IN-PROGRESS followup 1), the `time.sleep()` in `call()` (followup 2 —
   **since closed as a false premise**, see the entry below and DECISIONS 68: a
   sync `call()` is dispatched off the event loop, so it never froze the UI), the
-  ratatui capture/geometry list (followup 4), and the owner's
+  the capture/geometry list (followup 4), and the owner's
   manual check in the running app: a `terminal` call shows its screen in chat,
   `C-c` interrupts a `sleep 60`, and a dead session shows its last screen. Every
   one of those three has an automated analogue. Main untouched, nothing pushed.
@@ -163,9 +163,12 @@ Test-count ground truth: see TESTING.md.
   honest and `unit:anchored` the 68 under it; **DECISIONS 76** is the numbers and
   the instrument lessons, and it says out loud what the window does *not* buy (the
   scrollbar now describes the window, `materialize` will still buy the whole
-  history, and DECISIONS 65's route is unchanged — this is the Textual-side bridge,
-  and M1's state extraction has a shipped precedent in
-  `ChatView.widget/window/materialize`). Verification rested on the automated
+  history, and the front-end question DECISIONS 65 settled is untouched by it —
+  this is the Textual-side bridge, and the state extraction any future front end
+  would want has a shipped precedent in
+  `ChatView.widget/window/materialize`). (65's route was itself retired
+  2026-09-20, DECISIONS 77; this sentence predates that and is kept as written.)
+  Verification rested on the automated
   headless suites: there is no screen here (TRAPS #22).
 
 ### P0b-followup 1 — `remain-on-exit`: a dead session reports its real last screen (branch `task-terminal-empty-output`, commits `d549b61`…`e5b4fba`)
@@ -552,9 +555,11 @@ No sign-off step participated (DECISIONS 71); the branch awaits the owner's merg
 C (`task-sliding-window-core`) → D (`task-scroll-load-prune-triggers`) →
 E (`task-edit-undo-removal-across-window-edges`) → F (this branch). The merge is the
 owner's and is the only part of finishing that is not the agent's; the followups the
-pipeline leaves for whoever next works on the UI are P9 here and, on the ratatui
-side, M1 — whose state extraction now has a shipped precedent in
-`ChatView.widget/window/materialize`.
+pipeline leaves for whoever next works on the UI are **P9** here and, on the
+front-end side, the state extraction a replacement UI would build on — which now
+has a shipped precedent in `ChatView.widget/window/materialize`. (As written,
+this sentence pointed at a route the owner retired on 2026-09-20; DECISIONS 77.
+The seam it named is untouched by that retirement.)
 
 
 ### WP-E (P8 pipeline) — edits, undo and removal across the window edges (branch `task-edit-undo-removal-across-window-edges`, awaiting the owner's merge)
@@ -869,9 +874,10 @@ free**:
   `handlers.py:27-28`) was **verified and left alone**: opening a chat reuses the
   mounted `Chat`, they are never stacked twice per id, each `ChatView` keeps its
   own window. `t9` pins that as it behaves today.
-- UI-ROUTE-RATATUI.md **M1** is noted in `bd0ece0` per the WP read list: this
-  window is the same state/view seam M1 extracts (messages are truth, the widget
-  tree a projection). The protocol was **not** pre-built.
+- The front-end read-list item is noted in `bd0ece0` as asked: this window is the
+  same state/view seam a replacement front end would have to extract (messages
+  are truth, the widget tree a projection). **No** front-end contract or protocol
+  was pre-built — and none is wanted now (DECISIONS 77).
 
 **Left undone on purpose**, at the boundaries the plan drew: the fact-5 superset
 "is_edit disables `prune()` entirely" stays a WP-E `Go`-time decision (WP-C pins

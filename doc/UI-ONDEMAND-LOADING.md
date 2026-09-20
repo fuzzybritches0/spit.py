@@ -190,8 +190,10 @@ branch chain** (branches stack; `main` untouched throughout).
   today).
 - **Read list**: this doc's model + invariants; `chat_view.py`, `callback.py`,
   `chat.py`, `chat_text_area.py`, `side_panel.py`, `handlers.py`, WP-A widget
-  source; UI-ROUTE-RATATUI.md "M1" paragraph (this window is the same
-  state/view seam — note it in the commit, do not pre-build the protocol).
+  source; and the state/view seam point (this window is the same seam any
+  replacement front end would have to extract — note it in the commit, do not
+  pre-build any front-end contract; the route doc this item once pointed at is
+  deleted, DECISIONS 77).
 - **Accept**: new UI-suite checks: open a 1k-message fixture → ≤ 50 mounted +
   `scroll_end`; `load_older(25)` → anchor holds (frame-spy: 0 jump frames),
   `lo` −25, JSON untouched; **`prune()` after a slide → mounted count returns
@@ -319,8 +321,12 @@ branch chain** (branches stack; `main` untouched throughout).
   owner stated and the reason the window slides)** + RSS, vs full mount, same
   corpus, headless; write the numbers into `TASKS-FINISHED.md` (close P8) and
   a DECISIONS entry recording this as the Textual-side bridge (does NOT
-  re-open DECISIONS 65 — the ratatui route stands; M1's state extraction now
-  has a working precedent to reuse).
+  re-open DECISIONS 65's measurements; the state extraction a replacement front
+  end would want now has a working precedent to reuse). *As written in 2026-09-20
+  this clause also asserted that the chosen route off Textual still stood. The
+  owner retired that route the same day (DECISIONS 77), so the assertion is
+  dated here rather than left standing as current fact; the numbers are
+  untouched.*
 - **Accept** (met): numbers in the docs (DECISIONS 76 (a) and the `TASKS-FINISHED.md`
   WP-F entry), mounted count demonstrated flat at 1k and 5k depths — **two uncapped
   walks per N, four round trips**: 1k grid 4, 400 samples over 8,000 notches in each

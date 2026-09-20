@@ -12,13 +12,13 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **ONE entry is open** in this file: the ratatui enhancement list, followup 4.
+> **ONE entry is open** in this file: the `terminal`-tool harness list, followup 4.
 > The on-demand-loading pipeline is **closed end to end** — WP-A…WP-F are all in
 > `TASKS-FINISHED.md` on six branches awaiting the owner's merge, and P8 is marked
 > DONE in `TASKS-PLANNED.md`. WP-F closed 2026-09-20 on
 > `task-window-measurement-numbers-close-p8` (`18a84c4` P9 filed, `0568ce6`
-> DECISIONS 76 with the numbers, `a13d0e2` P8 closed, `b47f728` the ratatui rung
-> 0, then this close): it changed **no repo code**, so it asked no `Go!`
+> DECISIONS 76 with the numbers, `a13d0e2` P8 closed, `b47f728` the fallback-ladder
+> rung 0, then this close): it changed **no repo code**, so it asked no `Go!`
 > (DECISIONS 71 (c)), and what it left behind is **P9**, a code hole with its own
 > `Go!` ahead of it — not an unfinished package.
 > **The `/tmp` state WP-F depended on is not in git and the entry above is gone,
@@ -117,9 +117,13 @@ that is not the agent's.
   `/tmp/tmux-1000/spit-unit-terminal-*` and **no running server**; removing the
   files is safe, and any new terminal test must keep both properties.
 
-## P0b-followup 4 - what the `terminal` tool still needs *for* the ratatui migration  [enhancement list, picked up piece by piece]
+## P0b-followup 4 - what the `terminal` tool still needs as a UI-under-test harness  [enhancement list, picked up piece by piece]
 
-The list below was written during P0b and is **verbatim from it**; four items
+The list below was written during P0b and is **verbatim from it except for the
+framing**, which named a migration plan the owner retired on 2026-09-20
+(DECISIONS 77). The items and their measurements survive that retirement
+untouched, because none of them is about one toolkit: they are about what a pane
+can report. Four items
 have moved since — 8, 9, 10 and 12 — and each is marked **where it is marked
 done, never where it is still open**. Nothing else has been done, re-checked
 against the source 2026-09-10: `spit_app/tools/terminal.py` still accepts
@@ -141,19 +145,20 @@ and `pane_dead_time` (tmux >= 3.3) are two more tokens away in that format
 line. What is left of item 8 is surfacing them as fields on a LIVE
 screen — a formatting job now, not a plumbing one.
 
-Once `spit-tui` exists (the Rust front end planned in
-`doc/UI-ROUTE-RATATUI.md` and the engine <-> front-end protocol in
-`doc/UI-PROTOCOL.md` — both merged into this branch at `51faf79`, so they are
-**here**, read them here), this tool stops being a convenience and becomes **the only harness that can see the
-real binary running in a real pty** — ratatui's `TestBackend` covers widgets,
-the `terminal` tool covers the end-to-end app. Design it for that job now:
+Any front end that is not the Textual one in the process arrives as **a program
+running in a real pty**, and for that job this tool stops being a convenience and
+becomes **the only harness that can see it**: a front end's own widget-level test
+backend covers its widgets, the `terminal` tool covers the end-to-end app — does
+it start, stream, scroll, paste, and die cleanly. The headless `App.run_test`
+suites cannot do that for anything that is not Textual. Design it for that job:
 
 1. **`command`, not hardcoded `bash`.** Launch arbitrary argv in the pane
-   (`command=["./spit-tui"]`, plus `env={}`, `cwd=`) — "start the UI under test"
-   is the primitive; interactive bash is a special case of it.
+   (`command=["python3", "main.py"]`, plus `env={}`, `cwd=`) — "start the UI
+   under test" is the primitive; interactive bash is a special case of it.
 2. **Geometry you control.** `cols`/`rows` at creation and a `resize` action.
-   Re-wrap-on-resize is load-bearing in the new architecture (measured: 746 ms
-   to re-wrap 2,000 messages), and it cannot be tested at 24x80 only. During
+   Re-wrap-on-resize is load-bearing for anything that re-wraps its history when
+   the pane changes width (measured: 746 ms to re-wrap 2,000 messages), and it
+   cannot be tested at 24x80 only. During
    this evaluation I had to nest a private tmux server to get 120x40 and
    150x35.
 3. **Capture modes: text | styled | bytes.** Today only plain text. `styled`
@@ -161,19 +166,20 @@ the `terminal` tool covers the end-to-end app. Design it for that job now:
    asserted. `bytes` (raw pane output) is how the **Kitty/Sixel graphics path
    gets asserted** — LaTeX and image rendering could not be verified at all in
    this environment because there is no way to see the escape sequences, and
-   that is the single biggest unproven risk in the migration.
+   that is the single biggest unproven risk in the graphics path.
 4. **Cursor as data, not decoration.** Report `cursor_x`/`cursor_y` as fields
    instead of splicing a `█` into the text (which corrupts the line and breaks
    under double-width characters); keep the marker as an option.
 5. **`wait_for` instead of `delay`.** Wait until a regex matches the pane or the
    screen is stable for N ms, with a timeout — blind sleeps make streaming tests
    flaky, and streaming (token deltas, follow-bottom, abort) is the main thing
-   the new UI must get right.
+   any UI under test must get right.
 6. **`send_bytes` / raw mode**, so a test can inject SGR mouse sequences and
-   bracketed paste. That is exactly how pyratatui's mouse and paste defects were
-   proven (4 injected sequences → 0 delivered; a pasted Enter arriving as
-   `Ctrl+J` wipes the line), and the new front end's input layer must be tested
-   against the same sequences.
+   bracketed paste. That is exactly how a candidate front end's mouse and paste
+   defects were proven in 2026-09 (4 injected sequences → 0 delivered; a pasted
+   Enter arriving as `Ctrl+J` wipes the line — those measurements belong to the
+   evaluation retired in DECISIONS 77; the check they justify does not), and any
+   front end's input layer must be tested against the same sequences.
 7. **Scrollback and diffs**: `capture(since=-N)` and "changed lines since last
    capture". With no scrollback and full-screen captures, an agent burns context
    re-reading the same 24 lines; a diff capture makes long-session work cheap.
@@ -243,7 +249,8 @@ pane is read and synchronised.
   also what makes an in-flight call abortable — DECISIONS 68 says the loop is
   already free, so this is about cancellation and flaky sleeps, not about
   freezing the UI); the natural single starter is item 1 (`command=` + `env=` +
-  `cwd=`), which is self-contained and unblocks any harness work on `spit-tui`.
+  `cwd=`), which is self-contained and is the one item every later
+  UI-under-test harness needs regardless of what that UI turns out to be.
 - **State hazards**: none. `tests/unit/terminal/` leaves stale socket *files*
   under `/tmp/tmux-1000/spit-unit-terminal-*` with no server behind them —
   safe to remove, and any new test must keep that property.

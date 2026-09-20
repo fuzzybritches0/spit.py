@@ -13,8 +13,6 @@ Quick map:
 | `doc/TOOLS.md` | Tool development guide (attributes, structure, full specs) |
 | `doc/TESTING.md` | Test infrastructure, fixtures, verification methods |
 | `doc/RUNTIME-RUN-COMMAND.md` | The run/sandbox/terminal subsystem |
-| `doc/UI-PROTOCOL.md` | Engine <-> front-end contract (JSONL) — the seam that makes the UI replaceable |
-| `doc/UI-ROUTE-RATATUI.md` | Route off Textual to a ratatui front end: gates M0-M5, measurements, fallbacks |
 | `doc/UI-ONDEMAND-LOADING.md` | Windowed message loading on Textual: proven anchor mechanism, work packages A-F — **all six done, P8 closed 2026-09-20** (DECISIONS 76; the limits found are P9) |
 | `doc/DECISIONS.md` | Design decision log — the *why*; append-only |
 | `doc/TASKS-IN-PROGRESS.md` | Check first — half-finished work may need recovery; the agents' own crash-recovery file, and agents close their own entries |

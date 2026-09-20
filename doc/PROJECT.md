@@ -16,9 +16,6 @@ development of the project; everything here reflects the repo at
    - `TOOLS.md` - tool development (attribute matrix, structure, full specs)
    - `TESTING.md` - test harness, fixtures, verification methods
    - `RUNTIME-RUN-COMMAND.md` - the run/sandbox/terminal subsystem
-   - `UI-PROTOCOL.md` - the engine <-> front-end contract (the seam; read before
-     touching anything that renders or reads input)
-   - `UI-ROUTE-RATATUI.md` - the route off Textual, with its gates and measurements
    - `UI-ONDEMAND-LOADING.md` - windowed message loading on Textual (P8): proven
      anchor mechanism, work packages A-F - **all six done, P8 closed 2026-09-20**.
      The widget tree is a window over the message data: 7-15 mounted at every

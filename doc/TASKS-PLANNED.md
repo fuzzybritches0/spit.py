@@ -131,9 +131,9 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
   only happen away from the bottom, so in practice they never contend).
 - On-demand loading itself (when to fetch, where the window starts, chat
   switch, undo/edit interactions) is the real work; the container is the
-  solved half. This is a Textual-side mitigation next to fallback rung 1 of
-  `UI-ROUTE-RATATUI.md` — it does NOT re-open DECISIONS 65 (the whole-tree
-  cost of *mounted* messages stays; the win is mounting fewer of them).
+  solved half. This is a Textual-side mitigation — it does NOT re-open
+  DECISIONS 65 (the whole-tree cost of *mounted* messages stays; the win is
+  mounting fewer of them).
 - A viewport **resize** reflows every message; decide there whether the pin
   compensates (it will, if armed) — semantics, not a bug.
 - **Verify**: probes rebuilt as a checkable suite + full `bash
@@ -182,19 +182,21 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
 
 ---
 
-## P7 - MOVED to doc/UI-ROUTE-RATATUI.md — leave Textual for a ratatui front end  [high priority, architecture]
+## P7 - RETIRED - leave Textual for a different front end  [number retired, 2026-09-20; a replacement route is a later, owner-level task]
 
-Decided 2026-09-07 (DECISIONS 65). The plan, the gates (M0–M5), the measurements
-and the fallback ladder are in **`doc/UI-ROUTE-RATATUI.md`**; the front-end
-contract is **`doc/UI-PROTOCOL.md`**.
+The route this number carried is **gone by the owner's decision of 2026-09-20**:
+the plan and the engine <-> front-end contract it pointed at are deleted, and
+DECISIONS 77 records the retirement. Nothing here proposes what replaces them —
+**the next route is the owner's to choose and a task of its own**; it is not
+pick-up work, and no gate, spike or prerequisite is defined for it.
 
-- **Prerequisite**: **P0b**, the `terminal` tool returning an empty message
-  container, filed on branch `task-terminal-empty-output`. Merge that branch
-  first: P0b is also the harness the new front end is tested with
-  (`UI-ROUTE-RATATUI.md`, "Prerequisite: the `terminal` tool").
-- **Do not start before the owner approves M0** (a ~2-day gated spike).
-- **Verify**: the M0 gate in the route doc; the full suite unchanged throughout
-  (the tool layer imports no Textual, so its counts are the safety net).
+- **What still stands**: DECISIONS 65's *measurements* of the Textual tree (the
+  entry is marked superseded, its numbers are not disputed) and DECISIONS 76's
+  finding that the window bounds the mounted count without touching the
+  per-message cost. The roadmap line in `README.md` ("GUI/TUI alternative to
+  Textual") is where the intent now lives, as an owner-level item (see P6).
+- **Do not**: resurrect the deleted plan from git history to use as a starting
+  point, or open a replacement entry, before the owner names the route.
 
 ---
 
