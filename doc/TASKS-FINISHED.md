@@ -649,7 +649,11 @@ agent's.
 No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
 `main` untouched, nothing pushed. **Next in the chain: WP-F** — measurements,
 numbers, decision record, close P8 — cut from this tip, its own branch, its own
-`Go!`.
+`Go!`. **[DONE — WP-F was cut from this tip as
+`task-window-measurement-numbers-close-p8` and closed the pipeline on 2026-09-20:
+the table, the walk, DECISIONS 76 and the P8 close, docs only, no `Go!` asked
+because no code changed. Its entry is above this one. Do not start anything from
+this paragraph — the pipeline is complete and what is left is P9.]**
 
 
 ### WP-D (P8 pipeline) — the load/prune triggers and scroll UX (branch `task-scroll-load-prune-triggers`, commits `c8aab52`…`5c47bf7` + this close-out, awaiting the owner's merge)
