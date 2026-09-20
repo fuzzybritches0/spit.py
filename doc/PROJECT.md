@@ -20,8 +20,11 @@ development of the project; everything here reflects the repo at
      touching anything that renders or reads input)
    - `UI-ROUTE-RATATUI.md` - the route off Textual, with its gates and measurements
    - `UI-ONDEMAND-LOADING.md` - windowed message loading on Textual (P8): proven
-     anchor mechanism, work packages A-F (A, B, C, D and E are done; F still
-     awaits its own `Go!`)
+     anchor mechanism, work packages A-F - **all six done, P8 closed 2026-09-20**.
+     The widget tree is a window over the message data: 7-15 mounted at every
+     scroll depth at 1k and at 5k, and the numbers, the four instrument lessons
+     and what the window does NOT buy are DECISIONS 76. The one hole it found is
+     P9 in `TASKS-PLANNED.md` and needs its own `Go!`.
 5. `TASKS-IN-PROGRESS.md` - is someone's work half-done? Recover it first.
 6. `TASKS-PLANNED.md` - pick up work here.
 7. `TASKS-FINISHED.md` - what is already done (do not redo or "fix" it).
