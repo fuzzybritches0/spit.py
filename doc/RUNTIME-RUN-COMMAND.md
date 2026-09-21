@@ -64,6 +64,20 @@ between calls and never cleaned.
 - stderr is reported in a `~~~~ stderr ~~~~` block AFTER the output, only when
   there is stderr; `separate_stderr=false` interleaves both streams (the
   implementation reads both pipes concurrently - TRAPS #5).
+- **the verdict line reports news, not routine** (`run/run.py`, branch
+  `alternate-exit-reporting`): a non-zero exit always ends the result with
+  `✗ Exit code N - command reported an error!`, whatever the output and in either
+  stream mode; a signal death nobody claimed ends it with
+  `✗ Terminated by signal N!`; a run that produced neither stdout nor stderr says
+  `✓ Exit code 0 - command reported no error. (no output)`; and a success that
+  produced output says **nothing** - the output is the report. So the ABSENCE of a
+  line is what carries the information now, which is why the failure line can
+  never be suppressed and why an unclaimed signal-death had to start reporting:
+  silence would otherwise read back as exit 0. "Produced output" asks for a
+  non-whitespace byte, the same question the stderr block asks of `errors`.
+  The run_command PROMPT does NOT state this convention (it never stated the old
+  line either); whether it should is recorded as an open question in
+  `TASKS-IN-PROGRESS.md`.
 - `export` and `cd` carry over to the next call via `~/.sandbox_env` (the
   exported env is stored as literal `export NAME=value` lines; a STATE_EXCLUDE
   regex keeps noise out) and `~/.sandbox_cwd`. Both streams must be drained at

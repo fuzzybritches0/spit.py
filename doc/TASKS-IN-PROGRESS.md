@@ -12,7 +12,10 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **ONE entry is open** in this file: the `terminal`-tool harness list, followup 4.
+> **TWO entries are open** in this file: the `terminal`-tool harness list,
+> followup 4, and **exit-reporting** (the verdict-line rule in `run/run.py`, code
+> done on `alternate-exit-reporting`, waiting on the owner's ruling on five
+> sandbox checks that pinned the line it removes).
 > The on-demand-loading pipeline is **closed end to end** — WP-A…WP-F are all in
 > `TASKS-FINISHED.md` on six branches awaiting the owner's merge, and P8 is marked
 > DONE in `TASKS-PLANNED.md`. WP-F closed 2026-09-20 on
@@ -260,6 +263,96 @@ pane is read and synchronised.
   capture-formatting change **byte-for-byte** against the current output before
   changing behaviour (TRAPS #14), and keep the sandbox on by default (TRAPS #6)
   with `sandbox=False` only inside lifecycle tests.
+
+## exit-reporting - verdict lines only where they carry news  [code done; the test re-pin waits on the owner]
+
+
+The owner cut `alternate-exit-reporting` and edited `run/run.py` so the Run class
+stops printing `✓ Exit code 0 — command reported no error.` after every tool
+call: the line is boilerplate on the common path, and the model reads and ignores
+it. The intent is right and the shape it shipped with is not — it suppressed the
+line for the cases that need it and kept it for the one that does not:
+
+* **A failure with output reported nothing.** The gate was the *no-output*
+  condition, so `echo built; exit 3` — the shape of every compiler, test runner
+  and `make` — reached the model as ordinary text with no code. That is the
+  silent-failure class TRAPS #18 is about: not a check that stays red, a verdict
+  that flips.
+* **Nothing at all was reported with merged streams.** The gate began with
+  `stderr_task`, which is `None` unless `separate_stderr=True`. `Run`'s default
+  is `False` and that is how the 13 script tools are built, so every one of them
+  lost its exit reporting entirely — including the failure they announce by
+  `print("ERROR: ...")` + `sys.exit(1)`, where the ✗ line was the only
+  non-prose signal.
+* A silent run still got a line, so the only sentence left standing was the one
+  on the benign path, and a genuinely empty tool result was indistinguishable
+  from a call that never reported.
+
+The fix keeps the owner's rule and makes it mean the opposite of silent: the
+verdict is emitted when it is news.
+
+| case | main | branch |
+|---|---|---|
+| rc 0, output | `✓ Exit code 0 — …` | *nothing* — the output is the report |
+| rc 0, no output | `✓ … (no output)` in separate mode, nothing said about it in merged | `✓ Exit code 0 — command reported no error. (no output)` in both |
+| rc != 0, any output, either mode | `✗ Exit code N — …` | unchanged, byte-identical |
+| killed by a signal nobody claimed | *nothing at all* | `✗ Terminated by signal 9!` |
+
+Three consequences of that rule are load-bearing and are commented in the code:
+absence of a line now MEANS exit 0, so (a) the failure line must never be
+suppressed, and (b) an unclaimed signal-death must be reported, because silence
+would otherwise read as success — main was silent there, which is why the case is
+closed here rather than left as it was; (c) "was there output" now asks for a
+non-whitespace byte, the same question the stderr block already asks of `errors`,
+so a run that printed only a newline is not a blank block with no verdict.
+
+Measured with the differential probe over the whole matrix (TRAPS #13/#18), main
+in a worktree against the branch, both `separate_stderr` values: every failure
+row identical to main, the success-with-output rows losing exactly the one line.
+The `(no output)` suffix fell off the failure line: with the line now appearing
+whether or not there was output, the suffix stopped being a fact about the line
+and the emptiness above it is visible. DECISIONS 65's surviving sentence — the
+`Exit code N ...` line stays in the LLM's message — is honoured in the breach:
+the line stays wherever it carries information, and this is the record of
+narrowing it.
+
+### State (crash-recovery record)
+
+- **Branch**: `alternate-exit-reporting`, off `main` at `813017e`. Code commit
+  `a1563e5`, this entry and the RUNTIME bullet in the docs commit after it. No
+  test file touched — deliberately.
+- **Scope**: `spit_app/tools/run/run.py` only (the `errors`/`has_output`
+  initialisation in `run()`, the signal branch, the verdict block).
+- **Done**: the code, the matrix differential, two full-suite runs (byte-identical
+  to each other). Everything except `unit:sandbox` sits exactly at the
+  TESTING.md ground truth; the sandbox row reads **152 PASS / 5 FAIL**, and
+  152 + 5 = 157, so no check vanished. The five reds are all the same fact —
+  `t1-report` (streams), `t2-report-line` (delivery), `t2-report-line` and
+  `t5-report-line` (lifecycle), `t8-reports-no-error` (python_path): each calls a
+  command that succeeds WITH output and asserts the line that this task removes.
+  The failure-reporting checks (`t4-exit-code`, `t5-exit-code`, `t5-rc-True`,
+  `t5-rc-False`) are green again — the owner's version had them red.
+- **Left**: the owner's ruling on the five checks, then re-pin them. The obvious
+  re-pin is to assert the line is GONE on the success path (a check that can
+  fail, TRAPS #13 — the line's absence becomes a pinned property rather than an
+  accident) and to add one check that the `✗` line survives a failure WITH
+  output, which nothing in the tree pins today. Nothing else pending; no `Go!`
+  outstanding on what is already written.
+- **State hazards**: none beyond the 5 red sandbox checks named above. No
+  fixtures left behind, no `__pycache__` staged. Two probe scripts live in
+  `/tmp` (`probe_verdicts.py` for the matrix, `probe_signal.py` for the
+  unclaimed death; each takes a repo root, so main vs branch is two runs). They
+  ran against `main` through `git worktree add /tmp/spit-main main`, which has
+  since been removed — a second checkout of `main` blocks the owner's merge —
+  and no commit was ever made in it. Recreate it the same way to re-run the
+  differential.
+  Note also `unit:chat_window` went 565/3 once under full-suite load and 568/0 on
+  both runs after: a timing flake in that suite, unrelated to this change (it
+  does not touch Run) — worth watching, not worth chasing here.
+- **Verify**: `cd ~/spit.py && bash spit_app/tests/run_tests.sh` — every row at
+  the TESTING.md ground truth and `unit:sandbox` at 157 with FAIL 0 once the five
+  checks are re-pinned. Ground truth for the behaviour itself is the matrix table
+  above, re-run through the probe against both trees.
 
 ## Protocol when starting a task from TASKS-PLANNED.md
 
