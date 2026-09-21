@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory() as root:
                             separate_stderr=True)
     check("t1-no-header", STDERR_HEADER in out, False)
     check("t1-output", "hello" in out, True)
-    check("t1-report", "Exit code 0 — command reported no error." in out, True)
+    check("t1-report", out == "hello\n", True)
 
 print()
 print("=== 2. stderr is reported apart, after the output ===")
@@ -91,8 +91,8 @@ with tempfile.TemporaryDirectory() as root:
     os.makedirs(home)
     for separate in (True, False):
         out, _, _ = run_as_file(wrap_script("echo x >&2; exit 9"), home, root,
-                                separate_stderr=separate)
-        check(f"t5-rc-{separate}", "Exit code 9 — command reported an error!" in out, True)
+                                separate_stderr=separate, needs_exit_status_report=True)
+        check(f"t5-rc-{separate}", "Process finished with exit code 9!" in out, True)
 
 print()
 print("==============================")

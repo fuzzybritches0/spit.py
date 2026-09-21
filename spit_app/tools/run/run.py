@@ -149,8 +149,8 @@ def get_args(arguments: dict, defaults: dict) -> str:
 
 class Run(CommonMixIn):
     def __init__(self, app, chat_id: str, cmd: str|list, script: str, sandbox: bool = True, timeout: int = 0,
-                 script_as_file: bool = False,
-                 separate_stderr: bool = False) -> None:
+                 script_as_file: bool = False, separate_stderr: bool = False,
+                 needs_exit_status_report: bool = False) -> None:
         super().__init__(app, sandbox, chat_id)
         # an interpreter on its own, or an interpreter plus its own arguments
         # (`TOOL_PYTHON`): the first element is the program check_bwrap() looks
@@ -166,6 +166,14 @@ class Run(CommonMixIn):
         # every compiler put progress and diagnostics on stderr, and interleaved
         # they are indistinguishable from the output they describe.
         self.separate_stderr = separate_stderr
+        # True: every non-zero exit gets its line whether or not the command
+        # printed anything. False: the tool's own output is the verdict, so a
+        # failure that said so in prose is not followed by a second sentence
+        # saying it again -- which is what the 13 script tools do (measured: all
+        # 36 of their non-zero exits print an `ERROR:` line first). Silence is
+        # never covered by False: an empty result with a non-zero exit is
+        # reported either way, because nothing else can be.
+        self.needs_exit_status_report = needs_exit_status_report
         # deliver the script as a file instead of on stdin: the command then has
         # a stdin of its own (see script_path_in_sandbox)
         self.script_as_file = script_as_file
@@ -326,9 +334,9 @@ class Run(CommonMixIn):
         await self._command_finished(proc)
         if proc.returncode < 0:
             if self.timeout_reached:
-                yield "\n✗ Process was terminated due to timeout limit!"
+                yield "\n✗ Process terminated. Timeout limit reached!"
             elif self.terminated:
-                yield "\n✗ Process was terminated by user!"
+                yield "\n✗ Process terminated by user!"
             else:
                 # Nobody claimed this death, so say what actually happened: with
                 # the convention below -- no line means exit 0 -- a silent
@@ -336,20 +344,27 @@ class Run(CommonMixIn):
                 # read back to the model as a clean run. Same class of hole as
                 # an unreported non-zero exit code, which is why it is closed
                 # here and not left as it was. -9 reads as signal 9.
-                yield f"\n✗ Terminated by signal {-proc.returncode}!\n"
+                yield f"\n✗ Process terminated by signal {-proc.returncode}!\n"
         else:
-            # A line after every call is a line the model reads and ignores, so
-            # the exit status is reported when it carries news and not
-            # otherwise: a failure always (an exit code the model never sees is
-            # how a failing build reads as a passing one), and a success only
-            # when nothing at all came back -- the one case where silence would
-            # otherwise be ambiguous between "ran and printed nothing" and "the
-            # call never reported". A success WITH output says nothing, because
-            # the output is the report. Absence of a line means exit 0; that is
-            # the convention, and the failure line is what breaks it loudly.
-            if proc.returncode != 0:
-                yield f"\n✗ Exit code {proc.returncode} — command reported an error!\n"
-            elif not has_output and not errors.strip():
-                yield "\n✓ Exit code 0 — command reported no error. (no output)\n"
-            if stderr_task and errors.strip():
+            if errors.strip():
                 yield f"\n{STDERR_HEADER}\n{errors}"
+            # A line after every call is a line the model reads and ignores, so
+            # the verdict is written when it is news. `silent` is the case that
+            # always speaks: a result with neither stdout nor stderr cannot be
+            # told apart from a call that never reported, so it says so whether
+            # it ended 0 or not -- and a success WITH output stays quiet,
+            # because the output IS the report. A failure additionally speaks
+            # where the tool cannot: `needs_exit_status_report` is set by the
+            # tools whose stdout is somebody else's text (run_command,
+            # run_script), so their exit code is the only verdict they own.
+            # The `or silent` half is not negotiable -- an empty result with a
+            # non-zero exit is the one shape that reads as success while
+            # meaning the opposite.
+            silent = not has_output and not errors.strip()
+            if proc.returncode != 0:
+                if self.needs_exit_status_report or silent:
+                    yield f"\n✗ Process finished with exit code {proc.returncode}!" \
+                            f"{' (no output)' if silent else ''}"
+            elif silent:
+                yield "\n✓ Process finished with exit code 0. (no output)"
+

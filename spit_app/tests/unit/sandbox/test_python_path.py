@@ -232,7 +232,7 @@ with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as roo
     program += get_script(os.path.join(REPO_ROOT, "spit_app", "tools", "write_file.py"))
     output = run_through_run(home, root, TOOL_PYTHON, program)
     check("t8-no-poison-through-run", TOKEN in output, False)
-    check("t8-reports-no-error", "Exit code 0" in output, True)
+    check("t8-reports-no-error", output == "`content` saved to `made.txt`.\n", True)
     made = os.path.join(target, "made.txt")
     check("t8-file-written-in-the-carried-cwd",
           open(made).read() if os.path.exists(made) else None,

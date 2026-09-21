@@ -118,6 +118,7 @@ async def call_async_generator(app, arguments: dict, chat_id):
               wrap_script(script) if interpreter in SHELL_INTERPRETERS else script,
               SETTINGS["sandbox"]["value"], SETTINGS["timeout"]["value"],
               script_as_file=True,
-              separate_stderr=arguments.get("separate_stderr", True))
+              separate_stderr=arguments.get("separate_stderr", True),
+              needs_exit_status_report=True)
     async for line in run.run():
         yield line

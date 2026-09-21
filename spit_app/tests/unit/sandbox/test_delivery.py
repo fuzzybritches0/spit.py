@@ -68,7 +68,7 @@ with tempfile.TemporaryDirectory() as root:
     check("t2-read-got-eof", 'read: []' in out, True)
     check("t2-no-trailer-in-output", "EXIT_CODE" in out, False)
     check("t2-environment-saved", has_var(state(home), "SPIT_DELIV"), True)
-    check("t2-report-line", "Exit code 0 — command reported no error." in out, True)
+    check("t2-report-line", out == "read: []\n", True)
 
 print()
 print("=== 3. A bare cat gets an empty stdin ===")
@@ -84,8 +84,8 @@ print("=== 4. The delivered file is cleaned up, and exit codes survive ===")
 with tempfile.TemporaryDirectory() as root:
     home = os.path.join(root, "h")
     os.makedirs(home, exist_ok=True)
-    out, leftovers, _ = run_as_file(wrap_script("exit 5"), home, root)
-    check("t4-exit-code", "Exit code 5 — command reported an error!" in out, True)
+    out, leftovers, _ = run_as_file(wrap_script("exit 5"), home, root, needs_exit_status_report=True)
+    check("t4-exit-code", "Process finished with exit code 5!" in out, True)
     check("t4-no-leftovers", leftovers, [])
 
 print()

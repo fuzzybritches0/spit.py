@@ -155,7 +155,7 @@ print("=== 4. streamed tool response: run_command shape (hint + STDERR_HEADER) =
 # stderr block from run.py (STDERR_HEADER) crosses the fences.
 TOOL_CONTENT = ("out line one\nout line two\n"
                 "\n~~~~ stderr ~~~~\nerror line\n"
-                "\n✗ Exit code 1 — command reported an error!")
+                "\n✗ Process finished with exit code 1!")
 TOOL_SCREEN = [("Part", ""),
                ("Code", "~~~~~text\n" + TOOL_CONTENT + "\n~~~~~"),
                ("Part", "")]
