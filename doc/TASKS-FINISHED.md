@@ -74,8 +74,8 @@ Test-count ground truth: see TESTING.md.
   `run_command`/`run_script`/`terminal`) is recorded with its measurements in
   DECISIONS 78: it silences the same crash, re-anchors relative paths to the sandbox
   home — a silent wrong-directory write, worse than the traceback — and leaves
-  `sys.path[0]` writable besides. `tests/unit/sandbox/test_python_path.py`, 34
-  checks, 26 of them red against the pre-fix interpreter; unit:sandbox 119 → 153,
+  `sys.path[0]` writable besides. `tests/unit/sandbox/test_python_path.py`, 38
+  checks, 29 of them red against the pre-fix interpreter; unit:sandbox 119 → 157,
   every other row byte-for-byte (tools 509, anchored 68, arguments 131, chat_smoke
   168, chat_window 568, prompt 33, render 278, run_script 121, terminal 223), FAIL 0
   throughout. **Left open on purpose, same class**: **P10** (a file-delivered python

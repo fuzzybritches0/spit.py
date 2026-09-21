@@ -45,7 +45,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
-| unit:sandbox | 153 |
+| unit:sandbox | 157 |
 | unit:terminal | 223 |
 
 ## The test venv (four suites need it)
@@ -89,11 +89,11 @@ full runs identical, and the chat_smoke `golden.txt` md5
 the failure-counting fix raised it; the table lagged. Counts only ever go
 up, per the rule above.)
 
-(It is **153** since `fix-tool-interpreter-path-shadowing`: one new file,
-`test_python_path.py`, 34 checks, by addition alone - every other row
+(It is **157** since `fix-tool-interpreter-path-shadowing`: one new file,
+`test_python_path.py`, 38 checks, by addition alone - every other row
 byte-for-byte where it was (tools 509, anchored 68, arguments 131, chat_smoke
 168, chat_window 568, prompt 33, render 278, run_script 121, terminal 223).
-26 of the 34 are red against the pre-fix interpreter, which is the point of the
+29 of the 38 are red against the pre-fix interpreter, which is the point of the
 file: the first section is the control that shows a `types.py` in the working
 directory really does poison a stdlib-only script, so the checks after it cannot
 pass on a fixture that cannot fail. Its section 4 is the check that keeps the

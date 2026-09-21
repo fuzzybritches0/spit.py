@@ -198,6 +198,48 @@ with tempfile.TemporaryDirectory() as root:
           Run(app, "chat1", TOOL_PYTHON, "x").cmd[0], "python3")
 
 print()
+print("=== 8. Through Run itself: the argv is exec'd, on stdin, in the carried cwd ===")
+import asyncio                                          # noqa: E402
+from spit_app.tools.write_file import EXEC as WRITE_FILE  # noqa: E402
+
+
+def run_through_run(home, root, interpreter, program):
+    """The real Run, sandbox off (TRAPS #6), script on stdin as the file tools deliver."""
+    os.makedirs(os.path.join(root, "home"), exist_ok=True)
+    os.makedirs(os.path.join(root, "tmp"), exist_ok=True)
+    saved_home = os.environ.get("HOME")
+    os.environ["HOME"] = home                     # sandbox_env.sh reads $HOME for state
+    try:
+        runner = Run(StubApp(os.path.join(root, "home"), os.path.join(root, "tmp")),
+                     "chat1", interpreter, program, sandbox=False, timeout=0)
+
+        async def collect():
+            return "".join([chunk async for chunk in runner.run()])
+        return asyncio.run(collect())
+    finally:
+        if saved_home is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = saved_home
+
+
+with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as root:
+    target = poisoned_cwd(home)
+    state(home, cwd=target)
+    program = get_args({"path": "made.txt", "content": "written under TOOL_PYTHON\n",
+                        "append": False, "prepend_newline": True, "create_dirs": True},
+                       {"append": False, "prepend_newline": True, "create_dirs": True})
+    program += get_script(os.path.join(REPO_ROOT, "spit_app", "tools", "write_file.py"))
+    output = run_through_run(home, root, TOOL_PYTHON, program)
+    check("t8-no-poison-through-run", TOKEN in output, False)
+    check("t8-reports-no-error", "Exit code 0" in output, True)
+    made = os.path.join(target, "made.txt")
+    check("t8-file-written-in-the-carried-cwd",
+          open(made).read() if os.path.exists(made) else None,
+          "written under TOOL_PYTHON\n")
+    check("t8-nothing-in-the-home", os.path.exists(os.path.join(home, "made.txt")), False)
+
+print()
 print("==============================")
 print(f"PASS: {pass_}  FAIL: {fail_}")
 sys.exit(1 if fail_ else 0)
