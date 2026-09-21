@@ -104,7 +104,7 @@ try:
             expand_arguments(arguments, DESC["function"]["parameters"]
                              ["properties"].keys())
             head = get_args(arguments, DEFAULTS)
-            proc = subprocess.run([EXEC["interpreter"]], input=head + EXEC["script"],
+            proc = subprocess.run(EXEC["interpreter"], input=head + EXEC["script"],
                                   capture_output=True, text=True, cwd=sandbox_home,
                                   env=env)
             check("t4-rc", proc.returncode, 0)
@@ -114,7 +114,7 @@ try:
             print()
             print("=== 5. Control: without expansion the same call fails ===")
             head = get_args({"path": "~/one.txt"}, DEFAULTS)
-            proc = subprocess.run([EXEC["interpreter"]], input=head + EXEC["script"],
+            proc = subprocess.run(EXEC["interpreter"], input=head + EXEC["script"],
                                   capture_output=True, text=True, cwd=sandbox_home,
                                   env=env)
             check("t5-fails", proc.returncode, 1)

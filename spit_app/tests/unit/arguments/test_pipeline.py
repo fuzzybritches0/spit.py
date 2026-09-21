@@ -41,7 +41,7 @@ def check(name, condition, detail=""):
 def run(arguments: dict, cwd: str):
     """Run the tool script exactly as ToolCall.call() hands it to the sandbox."""
     head = get_args(arguments, DEFAULTS)
-    proc = subprocess.run([EXEC["interpreter"]], input=head + EXEC["script"],
+    proc = subprocess.run(EXEC["interpreter"], input=head + EXEC["script"],
                           capture_output=True, text=True, cwd=cwd)
     return proc
 

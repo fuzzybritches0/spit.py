@@ -29,6 +29,36 @@ def get_script(tool, common: str = "") -> str:
     with open(script_path, "r") as f:
         return common + f.read()
 
+# The interpreter the built-in tool scripts run under. The three flags are the
+# change, not the program name.
+#
+#   -P  do not prepend a potentially unsafe path to sys.path. These tools hand
+#       their script to python3 on STDIN (script_as_file is False for them), and
+#       stdin mode puts '' -- the CURRENT WORKING DIRECTORY -- first on sys.path.
+#       run_command's `cd` carries over between calls, so a call that ended
+#       inside a python package directory left every later file tool importing
+#       THAT directory in place of the standard library: `import pathlib` died
+#       inside site-packages/textual/types.py with `ModuleNotFoundError: No
+#       module named 'textual'`, and the file was not written. Whether a tool
+#       died was decided by its own import graph -- read_files.py imports nothing
+#       and answered normally in the same directory, search_replace.py imports
+#       re -> enum -> types and did not. -P removes the entry rather than moving
+#       the directory, so the tool still starts where the shell left off and a
+#       relative `path` argument still means what it meant.
+#   -E  ignore the environment: PYTHONPATH is the second door to the same
+#       shadowing, and it arrives the same way -- exported by an earlier
+#       run_command call and replayed by sandbox_env.sh. Measured both ways: with
+#       PYTHONPATH naming a directory that holds a `types.py`, plain python3
+#       imports the poison and -E does not.
+#   -s  no user site-packages: a tool script is pure stdlib (TRAPS #19), so
+#       anything importable only from ~/.local is a difference without a reason.
+#
+# -P is Python 3.11+ and -I has meant -E -s -P since 3.11; the repo is built and
+# tested on 3.13. `python3 -E -s -P` and `python3 -I` are the same flags on this
+# interpreter (sys.flags: ignore_environment=1, no_user_site=1, safe_path=True)
+# -- spelled out because the three reasons above are three separate ones.
+TOOL_PYTHON = ["python3", "-E", "-s", "-P"]
+
 # Where a call leaves the state the next one starts from, in shell form: $HOME
 # is resolved when the script runs, and the sandbox's HOME is the sandbox's home.
 SANDBOX_ENV_STATE = "$HOME/.sandbox_env"
@@ -118,11 +148,15 @@ def get_args(arguments: dict, defaults: dict) -> str:
     return ret + "\n"
 
 class Run(CommonMixIn):
-    def __init__(self, app, chat_id: str, cmd: str, script: str, sandbox: bool = True, timeout: int = 0,
+    def __init__(self, app, chat_id: str, cmd: str|list, script: str, sandbox: bool = True, timeout: int = 0,
                  script_as_file: bool = False,
                  separate_stderr: bool = False) -> None:
         super().__init__(app, sandbox, chat_id)
-        self.cmd = [cmd]
+        # an interpreter on its own, or an interpreter plus its own arguments
+        # (`TOOL_PYTHON`): the first element is the program check_bwrap() looks
+        # for and the rest goes to exec untouched. A list stays a list -- wrapping
+        # it in one would hand exec a list inside the argv.
+        self.cmd = list(cmd) if isinstance(cmd, (list, tuple)) else [cmd]
         self.script = script
         # False: stderr is written into stdout as it happens, the shell's own
         # behaviour. True: it is collected and reported in a labelled block at the
