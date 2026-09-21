@@ -58,7 +58,9 @@ spit_app/tools/scripts/common/   shared helpers PREPENDED to scripts
                                  (file.py = stat metadata, lines.py =
                                  line-ending primitives)
 spit_app/tools/run/run.py    the Run class: sandboxed (bwrap) script/ command
-                             execution, trailer, env+cwd carry-over
+                             execution, trailer, env+cwd carry-over, and
+                             TOOL_PYTHON, the isolated interpreter the script
+                             tools run under (TRAPS #25)
 spit_app/tools/run/common.py kill_process_group, bwrap args
 spit_app/tools/run/terminal.py  tmux backend for terminal/lsterm
 spit_app/tests/run_tests.sh  runs everything, prints one line per suite

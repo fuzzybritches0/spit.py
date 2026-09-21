@@ -182,6 +182,69 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
 
 ---
 
+## P10 - `run_script`'s python gets the shared sandbox tmp as `sys.path[0]`  [found alongside DECISIONS 78; needs its own `Go!`]
+
+- **The exposure** (measured, this box). DECISIONS 78 closed the stdin door for the
+  13 script tools. `run_script` and `run_command` deliver the script **as a file**,
+  and file mode puts the *script's own directory* first on `sys.path` — for
+  `run_script`'s python that is `sandbox_tmp`, which bwrap binds to `/tmp`. So a `.py`
+  file named after a stdlib module anywhere in that directory is imported instead of
+  the stdlib: with a `types.py` planted there, `python3 /tmp/<script>` dies exactly
+  like the file-tool bug did, and `python3 -P /tmp/<script>` does not. Measured on
+  this chat's sandbox tmp: **117 leftover `.py` files** from earlier sessions (the
+  debug note that started this investigation is itself about that litter), and
+  collisions with stdlib module names **today: none** — a loaded gun, not a misfire.
+  One `types.py`/`enum.py`/`copy.py` written there by any session breaks every later
+  `run_script python3` call in the chat, and whoever inherits it is told nothing.
+- **Why it was left open rather than fixed with 78**: the fix changes what a user
+  script can import, which is a semantics decision, not a bug fix. `-P` on
+  `run_script`'s python closes the door and, with it, the accidental "import the
+  helper I left in `/tmp` last call" route that works today. A **private per-call
+  delivery directory** (`mkdtemp()` under `sandbox_tmp`) closes it identically without
+  touching the flags — measured: the real `search_replace` script ran clean from a
+  poisoned cwd with `sys.path[0]` = its own fresh directory — and ends the same
+  cross-call route. Both answers are the same trade.
+- **Decide first**: is "modules importable from the shared sandbox tmp" a feature or
+  an accident? Feature → document the limit and the collision rule, change nothing.
+  Accident → take the private directory (it also stops the tmp accumulating other
+  sessions' files into every later `sys.path[0]`).
+- **Verify**: append-only numbers in `tests/unit/run_script/` (TRAPS #15) — plant a
+  stdlib-named module in the delivery directory and assert it is **not** imported,
+  with the control asserting it **is** under the plain interpreter (TRAPS #13), then
+  the real payloads still run and every other row byte-for-byte (TRAPS #18).
+
+---
+
+## P11 - A sandboxed `terminal` pane starts clean, an unsandboxed one inherits: pick one  [found alongside DECISIONS 78; needs its own `Go!`]
+
+- **The asymmetry** (measured). `term_new()` builds `bwrap_args() + ["bash"]` in
+  sandbox mode — **no `sandbox_env.sh`** — while the `sandbox=False` branch builds
+  `[self.SANDBOX_ENV] + ["bash"]`, which sources `~/.sandbox_env` and cds to
+  `~/.sandbox_cwd`. So in the default configuration a new pane starts in
+  `/home/<user>` with no carried exports: measured, a pane created right after
+  `export SPIT_TEST=carried; cd /tmp/wp-cwd-test` answers `cwd=/home/kurt`,
+  `SPIT_TEST=[unset]`, while a `run_command` in the same chat answers both. Nothing
+  in the docs or in either tool's PROMPT says which of the two is intended.
+- **Why it matters**: the `cd`-carry-over promise lives in `run_command`'s PROMPT, and
+  a model has no way to know the pane is a different shell than the one it just
+  `cd`-ed. `run_command` and `run_script` both go through `sandbox_env.sh` in both
+  modes; `terminal` is the only tool whose launcher depends on the sandbox setting.
+- **The two honest answers**: route the pane's shell through `sandbox_env.sh` in both
+  modes (a pane then starts where the chat's shell last was, and a long-lived pane
+  inherits whatever directory that was — harmless for bash, and a poisoned cwd there
+  is no longer a file-tool problem thanks to DECISIONS 78, but it is a decision); or
+  keep the clean start and **say so** in the `terminal` PROMPT and in
+  `RUNTIME-RUN-COMMAND.md`, which currently describes the pane as running bash
+  "bwrap-sandboxed by default" without mentioning the state. A third answer — the
+  present one — is a behaviour that depends on a setting whose stated purpose is
+  something else.
+- **Verify**: append-only checks in `tests/unit/terminal/` (needs the test venv,
+  TRAPS #19) asserting the chosen answer for both settings, with the pane's own
+  `pwd`/`echo $VAR` as the read — and no assertion of a pane's timing (decision 73:
+  synchronise to the pane's state, never to the test's clock).
+
+---
+
 ## P7 - RETIRED - leave Textual for a different front end  [number retired, 2026-09-20; a replacement route is a later, owner-level task]
 
 The route this number carried is **gone by the owner's decision of 2026-09-20**:

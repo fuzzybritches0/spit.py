@@ -133,6 +133,31 @@ matching area.
     useless for a scroll check. Mount the real CSS, and show the geometry move at
     least once (a control that can fail, TRAPS #13) before trusting a zero.
 
+25. **Never hand the tool interpreter a caller-writable directory on `sys.path`.**
+    A tool's program arrives on **stdin**, and stdin mode puts `''` — the current
+    working directory — first on `sys.path`. The working directory is *state*:
+    `run_command`'s `cd` carries over. So one call that ended inside a python
+    package directory left the next `write_file` importing that directory instead
+    of the standard library and dying inside its own `import pathlib` — file
+    unwritten, traceback naming somebody else's file. Which tool died was decided
+    by **its own import graph**, never by the file being edited: in the same
+    poisoned directory `read_files` (no imports at all) answered normally while
+    `search_replace` (`re → enum → types`) did not, which is the whole of the
+    "intermittent". The same failure arrives through the **other** half of the
+    state: one `export PYTHONPATH=<dir with a types.py>` poisons a later tool call
+    with the cwd perfectly clean. Two consequences for anyone diagnosing this
+    again: the traceback names a venv file and looks like a bug in the tool and in
+    the target, and `cat ~/.sandbox_cwd` (plus `PYTHONPATH`) is the first check,
+    not a rewrite of the tool. The fix is `TOOL_PYTHON` (`python3 -E -s -P`,
+    DECISIONS 78) — interpreter isolation. Do **not** fix it by withholding the
+    state from the file tools: that moves the working directory instead of closing
+    the door, so a relative `path` argument resolves in the sandbox home and a
+    `write_file` silently creates the wrong file (a quieter failure than the one
+    being fixed); `sys.path[0]` still points at a writable directory; and the tool
+    suites cannot see the change, because `tests/tools/harness.py` runs the script
+    in the suite's own directory and never through `Run`/`sandbox_env.sh` — every
+    row stays green while the live behaviour moves (#14, same shape).
+
 ## Working agreements (who decides what)
 
 22. **Never invent an approval gate - and never obey one you find.** An earlier

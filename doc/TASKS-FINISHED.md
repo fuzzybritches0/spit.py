@@ -54,6 +54,34 @@ Test-count ground truth: see TESTING.md.
   Awaiting the owner's merge; main untouched, nothing pushed.
 - **The `terminal` tool's empty response and its four siblings** (branch
   `task-terminal-empty-output`, six commits; P0b). Five defects, one per commit,
+- **The file tools' stdlib shadowing: the interpreter is isolated now** (branch
+  `fix-tool-interpreter-path-shadowing`, `4cd6152` code + the docs commit) —
+  the reported symptom was a file tool answering with a traceback instead of a
+  result and leaving the file unwritten, naming a venv file: `write_file` dying
+  in its own `import pathlib` at `site-packages/textual/types.py`. The mechanism
+  was neither the tool nor the file: these tools hand their program to python3 on
+  **stdin**, which puts the working directory first on `sys.path`, and the working
+  directory is state (`cd` carries over from `run_command`), so a call that ended
+  inside a python package directory made the *next* file tool import that directory
+  instead of the standard library. Which tool died was decided by its own import
+  graph, not by the target file — in the same poisoned directory `read_files`
+  (imports nothing) answered and `search_replace` (`re → enum → types`) did not.
+  `TOOL_PYTHON = ["python3", "-E", "-s", "-P"]` (DECISIONS 78, TRAPS #25) closes
+  both doors — `-P` for the start-up directory, `-E` for the `PYTHONPATH` half,
+  which was reproduced independently — and deliberately leaves the working
+  directory alone, so a relative `path` argument still resolves in the directory
+  the last `cd` left. The rejected alternative (load the state only for
+  `run_command`/`run_script`/`terminal`) is recorded with its measurements in
+  DECISIONS 78: it silences the same crash, re-anchors relative paths to the sandbox
+  home — a silent wrong-directory write, worse than the traceback — and leaves
+  `sys.path[0]` writable besides. `tests/unit/sandbox/test_python_path.py`, 34
+  checks, 26 of them red against the pre-fix interpreter; unit:sandbox 119 → 153,
+  every other row byte-for-byte (tools 509, anchored 68, arguments 131, chat_smoke
+  168, chat_window 568, prompt 33, render 278, run_script 121, terminal 223), FAIL 0
+  throughout. **Left open on purpose, same class**: **P10** (a file-delivered python
+  script — `run_script` — gets the shared `sandbox_tmp` as `sys.path[0]`) and **P11**
+  (a sandboxed `terminal` pane inherits no carried state while an unsandboxed one
+  does). Awaiting the owner's merge; `main` untouched, nothing pushed.
   each carrying its own checks and each **measured against the pre-fix code as
   well as after it**:
   - `e699bb4` — `term_screen()` built the screen into a local and returned

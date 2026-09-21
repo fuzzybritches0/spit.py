@@ -45,7 +45,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
-| unit:sandbox | 119 |
+| unit:sandbox | 153 |
 | unit:terminal | 223 |
 
 ## The test venv (four suites need it)
@@ -88,6 +88,19 @@ full runs identical, and the chat_smoke `golden.txt` md5
 (The sandbox row was re-measured 2026-09-04 at 119 - `test_prompt.py` and
 the failure-counting fix raised it; the table lagged. Counts only ever go
 up, per the rule above.)
+
+(It is **153** since `fix-tool-interpreter-path-shadowing`: one new file,
+`test_python_path.py`, 34 checks, by addition alone - every other row
+byte-for-byte where it was (tools 509, anchored 68, arguments 131, chat_smoke
+168, chat_window 568, prompt 33, render 278, run_script 121, terminal 223).
+26 of the 34 are red against the pre-fix interpreter, which is the point of the
+file: the first section is the control that shows a `types.py` in the working
+directory really does poison a stdlib-only script, so the checks after it cannot
+pass on a fixture that cannot fail. Its section 4 is the check that keeps the
+*semantics* honest - a relative `path` must still edit the file in the carried
+cwd and not the same-named one in the sandbox home - because the alternative
+fix that was rejected moves the tool rather than closing the door (DECISIONS 78,
+TRAPS #25).)
 
 (`unit:terminal` was re-measured at 119 when `test_event_loop.py` landed on the
 `task-terminal-empty-output` branch: 98 → 119 by addition alone, every other row
@@ -386,7 +399,11 @@ harness **absolute** fixture paths.
 - `tests/unit/sandbox/` - script wrapper and delivery: trailer, state
   (env/cwd carry-over), streams (stderr separation), lifecycle (background -
   MUST use sandbox=False, TRAPS #6), delivery, prompt (asserts the
-  run_command PROMPT tells the model the truth). Runner globs `test_*.py`
+  run_command PROMPT tells the model the truth), and `test_python_path.py`
+  (the `TOOL_PYTHON` isolation: a poisoned cwd and a poisoned `PYTHONPATH`
+  from the state, driven through `sandbox_env.sh` with the program on stdin
+  exactly as the file tools deliver it, plus the control that the bare
+  interpreter dies there). Runner globs `test_*.py`
   and sums `PASS: n  FAIL: n` lines; `stub_app.py` deliberately does not
   match the glob - renaming it would make the runner treat it as a suite.
   Lifecycle/delivery/streams drive everything through the shared

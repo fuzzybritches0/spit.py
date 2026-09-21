@@ -11,15 +11,49 @@ get_args), `run/common.py` (kill_process_group, bwrap args),
 1. Module builds `script = get_args(arguments, defaults) + EXEC["script"]`
    (`EXEC["script"]` = optional common file prepended + tool script, both
    pure stdlib).
-2. `Run(app, chat_id, interpreter, script, sandbox, timeout)` writes the
-   script to a **file** and runs it through that file (not `python3 -c`) so
-   the command keeps its stdin.
+2. `Run(app, chat_id, cmd, script, sandbox, timeout)` executes `cmd`, which is
+   either a program name or a program name plus its own arguments
+   (`self.cmd = list(cmd) if isinstance(cmd, (list, tuple)) else [cmd]`).
+   `script_as_file=True` writes the script to a **file** in `sandbox_tmp` and
+   runs it through that file so the command keeps a stdin of its own - that is
+   how `run_command` and `run_script` deliver. The 13 file tools do **not**:
+   the default `script_as_file=False` feeds the script on **stdin**, which is
+   why the interpreter's start-up directory is the working directory - see the
+   isolation note below and TRAPS #25.
 3. Inside or outside bwrap according to the user-editable `sandbox` setting
    (default True; the settings UI says DANGER on disabling). bwrap args
    include `--die-with-parent` and bind `sandbox_env.sh` as
    `~/.sandbox_env.sh`.
 4. A **trailer** appended to the command captures the real exit code and the
    exported environment. The trailer is fragile - see TRAPS #1.
+
+## The tool interpreter is isolated: `run/run.py TOOL_PYTHON`
+
+The 13 script tools run under `TOOL_PYTHON = ["python3", "-E", "-s", "-P"]`
+(DECISIONS 78, TRAPS #25), and the flags are load-bearing:
+
+- `-P` - do not prepend the interpreter's start-up directory to `sys.path`. In
+  stdin mode that directory is the **cwd**, and the cwd is state: `cd` carries
+  over from `run_command`. A package directory left as the cwd therefore used
+  to shadow the standard library for the next file tool (`import pathlib` dying
+  inside `site-packages/textual/types.py`), decided by the tool's own import
+  graph rather than by the file it was editing.
+- `-E` - ignore the environment: `PYTHONPATH` carried in `~/.sandbox_env` is the
+  second door to the same shadowing.
+- `-s` - no user site-packages, because a tool script is pure stdlib (TRAPS #19).
+
+Needs Python 3.11+ (`-P`); the repo is built and tested on 3.13. What the flags
+deliberately do **not** touch is the working directory: the tool still starts
+where the shell left off, so a relative `path` argument resolves exactly where
+it did before. The rejected alternative (load the state only for
+`run_command`/`run_script`/`terminal`) is recorded in DECISIONS 78 with the
+measurements against it - it re-anchors relative paths to the sandbox home,
+which turns a loud crash into a file silently created in the wrong place, and it
+leaves `sys.path[0]` writable all the same.
+
+Still open, same class, other delivery mode: **P10** - a file-delivered python
+script (`run_script`) gets `sys.path[0] = sandbox_tmp`, a directory shared
+between calls and never cleaned.
 
 ## run_command semantics (the model is told these; keep code and PROMPT in sync)
 

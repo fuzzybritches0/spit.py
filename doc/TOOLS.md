@@ -50,6 +50,12 @@ Rules behind the columns:
   trailing newline of its own (decision 62, pinned by
   `tests/unit/prompt/test_prompt_assembly.py`).
 - `STREAM_TOOL_RESPONSE` tools stream their output into the chat as it arrives.
+- **the script tools run on `run/run.py`'s `TOOL_PYTHON`** (`python3 -E -s -P`),
+  not on a bare `python3`, and `EXEC["interpreter"]` is therefore an argv
+  **list**, which `Run` accepts beside a bare program name. The flags keep the
+  working directory and the inherited environment off `sys.path`; the working
+  directory itself is untouched, so a relative path argument still resolves in
+  the directory the last `run_command` `cd` left (DECISIONS 78, TRAPS #25).
 - **the shell wrapper is bash's own**: `wrap_script()` is what carries a call's
   exit code and shell state (exported env, cwd) out of a run, and `run_script`
   hands it **only to bash**. A python or perl script goes to its interpreter
