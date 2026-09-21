@@ -286,6 +286,10 @@ class Run(CommonMixIn):
                         cwd=self.sandbox_path, start_new_session=True)
         stderr_chunks = []
         stderr_task = None
+        # "" when the streams are merged: there stderr arrives inside the output
+        # as it happens, so `has_output` already accounts for it and the verdict
+        # below has only the one stream to ask about.
+        errors = ""
         has_output = False
         if self.separate_stderr:
             stderr_task = asyncio.create_task(self._collect(proc.stderr, stderr_chunks))
@@ -297,7 +301,13 @@ class Run(CommonMixIn):
         try:
             async for data in self._stream(proc):
                 yield data.decode("UTF-8", errors="replace")
-                has_output = True
+                # Whitespace is not news. A command that printed nothing but a
+                # newline leaves the reader a blank block, and the blank block
+                # with no verdict line is the one case the rule below reads
+                # wrong -- so "was there output" asks the same question the
+                # stderr block already asks of `errors`. The streamed bytes are
+                # untouched: this decides a line, never what was written.
+                has_output = has_output or bool(data.strip())
         finally:
             # the file is the command, so it has to outlive the stream, but it
             # is a copy of a command and there is no reason to leave it behind
@@ -319,15 +329,27 @@ class Run(CommonMixIn):
                 yield "\n✗ Process was terminated due to timeout limit!"
             elif self.terminated:
                 yield "\n✗ Process was terminated by user!"
+            else:
+                # Nobody claimed this death, so say what actually happened: with
+                # the convention below -- no line means exit 0 -- a silent
+                # signal-death (OOM killer, an outside `kill`, a crash) would
+                # read back to the model as a clean run. Same class of hole as
+                # an unreported non-zero exit code, which is why it is closed
+                # here and not left as it was. -9 reads as signal 9.
+                yield f"\n✗ Terminated by signal {-proc.returncode}!\n"
         else:
-            if not has_output and (stderr_task and not errors.strip()):
-                has_output = " (no output)"
-            else:
-                has_output = ""
-            if not proc.returncode == 0:
-                status = f"✗ Exit code {proc.returncode} — command reported an error!{has_output}"
-            else:
-                status = f"✓ Exit code {proc.returncode} — command reported no error.{has_output}"
-            yield f"\n{status}\n"
+            # A line after every call is a line the model reads and ignores, so
+            # the exit status is reported when it carries news and not
+            # otherwise: a failure always (an exit code the model never sees is
+            # how a failing build reads as a passing one), and a success only
+            # when nothing at all came back -- the one case where silence would
+            # otherwise be ambiguous between "ran and printed nothing" and "the
+            # call never reported". A success WITH output says nothing, because
+            # the output is the report. Absence of a line means exit 0; that is
+            # the convention, and the failure line is what breaks it loudly.
+            if proc.returncode != 0:
+                yield f"\n✗ Exit code {proc.returncode} — command reported an error!\n"
+            elif not has_output and not errors.strip():
+                yield "\n✓ Exit code 0 — command reported no error. (no output)\n"
             if stderr_task and errors.strip():
                 yield f"\n{STDERR_HEADER}\n{errors}"
