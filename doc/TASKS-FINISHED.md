@@ -1242,3 +1242,34 @@ the refusal.
 
 **Known edge, deliberately left open** — see *Next steps → 4*.
 
+### exit-reporting — the verdict line reports news; the tool says whether it needs one (branch `alternate-exit-reporting`: `a1563e5`, `a4cf37f`, `ae568a0` + the docs close-out, awaiting the owner's merge)
+
+**What the owner asked for.** Stop the Run class appending `✓ Exit code 0 — command reported no error.` to
+every tool result: one paragraph per call saying only what the absence of a failure already says. The
+first cut of it (the owner's, uncommitted) gated the line behind the *no-output* condition, which reported
+the exit code where nobody needs it and not at all where they do — a failure with output reported no code
+(`echo built; exit 3`, the shape of every compiler and test runner), and because the gate began with
+`stderr_task`, which is `None` unless `separate_stderr=True`, all 13 script tools lost exit reporting of any
+kind. That is the TRAPS #18 class: not a red check, a flipped verdict.
+
+**What shipped.** The line is written when it is news, and how much of it is written is the tool's call, not
+`Run`'s — `needs_exit_status_report=True` for `run_command`/`run_script`, whose stdout is somebody else's
+text; default `False` for the 13 script tools, whose scripts print their own `ERROR:` verdict. Silence is
+covered either way: `or silent` writes the failure line whenever the result would otherwise be empty, and a
+success says something only in that same case. The three death sentences sit outside the flag and were
+reworded into one family with the exit line; the stderr block moved above the verdict so the verdict is the
+last thing read. Full record: **DECISIONS 79**, rule in `RUNTIME-RUN-COMMAND.md`.
+
+**Measured, not assumed.** The flag's premise is that the 13 tools state their own outcome, so it was
+counted before it was relied on: **all 36 non-zero exits across all 13 scripts print an `ERROR:` line
+first.** It holds inside the scripts and not outside them, which is what `or silent` is for — with the
+carve-out absent, a poisoned interpreter, an OOM kill or a future print-less `sys.exit(1)` returned the
+empty string, byte for byte, from a `write_file`-shaped call through the real delivery path. The behaviour
+was settled by a differential over rc × output × stream-mode with `main` in a throwaway worktree against the
+branch, both `separate_stderr` values, plus a case killing the process `Run` exec'd: every failure row
+byte-identical to `main`, the success-with-output rows losing exactly the one line, the signal death silent
+on `main` and reported here. The worktree was removed afterwards — a second checkout of `main` blocks the
+owner's merge — and no commit was made in it.
+
+**The five checks, and what the re-pin changed about them.** They asserted the line this removes, and the
+owner re-pinned them to the exact tool result (`out == "read: []\n"`, `out == "hi\n"`,
