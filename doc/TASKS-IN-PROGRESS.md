@@ -423,12 +423,14 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
 ### State (crash-recovery record)
 
 - **Branch**: `task-token-counts-p12`, cut from `docs-plan-token-usage-context-size`
-  (`c7e7d74`, the planning landing). Last commit on it: `b7d06ac` (step 2).
+  (`c7e7d74`, the planning landing). Last commit on it: `304530a` (step 3).
 - **Scope** (so far): `spit_app/endpoints/llamacpp.py` (step 1),
-  `spit_app/chat/work.py` + `spit_app/chat/chat.py` (step 2). Rest of the
-  chain: see the step list — one file per step, in order.
+  `spit_app/chat/work.py` + `spit_app/chat/chat.py` (step 2),
+  `spit_app/manage/endpoint/endpoint.py` (step 3). Rest of the chain: see the
+  step list — one file per step, in order.
 - **Done**: planning (`c7e7d74`), the entry move (`b799526`), **step 1**
-  (`a173854`) and **step 2** (`b7d06ac`) — see the two blocks below.
+  (`a173854`), **step 2** (`b7d06ac`) and **step 3** (`304530a`) — see the three
+  blocks below.
 
   **Step 1** (`a173854`): `extract_fields` is a no-op on empty/missing `choices`;
   `delta.get("usage")` is read in the chunk loop *before* anything touches choices
@@ -473,25 +475,62 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
   — `write_chat_history` (`chat.py:106-111`) still writes only
   ctime/settings/messages, so a reloaded chat starts at zeros; it is NOT added to
   the saved chat file without the owner's word.
-- **Left**: **step 3** — `spit_app/manage/endpoint/endpoint.py`: add `context_size`
-  to `NEW` (`"uinteger"`, `empty: False`, `value: 0`, desc saying 0 = auto-detect;
-  model it on the `timeout` line). The honouring logic is step 1's and was measured
-  working on 2026-09-22 with this tree: `get_context_size` returned `8192` from
-  `context_size` alone against a dead address (both HTTP rungs missed), and
-  `prepare_payload()` left `context_size` OUT of the payload while a control setting
-  NOT on the skip list leaked into it (`4242`) — the TRAPS #13 control shape step 5
-  will pin. Step 3 does NOT touch `llamacpp.py`. Note for whoever edits it: the
-  field only appears for endpoints created after the change (an existing
-  `endpoints.json` entry keeps exactly its own keys — nothing merges `NEW` into a
-  loaded endpoint), which is harmless because `get_context_size` reads the key with
-  `.get()`. Full handoff message was handed to the owner.
-- **State hazards**: none. Tree clean at `b7d06ac`; full suite green and
-  byte-identical to the pre-step-2 run (re-measured). Throwaway probes, deliberately
-  NOT committed (the committed suite is step 5) and safe to delete:
-  `/tmp/p12_step2_probe.py` (drives the real `work_stream()`/`harvest_usage()` with a
-  fake endpoint; run with `PYTHONPATH=~/spit.py ~/.venv-spit/bin/python`). The step-1
-  probe `/tmp/p12_check.py` is still there too (step 1's, same status). Neither is
-  read by anything in the repo; step 5 replaces both with the committed suite.
+
+  **Step 3** (`304530a`): `NEW` gained, after `timeout` and before `reasoning_key`
+  (mount order is `NEW`'s dict order; nothing else reordered),
+  `"context_size": {"stype": "uinteger", "empty": False, "desc": "Context Size
+  (0 = auto-detect)", "value": 0}` — modelled on `timeout` (same `uinteger`, same
+  `"empty": False`, which `manage/validation.py:27`/`:152` turn into `is_not_empty`,
+  so it cannot be saved blank; the desc carries the `N (0 = meaning)` phrasing), and
+  deliberately NOT on `parallel`, which omits `"empty"`. No logic; `llamacpp.py`
+  untouched. **No deviation from the handoff.** Measurements after the edit
+  (throwaway `/tmp/p12_step3_probe.py`, PASS 10 FAIL 0 — step 5 replaces it):
+  `get_context_size(ep, "m")` on `http://127.0.0.1:1/v1` (BOTH HTTP rungs refused)
+  with `context_size` 8192 → **8192** (the override rung answered);
+  `prepare_payload()` keys → exactly `model/messages/stream/stream_options/timeout`,
+  `context_size` **absent**; the TRAPS #13 control — the same endpoint plus
+  `n_ctx_control` 4242, NOT on the skip list → **does** appear (4242) while
+  `context_size` still does not; and the three no-value paths (0, blanked-to-`None`
+  the way `store_values` leaves it, key absent entirely) all answer `None` without
+  raising. Probe detail worth keeping: `NEW` carries no `"value"` for the settings
+  without a default, but `construct_payload` (`llamacpp.py:149`) and `auth_headers`
+  (`:29`) index it, so a test endpoint must be built as a SAVED one (`setdefault`).
+  Accepted limit, in the commit body: an endpoint stored BEFORE this change keeps
+  only its own keys (`settings` reads `endpoints.json` verbatim, `Manage.load()`
+  deepcopies, `manage.py:37`) so it shows no Context Size field, even after an
+  edit+save; harmless (the override is the last of three rungs and is read with
+  `.get()`), and NOT to be "fixed" by merging `NEW` into loaded endpoints in
+  `settings.py` without the owner's word.
+- **Left**: **step 4** — `spit_app/chat/chat_settings.py`: one `Label` on the
+  chat-settings row, `ctx <used> / <n_ctx> · gen <generated> · cached <cached>`,
+  reading `chat.token_usage` and `get_context_size(self.app.get_endpoint(cs("endpoint")),
+  cs("model"))` cached per `(endpoint, model)`, refreshed at `StreamCallback` signal 0
+  and on endpoint/model change, a `None` rendering as a dash and never as a number.
+  TWO hazards measured on this tree 2026-09-22, both in the handoff: (a) signal 0 is
+  posted on `chat_view` and `Message.bubble` means only ANCESTORS receive it — a
+  handler on `ChatSettings` (a SIBLING of `ChatView` under `Chat`) is never called;
+  the measured receiver is `Chat`. (b) `get_context_size({})` — what
+  `SmokeApp.get_endpoint()` returns — **raises** `KeyError: 'endpoint_url'` (step 1
+  guards the HTTP and the override, not a missing `endpoint_url`), and
+  `app.get_endpoint(id)` itself raises `KeyError` on an id that is gone
+  (`app.py:143-145`); the file's own pattern already guards both —
+  `update_models` opens with `if not self.cs("endpoint") in self.app.endpoint_list():
+  return None` (`chat_settings.py:77`) — and the new call needs the same guard, else
+  `unit:chat_smoke`/`unit:chat_window` (whose stub `get_endpoint()` answers `{}`) die
+  in the new code path. Mounting the `Label` LAST in
+  `on_mount` moves no suite and does not touch the golden; mounting it FIRST breaks
+  `chat_smoke` (`self.children[1/3/5]` are indexed by position).
+- **State hazards**: none. Tree clean at `304530a`; full suite green with every row
+  at its TESTING.md value (tools 127/24/30/119/80/32/68/29, unit
+  68/131/168/568/33/278/121/157/223) and `chat_smoke`'s golden md5 unmoved
+  (`8ae9d1186a59627d30d05dee95f0ad95`) — re-measured after step 3. Throwaway
+  probes, deliberately NOT committed (the committed suite is step 5) and safe to
+  delete: `/tmp/p12_step3_probe.py` (this step's, the three measurements above),
+  `/tmp/p12_step4_probe.py` (measures who receives signal 0 — `Chat`, not
+  `ChatSettings`; it monkey-patches handlers and writes nothing),
+  `/tmp/p12_step2_probe.py` and `/tmp/p12_check.py` (steps 1-2). All run with
+  `PYTHONPATH=~/spit.py ~/.venv-spit/bin/python`; none is read by anything in the
+  repo, and step 5 replaces them with the committed suite.
 - **Verify**: each step: full suite from the repo root, counts unmoved except by this
   entry's own new checks (step 5). Final: the entry's **Verify** bullet, then close
   per step 6.
