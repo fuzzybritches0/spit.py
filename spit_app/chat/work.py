@@ -111,6 +111,26 @@ class Work:
         if self.save_cache_prompt():
             await self.manage_cache.return_slot(self.cs("model"), self.chat.id, self.slot)
 
+    def harvest_usage(self) -> None:
+        # The endpoint kept the last usage object of the stream that just ran, or
+        # None when the server said nothing: silence must never zero what the chat
+        # already knows, so this returns without touching the accumulated numbers.
+        usage = self.endpoint.usage
+        if not usage:
+            return
+        prompt = usage.get("prompt_tokens") or 0
+        completion = usage.get("completion_tokens") or 0
+        details = usage.get("prompt_tokens_details") or {}
+        # `context` is the window fill of the LATEST call, never a sum: that call's
+        # prompt already contains the previous answer and the tool results, so a
+        # tool loop refreshes it instead of adding the history up again.
+        self.chat.token_usage["context"] = prompt + completion
+        # `generated` is the one number that does add up across the chat.
+        self.chat.token_usage["generated"] += completion
+        # Best effort: a server that sends no details leaves `cached` at 0 for this
+        # read rather than keeping the count from the call before it.
+        self.chat.token_usage["cached"] = details.get("cached_tokens") or 0
+
     async def work_stream(self) -> None:
         if "tool_calls" in self.messages[-1]:
             for tool_call in self.messages[-1]["tool_calls"]:
@@ -126,6 +146,9 @@ class Work:
             if self.endpoint == -1:
                 self.app.exception = Exception("No free slot for inference available! Please try again later!")
             await self.endpoint.stream()
+            # after the await and still inside the try: a stream that raised leaves
+            # a reply nobody got, and an error is not a counted reply.
+            self.harvest_usage()
         except Exception as exception:
             if type(exception).__name__ in ("TimeoutError", "ReadTimeout", "ConnectError",
                                             "RuntimeError", "ConnectTimeout", "ReadError",

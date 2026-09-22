@@ -32,6 +32,12 @@ class Chat(Vertical):
         self.messages = content["messages"]
         self.model_capabilities = []
         self.work = None
+        # The running token counts of this chat, kept here and not on Work because
+        # a new Work is constructed per send (chat_text_area.py, chat_view_actions.py)
+        # and could hold nothing across replies. Session state only:
+        # write_chat_history() stores ctime/settings/messages, so a reloaded chat
+        # starts at zeros.
+        self.token_usage = {"context": 0, "generated": 0, "cached": 0}
         self.chat_view = ChatView(self)
         self.text_area = ChatTextArea(self)
         self.chat_settings = ChatSettings(self)
