@@ -5,9 +5,7 @@ from copy import deepcopy
 
 async def get_models(endpoint: dict) -> list:
     api_endpoint = endpoint["endpoint_url"]["value"] + "/models"
-    headers = {}
-    if "key" in endpoint and endpoint["key"]["value"]:
-        headers["Authorization"] = f"Bearer {endpoint['key']['value']}"
+    headers = auth_headers(endpoint)
     try:
         async with httpx.AsyncClient(timeout=3) as client:
             response = await client.get(api_endpoint, headers=headers)
@@ -25,6 +23,65 @@ async def get_models(endpoint: dict) -> list:
         except:
             return []
     return []
+
+def auth_headers(endpoint: dict) -> dict:
+    headers = {}
+    if "key" in endpoint and endpoint["key"]["value"]:
+        headers["Authorization"] = f"Bearer {endpoint['key']['value']}"
+    return headers
+
+def native_address(endpoint: dict) -> str:
+    # The OpenAI-compatible endpoints are <server>/v1/...; llama.cpp's own routes
+    # (/props, /slots) hang off the server itself, so the trailing /v1 comes off -
+    # only when it is there, so an URL without it is not cut into something else.
+    url = endpoint["endpoint_url"]["value"]
+    if url.endswith("/v1"):
+        return url[:-3]
+    return url
+
+async def get_json(url: str, headers: dict, params: dict = None) -> dict|list|None:
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            response = await client.get(url, headers=headers, params=params)
+    except:
+        return None
+    if not response.status_code == 200:
+        return None
+    try:
+        return json.loads(response.text)
+    except:
+        return None
+
+def n_ctx_of(obj) -> int|None:
+    if isinstance(obj, dict) and isinstance(obj.get("n_ctx"), int) and obj["n_ctx"] > 0:
+        return obj["n_ctx"]
+    return None
+
+async def get_context_size(endpoint: dict, model: str = None) -> int|None:
+    # How large the window the server runs is. None means unknown and the caller
+    # shows a dash: a guessed limit is a lie about when a chat overflows.
+    # Chain: /props (the one answer llama.cpp gives for the model it has loaded -
+    # ?model=<id> picks it out of a router/multi-model server), then the first
+    # /slots entry that reports one, then the endpoint's own override, then None.
+    headers = auth_headers(endpoint)
+    address = native_address(endpoint)
+    params = {"model": model} if model else None
+    props = await get_json(f"{address}/props", headers, params)
+    settings = props.get("default_generation_settings") if isinstance(props, dict) else None
+    n_ctx = n_ctx_of(settings)
+    if n_ctx:
+        return n_ctx
+    slots = await get_json(f"{address}/slots", headers)
+    if isinstance(slots, list):
+        for slot in slots:
+            n_ctx = n_ctx_of(slot)
+            if n_ctx:
+                return n_ctx
+    override = endpoint.get("context_size")
+    value = override.get("value") if isinstance(override, dict) else None
+    if isinstance(value, int) and value > 0:
+        return value
+    return None
 
 def nameid(model: dict) -> str:
     if "name" in model:
@@ -81,6 +138,7 @@ class LlamaCppEndpoint:
             self.timeout = None
         self.prompt = prompt
         self.tools = tools
+        self.usage = None
 
     def maybe_callback(self, signal: int) -> None:
         if self.callback:
@@ -89,7 +147,10 @@ class LlamaCppEndpoint:
     def construct_payload(self, payload: dict, settings: dict) -> None:
         for setting in settings.keys():
             value = settings[setting]["value"]
-            if not setting in ["name", "endpoint_url", "key", "reasoning_key", "save_cache_prompt", "parallel"]:
+            # context_size is a client-side fact about the endpoint, not an inference
+            # parameter: forwarding it would make the server reject the request.
+            if not setting in ["name", "endpoint_url", "key", "reasoning_key", "save_cache_prompt",
+                               "parallel", "context_size"]:
                 if "." in setting and (value or value is False):
                     dot2obj(payload, setting, value)
                 else:
@@ -121,6 +182,7 @@ class LlamaCppEndpoint:
             payload["tools"] = self.tools
             payload["tool_choice"] = "auto"
         payload["stream"] = True
+        payload["stream_options"] = {"include_usage": True}
         return payload
 
     def tool_calls(self, content: dict) -> None:
@@ -145,7 +207,13 @@ class LlamaCppEndpoint:
                 tc_list[-1]["function"]["arguments"] += content["function"]["arguments"]
 
     def extract_fields(self, delta: dict) -> None:
-        choice = delta["choices"][0]["delta"]
+        # A usage chunk carries "choices": [] (OpenAI and llama.cpp since PR #15444),
+        # so touching choices[0] before reading it is an IndexError that would kill
+        # the stream: work_stream() re-raises everything outside the timeout family.
+        choices = delta.get("choices")
+        if not choices:
+            return
+        choice = choices[0]["delta"]
         if content := choice.get("content"):
             self.messages[-1]["content"][0]["text"] += content
             self.maybe_callback(2)
@@ -163,31 +231,50 @@ class LlamaCppEndpoint:
             typ = delta["error"].get("type", "unknown")
             raise RuntimeError(f"Endpoint raised Error: {code}, Type: {typ}, {message}")
 
+    async def stream_request(self, client, headers: dict, payload: dict) -> tuple|None:
+        async with client.stream("POST", self.api_endpoint, headers=headers, json=payload) as resp:
+            if not resp.status_code == 200:
+                await resp.aread()
+                return (resp.status_code, resp.text)
+            async for raw_line in resp.aiter_lines():
+                if not raw_line or not raw_line.startswith("data:"):
+                    continue
+                line = raw_line[5:].strip()
+                if not line:
+                    continue
+                try:
+                    delta = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                self.maybe_error(delta)
+                # read the usage before anything touches choices: old llama.cpp puts
+                # it on the finish_reason chunk, new llama.cpp and OpenAI on a final
+                # chunk with "choices": [] - one rule covers all three stream shapes.
+                if usage := delta.get("usage"):
+                    self.usage = usage
+                self.extract_fields(delta)
+        return None
+
     async def stream(self) -> None:
         headers = {}
         api_key = self.endpoint["key"]["value"]
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         headers["Content-Type"] = "application/json"
+        self.usage = None
         payload = self.prepare_payload()
         self.messages.append({"role": "assistant", "reasoning": "", "content": [{"type": "text", "text": ""}]})
         self.message_index = len(self.messages) - 1
         self.maybe_callback(1)
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            async with client.stream("POST", self.api_endpoint, headers=headers, json=payload) as resp:
-                if not resp.status_code == 200:
-                    await resp.aread()
-                    raise RuntimeError(f"Endpoint returned {resp.status_code}: {resp.text}")
-                async for raw_line in resp.aiter_lines():
-                    if not raw_line or not raw_line.startswith("data:"):
-                        continue
-                    line = raw_line[5:].strip()
-                    if not line:
-                        continue
-                    try:
-                        delta = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    self.maybe_error(delta)
-                    self.extract_fields(delta)
+            refusal = await self.stream_request(client, headers, payload)
+            if refusal and 400 <= refusal[0] < 500 and "stream_options" in payload:
+                # A server that refuses the request outright may be refusing the
+                # unknown stream_options field. Token counts are never worth losing
+                # a reply over (old llama.cpp sends the usage unconditionally), so
+                # ask once more without it.
+                del payload["stream_options"]
+                refusal = await self.stream_request(client, headers, payload)
+            if refusal:
+                raise RuntimeError(f"Endpoint returned {refusal[0]}: {refusal[1]}")
         self.maybe_callback(0)
