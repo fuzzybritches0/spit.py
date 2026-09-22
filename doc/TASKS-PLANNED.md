@@ -245,6 +245,98 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
 
 ---
 
+## P12 - Token counts: how many are used, and how many exist  [proposal owner-approved 2026-09-22; code needs its own `Go!`]
+
+- **The gap** (verified in the code). `endpoints/llamacpp.py` `stream()` parses every
+  SSE chunk through `extract_fields()`, which reads **only** `choices[0].delta`
+  (content / reasoning / tool_calls); everything else in every chunk is discarded, and
+  nothing ever asks the server for its context size. Both numbers the owner wants —
+  how full the window is, and what the chat has cost — are in the response today and
+  thrown away.
+- **Server-side facts** (verified 2026-09-22 against llama.cpp master source and
+  `tools/server/README.md`; symbol names are the stable handle, line numbers drift):
+  - The `usage` object (`usage_json_oaicompat()` in `server-task.cpp`):
+    `prompt_tokens`, `completion_tokens`, `total_tokens`,
+    `prompt_tokens_details.cached_tokens`. `prompt_tokens` is `slot.task->n_tokens()`
+    (`server-context.cpp`) — the **whole prompt of that request, cache-reused tokens
+    included**, i.e. exactly "context occupied", and correct even with
+    `save_cache_prompt` in play.
+  - The `timings` object attaches to the **last** streamed chunk unconditionally
+    (`to_json_oaicompat_chat_stream()`, `deltas.back()["timings"] = ...`):
+    `prompt_n`, `cache_n`, `predicted_n`; the README's own rule for context occupancy
+    is `prompt_n + cache_n + predicted_n`. llama.cpp-only, and speculative decoding
+    skews `timings` but not `usage`.
+  - **Three stream shapes exist, so parse per chunk and detect no versions.** llama.cpp
+    before PR #15444 (Aug 2025) put `usage` on the final `finish_reason` chunk,
+    `choices` non-empty, sent whether requested or not (issue #12102). llama.cpp since
+    #15444, and OpenAI itself, send `usage` **only** when the request carries
+    `stream_options: {"include_usage": true}` (parsed via `server-schema.cpp`), and
+    then as an extra final chunk with `"choices": []`.
+- **The latent crash the first commit must fix**: `extract_fields()` does
+  `delta["choices"][0]["delta"]` and `work_stream()` re-raises everything outside its
+  timeout family — so an OpenAI-style empty-`choices` usage chunk today would kill the
+  stream with an `IndexError`. The enabling guard: read `delta.get("usage")` **before**
+  touching `choices`, and make `extract_fields` a no-op when `choices` is empty. That
+  one rule is correct for all three shapes with no version detection.
+- **Tokens used — the proposal**:
+  - `prepare_payload()`: `payload["stream_options"] = {"include_usage": True}`. If some
+    exotic endpoint 4xxs on the unknown field, retry once without the flag and remember
+    that per endpoint (old llama.cpp ignores unknown fields *and* sends `usage` anyway).
+  - `stream()`: take `usage` from any chunk that carries it.
+  - Accumulate in `Work`/chat state, **never in `messages`** (they are POSTed verbatim):
+    `context_tokens` = latest call's `prompt + completion` (the window fill; each
+    recursive tool-loop call refreshes it, since its prompt already contains the
+    previous answer and the tool results), and `tokens_generated` = sum of
+    `completion_tokens` across the chat. `cached_tokens` is display bonus.
+  - `timings` may be read the same way as a llama.cpp-only cross-check, never as the
+    contract.
+- **Maximum available — the proposal**:
+  - New `async def get_context_size(endpoint, model)` beside `get_models()` in
+    `endpoints/llamacpp.py`: `GET {address}/props` →
+    `default_generation_settings.n_ctx`; router/multi-model mode takes `?model=<id>`.
+    `{address}` is the endpoint URL minus the trailing `/v1` — the same rule `work.py`
+    and `ManageCache` already use for the native `/slots/...` calls.
+  - Fallback chain: `/props` → `/slots[0].n_ctx` → a per-endpoint override field
+    `context_size` (`uinteger`, 0 = auto-detect; precedent: the local server's
+    `ctx-size`) → `None`, and the UI shows a dash rather than a lie.
+    `/v1/models` `meta.n_ctx_train` is the *trained* context — informational only, not
+    the server's limit; non-llama stacks that expose `max_model_len`/`context_length`
+    in `/v1/models` may be taken as hints.
+  - **Integration landmine**: `construct_payload(payload, self.endpoint)` forwards every
+    endpoint setting not on its skip list to the server. `context_size` **must** join
+    that list (`["name", "endpoint_url", "key", "reasoning_key", "save_cache_prompt",
+    "parallel", ...]`) or it will be POSTed as an inference param.
+  - Cache per `(endpoint, model)`; refresh where the value can actually change: managed
+    server start (`handlers.py` / the llamacpp Apply button), model load
+    (`work.py:maybe_load_model`), endpoint/model change in `ChatSettings`.
+- **UI**: one `Label` in the per-chat `ChatSettings` row
+  (`ctx 4.7k / 8.1k · gen 612 · cached 3.1k`), fed through the existing
+  `chat_view.callback` signal path (or read at signal 0, stream end). Nothing in the
+  message stream itself — a status row costs zero tokens.
+- **Semantics to document, not fix**: with unified KV (new llama.cpp default; the app
+  exposes `kv-unified`) `n_ctx` is the total shared across parallel slots; older
+  servers divided it per slot (total = parallel × n_ctx). Report what the server
+  reports, and say so in the docs.
+- **Not proposed**: client-side tokenization (tiktoken or similar) — the app does not
+  own GGUF vocabularies, the server is the only true counter. If a before-send budget
+  check is ever wanted, `POST {address}/tokenize` is llama.cpp's own exact tokenizer.
+- **Verify**: new unit section driving `LlamaCppEndpoint` and `get_context_size` against
+  a canned-SSE stdlib HTTP server on 127.0.0.1 (no live model), append-only numbers
+  (TRAPS #15): payload carries `stream_options`; `usage` extracted from **both** the
+  empty-`choices` shape and the old `finish_reason`-chunk shape; empty `choices` no
+  longer raises; `/props` parsed, override fallback honoured, absent answers `None`;
+  `context_size` never appears in the outgoing payload (TRAPS #13 — the control asserts
+  it *does* leak without the skip-list entry). Differential (TRAPS #18): replay every
+  recorded response fixture with the flag on and off, assert byte-identical
+  content/reasoning/tool_calls reconstruction. Full suite: only the new checks move.
+- **Gotchas**: TRAPS #19 — `endpoints/llamacpp.py` imports `httpx`, so this suite is a
+  **fifth dependency-listed suite** (after terminal/anchored/chat_smoke/chat_window):
+  it must run under the test venv and report the remedy when the import fails, never a
+  silent zero. Do not touch `messages`. A DECISIONS entry lands with the implementation
+  recording the read-anywhere parse and the override fallback.
+
+---
+
 ## P7 - RETIRED - leave Textual for a different front end  [number retired, 2026-09-20; a replacement route is a later, owner-level task]
 
 The route this number carried is **gone by the owner's decision of 2026-09-20**:
