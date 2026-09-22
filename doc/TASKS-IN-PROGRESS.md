@@ -423,11 +423,14 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
 ### State (crash-recovery record)
 
 - **Branch**: `task-token-counts-p12`, cut from `docs-plan-token-usage-context-size`
-  (`c7e7d74`, the planning landing). Last commit on it: `a173854` (step 1).
-- **Scope** (so far): `spit_app/endpoints/llamacpp.py` only (step 1). Rest of the
+  (`c7e7d74`, the planning landing). Last commit on it: `b7d06ac` (step 2).
+- **Scope** (so far): `spit_app/endpoints/llamacpp.py` (step 1),
+  `spit_app/chat/work.py` + `spit_app/chat/chat.py` (step 2). Rest of the
   chain: see the step list — one file per step, in order.
-- **Done**: planning (`c7e7d74`), the entry move (`b799526`), and **step 1**
-  (`a173854`): `extract_fields` is a no-op on empty/missing `choices`;
+- **Done**: planning (`c7e7d74`), the entry move (`b799526`), **step 1**
+  (`a173854`) and **step 2** (`b7d06ac`) — see the two blocks below.
+
+  **Step 1** (`a173854`): `extract_fields` is a no-op on empty/missing `choices`;
   `delta.get("usage")` is read in the chunk loop *before* anything touches choices
   and kept on `self.usage` (init'd in `__init__`, reset at the start of every
   `stream()`, stored only when the chunk carries a non-empty one);
@@ -452,14 +455,43 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
   three Authorization-header lines were extracted to `auth_headers()` (identical
   semantics) because `get_context_size` needs the same rule; `stream()`'s own
   header block was deliberately left as HEAD wrote it.
-- **Left**: **step 2** — `spit_app/chat/work.py` (+ `token_usage` init on `Chat` in
-  `spit_app/chat/chat.py`): harvest `self.endpoint.usage` after
-  `await self.endpoint.stream()` (`work.py:128`, the one site; the tool-loop
-  recursion at `work.py:142` re-enters it) into `chat.token_usage`, skipping the
-  error path. Full handoff message was handed to the owner.
-- **State hazards**: none. Tree clean at `a173854`; full suite green (re-measured
-  after step 1). The step-1 probe is `/tmp/p12_check.py` — throwaway, deliberately
-  not committed (the committed suite is step 5); safe to delete, nothing reads it.
+
+  **Step 2** (`b7d06ac`): `Chat.__init__` carries
+  `self.token_usage = {"context": 0, "generated": 0, "cached": 0}` (a plain dict
+  beside `self.work = None` (`chat.py:34`), at `chat.py:40` — not a Textual var), and
+  `Work.harvest_usage()` (`work.py:114`) is called immediately after the one
+  `await self.endpoint.stream()` and still inside its `try` (`work.py:151`), so an
+  escaping exception skips it. One point only: the tool-loop recursion
+  (`work.py:165`) re-enters the same statement. Semantics: `if not usage: return`
+  first (silence changes nothing — it never zeroes the accumulated numbers);
+  `context` = the LATEST call's `prompt_tokens + completion_tokens` (window fill,
+  refreshed by every call of a tool loop, never summed); `generated` +=
+  `completion_tokens`; `cached` = the latest `prompt_tokens_details.cached_tokens`,
+  and an absent one reads 0 for THAT read rather than keeping the previous call's
+  figure. Every key read with `.get()`. `messages` untouched. **No deviation from
+  the handoff.** Accepted limit, in the commit body: `token_usage` is session state
+  — `write_chat_history` (`chat.py:106-111`) still writes only
+  ctime/settings/messages, so a reloaded chat starts at zeros; it is NOT added to
+  the saved chat file without the owner's word.
+- **Left**: **step 3** — `spit_app/manage/endpoint/endpoint.py`: add `context_size`
+  to `NEW` (`"uinteger"`, `empty: False`, `value: 0`, desc saying 0 = auto-detect;
+  model it on the `timeout` line). The honouring logic is step 1's and was measured
+  working on 2026-09-22 with this tree: `get_context_size` returned `8192` from
+  `context_size` alone against a dead address (both HTTP rungs missed), and
+  `prepare_payload()` left `context_size` OUT of the payload while a control setting
+  NOT on the skip list leaked into it (`4242`) — the TRAPS #13 control shape step 5
+  will pin. Step 3 does NOT touch `llamacpp.py`. Note for whoever edits it: the
+  field only appears for endpoints created after the change (an existing
+  `endpoints.json` entry keeps exactly its own keys — nothing merges `NEW` into a
+  loaded endpoint), which is harmless because `get_context_size` reads the key with
+  `.get()`. Full handoff message was handed to the owner.
+- **State hazards**: none. Tree clean at `b7d06ac`; full suite green and
+  byte-identical to the pre-step-2 run (re-measured). Throwaway probes, deliberately
+  NOT committed (the committed suite is step 5) and safe to delete:
+  `/tmp/p12_step2_probe.py` (drives the real `work_stream()`/`harvest_usage()` with a
+  fake endpoint; run with `PYTHONPATH=~/spit.py ~/.venv-spit/bin/python`). The step-1
+  probe `/tmp/p12_check.py` is still there too (step 1's, same status). Neither is
+  read by anything in the repo; step 5 replaces both with the committed suite.
 - **Verify**: each step: full suite from the repo root, counts unmoved except by this
   entry's own new checks (step 5). Final: the entry's **Verify** bullet, then close
   per step 6.
