@@ -12,7 +12,10 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **ONE entry is open** in this file: the `terminal`-tool harness list, followup 4.
+> **TWO entries are open** in this file: the `terminal`-tool harness list,
+> followup 4, and **P12 - token counts** (started 2026-09-22 on
+> `task-token-counts-p12`, owner's `Go!` given, six-step handoff chain — see
+> its entry and its State below).
 > **exit-reporting closed on 2026-09-21** on `alternate-exit-reporting`
 > (`a1563e5`, `a4cf37f`, `ae568a0` + the docs after it): the verdict-line rule in
 > `run/run.py`, per-tool via `needs_exit_status_report`, the five re-pinned checks
@@ -265,6 +268,172 @@ pane is read and synchronised.
   capture-formatting change **byte-for-byte** against the current output before
   changing behaviour (TRAPS #14), and keep the sandbox on by default (TRAPS #6)
   with `sandbox=False` only inside lifecycle tests.
+
+## P12 - Token counts: how many are used, and how many exist  [owner's `Go!` given 2026-09-22; six-step handoff chain]
+
+**`Go!` record**: the owner approved the proposal on 2026-09-22 and instructed
+that the code be implemented step by step, one file per step, agents chained by
+fenced handoff messages. The once-per-task `Go!` for **every** code step of this
+entry is that instruction: do not re-ask, and do not invent further gates
+(TRAPS #22).
+
+- **The gap** (verified in the code). `endpoints/llamacpp.py` `stream()` parses every
+  SSE chunk through `extract_fields()`, which reads **only** `choices[0].delta`
+  (content / reasoning / tool_calls); everything else in every chunk is discarded, and
+  nothing ever asks the server for its context size. Both numbers the owner wants —
+  how full the window is, and what the chat has cost — are in the response today and
+  thrown away.
+- **Server-side facts** (verified 2026-09-22 against llama.cpp master source and
+  `tools/server/README.md`; symbol names are the stable handle, line numbers drift):
+  - The `usage` object (`usage_json_oaicompat()` in `server-task.cpp`):
+    `prompt_tokens`, `completion_tokens`, `total_tokens`,
+    `prompt_tokens_details.cached_tokens`. `prompt_tokens` is `slot.task->n_tokens()`
+    (`server-context.cpp`) — the **whole prompt of that request, cache-reused tokens
+    included**, i.e. exactly "context occupied", and correct even with
+    `save_cache_prompt` in play.
+  - The `timings` object attaches to the **last** streamed chunk unconditionally
+    (`to_json_oaicompat_chat_stream()`, `deltas.back()["timings"] = ...`):
+    `prompt_n`, `cache_n`, `predicted_n`; the README's own rule for context occupancy
+    is `prompt_n + cache_n + predicted_n`. llama.cpp-only, and speculative decoding
+    skews `timings` but not `usage`.
+  - **Three stream shapes exist, so parse per chunk and detect no versions.** llama.cpp
+    before PR #15444 (Aug 2025) put `usage` on the final `finish_reason` chunk,
+    `choices` non-empty, sent whether requested or not (issue #12102). llama.cpp since
+    #15444, and OpenAI itself, send `usage` **only** when the request carries
+    `stream_options: {"include_usage": true}` (parsed via `server-schema.cpp`), and
+    then as an extra final chunk with `"choices": []`.
+- **The latent crash the first commit must fix**: `extract_fields()` does
+  `delta["choices"][0]["delta"]` and `work_stream()` re-raises everything outside its
+  timeout family — so an OpenAI-style empty-`choices` usage chunk today would kill the
+  stream with an `IndexError`. The enabling guard: read `delta.get("usage")` **before**
+  touching `choices`, and make `extract_fields` a no-op when `choices` is empty. That
+  one rule is correct for all three shapes with no version detection.
+- **Tokens used — the proposal**:
+  - `prepare_payload()`: `payload["stream_options"] = {"include_usage": True}`. If some
+    exotic endpoint 4xxs on the unknown field, retry once without the flag and remember
+    that per endpoint (old llama.cpp ignores unknown fields *and* sends `usage` anyway).
+  - `stream()`: take `usage` from any chunk that carries it.
+  - Accumulate on the **`Chat`**, **never in `messages`** (they are POSTed verbatim) and
+    **not on `Work`** (a new `Work` is constructed per send — `chat_text_area.py:45`,
+    `chat_view_actions.py:50` — so it cannot hold anything across replies):
+    `context` = latest call's `prompt + completion` (the window fill; each recursive
+    tool-loop call refreshes it, since its prompt already contains the previous answer
+    and the tool results), `generated` = sum of `completion_tokens` across the chat,
+    `cached` = latest `prompt_tokens_details.cached_tokens` as best-effort bonus.
+  - `timings` may be read the same way as a llama.cpp-only cross-check, never as the
+    contract.
+- **Maximum available — the proposal**:
+  - New `async def get_context_size(endpoint, model)` beside `get_models()` in
+    `endpoints/llamacpp.py`: `GET {address}/props` →
+    `default_generation_settings.n_ctx`; router/multi-model mode takes `?model=<id>`.
+    `{address}` is the endpoint URL minus the trailing `/v1` — the same rule `work.py`
+    and `ManageCache` already use for the native `/slots/...` calls. The local managed
+    server needs no special case: `app.get_endpoint("0")` already hands back
+    `server.endpoint` (`app.py:143`).
+  - Fallback chain: `/props` → `/slots[0].n_ctx` → a per-endpoint override field
+    `context_size` (`uinteger`, 0 = auto-detect; precedent: the local server's
+    `ctx-size`) → `None`, and the UI shows a dash rather than a lie.
+    `/v1/models` `meta.n_ctx_train` is the *trained* context — informational only, not
+    the server's limit; non-llama stacks that expose `max_model_len`/`context_length`
+    in `/v1/models` may be taken as hints.
+  - **Integration landmine**: `construct_payload(payload, self.endpoint)` forwards every
+    endpoint setting not on its skip list to the server. `context_size` **must** join
+    that list (`["name", "endpoint_url", "key", "reasoning_key", "save_cache_prompt",
+    "parallel", ...]`) or it will be POSTed as an inference param.
+  - Cache per `(endpoint, model)`; refresh where the value can actually change: managed
+    server start (`handlers.py` / the llamacpp Apply button), model load
+    (`work.py:maybe_load_model`), endpoint/model change in `ChatSettings`.
+- **UI**: one `Label` in the per-chat `ChatSettings` row
+  (`ctx 4.7k / 8.1k · gen 612 · cached 3.1k`), fed through the existing
+  `chat_view.callback` signal path (or read at signal 0, stream end). Nothing in the
+  message stream itself — a status row costs zero tokens.
+- **Semantics to document, not fix**: with unified KV (new llama.cpp default; the app
+  exposes `kv-unified`) `n_ctx` is the total shared across parallel slots; older
+  servers divided it per slot (total = parallel × n_ctx). Report what the server
+  reports, and say so in the docs.
+- **Not proposed**: client-side tokenization (tiktoken or similar) — the app does not
+  own GGUF vocabularies, the server is the only true counter. If a before-send budget
+  check is ever wanted, `POST {address}/tokenize` is llama.cpp's own exact tokenizer.
+- **Verify**: new unit section driving `LlamaCppEndpoint` and `get_context_size` against
+  a canned-SSE stdlib HTTP server on 127.0.0.1 (no live model), append-only numbers
+  (TRAPS #15): payload carries `stream_options`; `usage` extracted from **both** the
+  empty-`choices` shape and the old `finish_reason`-chunk shape; empty `choices` no
+  longer raises; `/props` parsed, override fallback honoured, absent answers `None`;
+  `context_size` never appears in the outgoing payload (TRAPS #13 — the control asserts
+  it *does* leak without the skip-list entry). Differential (TRAPS #18): replay every
+  recorded response fixture with the flag on and off, assert byte-identical
+  content/reasoning/tool_calls reconstruction. Full suite: only the new checks move.
+- **Gotchas**: TRAPS #19 — `endpoints/llamacpp.py` imports `httpx`, so this suite is a
+  **fifth dependency-listed suite** (after terminal/anchored/chat_smoke/chat_window):
+  it must run under the test venv and report the remedy when the import fails, never a
+  silent zero. Do not touch `messages`. A DECISIONS entry lands with the implementation
+  recording the read-anywhere parse and the override fallback.
+
+### Step chain (file by file, handoff discipline)
+
+One file (or one clearly-stated concern) per step. Each step's agent finishes by
+updating this entry's **State** and writing the **next fenced handoff message**
+for the next agent, naming the next step; the chain ends at step 6, whose agent
+closes the entry — after that there is no handoff, the resolution is the record.
+Deviating from a step is allowed only where the code disagrees with the plan, and
+must be stated **loudly** in the commit body, in the State fields, and in the next
+handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
+
+1. `spit_app/endpoints/llamacpp.py` — the enabling guard (`extract_fields` a no-op on
+   empty/missing `choices`; `delta.get("usage")` read **before** `choices`;
+   `self.usage` reset at each `stream()` start and set wherever it arrives),
+   `stream_options: {"include_usage": true}` in `prepare_payload()` with one retry
+   **without** the flag on a refusal (never lose a reply over counting), new
+   `get_context_size(endpoint, model=None)` with the fallback chain above
+   (`{address}` = endpoint URL minus trailing `/v1`; never raises, `None` = unknown,
+   same shape as `get_models()`), and `"context_size"` added to the
+   `construct_payload` skip list. Full suite green; `chat_smoke`'s golden md5
+   unchanged.
+2. `spit_app/chat/work.py` (+ `token_usage` init on `Chat` in `spit_app/chat/chat.py`) —
+   harvest `self.endpoint.usage` after every `await self.endpoint.stream()` (the
+   tool-loop recursion included; skip harvest on error paths) into
+   `chat.token_usage = {"context": 0, "generated": 0, "cached": 0}` — on the **Chat**,
+   not `Work`: `Work` is constructed per send (`chat_text_area.py:45`,
+   `chat_view_actions.py:50`). `context` = latest `prompt_tokens + completion_tokens`;
+   `generated` += `completion_tokens`; `cached` = latest
+   `prompt_tokens_details.cached_tokens` best-effort. `messages` untouched.
+3. `spit_app/manage/endpoint/endpoint.py` — add `context_size` to `NEW` (`uinteger`,
+   default 0 = auto-detect, description says so; model it on `timeout`). The honouring
+   logic is step 1's; prove it here, do not re-implement it.
+4. `spit_app/chat/chat_settings.py` — a `Label` on the chat-settings row showing
+   `ctx <used> / <n_ctx> · gen <generated> · cached <cached>`; `n_ctx` via
+   `get_context_size(self.app.get_endpoint(cs("endpoint")), cs("model"))` cached per
+   `(endpoint, model)`; refreshed at stream end (signal 0 on the `StreamCallback`
+   path) and on endpoint/model change; a `None` renders as a dash, never as a number.
+5. `spit_app/tests/unit/endpoints/` (+ row in `spit_app/tests/run_tests.sh`, ground-truth
+   row in `doc/TESTING.md`) — canned-SSE stdlib HTTP server on 127.0.0.1 and canned
+   `/props`/`/slots` payloads, no live model; every check in the **Verify** bullet
+   above; append-only numbering (TRAPS #15); the skip-list check carries its
+   fail-able control (TRAPS #13); differential on/off byte-identical replay (TRAPS
+   #18). Fifth dependency-listed suite (TRAPS #19): runs under `~/.venv-spit`, reports
+   FAIL with the remedy on a missing import, never a silent zero.
+6. Close-out — full suite green with only this entry's checks moved; differential
+   recorded; a new DECISIONS entry (read-anywhere parse; `n_ctx` fallback and
+   override; `token_usage` on `Chat` not `Work`, the per-send construction being the
+   reason; the skip-list entry); doc updates where the mechanism must be written down;
+   then move this entry to `TASKS-FINISHED.md` with the resolution (branch, commits,
+   which verification the close-out rested on). No sign-off step (DECISIONS 71,
+   TRAPS #22). The branch is the owner's to merge, as always.
+
+### State (crash-recovery record)
+
+- **Branch**: `task-token-counts-p12`, cut from `docs-plan-token-usage-context-size`
+  (`c7e7d74`, the planning landing). Last commit on it: the entry move (this commit).
+- **Scope** (when it starts): see the step chain — one file per step, in order.
+- **Done**: planning only (`c7e7d74`) and this entry move. **No code yet.**
+- **Left**: step 1, `spit_app/endpoints/llamacpp.py` (guard + capture +
+  `stream_options` + retry-without-flag + `get_context_size` + skip-list entry),
+  full suite, commit, State update, next handoff.
+- **State hazards**: none. Full suite green at the cut (all rows FAIL 0, re-measured
+  at `c7e7d74` on 2026-09-22).
+- **Verify**: each step: full suite from the repo root, counts unmoved except by this
+  entry's own new checks (step 5). Final: the entry's **Verify** bullet, then close
+  per step 6.
 
 ## Protocol when starting a task from TASKS-PLANNED.md
 
