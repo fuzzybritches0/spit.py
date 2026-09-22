@@ -423,14 +423,43 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
 ### State (crash-recovery record)
 
 - **Branch**: `task-token-counts-p12`, cut from `docs-plan-token-usage-context-size`
-  (`c7e7d74`, the planning landing). Last commit on it: the entry move (this commit).
-- **Scope** (when it starts): see the step chain — one file per step, in order.
-- **Done**: planning only (`c7e7d74`) and this entry move. **No code yet.**
-- **Left**: step 1, `spit_app/endpoints/llamacpp.py` (guard + capture +
-  `stream_options` + retry-without-flag + `get_context_size` + skip-list entry),
-  full suite, commit, State update, next handoff.
-- **State hazards**: none. Full suite green at the cut (all rows FAIL 0, re-measured
-  at `c7e7d74` on 2026-09-22).
+  (`c7e7d74`, the planning landing). Last commit on it: `a173854` (step 1).
+- **Scope** (so far): `spit_app/endpoints/llamacpp.py` only (step 1). Rest of the
+  chain: see the step list — one file per step, in order.
+- **Done**: planning (`c7e7d74`), the entry move (`b799526`), and **step 1**
+  (`a173854`): `extract_fields` is a no-op on empty/missing `choices`;
+  `delta.get("usage")` is read in the chunk loop *before* anything touches choices
+  and kept on `self.usage` (init'd in `__init__`, reset at the start of every
+  `stream()`, stored only when the chunk carries a non-empty one);
+  `prepare_payload()` sends `stream_options: {"include_usage": true}`; a **4xx**
+  refusal with the flag set retries **once** without it (5xx not retried; a refusal
+  that survives raises the same `Endpoint returned N: ...` `RuntimeError`, so
+  `work_stream`'s error path is unchanged); new never-raising
+  `get_context_size(endpoint, model=None)` with the chain `/props` →
+  `default_generation_settings.n_ctx` (sends `?model=<id>` when a model is given) →
+  first `/slots` `n_ctx` → `context_size` override > 0 → `None`; `"context_size"`
+  added to the `construct_payload` skip list. Full suite: every row at its
+  TESTING.md value, FAIL 0, byte-identical to the pre-change run; `chat_smoke`'s
+  golden md5 unchanged (`8ae9d1186a59627d30d05dee95f0ad95`).
+  **Deviations, stated loudly** (also in the commit body): **(D1)** the proposal's
+  "remember that per endpoint" is NOT implemented — `Work` deepcopies the endpoint
+  dict per send (`work.py:22`), so remembering there dies with the `Work` and
+  remembering properly means mutating shared settings from a request path (not this
+  file). Cost: an endpoint that refuses the flag pays one extra request per send,
+  never a lost reply. **(D2)** `native_address()` strips the trailing `/v1` only
+  when present (the rule of record is a blind `[:-3]`); identical for every URL the
+  app builds, no mangling when a URL lacks the suffix. **(D3)** `get_models`'
+  three Authorization-header lines were extracted to `auth_headers()` (identical
+  semantics) because `get_context_size` needs the same rule; `stream()`'s own
+  header block was deliberately left as HEAD wrote it.
+- **Left**: **step 2** — `spit_app/chat/work.py` (+ `token_usage` init on `Chat` in
+  `spit_app/chat/chat.py`): harvest `self.endpoint.usage` after
+  `await self.endpoint.stream()` (`work.py:128`, the one site; the tool-loop
+  recursion at `work.py:142` re-enters it) into `chat.token_usage`, skipping the
+  error path. Full handoff message was handed to the owner.
+- **State hazards**: none. Tree clean at `a173854`; full suite green (re-measured
+  after step 1). The step-1 probe is `/tmp/p12_check.py` — throwaway, deliberately
+  not committed (the committed suite is step 5); safe to delete, nothing reads it.
 - **Verify**: each step: full suite from the repo root, counts unmoved except by this
   entry's own new checks (step 5). Final: the entry's **Verify** bullet, then close
   per step 6.
