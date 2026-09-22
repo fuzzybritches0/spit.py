@@ -14,6 +14,8 @@ class Endpoints(Common, ActionsMixIn, HandlersMixIn, ScreensMixIn, ValidationMix
                 "value": "http://127.0.0.1:8080/v1"},
             "key": {"stype": "string", "desc": "API Access Key"},
             "timeout": {"stype": "uinteger", "empty": False,"desc": "Timeout (0 = no timeout)", "value": 0},
+            "context_size": {"stype": "uinteger", "empty": False,
+                             "desc": "Context Size (0 = auto-detect)", "value": 0},
             "reasoning_key": {"stype": "select_no_default", "desc": "Reasoning Key",
                             "options":["reasoning_content", "reasoning"]},
             "save_cache_prompt": {"stype": "boolean", "desc": "Save and restore Prompt Cache from file",
