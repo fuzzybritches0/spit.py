@@ -56,6 +56,23 @@ class CallbackMixIn:
     async def on_stream_callback(self, message: StreamCallback) -> None:
         if message.signal == 0:
             await self.message_finish(message.index)
+            # The token counts on the chat-settings row, at the end of every
+            # reply — the tool-loop calls included, since that recursion ends a
+            # stream too. It is wired HERE and not as a handler on ChatSettings
+            # because a StreamCallback is posted on this widget and a Textual
+            # Message bubbles to ANCESTORS only: ChatSettings is a SIBLING of the
+            # ChatView, so a handler of its own for this message is never called
+            # (measured 2026-09-22 — a handler on ChatSettings receives nothing,
+            # the one on Chat receives ('Chat', 0)). This branch is chosen over a
+            # new handler on Chat because it is the one place that already knows
+            # "signal 0, this reply is over": a handler on Chat fires for signals
+            # 1 and 2 as well, i.e. once per streamed chunk, for a call needed
+            # once; and a call sitting in the handler that is guaranteed to run
+            # cannot be orphaned later by someone stopping the bubble — which is
+            # exactly the invisible dead signal this step had to measure its way
+            # around. refresh_usage() itself never blocks: the network question
+            # it may start runs in a worker.
+            self.chat.chat_settings.refresh_usage()
         elif message.signal == 1:
             await self.message_start(message.index)
         elif message.signal == 2:
