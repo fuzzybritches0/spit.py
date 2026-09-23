@@ -532,7 +532,10 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
   model `update_models()` picks programmatically, which announces itself the same
   way) and from the signal-0 branch of `ChatView.on_stream_callback`; both carry
   the `endpoint_list()`-membership guard, which is what keeps `get_context_size()`
-  away from the `{}` the smoke stub answers with. The probe runs in
+  away from the `{}` the smoke stub answers with — a dict with no `endpoint_url`
+  raises `KeyError` inside `native_address` (the index at `llamacpp.py:37`): step 1 guards
+  the HTTP and the override, NOT a missing key, and it is measured, which is why
+  the guard is not optional. The probe runs in
   `@work(group="context-size", exclusive=True, exit_on_error=False)`: a worker
   because it is two GETs of `timeout=3` (~6 s on an endpoint answering neither
   `/props` nor `/slots`, which would freeze the UI at the end of every reply), and
@@ -625,48 +628,197 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
   entry's own new checks (step 5). Final: the entry's **Verify** bullet, then close
   per step 6.
 
-### Handoff for step 5 (written by the step-4 recovery, 2026-09-23)
+### Handoff for step 5 — written by the step-4 recovery, 2026-09-23, with the measurements
 
 ```
-P12 step 5: build spit_app/tests/unit/endpoints/ — the committed suite for
-steps 1-4 — plus its row in spit_app/tests/run_tests.sh and its ground-truth row
-in doc/TESTING.md. Canned-SSE stdlib HTTP server on 127.0.0.1 + canned /props and
-/slots bodies: no live model, nothing beyond localhost. Append-only test numbers
-(TRAPS #15). Checks the entry's Verify bullet asks for, and the four the steps
-earned on the way:
-  * prepare_payload() carries stream_options {"include_usage": true};
-  * usage is taken from BOTH stream shapes — the final chunk with "choices": []
-    (OpenAI, llama.cpp since #15444) and the finish_reason chunk with choices
-    non-empty (old llama.cpp);
-  * an empty-choices chunk does NOT raise (the latent IndexError step 1 removed —
-    write this one against the old extract_fields first and watch it go red);
-  * a 4xx refusal retries once WITHOUT the flag and a 5xx does not;
-  * get_context_size: /props default_generation_settings.n_ctx, ?model=<id> when
-    a model is given, then /slots[0].n_ctx, then the context_size override, then
-    None; never raises on a dead address, a 404, or garbage JSON;
-  * context_size NEVER appears in the outgoing payload, with the TRAPS #13
-    control that a setting NOT on the skip list DOES leak;
-  * Work.harvest_usage: context is the latest call's prompt+completion (never
-    summed), generated accumulates, cached is the latest details or 0, silence
-    zeroes nothing, an error path counts nothing, messages untouched;
-  * the row (chat_settings): dash-not-number for None, one probe per
-    (endpoint, model), raw figures, and the three Selects still at children[1/3/5].
-Differential (TRAPS #18): replay every recorded SSE fixture with the flag on and
-off and assert byte-identical content/reasoning/tool_calls reconstruction — and
-verify the probe's own input mapping FIRST (TRAPS #13: three historical probes fed
-fixtures to the wrong file and still printed "identical").
-Shapes to steal rather than re-derive: /tmp/p12_check.py (the stream),
-/tmp/p12_step3_probe.py (payload + skip-list control), /tmp/p12_step2_probe.py
-(the harvest), /tmp/p12_step4_label_probe.py (the row, and StubEndpointApp — the
-smoke stub's endpoint_list()/get_endpoint() answer {}, which is the GUARD path and
-can never start a probe). A test endpoint must be built as a SAVED one: every
-field needs {"value": ...} because construct_payload and auth_headers index it.
-Do not touch messages. Do not "fix" the 80-column row: that is the owner's call,
-filed in the step-4 block. Fifth dependency-listed suite (TRAPS #19): the runner
-row must FAIL with the remedy when the import is missing, never PASS 0 FAIL 0.
-Full suite after it: every existing row where TESTING.md says it is, this suite's
-count new, FAIL 0 everywhere, chat_smoke golden md5
-8ae9d1186a59627d30d05dee95f0ad95 unmoved. Then step 6 closes the entry.
+STEP 5 of P12 — the committed test suite for steps 1-4. Branch
+task-token-counts-p12, written at tip b3ee808 (steps 1-4 are a173854, b7d06ac,
+304530a, 756179d; every step 1-4 fact you need is in this entry's State above —
+read the four blocks before you write a
+check — several of them record semantics that look wrong and are not). The
+owner's `Go!` of 2026-09-22 covers every code step of this entry: do not re-ask
+it and do not invent a gate (TRAPS #22). `main` untouched, never pull or push,
+`git commit -F file`, one concern per commit.
+
+DELIVERABLE
+  spit_app/tests/unit/endpoints/run_tests.sh
+  spit_app/tests/unit/endpoints/test_*.py            (+ anything shared in a
+  module NOT named test_*: the stub_app.py / window_harness.py precedent — the
+  runner globs test_*.py and a harness file in that glob becomes a suite file)
+  doc/TESTING.md: the new ground-truth row, a "Unit suites" paragraph for this
+  suite, and "four suites need a dependency" -> FIVE in all three docs that say
+  it: doc/TESTING.md (the venv heading and its list), doc/PROJECT.md (the repo
+  layout bullet and the Environment gotcha), doc/TRAPS.md #19.
+  Do NOT edit spit_app/tests/run_tests.sh — verified on this tree, it globs
+  `unit/*` and prints a row for any directory holding a run_tests.sh, so
+  `unit:endpoints` appears by itself. The step-5 wording "(+ row in
+  run_tests.sh)" is already satisfied by the glob; say that deviation loudly in
+  the commit instead of adding a row the glob would double-print.
+
+DEPENDENCY GATE (this is the fifth dependency-listed suite, TRAPS #19)
+  Measured on this box today: the bare system python3 has NO httpx
+  (`ModuleNotFoundError: No module named 'httpx'`), and `endpoints/llamacpp.py`
+  imports it, so this suite cannot run there. Copy the preamble of
+  tests/unit/chat_smoke/run_tests.sh verbatim and change the import it probes to
+  `import httpx, textual` — BOTH, because if you also check the counts row (you
+  should, see the last group) the suite imports chat_settings, which pulls
+  Textual; one gate for both is honest and one row for the suite is cheap. The
+  three orders are unchanged: $SPIT_TEST_PYTHON, then ~/.venv-spit/bin/python3,
+  then a python3 on PATH that can import it. A missing dependency prints the
+  remedy and `PASS: 0  FAIL: 1` and exits 1 — never a silent zero. Each
+  test_*.py prints one final `PASS: n  FAIL: n` line; the runner sums those.
+
+THE CANNED SERVER (stdlib only, no live model, nothing beyond localhost)
+  http.server bound to ("127.0.0.1", 0) — port 0, so no fixture collides with a
+  real endpoint — served from a thread, shut down in a finally, daemon thread.
+  Three routes are enough, and /tmp/p12_check.py already implements all three
+  with scenario-by-path routing (reuse it, it works): POST /v1/chat/completions
+  (Content-Type text/event-stream, lines `data: {json}\n\n`, ending
+  `data: [DONE]\n\n`), GET /props, GET /slots. The native routes hang off the
+  URL minus the trailing /v1 (native_address, llamacpp.py:33), so the endpoint
+  fixture's endpoint_url is `http://127.0.0.1:<port>/v1`.
+  Record every request the server saw, and assert on the RECORDED REQUEST LINE
+  (method + path + query), not only on the answer: `?model=<id>` is a behaviour,
+  and the retry-count checks are counting requests.
+  Endpoints must be built as SAVED ones — every field `{"value": ..., "stype":
+  ...}`: construct_payload indexes settings[setting]["value"] and
+  settings[setting]["stype"] (llamacpp.py:147-163) and auth_headers indexes
+  ["key"]["value"] (:27-31), so raw NEW raises KeyError for the settings without
+  a default. Give `timeout` a NON-ZERO value: 0 becomes `timeout=None`
+  (`llamacpp.py:136-138`) and a hung request then hangs the suite. For the
+  nothing-answers paths use a port that REFUSES: http://127.0.0.1:9 measured
+  39 ms, so the None-path checks cost nothing; a filtered address would cost
+  3 s each.
+  Drive one asyncio loop per case (`asyncio.new_event_loop()`, close it in a
+  finally, as p12_check.py does): httpx.AsyncClient binds to the loop it ran on.
+
+THE TRAP YOU MUST NOT INHERIT — PIN THE DIFFERENTIAL'S BASELINE (measured today)
+  /tmp/p12_check.py, the step-1 probe, derives its OLD side from
+  `git show HEAD:spit_app/endpoints/llamacpp.py` AND overwrites
+  /tmp/p12_old_llamacpp.py with it on every run. That was correct while step 1
+  was uncommitted. Step 1 is committed now, so its OLD side IS the new code:
+  re-run today it prints PASS: 47  FAIL: 3, and the three reds are exactly the
+  checks that ask the old side to be old — t1-CONTROL-old-raises-IndexError
+  (got None), t4-CONTROL-old-forwarded-context_size (got nothing),
+  t4-CONTROL-old-had-no-stream_options (got True) — while its
+  "identical-to-old" reconstruction pairs stay green VACUOUSLY, comparing the
+  code with itself (two of them, t2-old-identical-to-old and
+  t2-nousage-identical-to-old) and printing the tidy row a lying probe always
+  prints (TRAPS #13, in the wild, seven weeks after the docs warned about it).
+  So: pin the baseline by sha. `b799526` (= `a173854^`, the entry-move commit)
+  holds the pre-step-1 file and it is byte-identical to `main`'s (bf55d39) —
+  verified with git show. `git -C ~/spit.py show b799526:spit_app/endpoints/
+  llamacpp.py` into a module of its own (importlib from a string, the
+  p12_check.py way), and add a BASELINE SELF-CHECK that proves the old side is
+  old: it has no `stream_options`, no `get_context_size`, and its
+  extract_fields raises IndexError on `"choices": []`. A differential that
+  cannot fail is not evidence. /tmp/p12_old_pre_step1.py is that file already
+  extracted, if you want it today. And harden the old arm so it FAILS rather
+  than raises: DECISIONS 70's lesson is that a differential half which crashes
+  hides every red after it.
+
+CHECKS — append-only numbers across the whole suite (TRAPS #15), distinctive
+tokens in every asserted string (TRAPS #8), and the input mapping of every
+differential printed (TRAPS #13).
+  t1  prepare_payload(): stream_options is exactly {"include_usage": True};
+      stream is True; the model, the system prompt and the reasoning-key rename
+      still land.
+  t2  the parse, over EVERY shape, each replayed through old and new with the
+      reconstruction compared byte-for-byte: content deltas, reasoning deltas,
+      tool_calls split across chunks (id/type/name/arguments, the second
+      argument fragment arriving alone), the old finish_reason chunk carrying
+      usage with choices non-empty, the final "choices": [] chunk carrying usage
+      (OpenAI, llama.cpp >= #15444), usage arriving in a MIDDLE empty-choices
+      chunk (read-anywhere — that is what "no version detection" buys), a stream
+      with no usage at all, `data:` lines with no space, junk lines between
+      chunks, and `data: [DONE]`.
+  t3  an empty-choices chunk raises NOTHING (the latent IndexError step 1
+      removed) — and the pinned old extract_fields raises IndexError on the same
+      chunk: the control that makes t3 a check and not a wish.
+  t4  self.usage is reset at the start of every stream() (a second stream that
+      says nothing must not repeat the first reply's numbers) and holds the
+      whole usage object when it arrives.
+  t5  the skip list: `context_size` NEVER appears in the outgoing payload, with
+      the control (TRAPS #13) that a setting NOT on the list — invent one,
+      n_ctx_control 4242 — DOES leak through it, and `temperature`/`parallel`
+      still behave as HEAD had them. Assert the key SET, not just the absence.
+  t6  the 4xx retry: a 4xx with the flag retried EXACTLY once, the second
+      request carrying no stream_options, the reply delivered (never lose a
+      reply over counting); a 4xx that refuses both times raises the same
+      `Endpoint returned N: ...` RuntimeError work.py already catches (so
+      work_stream's error path is unchanged); a 5xx is NOT retried — one
+      request, counted; a success is one request.
+  t7  get_context_size's chain, each rung answered by the route that is
+      supposed to miss: /props default_generation_settings.n_ctx wins; with a
+      model given the /props request line carries ?model=<id>; a /props that
+      400s or lacks n_ctx falls to the first /slots entry whose n_ctx is a
+      positive int; a dead /props AND /slots falls to the endpoint's
+      context_size when it is > 0; 0 is auto-detect, not a size; a blanked
+      field (the way store_values leaves it, value None) and a key absent
+      entirely both answer None; nothing said at all answers None; garbage
+      JSON, a 404, a refused address and a {} endpoint dict never raise —
+      except the {} case, whose limit is recorded in the step-4 block:
+      native_address indexes ["endpoint_url"] (`llamacpp.py:37`), so an endpoint
+      dict without that key raises KeyError, and ChatSettings' guard is what
+      keeps it out of reach — step 1 does not guard it and this step must not
+      either.
+      Pin that as a check with its reason in the name, do not "fix" it here.
+  t8  native_address: strips a trailing /v1 once, leaves a URL without it
+      alone, and equals work.py's blind [:-3] for every URL the app builds.
+  t9  the auth header: key set -> `Bearer <key>`; key "" -> no header; key
+      absent -> the same KeyError on both sides (HEAD's behaviour, unchanged).
+  t10 Work.harvest_usage, driven with a SimpleNamespace standing in for the
+      Work (it reads self.endpoint.usage and self.chat.token_usage and nothing
+      else): context is the LATEST call's prompt+completion and NEVER a sum
+      (two calls, the second smaller — the figure must go DOWN); generated
+      accumulates across calls; cached is the latest prompt_tokens_details or 0
+      for THAT read and does not keep the previous call's figure; a stream that
+      said nothing changes nothing and zeroes nothing; a usage with
+      prompt_tokens absent counts 0 + completion; and `messages` is untouched
+      by the harvest (compare it before/after — TRAPS: never POST the counts).
+  t11 the counts row (this is why the gate takes textual too — chat_settings
+      imports it): assert the STRUCTURE, not the spelling, because the owner
+      has an open call on the 80-column rendering (see the LIMIT in the step-4
+      block) and an exact-string check would pin a decision that is not yours.
+      So: a None renders as a dash and the string contains no "0 / 0"; a real
+      zero renders as 0; the row appears at mount with no reply ever sent; one
+      probe per (endpoint, model) pair however many refreshes fire, and a
+      different model is a different pair (assert the probe count and the model
+      each probe carried); a None answer is CACHED so it is asked once, not
+      re-asked every reply; a probe started for pair A never draws A's number
+      while pair B is selected; the three Selects are still children[1/3/5] and
+      the counts Label is the last child (mounting it earlier shifts the
+      Selects and chat_smoke dies inside its own harness); signal 0 through the
+      real ChatView seam moves the row and a reply's numbers are on the row
+      that produced them (the harvest-before-signal ordering is what step 4
+      measured — keep that as a check, with the stale-by-one arrangement as its
+      control). Use StubEndpointApp from /tmp/p12_step4_label_probe.py: the
+      chat_smoke stub answers endpoint_list() with {}, which is the GUARD path
+      and can never start a probe, so a suite that does not override it cannot
+      see any probe behaviour at all.
+
+AFTER: full suite from the repo root. Every existing row exactly where
+TESTING.md has it — tools 127/24/30/119/80/32/68/29 (509), unit
+68/131/168/568/33/278/121/157/223 — `unit:endpoints` new with its own count,
+FAIL 0 everywhere, TWO consecutive byte-identical runs, and chat_smoke's golden
+md5 8ae9d1186a59627d30d05dee95f0ad95 unmoved. If any other row moved, something
+in this suite reached into the app: the server binds 127.0.0.1 only, touches no
+user data dir, and imports no tool.
+
+THREE THINGS NOT TO DO: do not touch `messages` (they are POSTed verbatim); do
+not "fix" the 80-column row, which is the owner's open call and is filed in the
+step-4 block; do not leave the old /tmp/p12_old_llamacpp.py name in place — it
+currently holds HEAD's post-step-1 file because the probe rewrote it, so its
+name lies, and anything re-run from it compares the new code with itself.
+
+THEN step 6 closes the entry: the DECISIONS entry (read-anywhere parse; the
+n_ctx chain and its override; token_usage on Chat not Work and the per-send
+construction that is the reason; the skip-list entry; the signal-0 seam and why
+a sibling of the ChatView never hears the message; the 80-column limit filed as
+an open question), the doc updates the mechanism needs, the full suite, and the
+entry moved to TASKS-FINISHED.md with its resolution and which verification the
+close-out rested on. No sign-off (DECISIONS 71, TRAPS #22). The branch is the
+owner's to merge.
 ```
 
 ## Protocol when starting a task from TASKS-PLANNED.md
