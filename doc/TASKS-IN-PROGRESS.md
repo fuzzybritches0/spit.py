@@ -15,7 +15,14 @@ that is not the agent's.
 > **TWO entries are open** in this file: the `terminal`-tool harness list,
 > followup 4, and **P12 - token counts** (started 2026-09-22 on
 > `task-token-counts-p12`, owner's `Go!` given, six-step handoff chain — see
-> its entry and its State below).
+> its entry and its State below). **P12 is at step 5 of 6**: steps 1-4 are
+> committed (`a173854`, `b7d06ac`, `304530a`, `756179d`), and step 4 needed a
+> recovery on 2026-09-23 — the session that wrote it died with the code
+> uncommitted and its State fields still describing step 3, so the next agent
+> re-measured it rather than trusting the notes (six byte-identical full-suite
+> runs, probes green, golden md5 unmoved) and committed it. That recovery also
+> found an **80-column layout limit** in the new counts row, filed for the owner
+> in the step-4 block; the chain's next step is the committed test suite.
 > **exit-reporting closed on 2026-09-21** on `alternate-exit-reporting`
 > (`a1563e5`, `a4cf37f`, `ae568a0` + the docs after it): the verdict-line rule in
 > `run/run.py`, per-tool via `needs_exit_status_report`, the five re-pinned checks
@@ -423,14 +430,20 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
 ### State (crash-recovery record)
 
 - **Branch**: `task-token-counts-p12`, cut from `docs-plan-token-usage-context-size`
-  (`c7e7d74`, the planning landing). Last commit on it: `304530a` (step 3).
+  (`c7e7d74`, the planning landing). Last code commit on it: `756179d` (step 4).
+  **Working tree clean** — the session that wrote step 4 died with it uncommitted
+  and its State fields still describing the tree at step 3; the recovery of
+  2026-09-23 re-measured it, committed it as `756179d`, and this doc commit is
+  what it left in place of the handoff that was never written.
 - **Scope** (so far): `spit_app/endpoints/llamacpp.py` (step 1),
   `spit_app/chat/work.py` + `spit_app/chat/chat.py` (step 2),
-  `spit_app/manage/endpoint/endpoint.py` (step 3). Rest of the chain: see the
+  `spit_app/manage/endpoint/endpoint.py` (step 3),
+  `spit_app/chat/chat_settings.py` + `spit_app/chat/callback.py` (step 4 — TWO
+  files, which is deviation D1 in the step-4 block). Rest of the chain: see the
   step list — one file per step, in order.
 - **Done**: planning (`c7e7d74`), the entry move (`b799526`), **step 1**
-  (`a173854`), **step 2** (`b7d06ac`) and **step 3** (`304530a`) — see the three
-  blocks below.
+  (`a173854`), **step 2** (`b7d06ac`), **step 3** (`304530a`) and **step 4**
+  (`756179d`, recovered and re-verified) — see the four blocks below.
 
   **Step 1** (`a173854`): `extract_fields` is a no-op on empty/missing `choices`;
   `delta.get("usage")` is read in the chunk loop *before* anything touches choices
@@ -501,39 +514,160 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
   edit+save; harmless (the override is the last of three rungs and is read with
   `.get()`), and NOT to be "fixed" by merging `NEW` into loaded endpoints in
   `settings.py` without the owner's word.
-- **Left**: **step 4** — `spit_app/chat/chat_settings.py`: one `Label` on the
-  chat-settings row, `ctx <used> / <n_ctx> · gen <generated> · cached <cached>`,
-  reading `chat.token_usage` and `get_context_size(self.app.get_endpoint(cs("endpoint")),
-  cs("model"))` cached per `(endpoint, model)`, refreshed at `StreamCallback` signal 0
-  and on endpoint/model change, a `None` rendering as a dash and never as a number.
-  TWO hazards measured on this tree 2026-09-22, both in the handoff: (a) signal 0 is
-  posted on `chat_view` and `Message.bubble` means only ANCESTORS receive it — a
-  handler on `ChatSettings` (a SIBLING of `ChatView` under `Chat`) is never called;
-  the measured receiver is `Chat`. (b) `get_context_size({})` — what
-  `SmokeApp.get_endpoint()` returns — **raises** `KeyError: 'endpoint_url'` (step 1
-  guards the HTTP and the override, not a missing `endpoint_url`), and
-  `app.get_endpoint(id)` itself raises `KeyError` on an id that is gone
-  (`app.py:143-145`); the file's own pattern already guards both —
-  `update_models` opens with `if not self.cs("endpoint") in self.app.endpoint_list():
-  return None` (`chat_settings.py:77`) — and the new call needs the same guard, else
-  `unit:chat_smoke`/`unit:chat_window` (whose stub `get_endpoint()` answers `{}`) die
-  in the new code path. Mounting the `Label` LAST in
-  `on_mount` moves no suite and does not touch the golden; mounting it FIRST breaks
-  `chat_smoke` (`self.children[1/3/5]` are indexed by position).
-- **State hazards**: none. Tree clean at `304530a`; full suite green with every row
-  at its TESTING.md value (tools 127/24/30/119/80/32/68/29, unit
-  68/131/168/568/33/278/121/157/223) and `chat_smoke`'s golden md5 unmoved
-  (`8ae9d1186a59627d30d05dee95f0ad95`) — re-measured after step 3. Throwaway
-  probes, deliberately NOT committed (the committed suite is step 5) and safe to
-  delete: `/tmp/p12_step3_probe.py` (this step's, the three measurements above),
-  `/tmp/p12_step4_probe.py` (measures who receives signal 0 — `Chat`, not
-  `ChatSettings`; it monkey-patches handlers and writes nothing),
-  `/tmp/p12_step2_probe.py` and `/tmp/p12_check.py` (steps 1-2). All run with
+
+  **Step 4** (`756179d`, **recovered 2026-09-23**): the counts row is a `Label`
+  (`ChatSettings.usage_label`) mounted LAST in `on_mount` — a position that is
+  load-bearing, because `self.selects` and every `children[1/3/5]` in this file
+  index BY POSITION: mounted before the Selects it shifts all three and
+  `unit:chat_smoke` dies inside its own harness (`'Label' object has no attribute
+  'set_options'`), which the outer runner's `| tail -n 1` reports as
+  `PASS: 0  FAIL: 0`. Text `ctx <used> / <n_ctx> · gen <generated> · cached
+  <cached>`; `count_or_dash()` renders `None` as `—`, never as a number, and 0 as
+  0. `context_sizes` caches the window size per `(endpoint, model)` — absent key
+  "never asked", stored `None` "asked and the server would not say" — with
+  `"none"`/NULL models normalised to `None` so a router server is never asked
+  `?model=none`, and each answer stored under the pair its probe was STARTED for,
+  never under whatever is selected when it lands. `refresh_usage()` is the public
+  seam: called from `on_select_changed` (endpoint/model change, including the
+  model `update_models()` picks programmatically, which announces itself the same
+  way) and from the signal-0 branch of `ChatView.on_stream_callback`; both carry
+  the `endpoint_list()`-membership guard, which is what keeps `get_context_size()`
+  away from the `{}` the smoke stub answers with. The probe runs in
+  `@work(group="context-size", exclusive=True, exit_on_error=False)`: a worker
+  because it is two GETs of `timeout=3` (~6 s on an endpoint answering neither
+  `/props` nor `/slots`, which would freeze the UI at the end of every reply), and
+  in its OWN group because `exclusive=True` without a group cancels every other
+  worker of that node — `update_models()` and its 60-try server wait included
+  (measured on a bare widget: default group → `a-CANCELLED`, own group → runs to
+  completion). The harvest-before-signal ordering is VERIFIED, not assumed: signal
+  0 is posted as stream()'s last act and the harvest runs the moment the await
+  returns, so the row shows this reply's numbers; the probe proves the instrument
+  can see staleness by deferring the harvest past the signal.
+  **Deviations, stated loudly** (also in the commit body): **(D1)** the refresh is
+  wired in `chat/callback.py`, NOT in `chat_settings.py` — the step named one
+  file and hazard (a) below is why it could not be: an `on_stream_callback` on
+  `ChatSettings` is never delivered (a sibling of the `ChatView`, and a Textual
+  Message bubbles to ANCESTORS only), so the call sits in the one branch that
+  already knows "signal 0, this reply is over"; a handler on `Chat` was rejected
+  because it also fires for signals 1 and 2 — once per streamed chunk — for a call
+  needed once per reply. **(D2)** the figures render RAW, not in the proposal's
+  `4.7k` form, which is what the 80-column limit below costs. **(D3)**
+  `refresh_usage()` also fires on a `model_settings` change (not in the cache
+  key): one redraw, no probe, accepted.
+  **Verified by the recovery** — probes green on the tree as it landed:
+  `/tmp/p12_step4_label_probe.py` (A the row moves through the real seam and NOT
+  with the seam unwired — the control; B a real harvest renders `ctx 4311 / — ·
+  gen 211 · cached 3050` and the second reply is not one-reply-stale; C a dead
+  endpoint with no override is a dash and never `0 / 0`; D one probe per pair,
+  four more refreshes cost zero, a new model costs exactly one, step 3's
+  `context_size` override renders; E a 0.5 s probe neither delays the refresh nor
+  stalls the message loop; F endpoint change through the real `on_select_changed`;
+  G the three Selects still sit at children[1/3/5] and the Label is the last
+  child), `/tmp/p12_step4_mount_probe.py` (the row is filled at MOUNT with no
+  reply ever sent, at a cost of exactly one probe, plus the staleness control),
+  `/tmp/p12_step4_exclusive_probe.py` (the worker-group measurement above),
+  `/tmp/p12_step4_probe.py` (the signal-0 receivers). Six byte-identical full-suite
+  runs of this tree (md5 `478ed3aff02c64dd6934ccbd1acb23fc`): the crashed
+  session's pre-step baseline and its two runs, and three taken after the
+  recovery — every row at its TESTING.md value, FAIL 0, `chat_smoke`'s golden md5
+  unmoved.
+  **LIMIT FOUND BY THE RECOVERY, FILED FOR THE OWNER** (measured through
+  `WindowApp`, which mounts the repo's own `spit_app/styles.css` — TRAPS #24; the
+  row is `height: 1`, so the question is horizontal): the Label takes its natural
+  width and the three Selects give way. At 80×24 the Selects are **12/13/13**
+  columns at HEAD, **3/3/4** with this Label and a zeroed chat (the 28-column text
+  ends exactly at column 80), and **1/1/1** with a running chat's figures, whose
+  39–47-column text then ends at 84–97 of the 80 available and is **clipped**. At
+  120 columns the row fits and the Selects keep 10–14 each. No suite can see this
+  (`chat_smoke`'s dump reads the message list, `chat_window`'s checks are about the
+  window), so the row is unasserted territory. The relief is a rendering choice —
+  the k-abbreviated form the proposal showed, or CSS giving the Label the leftover
+  width and ellipsizing it, or a row of its own — and it is the owner's, so nothing
+  was changed for it. Probes: `/tmp/p12_recover_layout_probe2.py` (after) and
+  `/tmp/p12_recover_layout_before.py` (HEAD — pass it the tree to measure).
+- **Left**: **step 5** — `spit_app/tests/unit/endpoints/` (+ a row in
+  `spit_app/tests/run_tests.sh`, + the ground-truth row in `doc/TESTING.md`):
+  canned-SSE stdlib HTTP server on 127.0.0.1 and canned `/props`/`/slots`
+  payloads, no live model; every check of the **Verify** bullet above; append-only
+  numbering (TRAPS #15); the skip-list check with its fail-able control (TRAPS
+  #13); the differential on/off byte-identical replay (TRAPS #18); fifth
+  dependency-listed suite (TRAPS #19) — `~/.venv-spit`, FAIL-with-remedy on a
+  missing import, never a silent zero. The full handoff for it is fenced below.
+  Nothing else of P12 is left before step 6 except that one **owner question**:
+  what the counts row renders at 80 columns (see LIMIT in the step-4 block). It
+  is a code change (`chat_settings.py` and/or `styles.css`) AND a taste call, so
+  it waits for the owner's word; it does not block step 5 or step 6, and it must
+  not be "fixed" by guessing — a k-form invented by an agent is a different lie
+  from the one `count_or_dash()` refuses.
+- **State hazards**: none in the repo — tree clean at `756179d` + this doc commit,
+  full suite green with every row at its TESTING.md value (tools
+  127/24/30/119/80/32/68/29, unit 68/131/168/568/33/278/121/157/223) and
+  `chat_smoke`'s golden md5 unmoved (`8ae9d1186a59627d30d05dee95f0ad95`).
+  In `/tmp`, deliberately NOT committed (the committed suite is step 5) and safe
+  to delete: `p12_check.py`, `p12_old_llamacpp.py`, `p12_step2_probe.py`,
+  `p12_step3_probe.py` (steps 1-3), `p12_step4_probe.py`,
+  `p12_step4_exclusive_probe.py`, `p12_step4_label_probe.py`,
+  `p12_step4_mount_probe.py` (step 4 — all four green on the tree as committed),
+  `p12_recover_layout_probe.py`, `p12_recover_layout_probe2.py`,
+  `p12_recover_layout_before.py` (the 80-column finding) and `p12_rec_full_{1,2}.txt`
+  (the recovery's suite rows). All run with
   `PYTHONPATH=~/spit.py ~/.venv-spit/bin/python`; none is read by anything in the
-  repo, and step 5 replaces them with the committed suite.
+  repo, and step 5 replaces them with committed checks. TWO recovery artefacts to
+  know about so nobody chases them: (a) `/tmp/p12_step4_seam_probe.py` was written
+  BEFORE step 4 existed in the file — it monkey-patches `refresh_usage` onto
+  `ChatSettings` and expects six children — so it now reports four reds that are
+  expectations of the old tree, not defects (the doubled refresh is the probe's
+  own `Chat` handler plus the wired `ChatView` one; harmless, because
+  `refresh_usage` is a redraw); the label probe supersedes it. (b)
+  `/tmp/spit-head-p12/` is a throwaway `git archive` copy of `19a6c0b` used for the
+  before-picture of the settings row — remove it freely.
 - **Verify**: each step: full suite from the repo root, counts unmoved except by this
   entry's own new checks (step 5). Final: the entry's **Verify** bullet, then close
   per step 6.
+
+### Handoff for step 5 (written by the step-4 recovery, 2026-09-23)
+
+```
+P12 step 5: build spit_app/tests/unit/endpoints/ — the committed suite for
+steps 1-4 — plus its row in spit_app/tests/run_tests.sh and its ground-truth row
+in doc/TESTING.md. Canned-SSE stdlib HTTP server on 127.0.0.1 + canned /props and
+/slots bodies: no live model, nothing beyond localhost. Append-only test numbers
+(TRAPS #15). Checks the entry's Verify bullet asks for, and the four the steps
+earned on the way:
+  * prepare_payload() carries stream_options {"include_usage": true};
+  * usage is taken from BOTH stream shapes — the final chunk with "choices": []
+    (OpenAI, llama.cpp since #15444) and the finish_reason chunk with choices
+    non-empty (old llama.cpp);
+  * an empty-choices chunk does NOT raise (the latent IndexError step 1 removed —
+    write this one against the old extract_fields first and watch it go red);
+  * a 4xx refusal retries once WITHOUT the flag and a 5xx does not;
+  * get_context_size: /props default_generation_settings.n_ctx, ?model=<id> when
+    a model is given, then /slots[0].n_ctx, then the context_size override, then
+    None; never raises on a dead address, a 404, or garbage JSON;
+  * context_size NEVER appears in the outgoing payload, with the TRAPS #13
+    control that a setting NOT on the skip list DOES leak;
+  * Work.harvest_usage: context is the latest call's prompt+completion (never
+    summed), generated accumulates, cached is the latest details or 0, silence
+    zeroes nothing, an error path counts nothing, messages untouched;
+  * the row (chat_settings): dash-not-number for None, one probe per
+    (endpoint, model), raw figures, and the three Selects still at children[1/3/5].
+Differential (TRAPS #18): replay every recorded SSE fixture with the flag on and
+off and assert byte-identical content/reasoning/tool_calls reconstruction — and
+verify the probe's own input mapping FIRST (TRAPS #13: three historical probes fed
+fixtures to the wrong file and still printed "identical").
+Shapes to steal rather than re-derive: /tmp/p12_check.py (the stream),
+/tmp/p12_step3_probe.py (payload + skip-list control), /tmp/p12_step2_probe.py
+(the harvest), /tmp/p12_step4_label_probe.py (the row, and StubEndpointApp — the
+smoke stub's endpoint_list()/get_endpoint() answer {}, which is the GUARD path and
+can never start a probe). A test endpoint must be built as a SAVED one: every
+field needs {"value": ...} because construct_payload and auth_headers index it.
+Do not touch messages. Do not "fix" the 80-column row: that is the owner's call,
+filed in the step-4 block. Fifth dependency-listed suite (TRAPS #19): the runner
+row must FAIL with the remedy when the import is missing, never PASS 0 FAIL 0.
+Full suite after it: every existing row where TESTING.md says it is, this suite's
+count new, FAIL 0 everywhere, chat_smoke golden md5
+8ae9d1186a59627d30d05dee95f0ad95 unmoved. Then step 6 closes the entry.
+```
 
 ## Protocol when starting a task from TASKS-PLANNED.md
 
