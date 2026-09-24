@@ -68,7 +68,8 @@ spit_app/tests/tools/        per-tool shell suites (layout: TESTING.md)
 spit_app/tests/unit/         unit suites: arguments, sandbox, prompt,
                              run_script, render (pure python), terminal
                              (libtmux), anchored / chat_smoke / chat_window
-                             (headless Textual) - see TESTING.md
+                             (headless Textual), endpoints (httpx + headless
+                             Textual, canned localhost server) - see TESTING.md
 ```
 
 ## How to run things
@@ -86,12 +87,14 @@ The app's dependencies (`textual`, `libtmux`, ...) are **NOT installed in the
 bare system python3**. The app runs elsewhere (container/venv). Consequences:
 - Test scripts in `spit_app/tests/tools/` and `tests/unit/sandbox/` are built
   to need no Textual (sandbox tests drive `Run` through `stub_app.py`).
-- **Four suites need a dependency and say so**: `tests/unit/terminal/` drives a
+- **Five suites need a dependency and say so**: `tests/unit/terminal/` drives a
   real tmux through `libtmux`; `tests/unit/anchored/`, `tests/unit/chat_smoke/`
   and `tests/unit/chat_window/` drive a real headless Textual (`App.run_test`)
   for the `AnchoredScroll` container, the `ChatView` accessor differential and
-  the sliding window. Build the venv once with
-  `bash spit_app/tests/create_venv.sh` (it unsets `PIP_USER`, which this
+  the sliding window; `tests/unit/endpoints/` needs **httpx** because
+  `endpoints/llamacpp.py` imports it (and Textual too, for its counts-row
+  file), so it cannot run on the bare interpreter at all. Build the venv once
+  with `bash spit_app/tests/create_venv.sh` (it unsets `PIP_USER`, which this
   environment exports and which a virtualenv refuses). Without it that row
   reports FAIL 1 with the command to run — never a silent zero (TESTING.md).
 - To smoke-check a tool module's wiring without deps:

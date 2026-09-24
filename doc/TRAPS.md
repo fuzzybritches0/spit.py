@@ -105,15 +105,21 @@ matching area.
 
 19. **System python3 has NO app dependencies** (textual, libtmux...). Scripts
     are stdlib and test directly; modules need the app's runtime. Tests are
-    built to run without Textual at all (`stub_app.py`). Four suites cannot avoid
+    built to run without Textual at all (`stub_app.py`). Five suites cannot avoid
     a dependency: `unit:terminal` needs **libtmux** because it drives a real
-    tmux, and `unit:anchored`, `unit:chat_smoke` and `unit:chat_window` need
+    tmux, `unit:anchored`, `unit:chat_smoke` and `unit:chat_window` need
     **textual** because each drives a real headless Textual (`App.run_test` -
-    frame accuracy cannot be checked against a stub), and the sandbox's
-    `PIP_USER=True` makes a plain `pip install` into a fresh venv fail outright -
-    build the venv with `bash spit_app/tests/create_venv.sh` (it unsets both; see
-    TESTING.md, "The test venv"). A missing dependency there is a FAIL with the
-    remedy in the message, never a `PASS: 0  FAIL: 0`.
+    frame accuracy cannot be checked against a stub), and `unit:endpoints` needs
+    **httpx** - not optionally: the module it tests,
+    `spit_app/endpoints/llamacpp.py`, imports it, so nothing in that suite can
+    even be imported on the bare interpreter (and its counts-row file pulls
+    Textual as well). The shape of the gate is the lesson: a suite's dependency
+    is what the code UNDER TEST imports, not what the test file happens to
+    import. The sandbox's `PIP_USER=True` makes a plain `pip install` into a
+    fresh venv fail outright - build the venv with
+    `bash spit_app/tests/create_venv.sh` (it unsets both; see TESTING.md, "The
+    test venv"). A missing dependency there is a FAIL with the remedy in the
+    message, never a `PASS: 0  FAIL: 0`.
 20. **Tools are loaded at app startup** - tool code changes need an app
     reload to take effect.
 21. **`["string", "array"]` schema types are not decodable everywhere**;

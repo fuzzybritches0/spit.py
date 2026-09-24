@@ -42,18 +42,23 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
 | unit:chat_window | 568 |
+| unit:endpoints | 343 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 157 |
 | unit:terminal | 223 |
 
-## The test venv (four suites need it)
+## The test venv (five suites need it)
 
 `unit:terminal` drives a **real tmux** through `libtmux`; `unit:anchored`,
 `unit:chat_smoke` and `unit:chat_window` drive a **real headless Textual**
 (`App.run_test` - frame and geometry accuracy cannot be checked against a stub).
-The bare system python3 has no app dependencies (TRAPS #19), so all four need a
+`unit:endpoints` needs **httpx** - the module under test,
+`spit_app/endpoints/llamacpp.py`, imports it, and the bare system python3 does
+not have it (measured: `ModuleNotFoundError: No module named 'httpx'`) - and
+**Textual** too, because its counts-row file drives `chat_settings` headless.
+The bare system python3 has no app dependencies (TRAPS #19), so all five need a
 venv. Build it once:
 
 ```
@@ -409,6 +414,33 @@ harness **absolute** fixture paths.
   Lifecycle/delivery/streams drive everything through the shared
   `run_as_file(...)` -> `(output, leftovers, elapsed)`.
 
+- `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
+  (343 checks): `endpoints/llamacpp.py`, `Work.harvest_usage()` and the
+  chat-settings counts row, driven against a **canned stdlib `http.server`**
+  bound to `127.0.0.1` port 0 - no live model, no port but loopback, no user
+  data dir, no tool import. `run_tests.sh` gates **httpx and textual** (both
+  probes in one `import`, FAIL-with-remedy and `PASS: 0  FAIL: 1` when either is
+  missing, never a silent zero - TRAPS #19), globs `test_*.py` and sums the
+  `PASS:` lines. Files: `test_payload.py` (t1 payload, t5 skip list, t8
+  `native_address`, t9 auth header, 88), `test_stream_parse.py` (t2 every stream
+  shape old-vs-new, t3 the empty-`choices` chunk that used to kill the stream,
+  t4 the usage object, 132), `test_requests.py` (t6 the one-retry rule around
+  `stream_options`, t7 the `/props` → `/slots` → override chain - both read the
+  server's **recorded request lines**, because those behaviours *are* request
+  counts and request order, 61), `test_harvest_usage.py` (t10, driven with a
+  `SimpleNamespace` because the harvest reads `self.endpoint.usage` and
+  `self.chat.token_usage` and nothing else - 19), `test_counts_row.py` (t11, the
+  counts row in a real headless widget tree, 43). Shared code lives in
+  `endpoint_harness.py` and `counts_harness.py`, deliberately **not** `test_*`:
+  the runner's glob would turn a harness into a suite file (the `stub_app.py` /
+  `window_harness.py` precedent), and `counts_harness.py` imports
+  `chat_smoke/smoke_scenario.py`'s `SmokeApp` and overrides `endpoint_list()` -
+  the stub answers `{}`, which is the *guard* path of `refresh_usage()`, so a
+  suite built on it could never see a single context-size probe.
+  Every differential file prints its INPUT MAPPING before it runs (TRAPS #13),
+  and every comparison against the pre-step-1 code is preceded by
+  `baseline_selfcheck()` - see "Differential verification" below.
+
 ## Differential verification (for changes to established behaviour)
 
 A green suite cannot see a refusal that became an application, or a rename
@@ -423,3 +455,32 @@ changes (proven on the patch redesign):
 4. For pure renames/refactors: md5-multiset comparison of generated corpora
    per suite + `git diff main..HEAD` touching only the intended paths
    (TRAPS #14).
+
+5. **Pin the OLD side by SHA, and prove it is old.** A differential whose
+   baseline is derived at run time from `HEAD` silently becomes a comparison of
+   the new code with itself the moment the change is committed - and it still
+   prints tidy greens. Measured on this repo: the step-1 probe
+   (`/tmp/p12_check.py`) took its OLD side from `git show HEAD:...` and rewrote
+   `/tmp/p12_old_llamacpp.py` on every run. Correct while step 1 was
+   uncommitted; re-run after the commit it printed `PASS: 47  FAIL: 3`, the
+   three reds being exactly the checks that ask the old side to BE old, while
+   its "identical to old" reconstruction pairs stayed green **vacuously**. So
+   `unit:endpoints` execs `git show b799526:spit_app/endpoints/llamacpp.py`
+   (md5 `38858cde93e6066ce24e39a908cd0a6a` - `a173854^`, the parent of the
+   commit that changed the file, byte-identical to `main`'s copy) into a module
+   of its own - from the git object, not a temp file, so nothing can be
+   overwritten between runs - and every file that compares against it first
+   runs `baseline_selfcheck()`: the pinned bytes, the parent-of-step-1
+   relationship, "not the current file", and four facts that only the old file
+   fails (no `stream_options`, no `get_context_size` / `native_address` /
+   `auth_headers`, `extract_fields` raises `IndexError` on `"choices": []`). A
+   differential that cannot fail is not evidence.
+
+6. **Check the instrument by substituting the defect.** Breaking the mechanism
+   on purpose is what turns a green row into a claim: writing the context-size
+   answer under the *currently selected* pair instead of the pair the probe was
+   started for left every in-flight-cancellation check green (the exclusive
+   worker group cancels the probe, so the answer never arrives to be filed
+   anywhere) and reddened only the arrangement where the switch starts no
+   worker and the late answer does arrive. See `test_counts_row.py`
+   `t11_no_bleeding`, which carries both arrangements for exactly that reason.
