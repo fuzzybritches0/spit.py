@@ -198,6 +198,23 @@ Test-count ground truth: see TESTING.md.
   2026-09-20, DECISIONS 77; this sentence predates that and is kept as written.)
   Verification rested on the automated
   headless suites: there is no screen here (TRAPS #22).
+- **P12: the token counts row and the endpoint's context size** (branch
+  `task-token-counts-p12`, `c7e7d74`…`a643666` + the close-out, awaiting the
+  owner's merge; `main` untouched). Every chat now shows
+  `ctx <used> / <available> · gen <generated> · cached <cached>` on its
+  chat-settings row, from the `usage` object the SSE parser used to discard: the
+  parse reads usage **wherever a chunk puts it** (no version detection, and the
+  empty-`choices` guard removes the latent `IndexError` the modern OpenAI shape
+  would have caused), the window size comes from `/props` → `/slots` → the
+  endpoint's `context_size` setting, and a server that answers neither shows a
+  **dash, never a guessed number** — the denominator is the one place a chat can
+  overflow and the user is told about it. The counts live on the `Chat` (a `Work`
+  is built per send; `context` is the latest call's, never a sum) and never in
+  `messages`, which are POSTed verbatim. DECISIONS 80; new ground-truth row
+  `unit:endpoints` 343, the fifth dependency-listed suite. **Open for the owner**:
+  the row's rendering at 80 columns (Selects 12/13/13 → 1/1/1, text clipped at
+  84–97 of 80; at 120 it fits) — a rendering choice, measurement in the entry.
+  Close-out verification: the automated headless suites; no screen here (TRAPS #22).
 
 ### P0b-followup 1 — `remain-on-exit`: a dead session reports its real last screen (branch `task-terminal-empty-output`, commits `d549b61`…`e5b4fba`)
 
@@ -1273,3 +1290,137 @@ owner's merge — and no commit was made in it.
 
 **The five checks, and what the re-pin changed about them.** They asserted the line this removes, and the
 owner re-pinned them to the exact tool result (`out == "read: []\n"`, `out == "hi\n"`,
+
+### P12 — token counts: how many are used, and how many exist (branch `task-token-counts-p12`, commits `c7e7d74`…`a643666` + this close-out, awaiting the owner's merge)
+
+**Owner gate.** The owner approved the proposal and gave the `Go!` on 2026-09-22,
+with the instruction that the code be implemented step by step, one file per step,
+agents chained by fenced handoff messages. That once-per-task `Go!` covered **every**
+code step of this entry (DECISIONS 71 (c)); step 6 — this close-out — touches no code
+and asks nothing. `main` (`bf55d39`) untouched throughout, nothing pulled, nothing
+pushed; the branch is the owner's to merge, as always. Full record: **DECISIONS 80**.
+
+**What landed, step by step** (code commits; each step also left a State doc commit:
+`70c0603`, `84cd240`, `19a6c0b`, `b3ee808`, `88309d1`, `a643666`).
+
+- `c7e7d74` planning (on `docs-plan-token-usage-context-size`, the branch this one
+  was cut from), `b799526` the entry move — and with it the commit whose copy of
+  `endpoints/llamacpp.py` is the suite's pinned differential baseline.
+- **Step 1** `a173854` — `endpoints/llamacpp.py`: `extract_fields` is a no-op on
+  empty/missing `choices` (the latent `IndexError` that would have killed the stream
+  the day a server sent the modern usage-chunk shape); `usage` is read per chunk
+  **before** anything touches `choices` and kept on `self.usage` (reset at every
+  `stream()` start); `prepare_payload()` sends `stream_options:
+  {"include_usage": true}` with one retry **without** the flag on a 4xx (never lose
+  a reply over counting); never-raising `get_context_size(endpoint, model=None)`
+  with the chain `/props` → `/slots` → `context_size` override → `None`;
+  `"context_size"` joins the `construct_payload` skip list.
+- **Step 2** `b7d06ac` — `Chat.token_usage = {"context", "generated", "cached"}`
+  (`chat.py:40`), fed by `Work.harvest_usage()` right after every `await
+  self.endpoint.stream()`, the tool-loop recursion included: `context` = the LATEST
+  call's prompt+completion (never summed — the next prompt already contains the
+  previous answer and the tool results), `generated` += completion, `cached` =
+  latest `cached_tokens` for THAT read. `messages` untouched.
+- **Step 3** `304530a` — the endpoint gets `context_size` (`uinteger`, 0 =
+  auto-detect, modelled on `timeout`), the honouring logic staying step 1's.
+- **Step 4** `756179d` — the counts row: a `Label` **mounted LAST** in
+  `ChatSettings.on_mount` (load-bearing: `self.selects` and the file's
+  `children[1/3/5]` index by position), text `ctx <used> / <n_ctx> · gen
+  <generated> · cached <cached>`, `count_or_dash()` rendering `None` as a dash and
+  never a number, `context_sizes` cached per `(endpoint, model)` with the answer
+  filed under the pair its probe was STARTED for, `refresh_usage()` the public seam
+  called at endpoint/model change and at stream end — through `chat/callback.py`'s
+  signal-0 branch, because a sibling never hears the `StreamCallback` (DECISIONS
+  80 (e)) — with the `endpoint_list()`-membership guard keeping `get_context_size`
+  away from the `{}` the smoke stub answers, and the probe running in its own
+  worker `group="context-size", exclusive=True` (measured: `exclusive` without a
+  group cancels `update_models()` and its server wait).
+- **Step 5** `eef3045` + `76e0dd2` — `spit_app/tests/unit/endpoints/`, **343
+  checks**, the fifth dependency-listed suite (TRAPS #19: gates httpx + textual,
+  FAIL + remedy, never a silent zero), five check files on one canned
+  `http.server` bound to `127.0.0.1` port 0, the differential's OLD side pinned by
+  sha from the git object with `baseline_selfcheck()` ahead of every comparison,
+  plus `doc/TESTING.md`'s row and its two new differential rules (item 5: pin the
+  baseline by sha; item 6: check the instrument by substituting the defect — both
+  learned by running, both in DECISIONS-adjacent prose of the step-5 commit).
+- **Step 6** this close-out: DECISIONS 80, the PROJECT.md Features row + the
+  unified-KV sentence, the P12 flip to DONE in `TASKS-PLANNED.md`, the entry
+  deleted from `TASKS-IN-PROGRESS.md` with its banner rewritten to ONE open
+  entry. No app code, no test changes.
+
+**Two recoveries mark the chain** (recorded so the numbers above are trusted as
+re-measured, not inherited): step 4's session died with the code uncommitted and
+its State fields still describing step 3 — the next agent re-measured (six
+byte-identical full-suite runs, probes green, golden md5 unmoved), committed it,
+and that recovery is what found the 80-column limit below; step 5's session died
+while finishing its docs, and the tree at `76e0dd2` was again re-measured (two
+byte-identical runs, md5 `ddafccf8f3a6696d149ae33c0a49e5e7`) before its notes
+were committed as `a643666`.
+
+**Deviations, collected in one place** (each already in its commit body, stated
+loudly there). Step 1: **(D1)** a refusal of `stream_options` is NOT remembered
+per endpoint — `Work` deepcopies the endpoint dict per send, so remembering there
+dies with the `Work`; cost: a refusing endpoint pays one extra request per send,
+never a lost reply. **(D2)** `native_address()` strips the trailing `/v1` only
+when present (the old rule of record was a blind `[:-3]`); identical for every
+URL the app builds. **(D3)** `get_models`' auth-header lines were extracted to
+`auth_headers()` because `get_context_size` needs the same rule; `stream()`'s own
+header block was left as HEAD wrote it. Step 4: **(D1)** the refresh is wired in
+`chat/callback.py`, not `chat_settings.py` — the step named one file and the
+sibling-never-hears-message fact is why it could not be (80 (e)). **(D2)** the
+figures render RAW, not in the proposal's `4.7k` form — what the 80-column limit
+below costs. **(D3)** `refresh_usage()` also fires on a `model_settings` change
+(not part of the cache key): one redraw, no probe. Step 5: **(D1)** NO row was
+added to `spit_app/tests/run_tests.sh` — it globs `unit/*` and prints the
+`unit:endpoints` row by itself; a hand-written row would print the suite twice.
+**(D2)** `t10`/`t11` share `counts_harness.py` — the Work stand-in and the stub
+app are the same two objects, and one dependency gate covering both files is
+what TRAPS #19 asks for.
+
+**Accepted limits** (none to be "fixed" without the owner's word): `token_usage`
+is session state — `write_chat_history` still writes only ctime/settings/messages,
+so a reloaded chat starts at zeros; an endpoint saved BEFORE `context_size`
+existed shows no Context Size field (settings read `endpoints.json` verbatim; the
+override is the third rung and is read with `.get()`); and the refusing endpoint's
+one extra request per send (D1 of step 1).
+
+**The one open question, left for the owner — the counts row at 80 columns.**
+Measured at 80×24 through an app that mounts the repo's own `styles.css`
+(TRAPS #24): the three Selects of the settings row are **12/13/13** columns
+before P12, **3/3/4** with this Label and a zeroed chat (the 28-column text ends
+exactly at column 80), and **1/1/1** with a running chat's figures, whose
+39–47-column text ends at 84–97 of the 80 available and is **clipped**; at 120
+columns the row fits and the Selects keep 10–14 each. The relief is a rendering
+choice — k-abbreviation, CSS leftover width + ellipsis, or a row of its own — and
+it is a code change plus a taste call, so nothing was changed for it and this
+close-out changes nothing (a k-form invented by an agent is a different lie from
+the one `count_or_dash()` refuses). `t11` asserts STRUCTURE, not spelling,
+precisely so the owner's answer will not have to keep today's text. DECISIONS 80
+(f) carries the same numbers.
+
+**Which verification the close-out rested on, plainly.** The **automated headless
+suites**: `unit:endpoints` 343 (this entry's own row), `unit:chat_smoke` 168 with
+its golden dump (md5 `8ae9d1186a59627d30d05dee95f0ad95`, unmoved across all six
+steps — no re-pin was ever needed), `unit:chat_window` 568, the rest of the suite
+green around them. This environment has **no screen**: nothing in P12 was verified
+by looking at the running app (TRAPS #22), and no by-hand checklist is a condition
+of closing. A by-hand look at the counts row in a real terminal (does it read
+well, what should it render at 80 columns) is a **note for whoever next runs the
+app**, folded into the open question above. The step-5 entry in the (now-deleted)
+in-progress record was right that the `/tmp/p12_*` probes are historical — every
+one of their checks is committed in `unit:endpoints`, and `p12_check.py` is a
+known-lying differential (TESTING.md item 5 tells why); **do not recreate
+`/tmp/p12_old_llamacpp.py`** — the pinned baseline is
+`git show b799526:spit_app/endpoints/llamacpp.py` and the suite takes it from the
+git object.
+
+**Verified.** Full suite from the repo root at this close-out, run **twice**, the
+two runs byte-identical to each other AND to the tree's recorded baseline
+`ddafccf8f3a6696d149ae33c0a49e5e7` (stderr empty in every run): tools
+127/24/30/119/80/32/68/29 and unit 68/131/168/568/343/33/278/121/157/223,
+**FAIL 0 everywhere**. Step 6 adds no checks, so no row may move — none did, which
+is itself the proof that the close-out wrote no code.
+
+No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
+`main` untouched, nothing pushed. There is no handoff after this — step 6 was the
+last step, and this entry is the record.

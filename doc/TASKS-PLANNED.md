@@ -245,14 +245,17 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
 
 ---
 
-## P12 - IN PROGRESS - Token counts: how many are used, and how many exist  [owner-approved 2026-09-22; started]
+## P12 - DONE - Token counts: how many are used, and how many exist  [owner-approved 2026-09-22; closed 2026-09-24]
 
-The full entry **moved to `TASKS-IN-PROGRESS.md`** when the owner gave the `Go!`
-for its code on 2026-09-22. Branch `task-token-counts-p12` (cut from
-`docs-plan-token-usage-context-size`, which carries the planning at `c7e7d74`);
-the six-step file-by-file chain and the handoff discipline live in that entry,
-together with the verified server-side facts, the proposal, the **Verify** and
-the Gotchas.
+Implemented 2026-09-22 → 2026-09-24 as the six-step chain the entry sketched,
+on `task-token-counts-p12` (`b799526`…`a643666` + the close-out, cut from
+`docs-plan-token-usage-context-size`, which carries the planning at `c7e7d74`),
+awaiting the owner's merge; `main` untouched throughout. **Resolution:
+`TASKS-FINISHED.md`** (the steps, the deviations collected in one place, the
+accepted limits, and the ONE question left open for the owner — the counts
+row's 80-column rendering, with its measurements so it can be decided without
+re-measuring) **and DECISIONS 80**. New ground-truth row: `unit:endpoints` 343,
+the fifth dependency-listed suite.
 
 ---
 
