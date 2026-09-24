@@ -259,6 +259,241 @@ the fifth dependency-listed suite.
 
 ---
 
+## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; needs `Go!`]
+
+**The goal**: the model itself learns how full its window is while it works, so that
+it wraps up and writes a handoff instead of dying mid-task. Three pieces: a
+**generator** that turns hook output into system messages, one **hook** (the token
+status, thresholds 50/80/90%), and the **unpacking** that puts those messages on the
+wire. The handoff tool the 90% note will point at is P14; this entry is the mechanism
+only.
+
+**The constraint that shapes it** (the owner's): a note may NOT become an item of
+`chat.messages`. That list is the index space the whole UI addresses — the sliding
+window `messages[lo, hi)` projects it by dict identity (`window_consistent()`),
+`StreamCallback`/`RemoveMessage` carry those indexes, `Undo` stores them, and
+`ToolCall`/`LlamaCppEndpoint` hold a `message_index` into it mid-stream. A new item in
+the middle of that list while a stream runs is the bug, not the feature.
+
+**The mechanism** (the owner's design, adopted): a note is written INTO the message
+dict it follows, under a key the sender strips — `"system"`, a list of
+`{"hook": <name>, "level": <name>, "text": <str>}` entries — and
+`endpoints/llamacpp.py:LlamaCppEndpoint:prepare_payload` unpacks each entry into its
+own `{"role": "system", "content": <text>}` item right AFTER the message that carries
+it. `prepare_payload` already deepcopies every message (the `reasoning` →
+`reasoning_key` rename lives in that loop), so the app-side dict keeps its note, the
+wire copy never carries the private key, and `chat.messages` keeps its length and its
+identities — nothing in the UI can see any of it.
+
+Why the note rides on a message instead of being rebuilt fresh per request: a note is
+written **once, at the tail**, at the moment it becomes true, and from then on it is
+history. The prompt prefix therefore never changes, so llama.cpp's automatic prefix
+cache and this app's own `/slots?action=restore` cache (`endpoints/manage_cache.py`)
+stay valid — a note re-injected at a moving position, or merged into the leading
+system prompt, would break the whole cached prompt on every request.
+
+**The numbers, and what they may not be**: used = `chat.token_usage["context"]`, the
+server's own `prompt_tokens + completion_tokens` of the last call (DECISIONS 80 c);
+total = the window the server reported, read through a `Chat.context_window()`
+accessor over `ChatSettings.context_sizes[context_key()]` — no network on the request
+path. **Unknown total ⇒ silence**, exactly as the dash is a dash on the counts row
+(DECISIONS 80 b): a guessed denominator is a lie about when the chat dies. The figure
+is the fill at the END of the last reply, so it under-counts the newest user text and
+tool results; the note says that in words rather than inventing an estimate.
+
+**Four consequences of storing the note in the message dict — stated, not discovered
+later.** (1) `write_chat_history()` persists notes with the chat, so they survive a
+reload; `token_usage` does NOT (DECISIONS 80's carry-over), so a reloaded chat starts
+at zero counts and the thresholds re-arm while the old notes sit in the history as
+factual statements about the past. That is consistent and it must be written down, not
+"fixed" by an agent. (2) `Undo` deepcopies the message it records, so undoing a
+`change` to a noted message can take the note with it — the note is a nudge, not data,
+and the accepted answer is to let it go. (3) `action_abort` removes the tail message,
+and with it any note attached to it; the next request re-asks the hooks and re-writes
+one. (4) An edit never shows or edits a note (`Message` renders
+`reasoning`/`content`/`tool_calls` only), which is also why nothing in the UI notices
+any of this.
+
+**The two hazards this entry found, and how it answers them**
+
+1. **A `system` message after position 0 is refused outright by strict chat
+   templates.** The Qwen3.x template in llama.cpp carries
+   `{{- raise_exception('System message must be at the beginning.') }}` (line 85 of
+   `models/templates/Qwen3.5-4B.jinja`), and the server then fails the WHOLE request
+   with 400/500 — measured and reported with reproductions in llama.cpp #27367,
+   #20733, #18895 and QwenLM/Qwen3.8 #244, all of them agent harnesses injecting
+   mid-conversation context exactly like this one. (The mistral/gemma-family templates
+   are a different rule — they reject the `system` role at all or demand strict
+   user/assistant alternation — and the app's leading prompt is already unwelcome
+   there; that is not this hazard and is not made worse by it.) The workarounds in
+   those threads are hoisting the extra system content into the leading block or
+   serving a patched template: both wrong here — the first invalidates the cached
+   prompt on every request, the second is a GGUF the app does not own. The answer in
+   P13 is to keep the role a SINGLE constant in the unpacking (`"system"`, per the
+   owner's wording), so that an endpoint with a strict template is one setting away
+   from working: a `note_message_role` endpoint setting (`system` / `user` / `off`) is
+   filed as follow-up (a) below and is NOT built in P13. The limit is stated, not
+   papered over, and the note's own text must never be load-bearing for a reply —
+   losing it is fine, losing the request is not.
+2. **The template also wants an assistant's `tool_calls` and their `tool` replies
+   adjacent.** The generator only ever notes the LAST message, and at that moment the
+   last message is a `user`, a `tool`, or an `assistant` without `tool_calls` (a
+   request can only be pending once the pending tool calls have been run:
+   `work_stream()` runs them before `endpoint.stream()`), so the note never lands
+   inside a tool run. Pin it (WP-A pins the shape, WP-D pins the live sequence) rather
+   than trust it.
+
+**Package split** — five, each one sitting, each far under the token budget; all the
+code together is ~120 lines.
+
+- **WP-A — the unpacking (the only piece that touches the wire).**
+  `endpoints/llamacpp.py`: in the `prepare_payload()` loop, `_message.pop("system")`
+  and append one `{"role": "system", "content": text}` per entry after the message.
+  Nothing writes a note yet, so today's behaviour is unchanged and provable.
+  Tests: `unit:endpoints`, new file `test_system_note.py`, **t12** (append-only,
+  TRAPS #15): unpacked after its message; several notes keep their order; the private
+  key is never on the wire; the app-side dict keeps its note (the deepcopy, as t1 does
+  for `reasoning`); a message with no note gives a byte-identical payload — the
+  differential against the pinned baseline `b799526` (`endpoint_harness`) says the
+  no-note case moved nothing; notes coexist with the `reasoning` rename; the leading
+  system prompt stays at index 0; the after-the-carrier position is pinned even for an
+  assistant carrying `tool_calls` (a consequence stated, not hidden).
+- **WP-B — the generator and the hook contract.** New `spit_app/chat/system_note.py`,
+  importing NOTHING of Textual/httpx (TRAPS #19 — it must run on the bare
+  interpreter): `class SystemNotes` with `__init__(chat)` and `attach()`, a module
+  `HOOKS` list, and per-message `hook.notice(chat, messages, index)` returning text or
+  `None`. Invariants pinned by a NEW suite `tests/unit/system_note/` (bare python3,
+  `run_tests.sh` + `test_generator.py`): hooks are asked at every message position; a
+  hook speaks **at most once per message** (the walk is idempotent, so N requests
+  never duplicate a note); `None`/empty writes NOTHING — no empty `"system"` key;
+  `len(chat.messages)` and every `id(message)` are unchanged (the note never becomes a
+  message — the whole point, and the check that keeps WP-A's premise true); a raising
+  hook is NOT swallowed — a broken hook must not survive by silently doing nothing
+  (the same posture as the `{}`-endpoint KeyError pinned as a limit in DECISIONS 80 b).
+- **WP-C — the token-status hook.** `spit_app/chat/token_status.py`:
+  `LEVELS = ((0.5, "info"), (0.8, "warning"), (0.9, "critical"))`, once per level per
+  chat, silent while the window or the counts are unknown, and a note that hands the
+  model the verdict and the action instead of arithmetic it cannot do (LLMs cannot
+  count tokens — the reason the text spells the percentages and the remainders out and
+  asks for no sum). Draft texts, to be pinned word-for-word (model-facing text is
+  code; `tests/unit/prompt/` is the precedent for pinning it exactly) — and OPEN for
+  the owner's wording:
+  - info ≥50%: context status, `used` of `total`, `remaining`; nothing to do yet, be
+    economical with what you read and print;
+  - warning ≥80%: stop opening what you do not need, targeted reads over whole files,
+    start writing down what you did and what is left;
+  - critical ≥90%: finish the current step, start no new work, write the handoff
+    summary (what you were doing, what you changed, what is left, how to resume).
+  All three carry the caveat that the count is the server's figure from the last
+  reply. Tests in `unit:system_note`: silent below 50 / at 0 usage / when the total is
+  `None` (with the TRAPS #13 control that the same fixture with a known total DOES
+  speak); fires once at each level; silent between levels; the level state is per
+  instance.
+- **WP-D — the wiring, and the proof the chain works.** `Chat.__init__`: the
+  `TokenStatus` and `SystemNotes` instances (session state, next to `token_usage`, for
+  the DECISIONS 80 c reason — a `Work` is built per send) and `Chat.context_window()`;
+  `Work.work_stream()`: `self.chat.system_notes.attach()` immediately before
+  `await self.endpoint.stream()` — the position is load-bearing: the tool loop
+  re-enters `work_stream()`, so this asks the hooks before EVERY request, including
+  the ones inside a tool loop, where the window actually fills up. Tests:
+  `unit:endpoints` **t13**, end to end over the canned server (it records POST bodies):
+  under threshold ⇒ no note in the body; over 50% ⇒ exactly one system note in the
+  right position of the next request's `messages`; a second request at the same level
+  adds none; the `chat.messages` list the UI holds never gains an item. Prove the UI
+  is untouched: `chat_smoke`'s `golden.txt` md5 unmoved, `chat_window` row unmoved.
+- **WP-E — the docs.** DECISIONS 81 (the note-in-the-message-dict contract and why not
+  an index; the once-at-the-tail rule and the prefix-cache argument; silence when the
+  window is unknown; the thresholds; the strict-template limit); cross-linked from
+  DECISIONS 80's counts row; `TESTING.md` ground truth with the new `unit:system_note`
+  row and the `unit:endpoints` delta; `PROJECT.md` map; this entry closed by its
+  holder.
+
+**Follow-ups to file when WP-E runs** (not part of P13): (a) `note_message_role`
+endpoint setting `system`/`user`/`off` for strict templates — hazard 1; (b) render the
+notes in the UI so the user sees what the model was told (they are invisible today:
+`Message` renders `reasoning`/`content`/`tool_calls` only); (c) the thresholds as
+settings; (d) **P14, the handoff tool** — the 90% note exists to point at it.
+
+**Verify**: full `bash spit_app/tests/run_tests.sh` from the repo root, every row
+byte-for-byte except `unit:endpoints` (up by t12/t13) and the new `unit:system_note`
+row; `chat_smoke`'s golden md5 unmoved. Note that `unit:prompt` is ALREADY red at the
+tip (P15 below: 32+1 against the pinned 33) and stays red unless that fix lands first
+— a close-out must say which of the two the run rested on.
+
+**Gotchas**: TRAPS #19 (the WP-B/WP-C modules must import no Textual/httpx or the new
+suite silently needs the venv — gate it the way the five existing dependency suites
+do); #13 (every silent case needs the control that makes it speak); #15 (t12/t13 are
+new numbers, never reused); #18 (read a row as a floor — a crash hides behind
+`tail -n 1`); #14 (the no-note payload differential is the proof the wire format did
+not move); DECISIONS 80 (b)/(c) for the counts and the dash; the note text is
+model-facing text, i.e. code.
+
+---
+
+## P14 - New tool: `handoff` — an agent hands the work to the next agent  [owner-described 2026-09-25; not started; needs `Go!`]
+
+The owner's stated intent, verbatim from the P13 briefing: *"later we will introduce a
+tool call that lets you handoff information to the next agent so they may continue
+with the work. This will give you more autonomy and helps in automating what I've been
+doing by hand since now — telling the model that tokens run out and that they should
+handoff the work to the next agent, asking them to write a handoff message which I put
+into the next agent's chat. We want to automate this and avoid having the agent die mid
+work."*
+
+- **What P13 already does for it**: the ≥90% note (WP-C) is the trigger that exists
+  today; it tells the model to write the summary. P14 gives that summary somewhere to
+  GO instead of into the chat's last message.
+- **Decide first** (the entry's real work): where does a handoff land? (a) the tool
+  writes a handoff document under the app's data dir (next to the chats) and echoes it
+  so it is also in the transcript; (b) it creates the NEXT chat with the handoff as its
+  first message, so the human's part shrinks to opening it; (c) it writes a file the
+  next agent is pointed at by the P13 note's text. The three differ in how much of the
+  owner's manual loop they remove, and (b) touches the chat lifecycle — that is a
+  decision, not a detail.
+- **Scope** (per CONVENTIONS.md): `spit_app/tools/<name>.py` + its script under
+  `spit_app/tools/scripts/` + `spit_app/tests/tools/<name>/` (exactly three files),
+  `PATH_ARGS` if it takes paths, `OUTPUT_TYPE_HINT` if it is not Markdown, `dry_run` if
+  it is destructive.
+- **Verify**: full `bash spit_app/tests/run_tests.sh` green (its own new suite; note
+  the tip-red of P15 so a reader knows what a `unit:prompt` row means); new suite's
+  checks in its summary line; both `TASKS-FINISHED.md` and the P13 follow-up list
+  updated.
+- **Gotchas**: TRAPS #21 (PATH_ARGS), #10 (generated fixtures only), #19 (a tool module
+  cannot be imported by the bare interpreter); the tool's PROMPT/PROMPT_INST are
+  model-facing text = code, pinned by `tests/unit/prompt/`.
+
+---
+
+## P15 - `unit:prompt` is red at the tip: `TOOL_PROMPT` is emitted with no tool behind it  [found 2026-09-25; needs `Go!`]
+
+- **The measurement** (this box, tip `6bb1b62`): `unit:prompt: PASS: 32  FAIL: 1`,
+  against the ground truth `doc/TESTING.md` pins at **33** — the red is
+  `t6-mm_tool_without_the_capability_excluded`. It is not environmental: the same suite
+  run from a clean tree of `6bb1b62^` reports **PASS: 33  FAIL: 0**.
+- **The cause** — the tip commit `6bb1b62` ("chat: work: fix no tools selected"), in
+  `spit_app/chat/work.py:prompt()`: `prompt = TOOL_PROMPT + "\n\n".join(blocks)` moved
+  INSIDE `if self.cs("tools"):`, so the header is now emitted whenever a tool is
+  *selected*, even when the capability filter drops every one of them. The rule the
+  suite pins is the older one — `TOOL_PROMPT` opens the tool instructions and has no
+  business appearing when there are none. The same shape bites the live app: a chat
+  with only a multimodal tool selected on a text-only model sends the model "All of
+  your function calls are rendered…" with `payload["tools"]` **absent** — the model is
+  told to call functions that do not exist.
+- **The fix** (measured: restores `PASS: 33  FAIL: 0`, in a scratch copy, with the
+  owner's own crash-guard for `cs("tools")` being None/empty kept intact): hoist
+  `blocks = []` above the `if self.cs("tools"):` and guard the header on the blocks —
+  `if blocks: prompt = TOOL_PROMPT + "\n\n".join(blocks)`. One concern, one commit.
+  The duplication the commit left behind (`__init__` computes `tools_descs` and
+  `prompt()` re-filters the same predicate) is the reason this could drift at all;
+  whether to unify the two is a second, larger decision and should stay out of the
+  fix-commit.
+- **Verify**: `cd ~/spit.py/spit_app/tests/unit/prompt && bash run_tests.sh` → 33/0,
+  then the full suite with every row at the `doc/TESTING.md` numbers.
+- **Gotchas**: the check is pinned, so no test is re-pinned for this — the code moves
+  to the test, not the other way round (TRAPS #18: the row is the floor).
+
+---
+
 ## P7 - RETIRED - leave Textual for a different front end  [number retired, 2026-09-20; a replacement route is a later, owner-level task]
 
 The route this number carried is **gone by the owner's decision of 2026-09-20**:
