@@ -15,14 +15,28 @@ that is not the agent's.
 > **TWO entries are open** in this file: the `terminal`-tool harness list,
 > followup 4, and **P12 - token counts** (started 2026-09-22 on
 > `task-token-counts-p12`, owner's `Go!` given, six-step handoff chain — see
-> its entry and its State below). **P12 is at step 5 of 6**: steps 1-4 are
-> committed (`a173854`, `b7d06ac`, `304530a`, `756179d`), and step 4 needed a
-> recovery on 2026-09-23 — the session that wrote it died with the code
-> uncommitted and its State fields still describing step 3, so the next agent
-> re-measured it rather than trusting the notes (six byte-identical full-suite
-> runs, probes green, golden md5 unmoved) and committed it. That recovery also
-> found an **80-column layout limit** in the new counts row, filed for the owner
-> in the step-4 block; the chain's next step is the committed test suite.
+> its entry and its State below). **P12 is at step 6 of 6: every line of its
+> code is committed and only the close-out is left.** Steps 1-5 are `a173854`,
+> `b7d06ac`, `304530a`, `756179d` and `eef3045` (+ `76e0dd2`, step 5's docs);
+> step 5 landed `spit_app/tests/unit/endpoints/` — **343 checks**, the fifth
+> dependency-listed suite — so `unit:endpoints` 343 is now part of the
+> ground truth in `doc/TESTING.md`. Two recoveries mark this chain. Step 4's
+> session died with the code uncommitted and its State fields still describing
+> step 3; the next agent re-measured rather than trusting the notes (six
+> byte-identical full-suite runs, probes green, golden md5 unmoved) and
+> committed it, and that recovery also found an **80-column layout limit** in
+> the new counts row, filed for the owner in the step-4 block. Step 5's session
+> died while finishing its docs, having already written this entry's State
+> fields and the step-6 handoff; the next agent re-measured the tree at
+> `76e0dd2` (two byte-identical full-suite runs reproducing step 5's own md5
+> `ddafccf8f3a6696d149ae33c0a49e5e7`, stderr empty, every row at its
+> TESTING.md value, `chat_smoke`'s golden md5 unmoved) and committed them —
+> that is the tip step 6 starts from. **Step 6 touches no app code**: the
+> DECISIONS entry, the doc updates the mechanism needs, one more full suite
+> with NO row moving, and this entry moved to `TASKS-FINISHED.md`.
+> The one thing P12 leaves open for the owner is the counts row's 80-column
+> rendering (step-4 block) — a code change and a taste call, so it waits for
+> the owner's word.
 > **exit-reporting closed on 2026-09-21** on `alternate-exit-reporting`
 > (`a1563e5`, `a4cf37f`, `ae568a0` + the docs after it): the verdict-line rule in
 > `run/run.py`, per-tool via `needs_exit_status_report`, the five re-pinned checks
@@ -430,20 +444,30 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
 ### State (crash-recovery record)
 
 - **Branch**: `task-token-counts-p12`, cut from `docs-plan-token-usage-context-size`
-  (`c7e7d74`, the planning landing). Last code commit on it: `756179d` (step 4).
-  **Working tree clean** — the session that wrote step 4 died with it uncommitted
-  and its State fields still describing the tree at step 3; the recovery of
-  2026-09-23 re-measured it, committed it as `756179d`, and this doc commit is
-  what it left in place of the handoff that was never written.
+  (`c7e7d74`, the planning landing). Commits on it: `a173854` (step 1),
+  `b7d06ac` (step 2), `304530a` (step 3), `756179d` (step 4), `eef3045` (step 5,
+  the suite) and `76e0dd2` (step 5's docs); `main` untouched throughout, nothing
+  pulled, nothing pushed. The session that wrote step 5 died before it could
+  commit this file's own State fields and the step-6 handoff below, so **this
+  doc commit is the tip** and it is what that handoff starts from. It landed
+  only after the tree was re-measured at `76e0dd2` rather than taken on the
+  notes: two byte-identical full-suite runs (md5
+  `ddafccf8f3a6696d149ae33c0a49e5e7`, stderr empty, every row at its TESTING.md
+  value, `chat_smoke`'s golden md5 unmoved) — the same md5 step 5 recorded for
+  its own two runs, so the tree the notes describe is the tree that is here.
 - **Scope** (so far): `spit_app/endpoints/llamacpp.py` (step 1),
   `spit_app/chat/work.py` + `spit_app/chat/chat.py` (step 2),
   `spit_app/manage/endpoint/endpoint.py` (step 3),
   `spit_app/chat/chat_settings.py` + `spit_app/chat/callback.py` (step 4 — TWO
-  files, which is deviation D1 in the step-4 block). Rest of the chain: see the
-  step list — one file per step, in order.
+  files, which is deviation D1 in the step-4 block), the whole new directory
+  `spit_app/tests/unit/endpoints/` — 8 files, one runner, five check files, two
+  harnesses (step 5) — and `doc/TESTING.md` / `doc/PROJECT.md` / `doc/TRAPS.md`
+  (step 5's docs). Step 6 touches `doc/DECISIONS.md`, `doc/TASKS-FINISHED.md`
+  and whatever the mechanism needs in the other docs: NO app code.
 - **Done**: planning (`c7e7d74`), the entry move (`b799526`), **step 1**
-  (`a173854`), **step 2** (`b7d06ac`), **step 3** (`304530a`) and **step 4**
-  (`756179d`, recovered and re-verified) — see the four blocks below.
+  (`a173854`), **step 2** (`b7d06ac`), **step 3** (`304530a`), **step 4**
+  (`756179d`, recovered and re-verified) and **step 5** (`eef3045` + the doc
+  commit `76e0dd2`) — see the five blocks below.
 
   **Step 1** (`a173854`): `extract_fields` is a no-op on empty/missing `choices`;
   `delta.get("usage")` is read in the chunk loop *before* anything touches choices
@@ -588,237 +612,251 @@ handoff (precedent: DECISIONS 70 "Deviations from the handoff, stated loudly").
   width and ellipsizing it, or a row of its own — and it is the owner's, so nothing
   was changed for it. Probes: `/tmp/p12_recover_layout_probe2.py` (after) and
   `/tmp/p12_recover_layout_before.py` (HEAD — pass it the tree to measure).
-- **Left**: **step 5** — `spit_app/tests/unit/endpoints/` (+ a row in
-  `spit_app/tests/run_tests.sh`, + the ground-truth row in `doc/TESTING.md`):
-  canned-SSE stdlib HTTP server on 127.0.0.1 and canned `/props`/`/slots`
-  payloads, no live model; every check of the **Verify** bullet above; append-only
-  numbering (TRAPS #15); the skip-list check with its fail-able control (TRAPS
-  #13); the differential on/off byte-identical replay (TRAPS #18); fifth
-  dependency-listed suite (TRAPS #19) — `~/.venv-spit`, FAIL-with-remedy on a
-  missing import, never a silent zero. The full handoff for it is fenced below.
-  Nothing else of P12 is left before step 6 except that one **owner question**:
+
+  **Step 5** (`eef3045` code + `76e0dd2` docs): `spit_app/tests/unit/endpoints/`
+  — the suite for steps 1-4, **343 checks**, FAIL 0, the fifth
+  dependency-listed suite (gate probes `import httpx, textual`, FAIL + remedy +
+  exit 1 without them; the bare interpreter has no httpx — measured). Five
+  check files (t1/t5/t8/t9 88 · t2/t3/t4 132 · t6/t7 61 · t10 19 · t11 43) on
+  one canned `http.server` bound to `127.0.0.1` port 0, plus two shared modules
+  deliberately outside the `test_*.py` glob (`endpoint_harness.py`,
+  `counts_harness.py` — the latter subclasses `chat_smoke`'s `SmokeApp` and
+  overrides `endpoint_list()`, which the stub answers `{}`: the guard path of
+  `refresh_usage()`, so a suite built on the stub as-is cannot start a single
+  probe). **The differential's OLD side is pinned by sha** —
+  `git show b799526:spit_app/endpoints/llamacpp.py` (md5
+  `38858cde93e6066ce24e39a908cd0a6a`) exec'd from the git object, never a temp
+  file — and every file that uses it first runs `baseline_selfcheck()` (the
+  pinned bytes, the parent-of-step-1 relation, "not the current file", and four
+  facts only the old file fails). The full-suite result is two byte-identical
+  runs (md5 `ddafccf8f3a6696d149ae33c0a49e5e7`), stderr **empty**, every existing
+  row exactly where TESTING.md has it, the only new row `unit:endpoints: PASS:
+  343  FAIL: 0`, `chat_smoke`'s golden md5 unmoved.
+  **Deviations, stated loudly** (also in the commit body): **(D1)** NO row was
+  added to `spit_app/tests/run_tests.sh` — verified on this tree it globs
+  `unit/*` and prints a row for any directory holding a `run_tests.sh`, so
+  `unit:endpoints` appears by itself and a hand-written row would print the
+  suite twice. The step's wording "(+ row in run_tests.sh)" is satisfied by the
+  directory. **(D2)** t10 and t11 share `counts_harness.py` rather than each
+  carrying its own stub, because the Work stand-in and the stub app are the same
+  two objects and one gate covering both files is what TRAPS #19 asks for.
+  **Three things only running found**, all in the commit body: the new
+  `run_tests.sh` was not executable — `bash run_tests.sh` passes anything while
+  the outer runner EXECUTES it, and the failure showed up only as
+  `Permission denied` on the one channel the outer runner does not read (it is
+  `100755` now, like its nine siblings); closing the per-case asyncio loop with
+  httpx's `aiter_lines()` generator alive printed **958 bytes** of
+  `Task was destroyed but it is pending!` per run where every other suite writes
+  nothing, now fixed by `loop.shutdown_asyncgens()` before `loop.close()`; and a
+  counts-row check that installs its stub probe AFTER the app has mounted
+  measures nothing, because the mount fills `context_sizes` — the same reason the
+  endpoint-`context_size`-override checks run with the REAL `get_context_size`
+  (the override is a rung inside the chain a stub replaces).
+  **INSTRUMENT SANITY BY SUBSTITUTION** (defect inserted on purpose, reverted,
+  md5 verified each time) — 11 mutations, each reddening its own rows and nothing
+  else: 6 in `work.harvest_usage()` (`context +=` → 2 reds; `generated =` → 2;
+  `cached` keeping the previous figure → 3; silence zeroing instead of returning;
+  a count written into `messages` → 2; `or 0` dropped → the guard row) and 5 in
+  the step-4 UI code (`count_or_dash(None) → "0"` → 3; the cache guard removed →
+  9; the signal-0 `refresh_usage()` call removed → 4 with the unwired-seam
+  CONTROL staying green; the counts Label mounted before the Selects → 13; the
+  probe answer filed under the CURRENTLY SELECTED pair). The last one is the
+  finding worth keeping: it left EVERY in-flight-cancellation check green — with
+  `group="context-size", exclusive=True` the switch cancels the slow probe, so
+  the answer never arrives to be filed anywhere — and reddened only a second
+  arrangement added for the purpose (pre-seed B's pair so switching starts no
+  worker and A's late answer does arrive). `t11_no_bleeding` now carries both,
+  and TESTING.md's differential section carries the rule ("check the instrument
+  by substituting the defect") plus the pinned-baseline lesson as items 5 and 6.
+- **Left**: **step 6 only** — the close-out. The DECISIONS entry, the doc
+  updates the mechanism needs, one more full suite, and this entry moved to
+  `TASKS-FINISHED.md` with its resolution. The full handoff for it is fenced
+  below; it is a documentation step, and steps 1-5 touched all the code.
+  Nothing else of P12 is left before or after step 6 except that one **owner question**:
   what the counts row renders at 80 columns (see LIMIT in the step-4 block). It
   is a code change (`chat_settings.py` and/or `styles.css`) AND a taste call, so
   it waits for the owner's word; it does not block step 5 or step 6, and it must
   not be "fixed" by guessing — a k-form invented by an agent is a different lie
   from the one `count_or_dash()` refuses.
-- **State hazards**: none in the repo — tree clean at `756179d` + this doc commit,
-  full suite green with every row at its TESTING.md value (tools
-  127/24/30/119/80/32/68/29, unit 68/131/168/568/33/278/121/157/223) and
+- **State hazards**: none in the repo — tree clean at `76e0dd2` + this doc
+  commit, full suite green with every row at its TESTING.md value (tools
+  127/24/30/119/80/32/68/29, unit 68/131/168/568/**343**/33/278/121/157/223 —
+  `unit:endpoints` is the new row, and it is now part of the ground truth) and
   `chat_smoke`'s golden md5 unmoved (`8ae9d1186a59627d30d05dee95f0ad95`).
-  In `/tmp`, deliberately NOT committed (the committed suite is step 5) and safe
-  to delete: `p12_check.py`, `p12_old_llamacpp.py`, `p12_step2_probe.py`,
-  `p12_step3_probe.py` (steps 1-3), `p12_step4_probe.py`,
-  `p12_step4_exclusive_probe.py`, `p12_step4_label_probe.py`,
-  `p12_step4_mount_probe.py` (step 4 — all four green on the tree as committed),
-  `p12_recover_layout_probe.py`, `p12_recover_layout_probe2.py`,
-  `p12_recover_layout_before.py` (the 80-column finding) and `p12_rec_full_{1,2}.txt`
-  (the recovery's suite rows). All run with
-  `PYTHONPATH=~/spit.py ~/.venv-spit/bin/python`; none is read by anything in the
-  repo, and step 5 replaces them with committed checks. TWO recovery artefacts to
-  know about so nobody chases them: (a) `/tmp/p12_step4_seam_probe.py` was written
-  BEFORE step 4 existed in the file — it monkey-patches `refresh_usage` onto
-  `ChatSettings` and expects six children — so it now reports four reds that are
-  expectations of the old tree, not defects (the doubled refresh is the probe's
-  own `Chat` handler plus the wired `ChatView` one; harmless, because
-  `refresh_usage` is a redraw); the label probe supersedes it. (b)
-  `/tmp/spit-head-p12/` is a throwaway `git archive` copy of `19a6c0b` used for the
-  before-picture of the settings row — remove it freely.
-- **Verify**: each step: full suite from the repo root, counts unmoved except by this
-  entry's own new checks (step 5). Final: the entry's **Verify** bullet, then close
-  per step 6.
+  **`/tmp/p12_old_llamacpp.py` was DELETED with the step-5 code commit**, and
+  that deletion is load-bearing rather than tidying: the step-1 probe rewrote
+  that file from `git show HEAD:...` on every run, so after step 1 landed it held
+  the NEW file under a name claiming the opposite, and anything re-run from it
+  compares the new code with itself and prints tidy greens. The committed suite
+  reads **no `/tmp` path at all** (verified: the only `/tmp` mentions in the
+  directory are prose in a docstring), so nothing in the repo can be poisoned by
+  what is or is not in `/tmp`. Step 6 must not recreate that file: the pinned
+  baseline is `git show b799526:spit_app/endpoints/llamacpp.py`, and
+  `/tmp/p12_old_pre_step1.py` is the same bytes as a convenience copy for ad-hoc
+  probes — nothing reads it either, and it too is safe to delete.
+  Still in `/tmp`, the superseded step 1-4 probes, all runnable with
+  `PYTHONPATH=~/spit.py ~/.venv-spit/bin/python` and none read by anything in the
+  repo: `p12_check.py` (**now a lying differential — see above; run it only to
+  reproduce that failure mode**), `p12_step2_probe.py`, `p12_step3_probe.py`,
+  `p12_step4_probe.py`, `p12_step4_exclusive_probe.py`,
+  `p12_step4_label_probe.py`, `p12_step4_mount_probe.py`, the three
+  `p12_recover_layout_*.py` (the 80-column finding) and `p12_rec_full_{1,2}.txt`
+  / `p12s5_baseline_1.txt` / `p12s5_final_{1,2}.txt` (suite-row snapshots at
+  `756179d` and at step 5), and `p12_doccheck_run{1,2}.txt` +
+  `p12_doccheck_err{1,2}.txt` (the two 2026-09-24 runs that re-measured the tree
+  before this doc commit — both md5 `ddafccf8f3a6696d149ae33c0a49e5e7`, both
+  stderr empty). Step 5 replaced every one of their checks with committed ones,
+  so they are of historical interest only. TWO recovery artefacts
+  to know about so nobody chases them: (a) `/tmp/p12_step4_seam_probe.py` was
+  written BEFORE step 4 existed in the file — it monkey-patches `refresh_usage`
+  onto `ChatSettings` and expects six children — so it reports reds that are
+  expectations of the old tree, not defects; the label probe supersedes it. (b)
+  `/tmp/spit-head-p12/` is a throwaway `git archive` copy of `19a6c0b` used for
+  the before-picture of the settings row — remove it freely.
+- **Verify**: each step: full suite from the repo root, counts unmoved except by
+  this entry's own new checks (that was step 5, and `unit:endpoints` 343 is the
+  movement it made). Final, at step 6: full suite green with NO row moving at all
+  (step 6 adds no checks), the entry's **Verify** bullet read against the
+  committed suite rather than against probes, then close per step 6.
 
-### Handoff for step 5 — written by the step-4 recovery, 2026-09-23, with the measurements
+### Handoff for step 6 — written by step 5, 2026-09-23, with the measurements
 
 ```
-STEP 5 of P12 — the committed test suite for steps 1-4. Branch
-task-token-counts-p12, written at tip b3ee808 (steps 1-4 are a173854, b7d06ac,
-304530a, 756179d; every step 1-4 fact you need is in this entry's State above —
-read the four blocks before you write a
-check — several of them record semantics that look wrong and are not). The
-owner's `Go!` of 2026-09-22 covers every code step of this entry: do not re-ask
-it and do not invent a gate (TRAPS #22). `main` untouched, never pull or push,
-`git commit -F file`, one concern per commit.
+STEP 6 of P12 — the close-out. Branch task-token-counts-p12, tip 76e0dd2. Steps
+1-5 are a173854, b7d06ac, 304530a, 756179d, eef3045 (+ 76e0dd2, step 5's docs).
+**Step 6 touches NO app code**: doc/DECISIONS.md, doc/TASKS-FINISHED.md, the
+delete of this entry from this file, and whatever other doc the mechanism needs.
+The owner's `Go!` of 2026-09-22 covers every code step of this entry — never
+re-ask it, never invent a gate (TRAPS #22), and there is no sign-off step:
+wherever a file says "no sign-off" (DECISIONS 71) it is already satisfied and a
+later handoff repeating it as a NEW gate is a trap (TRAPS #22). `main` untouched,
+never pull or push, `git commit -F file`, one concern per commit. The branch is
+the owner's to merge.
 
-DELIVERABLE
-  spit_app/tests/unit/endpoints/run_tests.sh
-  spit_app/tests/unit/endpoints/test_*.py            (+ anything shared in a
-  module NOT named test_*: the stub_app.py / window_harness.py precedent — the
-  runner globs test_*.py and a harness file in that glob becomes a suite file)
-  doc/TESTING.md: the new ground-truth row, a "Unit suites" paragraph for this
-  suite, and "four suites need a dependency" -> FIVE in all three docs that say
-  it: doc/TESTING.md (the venv heading and its list), doc/PROJECT.md (the repo
-  layout bullet and the Environment gotcha), doc/TRAPS.md #19.
-  Do NOT edit spit_app/tests/run_tests.sh — verified on this tree, it globs
-  `unit/*` and prints a row for any directory holding a run_tests.sh, so
-  `unit:endpoints` appears by itself. The step-5 wording "(+ row in
-  run_tests.sh)" is already satisfied by the glob; say that deviation loudly in
-  the commit instead of adding a row the glob would double-print.
+READ FIRST, because the numbers and the semantics you must not re-derive are all
+there: this entry's five step blocks in State above, doc/TESTING.md's new
+"unit:endpoints" bullet and differential items 5 and 6, and the suite itself
+(spit_app/tests/unit/endpoints/) — its docstrings carry the measured reasons for
+every odd shape in it.
 
-DEPENDENCY GATE (this is the fifth dependency-listed suite, TRAPS #19)
-  Measured on this box today: the bare system python3 has NO httpx
-  (`ModuleNotFoundError: No module named 'httpx'`), and `endpoints/llamacpp.py`
-  imports it, so this suite cannot run there. Copy the preamble of
-  tests/unit/chat_smoke/run_tests.sh verbatim and change the import it probes to
-  `import httpx, textual` — BOTH, because if you also check the counts row (you
-  should, see the last group) the suite imports chat_settings, which pulls
-  Textual; one gate for both is honest and one row for the suite is cheap. The
-  three orders are unchanged: $SPIT_TEST_PYTHON, then ~/.venv-spit/bin/python3,
-  then a python3 on PATH that can import it. A missing dependency prints the
-  remedy and `PASS: 0  FAIL: 1` and exits 1 — never a silent zero. Each
-  test_*.py prints one final `PASS: n  FAIL: n` line; the runner sums those.
+WHAT TO WRITE — the DECISIONS entry (continue the numbering; 79 is the last one,
+so yours is 80). One entry, these load-bearing parts, each with its evidence:
+  (a) READ-ANYWHERE PARSE, NO VERSION DETECTION. `delta.get("usage")` is read
+      per chunk before anything touches `choices`, and `extract_fields` is a
+      no-op when `choices` is empty. One rule covers all three stream shapes
+      (pre-#15444 llama.cpp: usage on the finish_reason chunk, choices non-empty;
+      post-#15444 and OpenAI: an extra final chunk with "choices": []; and usage
+      arriving in a MIDDLE empty-choices chunk), and the empty-choices guard
+      removes the latent IndexError that would have killed the stream the day a
+      server started sending the modern shape. Evidence: t2/t3 and their
+      pinned-side controls — the pre-step-1 code raises IndexError on exactly the
+      chunks the new code reads, and the companion streams prove the usage chunk
+      moved nothing in the reconstruction (byte-for-byte).
+  (b) THE n_ctx CHAIN AND ITS OVERRIDE. `/props
+      default_generation_settings.n_ctx` (with `?model=<id>` when a model is
+      given, for router/multi-model servers) → the first `/slots` entry whose
+      n_ctx is a POSITIVE INT → the endpoint's own `context_size` when > 0 →
+      `None`, and `None` renders as a dash. Say why a guessed limit is the one
+      thing this row may not do: it is the only place a chat can overflow and the
+      user is told about it, so an invented number is a lie about when the chat
+      dies (`count_or_dash()`'s comment). Say too that `native_address()` strips
+      the trailing `/v1` only when present (step 1 D2) and that the chain never
+      raises — EXCEPT the `{}` endpoint dict, whose KeyError in
+      `native_address` is pinned by t7 as the limit it is: `ChatSettings`'
+      `endpoint_list()` guard is what keeps it out of reach, and step 1
+      deliberately did not guard the dict itself.
+  (c) token_usage ON THE Chat, NOT ON Work — because a new `Work` is
+      constructed per send (`chat_text_area.py`, `chat_view_actions.py`), so a
+      Work cannot hold anything across replies; and `context` is the LATEST
+      call's prompt+completion and NEVER a sum, because a tool loop's next prompt
+      already contains the previous answer and the tool results, so summing would
+      count the history again; `generated` is the one number that adds up;
+      `cached` is best-effort for THAT read. And NEVER in `messages` — they are
+      POSTed verbatim, so a count written there goes to the model. Evidence: t10
+      (19 checks, incl. the figure going DOWN on a smaller second call, and the
+      before/after `messages` comparison).
+  (d) THE SKIP-LIST ENTRY: `context_size` joins `construct_payload`'s skip list,
+      or a settings field meant for the app becomes an inference parameter.
+      Evidence: t5 with its fail-able control (`n_ctx_control` 4242 is NOT on the
+      list and DOES leak, in the same payload).
+  (e) THE SIGNAL-0 SEAM, AND WHY A SIBLING NEVER HEARS THE MESSAGE. The refresh
+      is wired in `ChatView.on_stream_callback`'s signal-0 branch
+      (`chat/callback.py`) and NOT as a handler on `ChatSettings`: a
+      StreamCallback is posted on the chat_view and a Textual Message bubbles to
+      ANCESTORS ONLY — `ChatSettings` is a SIBLING under `Chat`, so a handler of
+      its own for that message is never called (measured 2026-09-22: the
+      receivers are ChatView and Chat). A handler on `Chat` was rejected because
+      it fires for signals 1 and 2 as well, once per streamed chunk, for a call
+      needed once per reply. Say what makes the row correct rather than lucky:
+      signal 0 is posted as `stream()`'s LAST act, `post_message` only queues,
+      and `work_stream()` harvests the moment the await returns — so the harvest
+      lands before the handler runs, which is WHY the stale-by-one arrangement
+      (harvest deferred past the signal) is in the suite as the control: without
+      it the green would be about a row that cannot move.
+  (f) THE 80-COLUMN LIMIT, FILED AS AN OPEN QUESTION, NOT AS A FIXED THING.
+      Measured at 80x24 through an app that mounts the repo's own styles.css
+      (TRAPS #24): the Selects are 12/13/13 at HEAD, 3/3/4 with this Label and a
+      zeroed chat, 1/1/1 with a running chat's figures, whose 39-47-column text
+      then ends at 84-97 of the 80 available and is CLIPPED; at 120 columns it
+      fits. The relief is a rendering choice (k-abbreviation, CSS leftover width
+      + ellipsis, or a row of its own) and it is the OWNER'S; nothing was changed
+      for it and step 6 must not change it. Write it as an open question with the
+      measurement, so the next agent inherits a fact and a boundary rather than a
+      hint. Say plainly that no suite can see it and that `t11` asserts STRUCTURE
+      precisely so a re-rendering does not have to keep today's spelling.
+  Also carry, briefly: `token_usage` is SESSION state (write_chat_history still
+  writes ctime/settings/messages, so a reloaded chat starts at zeros — an
+  accepted limit, not to be "fixed" without the owner's word); step 1's D1 (the
+  refusal is NOT remembered per endpoint, because `Work` deepcopies the endpoint
+  per send — an endpoint that refuses `stream_options` pays one extra request per
+  send and never loses a reply); and step 3's accepted limit (an endpoint saved
+  before `context_size` existed shows no Context Size field).
 
-THE CANNED SERVER (stdlib only, no live model, nothing beyond localhost)
-  http.server bound to ("127.0.0.1", 0) — port 0, so no fixture collides with a
-  real endpoint — served from a thread, shut down in a finally, daemon thread.
-  Three routes are enough, and /tmp/p12_check.py already implements all three
-  with scenario-by-path routing (reuse it, it works): POST /v1/chat/completions
-  (Content-Type text/event-stream, lines `data: {json}\n\n`, ending
-  `data: [DONE]\n\n`), GET /props, GET /slots. The native routes hang off the
-  URL minus the trailing /v1 (native_address, llamacpp.py:33), so the endpoint
-  fixture's endpoint_url is `http://127.0.0.1:<port>/v1`.
-  Record every request the server saw, and assert on the RECORDED REQUEST LINE
-  (method + path + query), not only on the answer: `?model=<id>` is a behaviour,
-  and the retry-count checks are counting requests.
-  Endpoints must be built as SAVED ones — every field `{"value": ..., "stype":
-  ...}`: construct_payload indexes settings[setting]["value"] and
-  settings[setting]["stype"] (llamacpp.py:147-163) and auth_headers indexes
-  ["key"]["value"] (:27-31), so raw NEW raises KeyError for the settings without
-  a default. Give `timeout` a NON-ZERO value: 0 becomes `timeout=None`
-  (`llamacpp.py:136-138`) and a hung request then hangs the suite. For the
-  nothing-answers paths use a port that REFUSES: http://127.0.0.1:9 measured
-  39 ms, so the None-path checks cost nothing; a filtered address would cost
-  3 s each.
-  Drive one asyncio loop per case (`asyncio.new_event_loop()`, close it in a
-  finally, as p12_check.py does): httpx.AsyncClient binds to the loop it ran on.
+DOC UPDATES THE MECHANISM NEEDS (beyond DECISIONS — keep each one a sentence or
+two where a reader would otherwise be misled, not a new essay):
+  - doc/PROJECT.md's Features line: the per-chat counts row now exists
+    (used / available / generated / cached on the chat-settings row) and an
+    endpoint carries `context_size` (0 = auto-detect).
+  - The unified-KV semantics the entry's own bullet calls "document, not fix":
+    with unified KV (new llama.cpp default; the app exposes `kv-unified`) `n_ctx`
+    is the total SHARED across parallel slots, older servers divided it per slot.
+    Report what the server reports — and say so where the row is described, so a
+    reader does not take the denominator for a per-slot figure.
+  - doc/TESTING.md needs nothing more: the ground-truth row, the Unit-suites
+    bullet and the two new differential rules (pin the baseline by sha; check the
+    instrument by substituting the defect) landed with step 5's doc commit. If
+    your DECISIONS entry names a rule that contradicts one of them, amend
+    forward, do not silently rewrite.
+  - Do NOT touch `spit_app/tests/run_tests.sh` (it globs `unit/*`; the
+    `unit:endpoints` row appears by itself) and do NOT add a second row.
 
-THE TRAP YOU MUST NOT INHERIT — PIN THE DIFFERENTIAL'S BASELINE (measured today)
-  /tmp/p12_check.py, the step-1 probe, derives its OLD side from
-  `git show HEAD:spit_app/endpoints/llamacpp.py` AND overwrites
-  /tmp/p12_old_llamacpp.py with it on every run. That was correct while step 1
-  was uncommitted. Step 1 is committed now, so its OLD side IS the new code:
-  re-run today it prints PASS: 47  FAIL: 3, and the three reds are exactly the
-  checks that ask the old side to be old — t1-CONTROL-old-raises-IndexError
-  (got None), t4-CONTROL-old-forwarded-context_size (got nothing),
-  t4-CONTROL-old-had-no-stream_options (got True) — while its
-  "identical-to-old" reconstruction pairs stay green VACUOUSLY, comparing the
-  code with itself (two of them, t2-old-identical-to-old and
-  t2-nousage-identical-to-old) and printing the tidy row a lying probe always
-  prints (TRAPS #13, in the wild, seven weeks after the docs warned about it).
-  So: pin the baseline by sha. `b799526` (= `a173854^`, the entry-move commit)
-  holds the pre-step-1 file and it is byte-identical to `main`'s (bf55d39) —
-  verified with git show. `git -C ~/spit.py show b799526:spit_app/endpoints/
-  llamacpp.py` into a module of its own (importlib from a string, the
-  p12_check.py way), and add a BASELINE SELF-CHECK that proves the old side is
-  old: it has no `stream_options`, no `get_context_size`, and its
-  extract_fields raises IndexError on `"choices": []`. A differential that
-  cannot fail is not evidence. /tmp/p12_old_pre_step1.py is that file already
-  extracted, if you want it today. And harden the old arm so it FAILS rather
-  than raises: DECISIONS 70's lesson is that a differential half which crashes
-  hides every red after it.
+AFTER: the full suite from the repo root, TWICE, byte-identical. NO row moves —
+step 6 adds no checks, so the expected output is exactly today's: tools
+127/24/30/119/80/32/68/29, unit 68/131/168/568/343/33/278/121/157/223, FAIL 0
+everywhere, chat_smoke's golden md5 8ae9d1186a59627d30d05dee95f0ad95, stderr
+empty. If a row moves, step 6 wrote code; undo that.
 
-CHECKS — append-only numbers across the whole suite (TRAPS #15), distinctive
-tokens in every asserted string (TRAPS #8), and the input mapping of every
-differential printed (TRAPS #13).
-  t1  prepare_payload(): stream_options is exactly {"include_usage": True};
-      stream is True; the model, the system prompt and the reasoning-key rename
-      still land.
-  t2  the parse, over EVERY shape, each replayed through old and new with the
-      reconstruction compared byte-for-byte: content deltas, reasoning deltas,
-      tool_calls split across chunks (id/type/name/arguments, the second
-      argument fragment arriving alone), the old finish_reason chunk carrying
-      usage with choices non-empty, the final "choices": [] chunk carrying usage
-      (OpenAI, llama.cpp >= #15444), usage arriving in a MIDDLE empty-choices
-      chunk (read-anywhere — that is what "no version detection" buys), a stream
-      with no usage at all, `data:` lines with no space, junk lines between
-      chunks, and `data: [DONE]`.
-  t3  an empty-choices chunk raises NOTHING (the latent IndexError step 1
-      removed) — and the pinned old extract_fields raises IndexError on the same
-      chunk: the control that makes t3 a check and not a wish.
-  t4  self.usage is reset at the start of every stream() (a second stream that
-      says nothing must not repeat the first reply's numbers) and holds the
-      whole usage object when it arrives.
-  t5  the skip list: `context_size` NEVER appears in the outgoing payload, with
-      the control (TRAPS #13) that a setting NOT on the list — invent one,
-      n_ctx_control 4242 — DOES leak through it, and `temperature`/`parallel`
-      still behave as HEAD had them. Assert the key SET, not just the absence.
-  t6  the 4xx retry: a 4xx with the flag retried EXACTLY once, the second
-      request carrying no stream_options, the reply delivered (never lose a
-      reply over counting); a 4xx that refuses both times raises the same
-      `Endpoint returned N: ...` RuntimeError work.py already catches (so
-      work_stream's error path is unchanged); a 5xx is NOT retried — one
-      request, counted; a success is one request.
-  t7  get_context_size's chain, each rung answered by the route that is
-      supposed to miss: /props default_generation_settings.n_ctx wins; with a
-      model given the /props request line carries ?model=<id>; a /props that
-      400s or lacks n_ctx falls to the first /slots entry whose n_ctx is a
-      positive int; a dead /props AND /slots falls to the endpoint's
-      context_size when it is > 0; 0 is auto-detect, not a size; a blanked
-      field (the way store_values leaves it, value None) and a key absent
-      entirely both answer None; nothing said at all answers None; garbage
-      JSON, a 404, a refused address and a {} endpoint dict never raise —
-      except the {} case, whose limit is recorded in the step-4 block:
-      native_address indexes ["endpoint_url"] (`llamacpp.py:37`), so an endpoint
-      dict without that key raises KeyError, and ChatSettings' guard is what
-      keeps it out of reach — step 1 does not guard it and this step must not
-      either.
-      Pin that as a check with its reason in the name, do not "fix" it here.
-  t8  native_address: strips a trailing /v1 once, leaves a URL without it
-      alone, and equals work.py's blind [:-3] for every URL the app builds.
-  t9  the auth header: key set -> `Bearer <key>`; key "" -> no header; key
-      absent -> the same KeyError on both sides (HEAD's behaviour, unchanged).
-  t10 Work.harvest_usage, driven with a SimpleNamespace standing in for the
-      Work (it reads self.endpoint.usage and self.chat.token_usage and nothing
-      else): context is the LATEST call's prompt+completion and NEVER a sum
-      (two calls, the second smaller — the figure must go DOWN); generated
-      accumulates across calls; cached is the latest prompt_tokens_details or 0
-      for THAT read and does not keep the previous call's figure; a stream that
-      said nothing changes nothing and zeroes nothing; a usage with
-      prompt_tokens absent counts 0 + completion; and `messages` is untouched
-      by the harvest (compare it before/after — TRAPS: never POST the counts).
-  t11 the counts row (this is why the gate takes textual too — chat_settings
-      imports it): assert the STRUCTURE, not the spelling, because the owner
-      has an open call on the 80-column rendering (see the LIMIT in the step-4
-      block) and an exact-string check would pin a decision that is not yours.
-      So: a None renders as a dash and the string contains no "0 / 0"; a real
-      zero renders as 0; the row appears at mount with no reply ever sent; one
-      probe per (endpoint, model) pair however many refreshes fire, and a
-      different model is a different pair (assert the probe count and the model
-      each probe carried); a None answer is CACHED so it is asked once, not
-      re-asked every reply; a probe started for pair A never draws A's number
-      while pair B is selected; the three Selects are still children[1/3/5] and
-      the counts Label is the last child (mounting it earlier shifts the
-      Selects and chat_smoke dies inside its own harness); signal 0 through the
-      real ChatView seam moves the row and a reply's numbers are on the row
-      that produced them (the harvest-before-signal ordering is what step 4
-      measured — keep that as a check, with the stale-by-one arrangement as its
-      control). Use StubEndpointApp from /tmp/p12_step4_label_probe.py: the
-      chat_smoke stub answers endpoint_list() with {}, which is the GUARD path
-      and can never start a probe, so a suite that does not override it cannot
-      see any probe behaviour at all.
+THEN move this entry to doc/TASKS-FINISHED.md and delete it here. The resolution
+names the branch, the commits (a173854, b7d06ac, 304530a, 756179d, eef3045,
+76e0dd2, + yours), the DECISIONS number, the deviations (step 1 D1/D2/D3, step 4
+D1/D2/D3, step 5 D1/D2 — all already stated in their commit bodies; the close-out
+restates them in one place), the accepted limits, and the ONE question left open
+for the owner (the 80-column rendering) with the measurement attached so it can be
+decided without re-measuring. Say WHICH VERIFICATION the close-out rested on:
+the automated headless suites — unit:endpoints 343, unit:chat_smoke 168 with its
+golden dump, unit:chat_window 568 — and that there is no screen in this
+environment, so nothing was verified by looking at the running app (TRAPS #22).
+Do not dress that up and do not add a by-hand UI checklist as a condition of
+closing; if a by-hand look is still worth doing, put it in the finished entry as
+a note for whoever next runs the app.
 
-AFTER: full suite from the repo root. Every existing row exactly where
-TESTING.md has it — tools 127/24/30/119/80/32/68/29 (509), unit
-68/131/168/568/33/278/121/157/223 — `unit:endpoints` new with its own count,
-FAIL 0 everywhere, TWO consecutive byte-identical runs, and chat_smoke's golden
-md5 8ae9d1186a59627d30d05dee95f0ad95 unmoved. If any other row moved, something
-in this suite reached into the app: the server binds 127.0.0.1 only, touches no
-user data dir, and imports no tool.
-
-THREE THINGS NOT TO DO: do not touch `messages` (they are POSTed verbatim); do
-not "fix" the 80-column row, which is the owner's open call and is filed in the
-step-4 block; do not leave the old /tmp/p12_old_llamacpp.py name in place — it
-currently holds HEAD's post-step-1 file because the probe rewrote it, so its
-name lies, and anything re-run from it compares the new code with itself.
-
-THEN step 6 closes the entry: the DECISIONS entry (read-anywhere parse; the
-n_ctx chain and its override; token_usage on Chat not Work and the per-send
-construction that is the reason; the skip-list entry; the signal-0 seam and why
-a sibling of the ChatView never hears the message; the 80-column limit filed as
-an open question), the doc updates the mechanism needs, the full suite, and the
-entry moved to TASKS-FINISHED.md with its resolution and which verification the
-close-out rested on. No sign-off (DECISIONS 71, TRAPS #22). The branch is the
-owner's to merge.
+TWO HAZARDS NOT TO REPRODUCE: do NOT recreate /tmp/p12_old_llamacpp.py (it was
+deleted with eef3045 because the step-1 probe had left HEAD's post-step-1 file in
+it under a name claiming the opposite — anything read from it compares the new
+code with itself); the pinned baseline is `git show
+b799526:spit_app/endpoints/llamacpp.py` and the suite takes it from the git
+object. And do not "fix" the counts row's 80-column clipping or touch `messages`:
+the first is the owner's open call, the second is the payload.
 ```
 
 ## Protocol when starting a task from TASKS-PLANNED.md
