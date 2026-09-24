@@ -35,7 +35,16 @@ servers managed locally (optional Vulkan acceleration, model downloads) or to
 any OpenAI-compatible `/v1/chat/completions` endpoint. Features: multiple
 chats/endpoints/model-settings/system-prompts, tool calling, multimodal
 images, Markdown + LaTeX rendering (Kitty/Foot terminals), fully async long
-replies, full in-chat history editing. Repo `README.md` has install and usage
+replies, full in-chat history editing, and a per-chat token-counts row on
+the chat-settings bar (`ctx <used> / <available> · gen <generated> · cached
+<cached>`, DECISIONS 80). That row reports what the SERVER says and never
+guesses: usage is read from every streamed response, the window size comes
+from `/props` → `/slots` → the endpoint's `context_size` setting (0 =
+auto-detect), and an endpoint that answers neither shows a dash, not a
+number. With unified KV (new llama.cpp default; the app exposes
+`kv-unified`) that denominator is the total SHARED across parallel slots —
+older servers divided `n_ctx` per slot — so the figure means what the server
+says it means. Repo `README.md` has install and usage
 instructions (venv, `libcairo2`, `bubblewrap`, `tmux`,
 `playwright install chromium-headless-shell`). Tested with Python 3.13.
 
