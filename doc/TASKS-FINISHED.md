@@ -1496,3 +1496,72 @@ is exactly the seam the header fell through. Unifying them (one pass, both resul
 behaviour question about the tool table and one commit too big for a two-line fix, so it
 is named here instead of being done quietly. `main` untouched, nothing pushed, and no
 sign-off participated in closing this (DECISIONS 71).
+
+### P13/WP-A — unpack system notes onto the wire as `user` messages (branch `p13-wp-a-note-unpacking`: `0afaef8` the code+test, then this close-out; awaiting the owner's merge)
+
+**Owner gate.** The `Go!` was GIVEN 2026-09-25 for **WP-A alone**; WP-B/C/D/E have
+no `Go!` and none was started. The branch was cut from the docs branch
+`docs-p13-owner-rulings-handoff-wp-a` at its tip `1522932` — the entry's explicit
+instruction, because that branch carries the owner's rulings (`user` role,
+percentage-OR-remaining levels) and `main` still carries the superseded P13 text
+(`system` role, 50/80/90%). `main` untouched, nothing pulled, nothing pushed.
+
+**What landed** (`0afaef8`, one concern: the unpacking and the file that pins it).
+`endpoints/llamacpp.py` — in `prepare_payload()`'s existing loop, the deepcopy now
+starts with `notes = _message.pop("system", [])` (the private key is popped from
+the **deepcopy**, never from the app's dict), and after the carrier is appended
+each note is unpacked right after it through two new methods on
+`LlamaCppEndpoint`:
+
+- `append_note(out, carrier, note)` — carrier role `user` → merge the note text
+  into the wire copy's content; carrier `tool`/`assistant` → append one
+  `{"role": "user", "content": note["text"]}` item. The comment on it is the
+  *why*: a note rides the wire as `user`, never `system` (strict templates —
+  Qwen3.x and friends — `raise_exception` on a mid-conversation `system`, owner
+  ruling 2026-09-25), and a `user` carrier merges because `user` buys the
+  alternation family's rule instead (mistral-instruct, gemma-it raise on two
+  consecutive `user` messages) — hazard 1. **Do not "simplify" the merge into
+  always-appending**; that reproduces the defect on the alternation templates.
+- `merge_into_content(carrier, text)` — onto the LAST `{"type": "text"}` part of a
+  list content, a new text part when the list has none (image-only multimodal),
+  `\n\n`-append on a plain string; `None`/missing/empty content ends as the text
+  itself, never `"None"` and never a leading separator.
+
+Nothing else moved: no Chat, no Work, no UI, no settings surface, no new endpoint
+field, no writes into `chat.messages` — its length and order are the index space
+the UI addresses (P13's constraint), and the stored dicts keep both their `system`
+entry and their own content byte-identical (the deepcopy argument, checked).
+
+**The test.** New file `spit_app/tests/unit/endpoints/test_system_note.py`, owns
+**t12** (append-only, TRAPS #15), **51 checks** in the ten groups the entry
+prescribed, written first and run red against the unpatched code (19 of the 51
+failed before the helper existed). Among them: the merge-count equality carries
+the tool-carrier control that makes it fail-able (TRAPS #13); the private-key
+absence is asserted on the key SET of every wire message; and the proof proper —
+the no-note payload **byte-identical to the pinned baseline `b799526` apart from
+`stream_options`** (TRAPS #14, behind `baseline_selfcheck()`, with the control
+that one note DOES move it off the baseline, so the byte-identity cannot pass on
+a code path that ignores notes). `hook`/`level` are pinned off the wire; the
+leading `system` prompt stays at index 0; the `tool_calls` adjacency (hazard 2)
+is pinned as a consequence, including a note on an assistant carrying
+`tool_calls` landing after the whole message.
+
+**Deviation from the entry's scope note** (stated, not quiet): the entry allowed
+"**one** new helper method"; the implementation has **two** — `append_note()` and
+its merge split out as `merge_into_content()`, exactly as the entry's own code
+sketch showed both. Same concern, same file, WP-D still has one thing to call.
+
+**Verified.** Full `bash spit_app/tests/run_tests.sh` from the repo root: **every
+row at the `doc/TESTING.md` numbers except `unit:endpoints` 343 → 394** (= 343 +
+51, the five existing files byte-for-byte at 88/132/61/19/43), FAIL 0 everywhere,
+exit 0. `chat_smoke`'s `golden.txt` md5 `8ae9d1186a59627d30d05dee95f0ad95`
+unmoved — nothing in WP-A can reach the UI, and it did not. `unit:prompt` 33.
+`git status` before the docs commit: exactly the two intended paths. The close-out
+rested on the automated suites — there is no screen and no live endpoint in this
+environment (TRAPS #22), and the byte-identity against `b799526` is the automated
+analogue of "no live endpoint sees a format change from this commit".
+
+No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
+`main` untouched, nothing pushed. **Next in P13 is WP-B (the generator and the
+hook contract) and it needs its own `Go!` — nothing in P13 beyond WP-A is
+authorised.**

@@ -259,7 +259,7 @@ the fifth dependency-listed suite.
 
 ---
 
-## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; `Go!` for WP-A given 2026-09-25, work deliberately left to the next agent]
+## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25** (`Go!` was given 2026-09-25) - resolution in `TASKS-FINISHED.md`; WP-B/C/D/E NOT authorised, no `Go!`]
 
 **Owner rulings of 2026-09-25, which overrule parts of the plan below — read these
 first.** (i) **The injected note's role is `user`, not `system`, always** — the owner's
@@ -276,9 +276,10 @@ it. (iv) **When the P14 handoff tool lands, the critical text adopts it** — th
 block is the stand-in, and swapping the two is a text change, not a mechanism change.
 (v) P15 (`unit:prompt`) is closed and merged; `main` carries it.
 
-**WP-A has the `Go!` and is NOT started.** Its entry in `TASKS-IN-PROGRESS.md` ("P13/WP-A")
-is the crash-recovery record and the starting point; nothing else in P13 is authorised
-yet.
+**WP-A is DONE** (closed 2026-09-25 on `p13-wp-a-note-unpacking`, cut from
+`docs-p13-owner-rulings-handoff-wp-a` tip `1522932`; resolution in `TASKS-FINISHED.md` —
+`unit:endpoints` 343 → 394 with the new `test_system_note.py`, t12). **WP-B/C/D/E are NOT
+authorised yet** — no `Go!` for any of them; ask before the first code change.
 
 **The goal**: the model itself learns how full its window is while it works, so that
 it wraps up and writes a handoff instead of dying mid-task. Three pieces: a **generator**
@@ -394,7 +395,9 @@ any of this.
 code together is ~120 lines.
 
 - **WP-A — the unpacking (the only piece that touches the wire). `Go!` GIVEN 2026-09-25,
-  NOT started**: the starting point is the entry "P13/WP-A" in `TASKS-IN-PROGRESS.md`.
+  DONE 2026-09-25** (`p13-wp-a-note-unpacking`, code `0afaef8`; the two helpers on
+  `LlamaCppEndpoint` are `append_note()`/`merge_into_content()`, the test file is
+  `test_system_note.py` t12, 51 checks — resolution in `TASKS-FINISHED.md`).
   `endpoints/llamacpp.py`: in the `prepare_payload()` loop, `_message.pop("system")` and
   for each entry in order — if the carrier's own role is `user`, **merge** the text into
   the wire copy's content (append onto the last `{"type": "text"}` part, or add one when

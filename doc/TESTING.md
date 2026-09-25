@@ -42,7 +42,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
 | unit:chat_window | 568 |
-| unit:endpoints | 343 |
+| unit:endpoints | 394 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
@@ -415,7 +415,9 @@ harness **absolute** fixture paths.
   `run_as_file(...)` -> `(output, leftovers, elapsed)`.
 
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
-  (343 checks): `endpoints/llamacpp.py`, `Work.harvest_usage()` and the
+  (343 checks; **394** since P13/WP-A added `test_system_note.py`, by addition
+  alone - the five P12 files untouched at 88/132/61/19/43):
+  `endpoints/llamacpp.py`, `Work.harvest_usage()` and the
   chat-settings counts row, driven against a **canned stdlib `http.server`**
   bound to `127.0.0.1` port 0 - no live model, no port but loopback, no user
   data dir, no tool import. `run_tests.sh` gates **httpx and textual** (both
@@ -430,7 +432,12 @@ harness **absolute** fixture paths.
   counts and request order, 61), `test_harvest_usage.py` (t10, driven with a
   `SimpleNamespace` because the harvest reads `self.endpoint.usage` and
   `self.chat.token_usage` and nothing else - 19), `test_counts_row.py` (t11, the
-  counts row in a real headless widget tree, 43). Shared code lives in
+  counts row in a real headless widget tree, 43), `test_system_note.py` (t12,
+  P13/WP-A: the private key `system` unpacks onto the wire as `user` notes after
+  their carriers - merge onto a `user` carrier, never a second consecutive
+  `user`, never a mid-conversation `system` - and the proof that a no-note
+  payload is byte-identical to the pinned baseline `b799526` apart from
+  `stream_options`, 51). Shared code lives in
   `endpoint_harness.py` and `counts_harness.py`, deliberately **not** `test_*`:
   the runner's glob would turn a harness into a suite file (the `stub_app.py` /
   `window_harness.py` precedent), and `counts_harness.py` imports
