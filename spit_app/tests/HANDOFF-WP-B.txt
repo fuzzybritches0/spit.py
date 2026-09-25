@@ -1,9 +1,9 @@
 TASK: P13/WP-B - the system-note generator and the hook contract. Go! GIVEN by the
 owner 2026-09-25 (quoted verbatim in your entry). Do WP-B and nothing else.
 
-WORK ON: ~/spit.py, branch `p13-wp-a-note-unpacking`, at its CURRENT tip (this file
+WORK ON: ~/spit.py, branch p13-wp-a-note-unpacking, at its CURRENT tip (this file
 was committed at ada2018 - newer doc commits on the branch are expected, nothing of
-them is code). Work ON that branch - do NOT cut a new one. Never touch `main`, never
+them is code). Work ON that branch - do NOT cut a new one. Never touch main, never
 push, never pull.
 
 READ FIRST, in this order:
@@ -19,7 +19,7 @@ READ FIRST, in this order:
     Do NOT edit it or any other unit:endpoints file. Your side matches that pin.
 
 WHAT WP-B IS:
- - NEW spit_app/chat/system_note.py: `class SystemNotes` with __init__(chat) and
+ - NEW spit_app/chat/system_note.py: class SystemNotes with __init__(chat) and
    attach(), a module HOOKS list, hooks exposing notice(chat, messages, index). It
    writes notes INTO the message dict at the index - never into the list.
  - NEW suite spit_app/tests/unit/system_note/ (run_tests.sh + test_generator.py),
@@ -46,7 +46,7 @@ say in your handoff what you chose and why.
 
 MEASURED FOR YOU on this box (2b5eac6), so you do not re-derive it:
  - spit_app/chat/ has NO __init__.py - it is a namespace package, so
-   `import spit_app.chat.system_note` pulls in nothing and runs on the BARE python3
+   import spit_app.chat.system_note pulls in nothing and runs on the BARE python3
    (verified: neither textual nor httpx in sys.modules). Your suite therefore needs NO
    venv preamble, and that absence is your gate - TRAPS #19 inverted: a module that
    later grows a Textual or httpx import makes the suite die loudly on the bare
@@ -59,7 +59,7 @@ MEASURED FOR YOU on this box (2b5eac6), so you do not re-derive it:
    green (TRAPS #19). Read whole outputs, never just a runner row (TRAPS #18).
 
 VERIFY (numbers fresh at 2b5eac6, every row green, exit 0):
- full `bash spit_app/tests/run_tests.sh` from the repo root moves ONLY your new row.
+ full bash spit_app/tests/run_tests.sh from the repo root moves ONLY your new row.
  tools 127/24/30/119/80/32/68/29 (509), anchored 68, arguments 131, chat_smoke 168,
  chat_window 568, endpoints 394, prompt 33, render 278, run_script 121, sandbox 157,
  terminal 223. chat_smoke's golden.txt md5 must stay
@@ -75,5 +75,5 @@ owner copies handoffs with a key binding, and Markdown pasted out of the chat is
 lost; plain text, pointer to the entry, never a second record);
 then STOP. The owner's chain instruction is that each finisher hands off the next -
 WP-B's Go! does NOT authorise you to start WP-C. WP-E is the last package: its
-finisher writes a close-out, not a handoff. The owner merges `p13-wp-a-note-unpacking`
+finisher writes a close-out, not a handoff. The owner merges p13-wp-a-note-unpacking
 to main after WP-E.
