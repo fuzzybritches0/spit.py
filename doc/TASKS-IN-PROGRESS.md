@@ -12,8 +12,17 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **ONE entry is open** in this file: the `terminal`-tool harness list,
-> followup 4.
+> **TWO entries are open** in this file: **P13/WP-A** (unpack the system notes onto the
+> wire as `user` messages — `Go!` given by the owner 2026-09-25, **not started**: the
+> holder that planned it stopped before the first edit because its token budget ran down,
+> so its State fields are the whole of the work, and its **Branch to work on** says which
+> tip to cut from), and the `terminal`-tool harness list, followup 4.
+> **P15 closed and merged 2026-09-25** (`b969e00`, close-out `d160c2e`): `unit:prompt`
+> reads its pinned **33** on `main` again, so a full-suite run from `main` has no
+> pre-existing red to explain. **P13's owner rulings are on the unmerged docs branch
+> `docs-p13-owner-rulings-handoff-wp-a`** — the role is `user`, the levels are
+> percentage-OR-remaining; `main` still carries the older P13 text, which is why the WP-A
+> entry points at that branch.
 > **P12 — token counts — closed on 2026-09-24** on `task-token-counts-p12`
 > (`c7e7d74` planning, `b799526` the entry move, then the six steps
 > `a173854`, `b7d06ac`, `304530a`, `756179d`, `eef3045` + the docs after each,
@@ -121,6 +130,130 @@ that is not the agent's.
 > resolution (root causes, coverage, the two accepted limits, and that
 > checklist kept in case anyone still wants to run it by hand) is in
 > `TASKS-FINISHED.md`.
+
+## P13/WP-A — unpack system notes onto the wire as `user` messages  [`Go!` GIVEN by the owner 2026-09-25; NOT started — the previous holder ran out of budget and stopped before the first edit, deliberately]
+
+**Take this entry and do exactly WP-A. Nothing else in P13 is authorised.** The plan is
+the P13 entry in `doc/TASKS-PLANNED.md` — read its **owner rulings**, its **hazard 1**
+and its **WP-A** bullet first; they are short and they overrule parts of the older prose
+below them in the same entry.
+
+### State (crash-recovery record)
+
+- **Branch to work on**: cut `p13-wp-a-note-unpacking` from
+  **`docs-p13-owner-rulings-handoff-wp-a`**, not from `main` and not from the P13 planning
+  commit: that docs branch carries the **owner's rulings** (`user` role, the
+  percentage-OR-remaining levels, wording delegated, P14 adopts the text later) and this
+  very entry. `main` has the *older* P13 text (`system` role, 50/80/90%) and would send
+  you down the path the owner rejected. If the owner has merged the docs branch by the
+  time you read this, cut from `main` instead — check with
+  `git log --oneline main -- doc/TASKS-PLANNED.md | head -3` and look for the
+  "owner rulings" commit.
+- **Scope — everything WP-A touches**:
+  - `spit_app/endpoints/llamacpp.py` — `prepare_payload()` (its `for message in
+    self.messages:` loop, the one that already deepcopies and renames `reasoning`) plus
+    **one** new helper method on `LlamaCppEndpoint`. Nothing else in the app, no Chat, no
+    Work, no UI, no settings surface, no new endpoint field.
+  - `spit_app/tests/unit/endpoints/test_system_note.py` — NEW file, owns **t12**
+    (append-only, TRAPS #15; t1–t11 are taken by the four existing files, and the harness
+    docstring lists who owns what).
+  - `doc/TESTING.md` — the `unit:endpoints` row 343 → 343+N, plus one line in that
+    suite's prose saying what t12 is.
+- **Done**: no code. Committed and merged in `main`: P13 planning (`a83c42e`), the P15
+  `TOOL_PROMPT` fix (`b969e00`, `unit:prompt` back at its pinned 33), P15's close-out
+  (`d160c2e`). On the unmerged docs branch: the owner's rulings and this entry.
+- **Left — the whole of WP-A, in this order** (one sitting; the test file first so every
+  check is written against a red):
+  1. Read: `doc/TRAPS.md` #13/#14/#15/#18/#19; `doc/TESTING.md` (the differential items
+     and the venv section — `unit:endpoints` needs **httpx + Textual**, run it with
+     `~/.venv-spit/bin/python3` or `SPIT_TEST_PYTHON`); `spit_app/tests/unit/endpoints/
+     endpoint_harness.py` (what you will call: `NEW`, `check`, `guarded`, `summary`,
+     `baseline_selfcheck`, `saved_endpoint`, `messages_fixture`, `dumps`, `raises`);
+     `spit_app/tests/unit/endpoints/test_payload.py` (t1/t5 — copy its shape: a control
+     that can fail, and a `baseline_selfcheck` before any "same as old" row);
+     `prepare_payload()` itself.
+  2. Write `test_system_note.py` with **t12** covering, in this order: (a) a note on a
+     `tool` carrier and one on an `assistant` carrier each become their own
+     `{"role": "user", "content": <text>}` item **immediately after** the carrier, and
+     never a `system` item; (b) two notes on one carrier keep their order; (c) **a note on
+     a `user` carrier produces NO extra item** — the message count is what it was and the
+     text is inside the carrier's content (this is hazard 1's rule, the one thing most
+     likely to be "fixed" later, so name the checks like
+     `t12-user-carrier-merges-no-second-user-message`); (d) the private key `system` is
+     nowhere in the payload (assert on the key SET of every message, not on one key);
+     (e) the app-side dict keeps its `system` entry **and its own content byte-identical**
+     (the deepcopy argument, exactly as t1 pins it for `reasoning`); (f) the merge lands
+     on a list content with a text part, on a list content WITHOUT one (multimodal: an
+     `image_url` part only), and on a plain-string content — three cells; (g) `messages`
+     with no notes at all produce a payload byte-identical to the pinned baseline's
+     (`b799526` via the harness) apart from `stream_options`, i.e. **the wire format did
+     not move** (TRAPS #14 — this is the check that makes WP-A safe rather than
+     plausible); (h) notes coexist with the `reasoning` → `reasoning_key` rename; (i) the
+     leading system prompt is still `payload["messages"][0]`; (j) no `tool` message is
+     separated from the `assistant` whose `tool_calls` it answers, and a note on an
+     assistant carrying `tool_calls` still lands after the whole assistant message (a
+     consequence, stated — hazard 2 says the generator will never do it, and the shape is
+     pinned anyway).
+  3. Implement, in the existing loop:
+
+     ```python
+     notes = _message.pop("system", [])
+     ...the existing reasoning rename...
+     payload["messages"].append(_message)
+     for note in notes:
+         self.append_note(payload["messages"], _message, note)
+
+     def append_note(self, out, carrier, note):
+         if carrier["role"] == "user":
+             self.merge_into_content(carrier, note["text"])
+             return
+         out.append({"role": "user", "content": note["text"]})
+
+     def merge_into_content(self, carrier, text):
+         content = carrier.get("content")
+         if isinstance(content, list):
+             for part in reversed(content):
+                 if part.get("type") == "text":
+                     part["text"] = f"{part['text']}\n\n{text}" if part["text"] else text
+                     return
+             content.append({"type": "text", "text": text})
+             return
+         carrier["content"] = f"{content}\n\n{text}" if content else text
+     ```
+     Sketch, not a decree: match the file's style (no docstrings unless a line earns
+     one — the one that earns a comment is *why* a `user` carrier merges; cite hazard 1
+     and the alternation family). `pop` from the **deepcopy**, never from the app's dict.
+     `None`/missing content must end as `text`, not `"None"`.
+  4. `bash spit_app/tests/unit/endpoints/run_tests.sh` green, then the FULL suite from
+     the repo root; `doc/TESTING.md`'s row goes up by exactly N and nothing else moves.
+  5. Two commits: the code+test (one concern), then the docs (`TESTING.md` row; strike
+     the WP-A bullet's "NOT started" marker; note here in `TASKS-IN-PROGRESS.md` what the
+     run rested on). Close the entry yourself when its Verify holds — no sign-off
+     (DECISIONS 71).
+- **State hazards**: none in the tree (clean). The one conceptual trap: **do not emit a
+  second consecutive `user` message** — that is the whole reason the merge rule exists, so
+  a "simplification" that always appends an item reproduces the defect on
+  mistral/gemma-family templates. Second trap: `unit:endpoints` **cannot run on the bare
+  system python3** (TRAPS #19) — a `PASS: 0 FAIL: 1` with the venv remedy means "I did not
+  measure anything", not "green". Third: the outer runner reads `tail -n 1`, so run the
+  files, or read the whole output — a dead file hides behind a tidy row (TRAPS #18).
+- **Do NOT**: start WP-B/C/D/E (no `Go!`); reintroduce a `system` role on the wire (the
+  owner ruled `user`, and strict templates raise on a mid-conversation `system`); add an
+  endpoint setting (that is follow-up (a)); write into `chat.messages`'s LENGTH or reorder
+  it (the index space; see P13's constraint); or touch `tests/unit/endpoints/`
+  `test_payload.py`/`test_stream_parse.py`/`test_requests.py`/`test_harvest_usage.py`/
+  `test_counts_row.py` — t12 lives in its own file and their counts must not move.
+- **Verify**: full `bash spit_app/tests/run_tests.sh` from the repo root: every row at the
+  `doc/TESTING.md` numbers except `unit:endpoints` **343 → 343+N**; `chat_smoke`'s
+  `golden.txt` md5 `8ae9d1186a59627d30d05dee95f0ad95` unmoved (nothing in WP-A can reach
+  the UI — if that row moves, something wrote into `messages`); `unit:prompt` 33 (main
+  carries the P15 fix). Then the WP-A proof proper, which is check (g): the no-note
+  payload is byte-identical to the pinned baseline's, so no live endpoint sees a format
+  change from this commit.
+- **Budget**: WP-A is ~40k tokens of work — a 15-line helper and one test file. If you are
+  in under, stop at WP-A: WP-B needs its own `Go!`.
+
+---
 
 ## Machine state these entries assume (none of it is in git)
 
