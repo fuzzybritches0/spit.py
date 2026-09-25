@@ -416,9 +416,11 @@ settings; (d) **P14, the handoff tool** — the 90% note exists to point at it.
 
 **Verify**: full `bash spit_app/tests/run_tests.sh` from the repo root, every row
 byte-for-byte except `unit:endpoints` (up by t12/t13) and the new `unit:system_note`
-row; `chat_smoke`'s golden md5 unmoved. Note that `unit:prompt` is ALREADY red at the
-tip (P15 below: 32+1 against the pinned 33) and stays red unless that fix lands first
-— a close-out must say which of the two the run rested on.
+row; `chat_smoke`'s golden md5 unmoved. One caveat about that row: `unit:prompt` was red
+at `main` (32+1 against the pinned 33, P15) and is fixed only by `b969e00`, which this
+entry's branch carries. A branch cut from `main` **before** that commit is merged will
+read the red again and must not be closed as if the failure were P13's — say which tip
+the run rested on.
 
 **Gotchas**: TRAPS #19 (the WP-B/WP-C modules must import no Textual/httpx or the new
 suite silently needs the venv — gate it the way the five existing dependency suites
@@ -464,7 +466,15 @@ work."*
 
 ---
 
-## P15 - `unit:prompt` is red at the tip: `TOOL_PROMPT` is emitted with no tool behind it  [found 2026-09-25; needs `Go!`]
+## P15 - DONE - `unit:prompt` was red at the tip: `TOOL_PROMPT` emitted with no tool behind it  [found and fixed 2026-09-25; `Go!` given and used the same day]
+
+**Resolution: `TASKS-FINISHED.md`** ("P15 — the tool header with no tool under it"), on
+branch `fix-tool-prompt-header-p15` (`a83c42e` the planning docs, `b969e00` the fix),
+awaiting the owner's merge; `main` untouched. `unit:prompt` is back at its pinned
+**33/0** and the full suite reads exactly the `doc/TESTING.md` table with stderr empty.
+The record of what was measured stays below verbatim — it is the reason the fix guards
+on `blocks` and not on the selection.
+
 
 - **The measurement** (this box, tip `6bb1b62`): `unit:prompt: PASS: 32  FAIL: 1`,
   against the ground truth `doc/TESTING.md` pins at **33** — the red is

@@ -1424,3 +1424,75 @@ is itself the proof that the close-out wrote no code.
 No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
 `main` untouched, nothing pushed. There is no handoff after this — step 6 was the
 last step, and this entry is the record.
+
+### P15 — the tool header with no tool under it (branch `fix-tool-prompt-header-p15`: `a83c42e` the planning docs, `b969e00` the fix; awaiting the owner's merge)
+
+**Found while planning P13, and it is not P13's work** — filed as its own entry, `Go!`
+asked and given separately, because it is a red in `main` that every later close-out in
+this area has to read around.
+
+**The red, measured.** At the tip `6bb1b62` ("chat: work: fix no tools selected") the
+row is `unit:prompt: PASS: 32  FAIL: 1`, against the **33** `doc/TESTING.md` pins; the
+failing check is `t6-mm_tool_without_the_capability_excluded`. Not environmental, and
+not a stale expectation either: the same suite run from a clean tree of `6bb1b62^`
+reports **PASS: 33  FAIL: 0** (whole tree exported with `git archive`, nothing else
+touched). So the tip moved the code away from a rule the suite had already pinned.
+
+**The cause, in one line.** `6bb1b62` moved
+
+```python
+prompt = TOOL_PROMPT + "\n\n".join(blocks)
+```
+
+*inside* `if self.cs("tools"):`. That changed the header's condition from **"a tool
+block was built"** to **"a tool is selected"**, and those are different sets: a selected
+tool still drops out of the assembly two lines below, because `req_mm_image()` filters a
+multimodal tool out of a chat whose model has no image capability. The header then opens
+a section with nothing in it. In the live app the same filter runs in `__init__`
+(`tools_descs`) and `prepare_payload` sets `payload["tools"]` only when that list is
+non-empty — so the request that went out told the model *"All of your function calls are
+rendered in human-readable form for the user to inspect…"* with **no `tools` key in the
+payload at all**: instructions to call functions that do not exist in that request. That
+is why this is a bug and not a cosmetic prompt-shape preference.
+
+**The fix** (`b969e00`): `blocks = []` hoisted above the `if self.cs("tools"):`, and
+`if blocks:` guards the header. The commit that introduced the red was fixing a real
+crash — an empty/None selection reaching `tool in self.cs("tools")` — and that guard is
+kept exactly as it was; only the header's condition went back to the blocks. Two lines
+of change, no new concept.
+
+**Proved by differential, not by the green row** (TRAPS #18: a pinned check sees the one
+case it pins). 20 cells of (tool table, selection, capability, user tool settings, chat
+prompt) were run through **both** classes. The old side is **pinned by sha** —
+`git show 6bb1b62:spit_app/chat/work.py`, exec'd into a module of its own — and *not*
+`git show main:`, because the day this fix merges, `main` holds the fix and the old half
+of the differential would quietly compare the new code with itself: the
+`endpoint_harness.py` lesson, a differential that cannot fail is not evidence. The probe
+carries its own self-checks for exactly that ("old side really is 6bb1b62 and NOT the
+fixed file", "new side really is the fix", "`TOOL_PROMPT` the same on both sides"), all
+three true:
+
+- **15 cells byte-identical**, including the chat-prompt wrapping, the `## tool`
+  headings, the `PROMPT_INST` substitution, user-settings precedence, prompts with
+  trailing breaks, and a tool whose PROMPT is empty (heading-only block).
+- **5 cells moved, and they are exactly the cells where the selection is truthy while
+  zero blocks survive** — that set the probe computes a third time, independently of
+  both implementations, and asserts against. Nothing with a surviving block changed.
+- Among the 5 is a case the pinned test does **not** cover: a chat whose `tools` list
+  names a tool that is no longer in the tool table at all also sent the header over
+  nothing. The fix catches it; the suite would not have.
+
+**Verified.** Full suite from the repo root after the fix, **stderr empty**: tools
+127/24/30/119/80/32/68/29 and unit 68/131/168/568/343/**33**/278/121/157/223, **FAIL 0
+everywhere** — every row at the numbers `doc/TESTING.md` already pins, `unit:prompt`
+among them again. No check was added, deleted or re-pinned: the row went from 32+1 to 33
+because the code moved to the test, which is the only direction that was allowed here
+(the check was pinned before the regression existed).
+
+**Left open, deliberately.** The duplication that let this drift in the first place:
+`Work.__init__` builds `tools_descs` from the tool table and `Work.prompt()` re-applies
+the *same* predicate a second time to build the blocks, so the two can disagree — that
+is exactly the seam the header fell through. Unifying them (one pass, both results) is a
+behaviour question about the tool table and one commit too big for a two-line fix, so it
+is named here instead of being done quietly. `main` untouched, nothing pushed, and no
+sign-off participated in closing this (DECISIONS 71).
