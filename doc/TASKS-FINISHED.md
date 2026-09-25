@@ -1632,8 +1632,13 @@ generator stamps `hook` itself.
 **The test** (`spit_app/tests/unit/system_note/`, `run_tests.sh` +
 `test_generator.py`, owns **t1–t9**, its own append-only sequence — TRAPS #15; the
 `unit:endpoints` numbers are a different sequence and t13 there is WP-D's). Written
-first and run against a red: the module did not exist, and the first failure was
-t1's own "imported the repository's own module". **96 checks**, and every group
+first and run against a red — stated as measured, because it was NOT a tidy wall
+of reds: with the module absent the file dies at its `import`, and the runner
+reports that as `PASS: 0  FAIL: 1` naming the file that never reached its summary
+line (re-measured at this commit by moving the module aside). So the red that
+proved the checks were real is the mutation list below, not that first run, and
+t1's own "imported the repository's own module" could not even be reached until
+the module existed. **96 checks**, and every group
 verified red by **substituting its defect** rather than assumed
 (`git`-restored mutations, one at a time): the walk skipping the tail and asking
 only the first hook (t2), dropping the idempotence guard and keying it on
