@@ -1,8 +1,10 @@
 TASK: P13/WP-B - the system-note generator and the hook contract. Go! GIVEN by the
 owner 2026-09-25 (quoted verbatim in your entry). Do WP-B and nothing else.
 
-WORK ON: ~/spit.py, branch `p13-wp-a-note-unpacking`, at its tip 2b5eac6. Work ON
-that branch - do NOT cut a new one. Never touch `main`, never push, never pull.
+WORK ON: ~/spit.py, branch `p13-wp-a-note-unpacking`, at its CURRENT tip (this file
+was committed at ada2018 - newer doc commits on the branch are expected, nothing of
+them is code). Work ON that branch - do NOT cut a new one. Never touch `main`, never
+push, never pull.
 
 READ FIRST, in this order:
  1. doc/TASKS-IN-PROGRESS.md, entry "P13/WP-B" - your crash-recovery record, and it is
