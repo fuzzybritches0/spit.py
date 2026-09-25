@@ -259,7 +259,7 @@ the fifth dependency-listed suite.
 
 ---
 
-## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25** - resolution in `TASKS-FINISHED.md`; **WP-B `Go!` GIVEN 2026-09-25** (entry "P13/WP-B" in `TASKS-IN-PROGRESS.md`) and the owner's standing instruction chains the rest: each finisher writes the next handoff message, **WP-B…WP-E all land on `p13-wp-a-note-unpacking`**, no new branches, and **the owner merges that branch after WP-E**]
+## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25** and **WP-B DONE 2026-09-25** - resolutions in `TASKS-FINISHED.md`; **WP-C `Go!` GIVEN 2026-09-25**, arriving with WP-B's handoff message (entry "P13/WP-C" in `TASKS-IN-PROGRESS.md`) and the owner's standing instruction chains the rest: each finisher writes the next handoff message, **WP-B…WP-E all land on `p13-wp-a-note-unpacking`**, no new branches, and **the owner merges that branch after WP-E**]
 
 **Owner rulings of 2026-09-25, which overrule parts of the plan below — read these
 first.** (i) **The injected note's role is `user`, not `system`, always** — the owner's
@@ -421,9 +421,20 @@ code together is ~120 lines.
   index 0; no `tool` message is ever separated from the `assistant` whose `tool_calls` it
   answers, and the after-the-carrier position is pinned even for an assistant carrying
   `tool_calls` (a consequence stated, not hidden).
-- **WP-B — the generator and the hook contract. `Go!` GIVEN 2026-09-25, NOT started**:
-  the starting point is the entry "P13/WP-B" in `TASKS-IN-PROGRESS.md`.
-  New `spit_app/chat/system_note.py`,
+- **WP-B — the generator and the hook contract. `Go!` GIVEN and DONE 2026-09-25**
+  (`p13-wp-a-note-unpacking`: `a6ec179` the code+test, `7046bcb` the TESTING.md row;
+  resolution in `TASKS-FINISHED.md`). The contract it pinned, which WP-C and WP-D
+  write against: `notice(chat, messages, index)` returns **`Note(level, text)` or
+  `None`** — the level travels in the return value because the levels below are
+  state-machine output, not per-call arguments — and `hook` is stamped by the
+  generator (the hook's `name`, else its class name, so `notice()` stays the only
+  requirement on a hook). Idempotence keys on that name against the notes already
+  standing in the message dict, so nothing is remembered on the generator and the
+  rule holds across instances **and across a chat reload**; a note is never upgraded
+  in place, and a hook that wants to say something newer speaks on a newer message.
+  A `notice()` return that is neither `None` nor a `Note` raises `TypeError` naming
+  the hook; `None` or empty text writes nothing, not an empty `system` key; a raising
+  hook propagates, with no rollback. New `spit_app/chat/system_note.py`,
   importing NOTHING of Textual/httpx (TRAPS #19 — it must run on the bare
   interpreter): `class SystemNotes` with `__init__(chat)` and `attach()`, a module
   `HOOKS` list, and per-message `hook.notice(chat, messages, index)` returning text or
@@ -435,9 +446,23 @@ code together is ~120 lines.
   message — the whole point, and the check that keeps WP-A's premise true); a raising
   hook is NOT swallowed — a broken hook must not survive by silently doing nothing
   (the same posture as the `{}`-endpoint KeyError pinned as a limit in DECISIONS 80 b).
-- **WP-C — the token-status hook** (`Go!` arrives with WP-B's handoff message, per the
-  owner's chain instruction of 2026-09-25; do not start it before that message says so).
-  `spit_app/chat/token_status.py`.
+- **WP-C — the token-status hook** (`Go!` GIVEN 2026-09-25, arriving with WP-B's
+  handoff message `spit_app/tests/HANDOFF-WP-C.txt`; the entry is open as
+  "P13/WP-C" in `TASKS-IN-PROGRESS.md`, and WP-D/WP-E stay unauthorised until their
+  own messages arrive).
+  `spit_app/chat/token_status.py`. Its tests go in **WP-B's suite**
+  (`spit_app/tests/unit/system_note/test_token_status.py`, numbers **t10 onward** —
+  t1–t9 are WP-B's, and `unit:endpoints` numbers are a separate sequence again), so
+  the `unit:system_note` row moves up rather than a new row appearing, and the
+  bare-interpreter gate WP-B built covers the new module from its first commit.
+  Two consequences of WP-B's pinned contract, stated here because they shape the
+  state machine: **a hook can only ever write one note per message** (the generator
+  drops the second), so a level change rides on the message that arrives after it —
+  never an upgrade in place; and **nothing catches what the hook raises**, while
+  WP-D calls `attach()` immediately before `endpoint.stream()`, so the hook must be
+  total — unknown total means silence, which is also the rule that keeps a request
+  alive. `Chat.context_window()` does not exist yet (it is WP-D's), so WP-C tests
+  the hook against a stub chat and does not build the accessor early.
 
   **The levels (owner ruling: percentage OR remaining, whichever comes first).** Each
   level has a percentage trigger AND an absolute remainder floor, and it triggers at the
