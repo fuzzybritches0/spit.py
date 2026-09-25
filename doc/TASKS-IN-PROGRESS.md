@@ -230,6 +230,12 @@ carrier contract WP-A's file documents, and do not touch that file.
      token-status hook: percentage-OR-remaining levels, the four texts pinned
      byte-for-byte — owner ruling (iii) delegates wording to the implementer,
      pinned word-for-word in WP-C's suite). Stop there; hand off, do not roll on.
+     **Also save the handoff as `spit_app/tests/HANDOFF-WP-C.txt`** and commit it:
+     the owner copies handoffs with a key binding, and Markdown pasted out of the
+     chat is lost (their report; the convention started with
+     `spit_app/tests/HANDOFF-WP-B.txt`, commit `32a1723`). Plain text, no
+     formatting to survive the trip; keep it a pointer to the entry, not a second
+     record — if the two disagree, the entry wins.
 - **State hazards**: none in the tree (clean at `da8ccfc`). Traps ahead: TRAPS #19
   (the new module must import nothing Textual/httpx — gate by check (a) above, a
   bare-interpreter suite that would die on such an import is the gate); #15 (new

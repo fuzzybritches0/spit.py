@@ -67,7 +67,10 @@ VERIFY (numbers fresh at 2b5eac6, every row green, exit 0):
 STOP AT, in this order: full suite green with only the new row added; two commits
 (code+test as one concern, then docs with the TESTING.md row); close your OWN entry
 into doc/TASKS-FINISHED.md with its resolution (no sign-off, DECISIONS 71); open the
-"P13/WP-C" entry in doc/TASKS-IN-PROGRESS.md; write the WP-C handoff message, fenced;
+"P13/WP-C" entry in doc/TASKS-IN-PROGRESS.md; write the WP-C handoff message, fenced,
+AND save it as spit_app/tests/HANDOFF-WP-C.txt (same convention as this file - the
+owner copies handoffs with a key binding, and Markdown pasted out of the chat is
+lost; plain text, pointer to the entry, never a second record);
 then STOP. The owner's chain instruction is that each finisher hands off the next -
 WP-B's Go! does NOT authorise you to start WP-C. WP-E is the last package: its
 finisher writes a close-out, not a handoff. The owner merges `p13-wp-a-note-unpacking`
