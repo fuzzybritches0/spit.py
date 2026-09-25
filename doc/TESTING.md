@@ -47,6 +47,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 157 |
+| unit:system_note | 96 |
 | unit:terminal | 223 |
 
 ## The test venv (five suites need it)
@@ -413,6 +414,35 @@ harness **absolute** fixture paths.
   match the glob - renaming it would make the runner treat it as a suite.
   Lifecycle/delivery/streams drive everything through the shared
   `run_as_file(...)` -> `(output, leftovers, elapsed)`.
+
+- `tests/unit/system_note/` - the P13/WP-B **system-note generator** (96 checks):
+  `spit_app/chat/system_note.py`, the hook contract and its five invariants, on
+  plain dicts and a one-attribute chat - no Textual, no endpoint, no network.
+  `test_generator.py` owns **t1-t9** (append-only within the suite; the
+  `unit:endpoints` numbers are a separate sequence, and t13 there belongs to
+  WP-D). `t1` is the gate with TRAPS #19 **inverted**: the runner has no venv
+  preamble because the module imports nothing of the app's runtime (`spit_app/chat/`
+  is a namespace package), and t1 asserts no `textual`/`httpx`/`libtmux` landed in
+  `sys.modules` - so a module that later grows such an import reddens here instead
+  of quietly becoming venv-bound. Measured both ways: with an `import textual` added
+  to the module, the bare run reports `PASS: 0  FAIL: 1` naming the file that died,
+  and a run under `~/.venv-spit` (where the import cannot kill the file) reddens
+  `t1-importing-it-loaded-no-app-dependency`. The five invariants are t2-t6 -
+  asked at every index; at most once per hook per message (idempotence over N walks
+  *and* over a reloaded chat, because the standing note is itself the record);
+  silence (`None`, or empty text) writes nothing, asserted on the key SET of every
+  message; the `messages` LIST untouched - object identity, length, per-message
+  `id()`, and every other key byte-identical - which is P13's whole constraint; a
+  raising hook propagates, unwrapped, with no rollback of what was already written.
+  `t7` pins the stored entry (`{"hook", "level", "text"}` dicts - not namedtuples,
+  which would persist as JSON lists - under the private key `system`) that
+  `unit:endpoints` t12 unpacks from the wire side; `t8` refuses a `notice()` return
+  that is neither `None` nor a `Note`, naming the hook; `t9` the name that stamps
+  `hook` and keys the once-per-message rule. Every group was verified red by
+  substituting its defect (skipping the tail, dropping the idempotence guard,
+  writing an empty `system` key, appending a note as a message, `except:`-ing the
+  raise, accepting a bare string, ignoring the `name`), so no green in this suite is
+  one that cannot fail (TRAPS #13/#14).
 
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
   (343 checks; **394** since P13/WP-A added `test_system_note.py`, by addition
