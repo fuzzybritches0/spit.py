@@ -64,8 +64,14 @@ class Work:
 
     def prompt(self) -> str:
         prompt = ""
+        # The header belongs to the tool BLOCKS, not to the selection: a tool can be
+        # selected and still drop out below (a multimodal tool on a chat without the
+        # image capability), and then there is nothing to head. Emitting TOOL_PROMPT on
+        # the strength of `cs("tools")` alone tells the model "All of your function
+        # calls are rendered..." on a request whose payload carries no `tools` key at
+        # all (unit:prompt t6 pins it; DECISIONS 62 owns the breaks of this prompt).
+        blocks = []
         if self.cs("tools"):
-            blocks = []
             for tool in self.app.tool_call.tools.keys():
                 if tool in self.cs("tools") and self.req_mm_image(tool):
                     tool_prompt = self.app.tool_call.tools[tool]["settings"]["prompt"]["value"]
@@ -81,6 +87,7 @@ class Work:
                     text = tool_prompt.strip("\n")
                     block = f"## {tool}\n\n{text}" if text else f"## {tool}"
                     blocks.append(block + self.prompt_inst(tool))
+        if blocks:
             prompt = TOOL_PROMPT + "\n\n".join(blocks)
         if self.cs("prompt") and self.cs("prompt") in self.settings.prompts:
             chat_prompt = self.settings.prompts[self.cs("prompt")]["text"]["value"]
