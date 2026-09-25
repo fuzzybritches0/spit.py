@@ -171,11 +171,14 @@ class LlamaCppEndpoint:
             payload["messages"].append({"role": "system", "content": self.prompt})
         for message in self.messages:
             _message = deepcopy(message)
+            notes = _message.pop("system", [])
             if "reasoning" in _message:
                 reasoning = _message["reasoning"]
                 del _message["reasoning"]
                 _message[self.reasoning_key] = reasoning
             payload["messages"].append(_message)
+            for note in notes:
+                self.append_note(payload["messages"], _message, note)
         self.construct_payload(payload, self.endpoint)
         self.construct_payload(payload, self.model_settings)
         if self.tools:
@@ -184,6 +187,31 @@ class LlamaCppEndpoint:
         payload["stream"] = True
         payload["stream_options"] = {"include_usage": True}
         return payload
+
+    def append_note(self, out: list, carrier: dict, note: dict) -> None:
+        # A stored note (the private "system" key a hook wrote into the message dict)
+        # rides the wire as `user`, never `system`: strict templates raise_exception
+        # on a mid-conversation `system` (P13 hazard 1, owner ruling 2026-09-25).
+        # A `user` CARRIER merges instead of appending: that swaps the strictness
+        # for the alternation family's own rule (mistral-instruct, gemma-it raise
+        # on two consecutive `user` messages), so the note joins the carrier's
+        # content rather than becoming the second half of that pair. The deepcopy
+        # is what this edits; the stored message keeps its note and its content.
+        if carrier["role"] == "user":
+            self.merge_into_content(carrier, note["text"])
+            return
+        out.append({"role": "user", "content": note["text"]})
+
+    def merge_into_content(self, carrier: dict, text: str) -> None:
+        content = carrier.get("content")
+        if isinstance(content, list):
+            for part in reversed(content):
+                if part.get("type") == "text":
+                    part["text"] = f"{part['text']}\n\n{text}" if part["text"] else text
+                    return
+            content.append({"type": "text", "text": text})
+            return
+        carrier["content"] = f"{content}\n\n{text}" if content else text
 
     def tool_calls(self, content: dict) -> None:
         if not "tool_calls" in self.messages[-1]:
