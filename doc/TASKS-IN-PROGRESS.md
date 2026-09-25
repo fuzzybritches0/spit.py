@@ -12,7 +12,10 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **ONE entry is open** in this file: the `terminal`-tool harness list, followup 4.
+> **TWO entries are open** in this file: **P13/WP-B** (the note generator and the
+> hook contract — `Go!` GIVEN by the owner 2026-09-25, together with the standing
+> instruction that each finisher writes the handoff message for the next WP; NOT
+> started), and the `terminal`-tool harness list, followup 4.
 > **P13/WP-A closed 2026-09-25** on `p13-wp-a-note-unpacking` (cut from the
 > `docs-p13-owner-rulings-handoff-wp-a` tip `1522932`, `0afaef8` the code+test, then this
 > close-out): `prepare_payload()` now pops the private key `system` from the deepcopy and
@@ -20,9 +23,13 @@ that is not the agent's.
 > `user`, its own `{"role": "user", ...}` item when it is `tool`/`assistant`, never a
 > `system` item, never a second consecutive `user`. `unit:endpoints` 343 → **394** with
 > the new `test_system_note.py` (t12, 51 checks); resolution in `TASKS-FINISHED.md`.
-> **P13's WP-B/C/D/E are NOT authorised** — no `Go!` for any of them; the owner rulings
-> they build on (`user` role, percentage-OR-remaining levels) live on the unmerged docs
-> branch until the owner merges.
+> **P13 chains by handoff message now**: the owner's instruction of 2026-09-25 (quoted
+> verbatim in the WP-B entry) gave the `Go!` for **WP-B** and told each finisher to
+> write the next handoff message, so WP-C, WP-D and WP-E run **on top of this branch**
+> as each previous WP's finisher opens its entry — no new branches, and the owner
+> merges `p13-wp-a-note-unpacking` to `main` **after the last package (WP-E) is done**.
+> The owner rulings every package builds on (`user` role, percentage-OR-remaining
+> levels) ride on that branch.
 > **P15 closed and merged 2026-09-25** (`b969e00`, close-out `d160c2e`): `unit:prompt`
 > reads its pinned **33** on `main` again, so a full-suite run from `main` has no
 > pre-existing red to explain. **P13's owner rulings are on the unmerged docs branch
@@ -136,6 +143,111 @@ that is not the agent's.
 > resolution (root causes, coverage, the two accepted limits, and that
 > checklist kept in case anyone still wants to run it by hand) is in
 > `TASKS-FINISHED.md`.
+
+## P13/WP-B — the system-note generator and the hook contract  [`Go!` GIVEN by the owner 2026-09-25 — verbatim below; NOT started]
+
+**The owner's instruction that opens this entry (2026-09-25, verbatim):** *"Please
+write the initial WP-B message for the next agent. Give them the `Go!` for it. Then
+when they finish WP-B, tell them to write the next handoff message and so on. They
+should do their work on top of your branch and so on. I will merge to main after all
+work is done."* That is the `Go!` for WP-B **and** the rule for the rest of the
+chain: each finisher writes the next handoff message and opens the next entry here;
+everything lands on **`p13-wp-a-note-unpacking`** (no new branches); the owner merges
+that branch after WP-E. Nothing outside P13's WP-B…WP-E is authorised by it — WP-B
+does not authorise WP-C until WP-B's finisher says so in its handoff, and no package
+may widen its own scope (DECISIONS 71, TRAPS #22 — the same rule holds for an
+agent's own handoff note: the rulings it states must match the owner's words).
+
+The plan is the P13 entry in `doc/TASKS-PLANNED.md` — read its **owner rulings**,
+**hazard 1** and the **WP-B** bullet first. WP-A is done and closed
+(`0afaef8` + docs `da8ccfc`, resolution in `TASKS-FINISHED.md`): the wire side is
+shipped and pinned (t12), so WP-B's notes have a proven reader — build to the
+carrier contract WP-A's file documents, and do not touch that file.
+
+### State (crash-recovery record)
+
+- **Branch**: work **on** `p13-wp-a-note-unpacking`, on top of its tip (WP-A:
+  `0afaef8` code, `da8ccfc` docs). Never push, never touch `main`.
+- **Scope — everything WP-B touches**:
+  - `spit_app/chat/system_note.py` — NEW. `class SystemNotes` with `__init__(chat)`
+    and `attach()`; a module `HOOKS` list; a hook is anything with
+    `notice(chat, messages, index)` returning the note text or `None`. Writes the
+    note dict(s) into the message dict at `index` under the private key `system`,
+    as `{"hook": <name>, "level": <name>, "text": <str>}` entries. **Imports
+    NOTHING of Textual/httpx** (TRAPS #19). Nothing wires it into `Chat`/`Work`
+    yet — that is WP-D.
+  - `spit_app/tests/unit/system_note/` — NEW suite, bare `python3` — no venv preamble,
+    and that absence IS the gate (TRAPS #19's shape, inverted: the code under test must
+    import nothing, so the bare interpreter must run it, and a module that later grows a
+    Textual/httpx import makes the suite die loudly there instead of quietly needing a
+    venv it never declared). `run_tests.sh` + `test_generator.py`. The suite owns its
+    own t1, t2… (append-only within the suite; TRAPS #15 — the endpoints numbers are a
+    different sequence, and **t13 there belongs to WP-D**).
+  - `doc/TESTING.md` — a new `unit:system_note` row (+ prose). The root
+    `run_tests.sh` needs no edit: it globs `unit/*` and auto-discovers a directory
+    holding a `run_tests.sh` (verified in `spit_app/tests/run_tests.sh:12-16`).
+  - Nothing else — no UI, no settings, no endpoint change, no WP-C/D/E work.
+- **Measured for you (2026-09-25, this box)**: `spit_app/chat/` has **no
+  `__init__.py`** — it is a namespace package, so `import spit_app.chat.system_note`
+  pulls no sibling module and `python3 -c "import spit_app.chat"` answers with
+  neither `textual` nor `httpx` in `sys.modules` on the **bare** interpreter. That
+  is why the new suite needs no venv gate — and why a relative import of anything
+  Textual-bound would silently break it: import hygiene is a check, not a hope
+  (see Left item 1).
+- **Decide-and-pin, don't re-litigate**: the entry in PLANNED sketches
+  `notice(...)` "returning text or `None`", but the stored entry needs a `level`
+  too — WP-C's levels are state-machine output, not per-call arguments. Pick the
+  narrowest contract that keeps WP-B's pinned invariants true (e.g. the hook's
+  `notice()` returns a text plus its level-name, or `None`, and the generator
+  stamps `hook` from the hook's own name); say in the handoff what you chose, with
+  the reason. The five invariants are NOT yours to weaken.
+- **Done**: nothing — the entry is open, the code is not started.
+- **Left — the whole of WP-B, in this order** (one sitting; tests first, against a
+  red):
+  1. `test_generator.py` pinning, in a fixture chat of plain dicts (no Textual —
+     the suite must run on bare `python3`, and its first check asserts exactly
+     that: importing the module leaves `textual` and `httpx` out of `sys.modules`):
+     (a) hooks are asked at every message position the walk visits; (b) a hook
+     speaks **at most once per message** — `attach()` over the same walk N times
+     never duplicates a note (idempotence, the check that keeps N requests quiet);
+     (c) `None` or empty text writes **NOTHING** — no empty `"system"` key appears;
+     (d) `len(chat.messages)` and every `id(message)` are unchanged — the note
+     never becomes a message (the whole constraint of P13, and WP-A's premise);
+     (e) a hook that raises is **NOT swallowed** (the posture of the `{}`-endpoint
+     KeyError, DECISIONS 80 b — a broken hook must not survive silently); plus a
+     control per absence (TRAPS #13: the same fixture with a speaking hook).
+  2. Implement `system_note.py` to the reds. Keep `attach()` free of network and of
+     `messages`-list surgery — it writes INTO dicts (the deepcopy on the wire side
+     is WP-A's, shipped; the app-side keep-untouched t12 pins from the wire's half).
+  3. `bash spit_app/tests/unit/system_note/run_tests.sh` green on the **bare**
+     interpreter, then the FULL suite from the repo root.
+  4. Two commits (code+test; then docs: the TESTING.md row — the new
+     `unit:system_note` line is its own ground truth, every other row must sit
+     exactly at its current number).
+  5. **Write the WP-C handoff message** (fenced, per the owner's instruction),
+     close this entry to `TASKS-FINISHED.md` with its resolution, and open the
+     WP-C entry here — same structure, next in PLANNED's package list (the
+     token-status hook: percentage-OR-remaining levels, the four texts pinned
+     byte-for-byte — owner ruling (iii) delegates wording to the implementer,
+     pinned word-for-word in WP-C's suite). Stop there; hand off, do not roll on.
+- **State hazards**: none in the tree (clean at `da8ccfc`). Traps ahead: TRAPS #19
+  (the new module must import nothing Textual/httpx — gate by check (a) above, a
+  bare-interpreter suite that would die on such an import is the gate); #15 (new
+  numbers only); #13 (silence needs a control); #18 (read whole outputs — the
+  outer runner `tail -n 1`s). Do **not** touch `endpoints/llamacpp.py` — t12
+  already pins what the wire does with the notes; if a check there seems to need
+  changing, the generator is wrong, not the pin.
+- **Verify**: new suite green on bare `python3`; full `bash spit_app/tests/run_tests.sh`
+  from the repo root with **every existing row unmoved** (`unit:endpoints` stays
+  **394**, `unit:prompt` 33, tools 509, etc. — WP-B touches no endpoint code and
+  no prompt) plus the one new row; `chat_smoke`'s `golden.txt` md5
+  `8ae9d1186a59627d30d05dee95f0ad95` unmoved (nothing of WP-B is wired into the UI
+  — if that row moves, something reached outside scope). Close the entry yourself
+  when it holds (DECISIONS 71) — then the handoff message, per the owner.
+- **Do NOT**: wire anything into `Chat`/`Work` (WP-D), write the token-status hook
+  or its texts (WP-C), touch `endpoints/llamacpp.py` or the `unit:endpoints` files,
+  start P14, or push.
+
 
 ---
 

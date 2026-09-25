@@ -1561,7 +1561,11 @@ rested on the automated suites — there is no screen and no live endpoint in th
 environment (TRAPS #22), and the byte-identity against `b799526` is the automated
 analogue of "no live endpoint sees a format change from this commit".
 
-No sign-off step participated (DECISIONS 71); the branch awaits the owner's merge,
-`main` untouched, nothing pushed. **Next in P13 is WP-B (the generator and the
-hook contract) and it needs its own `Go!` — nothing in P13 beyond WP-A is
-authorised.**
+No sign-off step participated (DECISIONS 71); `main` untouched, nothing pushed.
+**Written when this entry closed:** next in P13 was WP-B (the generator and the
+hook contract), and nothing beyond WP-A was authorised at that moment. **Superseded
+minutes later the same day by the owner's chain instruction** (quoted verbatim in
+the "P13/WP-B" entry of `TASKS-IN-PROGRESS.md`): WP-B got its `Go!`, each finisher
+writes the next handoff message, WP-B…WP-E all land on `p13-wp-a-note-unpacking`,
+and the owner merges that branch to `main` after WP-E — so the merge note above now
+means: the whole P13 chain merges as one branch, at the owner's hand, at the end.

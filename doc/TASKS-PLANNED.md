@@ -259,7 +259,7 @@ the fifth dependency-listed suite.
 
 ---
 
-## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25** (`Go!` was given 2026-09-25) - resolution in `TASKS-FINISHED.md`; WP-B/C/D/E NOT authorised, no `Go!`]
+## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25** - resolution in `TASKS-FINISHED.md`; **WP-B `Go!` GIVEN 2026-09-25** (entry "P13/WP-B" in `TASKS-IN-PROGRESS.md`) and the owner's standing instruction chains the rest: each finisher writes the next handoff message, **WP-B…WP-E all land on `p13-wp-a-note-unpacking`**, no new branches, and **the owner merges that branch after WP-E**]
 
 **Owner rulings of 2026-09-25, which overrule parts of the plan below — read these
 first.** (i) **The injected note's role is `user`, not `system`, always** — the owner's
@@ -278,8 +278,11 @@ block is the stand-in, and swapping the two is a text change, not a mechanism ch
 
 **WP-A is DONE** (closed 2026-09-25 on `p13-wp-a-note-unpacking`, cut from
 `docs-p13-owner-rulings-handoff-wp-a` tip `1522932`; resolution in `TASKS-FINISHED.md` —
-`unit:endpoints` 343 → 394 with the new `test_system_note.py`, t12). **WP-B/C/D/E are NOT
-authorised yet** — no `Go!` for any of them; ask before the first code change.
+`unit:endpoints` 343 → 394 with the new `test_system_note.py`, t12).
+**The chain (owner's instruction of 2026-09-25, verbatim in the WP-B entry): WP-B has
+the `Go!`; each finisher writes the fenced handoff message for the next WP and opens its
+entry in `TASKS-IN-PROGRESS.md`; WP-B…WP-E all land on `p13-wp-a-note-unpacking` (no new
+branches, `main` untouched, nothing pushed); the owner merges to `main` after WP-E.**
 
 **The goal**: the model itself learns how full its window is while it works, so that
 it wraps up and writes a handoff instead of dying mid-task. Three pieces: a **generator**
@@ -418,7 +421,9 @@ code together is ~120 lines.
   index 0; no `tool` message is ever separated from the `assistant` whose `tool_calls` it
   answers, and the after-the-carrier position is pinned even for an assistant carrying
   `tool_calls` (a consequence stated, not hidden).
-- **WP-B — the generator and the hook contract.** New `spit_app/chat/system_note.py`,
+- **WP-B — the generator and the hook contract. `Go!` GIVEN 2026-09-25, NOT started**:
+  the starting point is the entry "P13/WP-B" in `TASKS-IN-PROGRESS.md`.
+  New `spit_app/chat/system_note.py`,
   importing NOTHING of Textual/httpx (TRAPS #19 — it must run on the bare
   interpreter): `class SystemNotes` with `__init__(chat)` and `attach()`, a module
   `HOOKS` list, and per-message `hook.notice(chat, messages, index)` returning text or
@@ -430,7 +435,9 @@ code together is ~120 lines.
   message — the whole point, and the check that keeps WP-A's premise true); a raising
   hook is NOT swallowed — a broken hook must not survive by silently doing nothing
   (the same posture as the `{}`-endpoint KeyError pinned as a limit in DECISIONS 80 b).
-- **WP-C — the token-status hook.** `spit_app/chat/token_status.py`.
+- **WP-C — the token-status hook** (`Go!` arrives with WP-B's handoff message, per the
+  owner's chain instruction of 2026-09-25; do not start it before that message says so).
+  `spit_app/chat/token_status.py`.
 
   **The levels (owner ruling: percentage OR remaining, whichever comes first).** Each
   level has a percentage trigger AND an absolute remainder floor, and it triggers at the
@@ -502,7 +509,8 @@ code together is ~120 lines.
   above says; `small_window` fires once and only for `total <= 32768`; the four texts
   pinned byte-for-byte at a fixture where every number is distinct so a substitution
   mistake cannot pass.
-- **WP-D — the wiring, and the proof the chain works.** `Chat.__init__`: the
+- **WP-D — the wiring, and the proof the chain works** (`Go!` arrives with WP-C's
+  handoff message). `Chat.__init__`: the
   `TokenStatus` and `SystemNotes` instances (session state, next to `token_usage`, for
   the DECISIONS 80 c reason — a `Work` is built per send) and `Chat.context_window()`;
   `Work.work_stream()`: `self.chat.system_notes.attach()` immediately before
@@ -516,7 +524,9 @@ code together is ~120 lines.
   carrier the note is merged, so the request's message COUNT is the same with the note as
   without it (the hazard-1 rule, proven on the wire and not only in the helper). Prove
   the UI is untouched: `chat_smoke`'s `golden.txt` md5 unmoved, `chat_window` row unmoved.
-- **WP-E — the docs.** DECISIONS 81 (the note-in-the-message-dict contract and why not
+- **WP-E — the docs** (`Go!` arrives with WP-D's handoff message; **the last package**:
+  its finisher writes no handoff — the close-out says the chain is complete and the
+  branch awaits the owner's merge, and that is where the work stops). DECISIONS 81 (the note-in-the-message-dict contract and why not
   an index; the once-at-the-tail rule and the prefix-cache argument; silence when the
   window is unknown; **the owner's role ruling — notes ride the wire as `user`, why
   `system` cannot, and the `user`→`user` merge rule that keeps the alternation family
