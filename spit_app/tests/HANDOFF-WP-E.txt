@@ -1,0 +1,107 @@
+TASK: P13/WP-E - the docs: DECISIONS 81, cross-links, PROJECT.md, the P13
+PLANNED close and the four follow-up filings - the LAST package of P13. Go!
+GIVEN by the owner's chain instruction of 2026-09-25, arriving through this
+message. Docs ONLY - no code, no tests. Do WP-E and nothing else. **You write
+a close-out, NOT a handoff: the chain ends with you and the branch
+p13-wp-a-note-unpacking awaits the owner's merge.**
+
+WORK ON: ~/spit.py, branch p13-wp-a-note-unpacking, at its CURRENT tip (WP-D
+closed at dadc11b plus the docs that opened this entry - newer doc commits are
+expected, none of them code). Work ON that branch - do NOT cut a new one.
+Never touch main, never push, never pull, never merge.
+
+READ FIRST, in this order:
+ 1. doc/TASKS-IN-PROGRESS.md, entry "P13/WP-E" - your crash-recovery record:
+    Scope (the four doc files, each with its exact job), Left, State hazards,
+    Verify, Do NOT.
+ 2. The four P13/WP-A..WP-D entries in doc/TASKS-FINISHED.md - they carry the
+    argues you are turning into DECISIONS 81 (read them straight; the
+    registration argument is WP-D's, the memory-is-the-notes argument is
+    WP-C's, the merge rule is WP-A's, the contract is WP-B's).
+ 3. doc/TASKS-PLANNED.md entry P13 - the owner rulings (i)-(v), the two
+    hazards with the strict-template evidence (the Qwen3.x raise_exception and
+    the four issue threads), the worked levels table, the mechanism paragraph,
+    the WP-E bullet, and the "follow-ups to file when WP-E runs" list.
+ 4. The shipped code - every factual sentence in DECISIONS 81 must name where
+    the code or a suite pins it: spit_app/chat/system_note.py,
+    spit_app/chat/token_status.py, the chat.py wiring (the ONE HOOKS
+    registration at import, context_window()), the work.py attach() position,
+    and endpoints/llamacpp.py prepare_payload()/append_note()/
+    merge_into_content().
+ 5. doc/DECISIONS.md 79-80 - house style and the cross-link shape; 80 is your
+    cross-link partner (the dash, the same context_sizes source, both ways).
+ 6. doc/TRAPS.md #13, #15, #18, #22.
+
+WHAT WP-E IS (docs-only, one concern: the decision record):
+ - DECISIONS 81: the note-in-the-message-dict contract and why NOT an index
+   (the index space is the UI's); once-at-the-tail and the prefix-cache
+   argument (with WP-A's correction: a merge costs one message's tokens, not
+   the prompt); silence when the window is unknown (the dash, DECISIONS 80 b);
+   the owner's role ruling - notes ride the wire as `user`, never `system`,
+   with the strict-template evidence - and the user->user MERGE rule that
+   keeps the alternation family happy; the percentage-OR-remaining levels and
+   the rank machine (the worked 32k/64k/128k/200k table; small_window
+   orthogonal; advancing by rank never by trigger order - the 32k
+   announce-order with `info` shadowed forever is a design rule, not a wart);
+   and the residual abort-then-type limit (the shape hazard 1 cannot reach,
+   the owner's own manual practice, the filed escape hatch). Cross-link from
+   DECISIONS 80, both ways.
+ - PROJECT.md: the map gains the note chain (generator -> hooks -> the private
+   key -> prepare_payload's unpacking) pointing at DECISIONS 81; the file's
+   own voice, a map not an essay.
+ - TESTING.md: the counts are already true (endpoints 442, system_note 219 -
+   WP-D's commit dadc11b). One named sentence is now HISTORY and must be
+   rewritten to read true after WP-D: the system_note section ends "The hook
+   is NOT in HOOKS and no Chat builds it - registering and wiring it is WP-D"
+   - the hook IS registered now, once, at chat.py import, and t13 is the
+   wiring proof. Check the rest of the prose post-wiring; no row, no count
+   moves.
+ - TASKS-PLANNED.md: close the P13 entry (its record goes to
+   TASKS-FINISHED.md - the five WP results in one short place, not a sixth
+   essay) and file the four follow-ups as real entries: (a) note_mode
+   endpoint setting separate/merge/off (the kill switch + the
+   abort-then-type escape hatch), (b) rendering notes in the UI, (c) the
+   level numbers as settings, (d) P14 the handoff tool (ruling iv: its arrival
+   replaces the fenced-block clause of the critical text - a text change, not
+   a mechanism change).
+ - Nothing else. If a doc sentence seems to need a code change to be true, it
+   does not - write the true sentence. No code, no test file, no new row.
+
+MEASURED FOR YOU by WP-D, so you do not re-derive it:
+ - The wiring shipped in bcdc441 + dadc11b: Chat.__init__ builds
+   SystemNotes(self) and the hook reference next to token_usage; the hook is
+   registered ONCE in the module HOOKS at chat.py import - one shared
+   stateless instance, the WP-D decision (the hook keeps no state about WHICH
+   chat - its memory is its own standing notes - so sharing is its natural
+   shape; per-chat registration would ask N identical hooks per message for
+   zero behaviour; the rejected alternative reddens t13's three registration
+   checks); Chat.context_window() reads context_sizes[context_key()] as it
+   stands, no network on the request path, the dash answers None, and
+   token_status.py needed ZERO changes; attach() runs immediately before
+   await self.endpoint.stream() so the tool loop re-asks before every request.
+ - Fresh full-suite numbers (two consecutive byte-identical runs, exit 0,
+   stderr clean): tools 127/24/30/119/80/32/68/29 (509), anchored 68,
+   arguments 131, chat_smoke 168, chat_window 568, endpoints 442, prompt 33,
+   render 278, run_script 121, sandbox 157, system_note 219, terminal 223.
+   chat_smoke's golden.txt md5 8ae9d1186a59627d30d05dee95f0ad95 - the wired
+   hook is silent there by the unknown-window rule (and work_stream is not in
+   the smoke script at all). YOUR verify is that SAME table unmoved: docs
+   must not move a single check.
+ - ONE PRE-EXISTING FLAKE, not yours: unit:sandbox t3-child-stopped races the
+   kernel's reap and reads 156/1 now and then. If it reddens while you verify,
+   re-run, say so in your close-out, do NOT fix it, book nothing.
+
+VERIFY: full bash spit_app/tests/run_tests.sh from the repo root, exit 0,
+EVERY row at the table's numbers (nothing moves - you touched no code); the
+golden md5 unmoved; git diff touches only doc/ files (plus
+TASKS-FINISHED.md/TASKS-IN-PROGRESS.md at your close); DECISIONS 81 exists and
+80 cross-links it both ways; the P13 PLANNED entry is closed; the four
+follow-ups are filed; the one TESTING.md post-wiring sentence reads true.
+
+STOP AT, in this order: full suite green with every row unmoved; ONE docs
+commit; close your OWN entry into doc/TASKS-FINISHED.md with its resolution
+(no sign-off, DECISIONS 71) - and with it the P13 CHAIN: the close-out says
+plainly that WP-A..WP-E are all closed, P13 is complete, NO handoff is written
+(it ends with yours because there is no next package), and
+p13-wp-a-note-unpacking awaits the owner's merge - the only part of finishing
+that is not the agent's. Then STOP.
