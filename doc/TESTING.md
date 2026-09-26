@@ -471,8 +471,13 @@ harness **absolute** fixture paths.
   swaps, pct floor-instead-of-round, a clamp, levels in trigger order, no
   rank filter, no tail guard, the small-window boundary strict-less and
   repeating, every totality guard), so again no green here is one that
-  cannot fail (TRAPS #13/#14). The hook is NOT in `HOOKS` and no `Chat`
-  builds it - registering and wiring it is WP-D.
+  cannot fail (TRAPS #13/#14). The hook IS registered now: `chat.py` appends ONE
+  `TokenStatus` to the module `HOOKS` at its import and every `Chat` carries that
+  same reference - the hook keeps no state about WHICH chat, so sharing is its
+  natural shape (DECISIONS 81 e) - while the generator is per chat. Nothing in
+  this suite depends on that: `chat.py` is not in the bare interpreter's import
+  graph, which is why the row stays 219 venv-free, and the wiring is proved
+  where the app is real, by `unit:endpoints` t13.
 
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
   (343 checks; **442** since - P13/WP-A's `test_system_note.py` brought 51 and

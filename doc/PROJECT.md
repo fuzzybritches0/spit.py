@@ -44,7 +44,15 @@ auto-detect), and an endpoint that answers neither shows a dash, not a
 number. With unified KV (new llama.cpp default; the app exposes
 `kv-unified`) that denominator is the total SHARED across parallel slots —
 older servers divided `n_ctx` per slot — so the figure means what the server
-says it means. Repo `README.md` has install and usage
+says it means. The same two figures also go to the **model**, as system notes — the note
+chain, DECISIONS 81: generator (`chat/system_note.py`, module `HOOKS`) → hook
+(`chat/token_status.py`, the percentage-OR-remaining levels) → the private key
+`system` **inside the message dict** (never a new item of `chat.messages`) →
+`endpoints/llamacpp.py:prepare_payload()` unpacks it after its carrier as a
+`user` message, merged into the carrier's content when the carrier is `user`.
+`Work.work_stream()` asks the hooks before every request; the notes are
+invisible in the UI and the hook says nothing when the window is unknown (the
+dash again). Repo `README.md` has install and usage
 instructions (venv, `libcairo2`, `bubblewrap`, `tmux`,
 `playwright install chromium-headless-shell`). Tested with Python 3.13.
 
@@ -61,6 +69,14 @@ spit_app/tool_call.py        loads every spit_app/tools/*.py at STARTUP:
                              STREAM_TOOL_RESPONSE
 spit_app/arguments.py        coerces argument values to the declared schema
                              types; expands ~ / $VAR for PATH_ARGS only
+spit_app/chat/system_note.py the system-note generator: asks the module HOOKS,
+                             writes {"hook","level","text"} into the message
+                             dict under the private key "system" (DECISIONS 81)
+spit_app/chat/token_status.py the token-status hook: the percentage-OR-
+                             remaining levels, the rank machine, the four texts
+spit_app/endpoints/llamacpp.py OpenAI-compatible endpoint; prepare_payload()
+                             pops that private key and unpacks the notes onto
+                             the wire as `user` messages after their carriers
 spit_app/tools/<tool>.py     tool module (contract: CONVENTIONS.md)
 spit_app/tools/scripts/      pure-stdlib scripts executed in the sandbox
 spit_app/tools/scripts/common/   shared helpers PREPENDED to scripts
@@ -78,7 +94,9 @@ spit_app/tests/unit/         unit suites: arguments, sandbox, prompt,
                              run_script, render (pure python), terminal
                              (libtmux), anchored / chat_smoke / chat_window
                              (headless Textual), endpoints (httpx + headless
-                             Textual, canned localhost server) - see TESTING.md
+                             Textual, canned localhost server), system_note
+                             (bare python: the note generator and its hook) -
+                             see TESTING.md
 ```
 
 ## How to run things

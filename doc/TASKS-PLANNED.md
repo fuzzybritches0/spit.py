@@ -259,343 +259,151 @@ the fifth dependency-listed suite.
 
 ---
 
-## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25**, **WP-B DONE 2026-09-25** and **WP-C DONE 2026-09-25** - resolutions in `TASKS-FINISHED.md`; **WP-D `Go!` GIVEN 2026-09-25**, arriving with WP-C's handoff message (entry "P13/WP-D" in `TASKS-IN-PROGRESS.md`) and the owner's standing instruction chains the rest: each finisher writes the next handoff message, **WP-B…WP-E all land on `p13-wp-a-note-unpacking`**, no new branches, and **the owner merges that branch after WP-E**]
+## P13 - DONE - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; closed 2026-09-25 by WP-E, the last of the five packages]
 
-**Owner rulings of 2026-09-25, which overrule parts of the plan below — read these
-first.** (i) **The injected note's role is `user`, not `system`, always** — the owner's
-call, and the practice they have used by hand: abort, type a `user` message after the
-`tool` message, continue inference; their words on what it said, which worked: *"You have
-10k tokens left. This is critical. Write a fenced handoff message NOW!"* Why `user` can
-follow a `tool` message, and what it costs, is worked out under **hazard 1** below. (ii)
-**Percentage thresholds alone are the wrong instrument on a small window** — 90% of 32k
-leaves ~3k, which is not enough to write a handoff in, so each level triggers on
-**percentage OR remaining tokens, whichever comes first**, plus a notice for windows too
-small to work in at all: see **the levels** below. (iii) **Wording: delegated to the
-implementer**, to be pinned word-for-word in WP-C and re-pinned when the owner revisits
-it. (iv) **When the P14 handoff tool lands, the critical text adopts it** — the fenced
-block is the stand-in, and swapping the two is a text change, not a mechanism change.
-(v) P15 (`unit:prompt`) is closed and merged; `main` carries it.
+Implemented 2026-09-25 as the five-package chain the owner chained by handoff
+message, all of it on **`p13-wp-a-note-unpacking`** (cut from
+`docs-p13-owner-rulings-handoff-wp-a` at `1522932`), awaiting the owner's merge;
+`main` untouched throughout, nothing pushed.
 
-**WP-A is DONE** (closed 2026-09-25 on `p13-wp-a-note-unpacking`, cut from
-`docs-p13-owner-rulings-handoff-wp-a` tip `1522932`; resolution in `TASKS-FINISHED.md` —
-`unit:endpoints` 343 → 394 with the new `test_system_note.py`, t12).
-**The chain (owner's instruction of 2026-09-25, verbatim in the WP-B entry): WP-B has
-the `Go!`; each finisher writes the fenced handoff message for the next WP and opens its
-entry in `TASKS-IN-PROGRESS.md`; WP-B…WP-E all land on `p13-wp-a-note-unpacking` (no new
-branches, `main` untouched, nothing pushed); the owner merges to `main` after WP-E.**
+- **WP-A** the unpacking — `0afaef8`: `prepare_payload()` pops the private key
+  `system` from the deepcopy and puts each note right after its carrier, `user`
+  always, merged into the carrier's content when the carrier is `user`.
+  `unit:endpoints` 343 → 394 (`test_system_note.py`, t12, 51).
+- **WP-B** the generator and the hook contract — `a6ec179` + the row `7046bcb`:
+  `chat/system_note.py`, `attach()`, module `HOOKS`, `Note(level, text)`, the
+  five invariants. New row `unit:system_note` 96 (t1–t9, bare interpreter).
+- **WP-C** the token-status hook — `6f1a0ed` + the row `ad56e2d`:
+  `chat/token_status.py`, the percentage-OR-remaining levels, the rank machine,
+  the four texts byte-for-byte, no instance state. `unit:system_note` 96 → 219
+  (t10–t18, 123).
+- **WP-D** the wiring and the proof — `bcdc441` + the row `dadc11b`: `Chat`
+  builds the generator and the hook reference, `Chat.context_window()`, the ONE
+  `HOOKS` registration at `chat.py` import (one shared stateless instance),
+  `attach()` immediately before `await self.endpoint.stream()`.
+  `unit:endpoints` 394 → **442** (`test_note_chain.py`, t13, 48).
+- **WP-E** the docs — this record: **DECISIONS 81** (cross-linked from 80, both
+  ways), `PROJECT.md`'s note chain, `TESTING.md`'s post-wiring sentence, and the
+  four follow-ups below filed.
 
-**The goal**: the model itself learns how full its window is while it works, so that
-it wraps up and writes a handoff instead of dying mid-task. Three pieces: a **generator**
-that turns hook output into notes, one **hook** (the token status, with the
-percentage-OR-remaining levels below), and the **unpacking** that puts those notes on the
-wire as `user` messages. The handoff tool the critical note will point at is P14; this
-entry is the mechanism only.
+**Resolution: `TASKS-FINISHED.md`** (the five WP entries carry the argues —
+WP-A's merge rule, WP-B's contract, WP-C's memory-is-the-notes, WP-D's
+registration decision — and this entry's close-out carries the chain) **and
+DECISIONS 81**, which is where the WHY now lives: the note-in-the-message-dict
+contract and why not an index, once-at-the-tail and the prefix-cache argument,
+silence when the window is unknown (the dash, 80 b), the owner's role ruling
+with the strict-template evidence and the `user`→`user` merge, the
+percentage-OR-remaining levels and the rank machine with the worked
+32k/64k/128k/200k table, and the residual abort-then-type limit. The plan's
+hazards and drafts are superseded by that entry and by the shipped code; the
+four texts are model-facing text, i.e. code, pinned in t16 and re-pinned when
+the owner revisits them.
 
-**The constraint that shapes it** (the owner's): a note may NOT become an item of
-`chat.messages`. That list is the index space the whole UI addresses — the sliding
-window `messages[lo, hi)` projects it by dict identity (`window_consistent()`),
-`StreamCallback`/`RemoveMessage` carry those indexes, `Undo` stores them, and
-`ToolCall`/`LlamaCppEndpoint` hold a `message_index` into it mid-stream. A new item in
-the middle of that list while a stream runs is the bug, not the feature.
+**Follow-ups, filed by WP-E as entries of their own** (none of them P13's
+unfinished work; each needs its own `Go!`): **P16** the `note_mode` endpoint
+setting (`separate`/`merge`/`off`), **P17** rendering the notes in the UI,
+**P18** the level numbers as settings, and **P14** the handoff tool, whose
+arrival replaces the fenced-block clause of the `critical` text (ruling iv: a
+text change and its re-pin, not a mechanism change).
 
-**The mechanism** (the owner's design, adopted, with the role ruled to `user`): a note
-is written INTO the message dict it follows, under a key the sender strips — `"system"`,
-a list of `{"hook": <name>, "level": <name>, "text": <str>}` entries — and
-`endpoints/llamacpp.py:LlamaCppEndpoint:prepare_payload` unpacks each entry, right AFTER
-the message that carries it, either into its own `{"role": "user", "content": <text>}`
-item or, when the carrier's own role is `user`, merged into that carrier's content — the
-adjacency rule worked out under hazard 1. `prepare_payload` already deepcopies every
-message (the `reasoning` → `reasoning_key` rename lives in that loop), so the app-side
-dict keeps its note, the wire copy never carries the private key, and `chat.messages`
-keeps its length and its identities — nothing in the UI can see any of it. The word
-"system" in the private key names what it is for (a message to the model, a system
-message in the ordinary-language sense); the ROLE on the wire is `user`.
+---
 
-Why the note rides on a message instead of being rebuilt fresh per request: a note is
-written **once, at the tail**, at the moment it becomes true, and from then on it is
-history. The prompt prefix therefore never changes, so llama.cpp's automatic prefix
-cache and this app's own `/slots?action=restore` cache (`endpoints/manage_cache.py`)
-stay valid — a note re-injected at a moving position, or merged into the leading
-system prompt, would break the whole cached prompt on every request.
+## P16 - `note_mode` endpoint setting: `separate` / `merge` / `off`  [filed by P13/WP-E 2026-09-25; needs its own `Go!`]
 
-**The numbers, and what they may not be**: used = `chat.token_usage["context"]`, the
-server's own `prompt_tokens + completion_tokens` of the last call (DECISIONS 80 c);
-total = the window the server reported, read through a `Chat.context_window()`
-accessor over `ChatSettings.context_sizes[context_key()]` — no network on the request
-path. **Unknown total ⇒ silence**, exactly as the dash is a dash on the counts row
-(DECISIONS 80 b): a guessed denominator is a lie about when the chat dies. The figure
-is the fill at the END of the last reply, so it under-counts the newest user text and
-tool results; the note says that in words rather than inventing an estimate.
+- **Why it exists**: the role is decided (`user`, DECISIONS 81 c) and the merge
+  rule keeps every shape the app itself writes legal, but one shape is outside
+  the rule's reach — a note that shipped as its own `user` item stays in the
+  history, and the HUMAN turn typed after it is `note(user) → user`, the
+  abort-then-type pair (DECISIONS 81 f). A strict alternation template could
+  refuse that. The owner has produced the shape for months without a refusal, so
+  nothing is broken today; this is the **escape hatch** for the day one bites,
+  and the **kill switch** for an endpoint that objects to notes at all.
+- **The three modes** (in `endpoints/llamacpp.py`, where `append_note()` already
+  is): `separate` = today's rule (merge on a `user` carrier, its own `user` item
+  otherwise); `merge` = always merge into the carrier's content, so no note is
+  ever an item and no `user` pair is ever possible (the cost: a note on a
+  `tool`/`assistant` carrier is no longer a separate turn the model reads as
+  addressed to it — and there is nowhere to merge a note whose carrier is an
+  assistant with no content and `tool_calls`; decide that case explicitly);
+  `off` = `prepare_payload()` drops the private key and ships nothing — the
+  generator still runs and the notes still persist, which is what makes `off`
+  debuggable rather than mute.
+- **Decide first**: a setting per endpoint (like `context_size`, `timeout`:
+  honour it in `append_note()`; remember the skip list in `construct_payload` —
+  DECISIONS 80 d says a field that is not an inference parameter must be listed
+  or it leaks to the server), and what a chat does when its endpoint has no
+  opinion (default = today's `separate`, so nothing changes for an endpoint
+  saved before the field existed, the same `.get()` posture as `context_size`).
+- **Verify**: `unit:endpoints` t12/t13 keep their numbers (TRAPS #15: new
+  checks get new numbers, and t13's merge/pair checks must stay green on the
+  default); new checks per mode in the same files, each with the control that
+  the other modes differ; then the full suite with every other row unmoved.
+- **Gotchas**: TRAPS #13 (the `off` case needs the control that notes are still
+  being WRITTEN — assert the private key in `chat.messages` while the wire has
+  none, or "no note on the wire" cannot fail), #14 (the no-note payload
+  differential against the pinned baseline `b799526` is the proof the wire
+  format did not move for anybody who does not set the field), 80 d (skip list).
 
-**Four consequences of storing the note in the message dict — stated, not discovered
-later.** (1) `write_chat_history()` persists notes with the chat, so they survive a
-reload; `token_usage` does NOT (DECISIONS 80's carry-over), so a reloaded chat starts
-at zero counts and the thresholds re-arm while the old notes sit in the history as
-factual statements about the past. That is consistent and it must be written down, not
-"fixed" by an agent. (2) `Undo` deepcopies the message it records, so undoing a
-`change` to a noted message can take the note with it — the note is a nudge, not data,
-and the accepted answer is to let it go. (3) `action_abort` removes the tail message,
-and with it any note attached to it; the next request re-asks the hooks and re-writes
-one. (4) An edit never shows or edits a note (`Message` renders
-`reasoning`/`content`/`tool_calls` only), which is also why nothing in the UI notices
-any of this.
+---
 
-**The two hazards this entry found, and how it answers them**
+## P17 - Render the system notes in the UI  [filed by P13/WP-E 2026-09-25; needs its own `Go!`]
 
-1. **`system` after position 0 is refused by strict templates — so the note's role is
-   `user`, and `user` has its own adjacency rule, which the unpacking obeys.**
-   The finding: the Qwen3.x template in llama.cpp carries
-   `{{- raise_exception('System message must be at the beginning.') }}` (line 85 of
-   `models/templates/Qwen3.5-4B.jinja`) and the server fails the WHOLE request with
-   400/500 — reproductions in llama.cpp #27367, #20733, #18895, QwenLM/Qwen3.8 #244, all
-   of them agent harnesses injecting mid-conversation context exactly like this one.
-   Hoisting into the leading block or shipping a patched template are the workarounds in
-   those threads, and both are wrong here. **The owner's ruling replaces both: the note
-   is injected as `user`.**
-   - **Is `user` legal after a `tool` message?** Yes. The grammar every tool-capable
-     template implements is `assistant(tool_calls)` → `tool`* → anything; the `tool` run
-     ends at the first non-`tool` message, and a `user` turn closing it is the ordinary
-     next-human-turn shape in the OpenAI contract. The owner's own manual practice is
-     the live proof on their models: abort, type the "10k tokens left… write a handoff"
-     line as a user message after the tool result, continue inference — worked.
-   - **What `user` costs instead**: it swaps the *system-must-be-first* rule for the
-     **no two consecutive `user` messages** rule, which the alternation family enforces
-     with its own `raise_exception` (mistral-instruct/gemma-it: *"Conversation roles must
-     alternate…"*). A `user` note creates exactly that pair whenever the message it rides
-     on is itself a `user` message — the first send of a chat, or `action_continue` on a
-     user message.
-   - **The rule that keeps it out of reach (WP-A):** **merge when the carrier's role is
-     `user`, emit a separate item when it is `tool` or `assistant`.** The separate item
-     is then only ever preceded by `tool` or `assistant` — both legal — and the merged
-     note cannot create a pair because it is not an item. Merging means appending the
-     note text to the carrier's own content (a new text part if the content is a list, a
-     `\n\n` append if it is a string), on the deepcopied wire message only — the stored
-     message keeps its separate `system` entry.
-   - **The residual, stated rather than hidden**: a note emitted as an item stays in the
-     history, so a HUMAN `user` message typed later lands directly after it —
-     `note(user) → user` — the abort-then-type shape, and the carrier rule cannot reach
-     it. The owner has been producing precisely that shape by hand for months without a
-     template refusing it, so the accepted position is: `user` is the role, this shape is
-     a filed limit for the alternation family, and the escape hatch if one ever bites is
-     merge-always (`off` in follow-up (a) below).
-   - **Correction to this entry's first draft, on the cache.** It claimed merging would
-     "break the whole cached prompt". It does not: prefix caching is positional, so
-     everything before the modified message is still valid and only the carrier's own
-     tokens re-prefill — usually one tool result. What genuinely invalidates the cache is
-     rewriting position 0 (the leading prompt) or moving a note that is already in the
-     history. So the merge rule above costs a message, not a prompt, and the
-     once-at-the-tail rule stays for the reason it was made (a note never moves), not for
-     the one first written.
-2. **The template also wants an assistant's `tool_calls` and their `tool` replies
-   adjacent.** The generator only ever notes the LAST message, and at that moment the
-   last message is a `user`, a `tool`, or an `assistant` without `tool_calls` (a
-   request can only be pending once the pending tool calls have been run:
-   `work_stream()` runs them before `endpoint.stream()`), so the note never lands
-   inside a tool run. Pin it (WP-A pins the shape, WP-D pins the live sequence) rather
-   than trust it.
+- **Today a note is invisible**, and that is load-bearing for P13's constraint,
+  not an oversight: `Message` renders `reasoning`/`content`/`tool_calls` only, so
+  nothing in the UI sees the private key, no index moves, no edit shows a note
+  the user did not type. The cost is that the user cannot see what the model was
+  told, and the notes are in the chat's JSON on disk.
+- **Decide first** (it is a display question with a data edge in it): where the
+  note renders (its own block after the carrier, styled as the system that it is,
+  not as the model's own words — a note shown as content reads as something the
+  model said), whether the private key stays the storage or the render asks for
+  a separate shape (it must stay: the key is the whole contract, DECISIONS 81 a),
+  and what the copy/export path does with notes.
+- **Scope**: `spit_app/chat/message/` (the content list `Message.contents`), the
+  render pipeline it feeds, and `unit:render` / `unit:chat_smoke` — **careful**:
+  `chat_smoke`'s `golden.txt` is a differential against `f201700`, so a render
+  change there is a deliberate re-pin with its reason written, never a silent
+  refresh.
+- **Verify**: `unit:render` and `unit:chat_smoke` moves only by new checks;
+  `unit:system_note` and `unit:endpoints` (which own the note's data and wire
+  behaviour) must not move at all — a change that reaches them is changing the
+  contract, not the display.
+- **Gotchas**: TRAPS #13, #15, and DECISIONS 71 (c) — this is a code change and
+  a taste call, so the `Go!` and the look belong to the owner.
 
-**Package split** — five, each one sitting, each far under the token budget; all the
-code together is ~120 lines.
+---
 
-- **WP-A — the unpacking (the only piece that touches the wire). `Go!` GIVEN 2026-09-25,
-  DONE 2026-09-25** (`p13-wp-a-note-unpacking`, code `0afaef8`; the two helpers on
-  `LlamaCppEndpoint` are `append_note()`/`merge_into_content()`, the test file is
-  `test_system_note.py` t12, 51 checks — resolution in `TASKS-FINISHED.md`).
-  `endpoints/llamacpp.py`: in the `prepare_payload()` loop, `_message.pop("system")` and
-  for each entry in order — if the carrier's own role is `user`, **merge** the text into
-  the wire copy's content (append onto the last `{"type": "text"}` part, or add one when
-  there is none, or `\n\n`-append when the content is a plain string); otherwise append a
-  new `{"role": "user", "content": text}` item after it. The role is the owner's ruling
-  and the merge is the adjacency rule under hazard 1; both belong in ONE small helper
-  method so WP-D has one thing to call and the suite one thing to pin. Nothing writes a
-  note yet, so today's behaviour is unchanged and provable.
-  Tests: `unit:endpoints`, new file `test_system_note.py`, **t12** (append-only,
-  TRAPS #15): a note on a `tool`/`assistant` carrier becomes a `user` item AFTER it and
-  never a `system` one; several notes keep their order; **a note on a `user` carrier
-  creates no second `user` item** — the text lands in the carrier's own content and the
-  message count does not grow; the private key is never on the wire; the app-side dict
-  keeps both its note and its own content unmodified (the deepcopy, as t1 does for
-  `reasoning`); a message with no note gives a byte-identical payload — the differential
-  against the pinned baseline `b799526` (`endpoint_harness`) says the no-note case moved
-  nothing; notes coexist with the `reasoning` rename; the leading system prompt stays at
-  index 0; no `tool` message is ever separated from the `assistant` whose `tool_calls` it
-  answers, and the after-the-carrier position is pinned even for an assistant carrying
-  `tool_calls` (a consequence stated, not hidden).
-- **WP-B — the generator and the hook contract. `Go!` GIVEN and DONE 2026-09-25**
-  (`p13-wp-a-note-unpacking`: `a6ec179` the code+test, `7046bcb` the TESTING.md row;
-  resolution in `TASKS-FINISHED.md`). The contract it pinned, which WP-C and WP-D
-  write against: `notice(chat, messages, index)` returns **`Note(level, text)` or
-  `None`** — the level travels in the return value because the levels below are
-  state-machine output, not per-call arguments — and `hook` is stamped by the
-  generator (the hook's `name`, else its class name, so `notice()` stays the only
-  requirement on a hook). Idempotence keys on that name against the notes already
-  standing in the message dict, so nothing is remembered on the generator and the
-  rule holds across instances **and across a chat reload**; a note is never upgraded
-  in place, and a hook that wants to say something newer speaks on a newer message.
-  A `notice()` return that is neither `None` nor a `Note` raises `TypeError` naming
-  the hook; `None` or empty text writes nothing, not an empty `system` key; a raising
-  hook propagates, with no rollback. New `spit_app/chat/system_note.py`,
-  importing NOTHING of Textual/httpx (TRAPS #19 — it must run on the bare
-  interpreter): `class SystemNotes` with `__init__(chat)` and `attach()`, a module
-  `HOOKS` list, and per-message `hook.notice(chat, messages, index)` returning text or
-  `None`. Invariants pinned by a NEW suite `tests/unit/system_note/` (bare python3,
-  `run_tests.sh` + `test_generator.py`): hooks are asked at every message position; a
-  hook speaks **at most once per message** (the walk is idempotent, so N requests
-  never duplicate a note); `None`/empty writes NOTHING — no empty `"system"` key;
-  `len(chat.messages)` and every `id(message)` are unchanged (the note never becomes a
-  message — the whole point, and the check that keeps WP-A's premise true); a raising
-  hook is NOT swallowed — a broken hook must not survive by silently doing nothing
-  (the same posture as the `{}`-endpoint KeyError pinned as a limit in DECISIONS 80 b).
-- **WP-C — the token-status hook** (`Go!` GIVEN and **DONE 2026-09-25**,
-  `p13-wp-a-note-unpacking`: `6f1a0ed` the code+test, `ad56e2d` the TESTING.md
-  row 96 → 219; resolution in `TASKS-FINISHED.md`. It shipped
-  `spit_app/chat/token_status.py` — the rank machine (owner's levels as module
-  constants, `small_window` orthogonal, the 32k announce-order `small_window,
-  warning, critical`, `info` shadowed, pinned as a walk), the four texts
-  byte-for-byte at all-distinct figures (never clamped), **no instance state**:
-  the hook's memory is its own standing notes, so reload, abort and the drop
-  rule need no resync; and it asks the total through `chat.context_window()`
-  with `getattr` — unknown window or counts ⇒ silence, the door that keeps a
-  request alive. 123 checks, `test_token_status.py` t10–t18. **WP-D's
-  `Chat.context_window()` must answer int-or-None over
-  `ChatSettings.context_sizes[context_key()]`; `token_status.py` then needs
-  zero changes.** WP-D's `Go!` arrives with WP-C's handoff message and WP-E
-  stays unauthorised until its own message arrives).
-  `spit_app/chat/token_status.py`. Its tests go in **WP-B's suite**
-  (`spit_app/tests/unit/system_note/test_token_status.py`, numbers **t10 onward** —
-  t1–t9 are WP-B's, and `unit:endpoints` numbers are a separate sequence again), so
-  the `unit:system_note` row moves up rather than a new row appearing, and the
-  bare-interpreter gate WP-B built covers the new module from its first commit.
-  Two consequences of WP-B's pinned contract, stated here because they shape the
-  state machine: **a hook can only ever write one note per message** (the generator
-  drops the second), so a level change rides on the message that arrives after it —
-  never an upgrade in place; and **nothing catches what the hook raises**, while
-  WP-D calls `attach()` immediately before `endpoint.stream()`, so the hook must be
-  total — unknown total means silence, which is also the rule that keeps a request
-  alive. `Chat.context_window()` does not exist yet (it is WP-D's), so WP-C tests
-  the hook against a stub chat and does not build the accessor early.
+## P18 - The level numbers as settings  [filed by P13/WP-E 2026-09-25; needs its own `Go!`]
 
-  **The levels (owner ruling: percentage OR remaining, whichever comes first).** Each
-  level has a percentage trigger AND an absolute remainder floor, and it triggers at the
-  LOWER of the two fills:
-
-  | level | rank | percentage | remaining floor | fires at fill |
-  |---|---|---|---|---|
-  | `small_window` | orthogonal | — | — | `total <= 32768`, once, regardless of fill |
-  | `info` | 1 | 50% | — | 50% |
-  | `warning` | 2 | 80% | 20 000 | `min(0.8·total, total − 20000)` |
-  | `critical` | 3 | 90% | 10 000 | `min(0.9·total, total − 10000)` |
-
-  Worked out, because the whole point is that the two instruments disagree on small
-  windows:
-
-  | total | `info` | `warning` | `critical` | governed by |
-  |---|---|---|---|---|
-  | 32k | 50% (16.4k) | **39%** (12.8k) | **69%** (22.8k) | the floors |
-  | 64k | 50% (32.8k) | **69%** (45.5k) | **85%** (55.5k) | the floors |
-  | 128k | 50% | 80% | 90% | the percentages |
-  | 200k | 50% | 80% | 90% | the percentages |
-
-  **Consequence, and it is a design rule, not a wart**: on a small window a HIGHER-ranked
-  level triggers at a LOWER fill than a lower-ranked one (32k: `warning` at 39%, `info` at
-  50%). So the state machine advances **by level rank, never by trigger order** — the
-  highest level whose trigger holds is announced, and only if its rank is strictly above
-  every rank already announced. On a 32k window the first note the model ever sees is the
-  `warning`, and `info` is shadowed forever; that is correct, and WP-C pins it on a 32k
-  fixture (announce-order is `warning, critical`, with `info` never emitted).
-  `small_window` is not a rank: it is a one-shot statement about the window's SIZE, fired
-  the first time the fill is known at all, and it never repeats or upgrades.
-  The four numbers (`32768 / 0.5 / 20000 / 10000`) are module constants: tuning them is a
-  one-line change plus the re-pin of the texts that quote them (settings are follow-up
-  (c); the owner's floors, "10k", are theirs, and the 2× relation between the two floors
-  is the implementer's choice, stated so it can be argued with).
-
-  **The texts** (wording delegated by the owner 2026-09-25; pinned word-for-word in the
-  suite — model-facing text is code — and re-pinned when the owner revisits it; P14
-  replaces the fenced-block clause in `critical` with the tool call). They give the model
-  the verdict and the action, never arithmetic; the owner's own working line is the model
-  for `critical`: *"You have 10k tokens left. This is critical. Write a fenced handoff
-  message NOW!"*
-
-  - `small_window`: *"This chat's context window is only {total} tokens. That is small
-    enough to run out during ordinary work, so work narrowly: read the range you need,
-    not whole files; open few files at a time; do not repeat a read you already have;
-    keep what you print short."*
-  - `info`: *"Token status: {used} of {total} used ({pct}%), {remaining} left (the
-    server's figure at the end of the last reply — the newest tool results are not in it
-    yet). Nothing urgent: spend what is left on the task, not on re-reading."*
-  - `warning`: *"Token warning: {used} of {total} used ({pct}%), {remaining} left. Start
-    closing out: no new files unless the task cannot go on without them, targeted reads
-    instead of whole files, and begin writing down what you have done and what is still
-    left, while you still have room to say it properly."*
-  - `critical`: *"Critical: {used} of {total} used ({pct}%), {remaining} tokens left.
-    Stop working now. Write a fenced handoff message NOW: the task in one line, what you
-    changed (paths), what is unfinished, the exact next step, and anything you learned
-    that is not in the repo. Do not call any more tools and do not start new work after
-    the handoff — the chat dies inside this reply."*
-  (`{used}`/`{total}`/`{remaining}` plain integers, `{pct}` an integer percent. The
-  "do not continue after the handoff" half is load-bearing: the owner's observation was
-  that models which were not told it wrote a handoff and then kept working until the
-  crash.)
-
-  Tests in `unit:system_note`: silent below every trigger / at 0 usage / when the total
-  is `None` (with the TRAPS #13 control that the same fixture with a known total DOES
-  speak); each level fires exactly once and never downgrades; the 32k fixture's
-  announce-order; the 10 000/20 000 floors beat the percentages exactly where the table
-  above says; `small_window` fires once and only for `total <= 32768`; the four texts
-  pinned byte-for-byte at a fixture where every number is distinct so a substitution
-  mistake cannot pass.
-- **WP-D — the wiring, and the proof the chain works** (`Go!` GIVEN 2026-09-25,
-  arriving with WP-C's handoff message `spit_app/tests/HANDOFF-WP-D.txt`; the
-  entry is open as "P13/WP-D" in `TASKS-IN-PROGRESS.md`; WP-E stays unauthorised
-  until its own message arrives, and **WP-E's finisher writes a close-out, not a
-  handoff** — the chain ends there and the branch awaits the owner's merge).
-  `Chat.__init__`: the
-  `TokenStatus` and `SystemNotes` instances (session state, next to `token_usage`, for
-  the DECISIONS 80 c reason — a `Work` is built per send) and `Chat.context_window()`;
-  `Work.work_stream()`: `self.chat.system_notes.attach()` immediately before
-  `await self.endpoint.stream()` — the position is load-bearing: the tool loop
-  re-enters `work_stream()`, so this asks the hooks before EVERY request, including
-  the ones inside a tool loop, where the window actually fills up. Tests:
-  `unit:endpoints` **t13**, end to end over the canned server (it records POST bodies):
-  under threshold ⇒ no note in the body; over 50% ⇒ exactly one system note in the
-  right position of the next request's `messages`; a second request at the same level
-  adds none; the `chat.messages` list the UI holds never gains an item; and on a `user`
-  carrier the note is merged, so the request's message COUNT is the same with the note as
-  without it (the hazard-1 rule, proven on the wire and not only in the helper). Prove
-  the UI is untouched: `chat_smoke`'s `golden.txt` md5 unmoved, `chat_window` row unmoved.
-- **WP-E — the docs** (`Go!` arrives with WP-D's handoff message; **the last package**:
-  its finisher writes no handoff — the close-out says the chain is complete and the
-  branch awaits the owner's merge, and that is where the work stops). DECISIONS 81 (the note-in-the-message-dict contract and why not
-  an index; the once-at-the-tail rule and the prefix-cache argument; silence when the
-  window is unknown; **the owner's role ruling — notes ride the wire as `user`, why
-  `system` cannot, and the `user`→`user` merge rule that keeps the alternation family
-  happy**; **the percentage-OR-remaining levels, why the ranks advance out of trigger
-  order on a small window, and the small-window notice**; the strict-template evidence;
-  the residual abort-then-type limit); cross-linked from DECISIONS 80's counts row;
-  `TESTING.md` ground truth with the new `unit:system_note` row and the `unit:endpoints`
-  delta; `PROJECT.md` map; this entry closed by its holder.
-
-**Follow-ups to file when WP-E runs** (not part of P13): (a) `note_mode` endpoint setting
-`separate` / `merge` / `off` — `user` is the decided role, and this is the escape hatch
-for the one shape hazard 1 cannot reach (a human `user` turn typed right after a note)
-plus the kill switch for an endpoint that objects; (b) render the notes in the UI so the
-user sees what the model was told (they are invisible today: `Message` renders
-`reasoning`/`content`/`tool_calls` only); (c) the level numbers as settings; (d) **P14,
-the handoff tool**, whose arrival replaces the fenced-block clause of the critical text.
-
-**Verify**: full `bash spit_app/tests/run_tests.sh` from the repo root, every row
-byte-for-byte except `unit:endpoints` (up by t12/t13) and the new `unit:system_note`
-row; `chat_smoke`'s golden md5 unmoved. (`unit:prompt`'s old red is gone: P15 closed and
-the owner merged it, so `main` now reads 33 like the table.)
-
-**Gotchas**: TRAPS #19 (the WP-B/WP-C modules must import no Textual/httpx or the new
-suite silently needs the venv — gate it the way the five existing dependency suites
-do); #13 (every silent case needs the control that makes it speak); #15 (t12/t13 are
-new numbers, never reused); #18 (read a row as a floor — a crash hides behind
-`tail -n 1`); #14 (the no-note payload differential is the proof the wire format did
-not move); DECISIONS 80 (b)/(c) for the counts and the dash; the note text is
-model-facing text, i.e. code.
+- **The four numbers are module constants** in `spit_app/chat/token_status.py`:
+  `SMALL_WINDOW_TOTAL = 32768`, `INFO_PERCENT = 0.5`, `WARNING_REMAINING =
+  20000`, `CRITICAL_REMAINING = 10000` (plus `WARNING_PERCENT 0.8` /
+  `CRITICAL_PERCENT 0.9`). The owner's are `32768 / 0.5 / 10000`; the
+  `20000 = 2 × 10000` relation is the implementer's, stated in DECISIONS 81 e so
+  it can be argued with. Tuning today is a one-line code change plus the re-pin
+  of the texts that quote them.
+- **Decide first**: the scope of the setting (per endpoint like `context_size`,
+  or app-wide — a window is an endpoint fact, a *policy* about how loudly to
+  warn is arguably not); whether `small_window` is a threshold the user may not
+  want at all (off = a sentinel, never a magic 0); and what happens to the
+  announce record when the numbers change mid-chat (nothing special: the record
+  is the standing notes and the levels are re-derived from them, so a widened
+  floor just speaks later — say it, because "I lowered the threshold and it did
+  not re-warn" is the report this invites).
+- **The trap that makes this not-free**: the four texts quote the figures in
+  words (`critical` says nothing numeric except the substituted figures, but the
+  module constants and the pinned texts are one mechanism), and `t12`–`t15` pin
+  the **exact tokens** at 32k/64k/128k/200k. Settings mean the suite must test
+  the machine's DEFAULTS, not whatever the developer's settings file says — so
+  the tests set the values explicitly rather than reading them, and the default
+  row is pinned as it is now.
+- **Verify**: `unit:system_note` moves by new checks only; every other row
+  unmoved; the announce-order pin (`t14-order-32k`) stays green with the default
+  numbers and is re-run with a deliberately silly setting (e.g. a 64k
+  `small_window`) to prove the settings are actually read.
+- **Gotchas**: TRAPS #15 (append-only numbers), #13 (a settings test that never
+  proves the setting was READ is the classic vacuous green), DECISIONS 80 d if
+  the field lands on an endpoint (`construct_payload` skip list).
 
 ---
 
@@ -609,12 +417,18 @@ handoff the work to the next agent, asking them to write a handoff message which
 into the next agent's chat. We want to automate this and avoid having the agent die mid
 work."*
 
-- **What P13 already does for it**: the `critical` note (P13/WP-C) is the trigger that
-  exists today; it tells the model to write the summary as a fenced block. P14 gives that
-  summary somewhere to GO instead of into the chat's last message, and when it lands the
-  note's text is updated to call it (owner ruling 2026-09-25: "we can adopt the message
-  when the tool call lands") — a text change plus its pinned-check re-pin, no mechanism
-  change.
+- **What P13 already does for it** (shipped, P13 closed 2026-09-25): the
+  `critical` note is the trigger that exists today — `TEXT_CRITICAL` in
+  `spit_app/chat/token_status.py`, pinned byte-for-byte by `unit:system_note`
+  t16 — and it tells the model to write the summary as a **fenced block**. P14
+  gives that summary somewhere to GO instead of into the chat's last message, and
+  when it lands the note's text is updated to call the tool (owner ruling iv,
+  2026-09-25: "we can adopt the message when the tool call lands") — **a text
+  change plus its pinned-check re-pin, not a mechanism change**: the generator,
+  the rank machine, the private key and the unpacking all stay exactly as
+  DECISIONS 81 records them. Re-pin `t16` in the same commit as the new text, and
+  keep the load-bearing half — *do not call any more tools and do not start new
+  work after the handoff* — inside whatever the new wording is.
 - **Decide first** (the entry's real work): where does a handoff land? (a) the tool
   writes a handoff document under the app's data dir (next to the chats) and echoes it
   so it is also in the transcript; (b) it creates the NEXT chat with the handoff as its
@@ -626,10 +440,11 @@ work."*
   `spit_app/tools/scripts/` + `spit_app/tests/tools/<name>/` (exactly three files),
   `PATH_ARGS` if it takes paths, `OUTPUT_TYPE_HINT` if it is not Markdown, `dry_run` if
   it is destructive.
-- **Verify**: full `bash spit_app/tests/run_tests.sh` green (its own new suite; note
-  the tip-red of P15 so a reader knows what a `unit:prompt` row means); new suite's
-  checks in its summary line; both `TASKS-FINISHED.md` and the P13 follow-up list
-  updated.
+- **Verify**: full `bash spit_app/tests/run_tests.sh` green at the
+  `doc/TESTING.md` numbers (its own new suite row; `unit:prompt` reads its pinned
+  **33** — P15 closed and the owner merged it); new suite's checks in its summary
+  line; `TASKS-FINISHED.md` updated, and so is the `critical` text's pin at
+  `unit:system_note` t16 (see the ruling-iv bullet above).
 - **Gotchas**: TRAPS #21 (PATH_ARGS), #10 (generated fixtures only), #19 (a tool module
   cannot be imported by the bare interpreter); the tool's PROMPT/PROMPT_INST are
   model-facing text = code, pinned by `tests/unit/prompt/`.
