@@ -42,7 +42,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
 | unit:chat_window | 568 |
-| unit:endpoints | 394 |
+| unit:endpoints | 442 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
@@ -475,8 +475,9 @@ harness **absolute** fixture paths.
   builds it - registering and wiring it is WP-D.
 
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
-  (343 checks; **394** since P13/WP-A added `test_system_note.py`, by addition
-  alone - the five P12 files untouched at 88/132/61/19/43):
+  (343 checks; **442** since - P13/WP-A's `test_system_note.py` brought 51 and
+  P13/WP-D's `test_note_chain.py` brought 48, both by addition alone - the five
+  P12 files untouched at 88/132/61/19/43):
   `endpoints/llamacpp.py`, `Work.harvest_usage()` and the
   chat-settings counts row, driven against a **canned stdlib `http.server`**
   bound to `127.0.0.1` port 0 - no live model, no port but loopback, no user
@@ -497,7 +498,25 @@ harness **absolute** fixture paths.
   their carriers - merge onto a `user` carrier, never a second consecutive
   `user`, never a mid-conversation `system` - and the proof that a no-note
   payload is byte-identical to the pinned baseline `b799526` apart from
-  `stream_options`, 51). Shared code lives in
+  `stream_options`, 51), `test_note_chain.py` (t13, P13/WP-D: **the wiring end
+  to end** - a real headless `Chat` (the stub app extended with the `slots` and
+  `path` a real `Work` asks) and a real `Work.work_stream()` against the canned
+  server, whose RECORDED POST bodies are the wire: silence under threshold with
+  the over-50% control speaking, the info note byte-for-byte as its own `user`
+  item right after its carrier, a second request at the same level adding none
+  with the higher-level control (the rank machine on the wire, and never
+  downgrading back), the UI's `chat.messages` growing by streamed replies only,
+  the `user`-carrier note MERGED so the request's message COUNT is the same
+  with the note as without it (hazard 1 proven on the wire, not only in the
+  helper), `context_window()` answering the int or the dash with the dash
+  meaning silence and filling the cache costing no probe - no network on the
+  request path - and the registration pinned as ONE `token_status` entry in the
+  module `HOOKS` at `chat.py` import, one shared hook instance across chats,
+  the generator per chat. The fixture's canned scenario carries NO usage chunk
+  so `harvest_usage()` never moves a hand-set fill, and the mount's own probe
+  is awaited before the test writes the window, so nothing can clobber it;
+  verified red before the wiring and against substituted defects - attach after
+  the stream, a guessed denominator, a per-chat registration, 48). Shared code lives in
   `endpoint_harness.py` and `counts_harness.py`, deliberately **not** `test_*`:
   the runner's glob would turn a harness into a suite file (the `stub_app.py` /
   `window_harness.py` precedent), and `counts_harness.py` imports
