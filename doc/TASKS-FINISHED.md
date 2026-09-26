@@ -1976,3 +1976,140 @@ the TESTING.md ground truth (already 442/219 from this WP's row move),
 handoff** — its close-out says the chain is complete and the branch awaits the
 owner's merge. Its entry is open in `TASKS-IN-PROGRESS.md`. Handoff:
 `spit_app/tests/HANDOFF-WP-E.txt`.
+
+### P13/WP-E — the docs: DECISIONS 81, the cross-links, PROJECT.md, TESTING.md's post-wiring sentence, P13 closed and its four follow-ups filed (branch `p13-wp-a-note-unpacking`: `67054f2` the docs, then this close-out; the whole branch awaits the owner's merge)
+
+**Owner gate.** The `Go!` was GIVEN 2026-09-25 for **WP-E**, by the owner's chain
+instruction arriving through WP-D's handoff message
+(`spit_app/tests/HANDOFF-WP-E.txt`). Worked **on** that branch at its tip
+`9e13314` — no new branch, `main` untouched, nothing pulled, nothing pushed.
+**This is the last package of P13 and its finisher writes no handoff**: the
+close-out below is the end of the chain (see "The chain is complete").
+
+**What landed** (one docs commit, one concern: the decision record — **no code,
+no test file, no check moved, no row moved**).
+
+- **`doc/DECISIONS.md` — 81 written, and 80 cross-linked to it.** 81 is the WHY
+  of the note chain, six parts, each naming where the code or a suite pins it
+  (TRAPS #13, the way WP-E's hazard named it: this WP verifies nothing by
+  substitution, so its risk was prose drift and every factual sentence points at
+  `system_note.py` / `token_status.py` / `chat.py` / `work.py` /
+  `llamacpp.py` or at a check by its full name): **(a)** the note lives under
+  the private key `system` **inside the message dict**, not as a message,
+  because `chat.messages` is the UI's index space (the window projects it by
+  dict identity, `StreamCallback`/`RemoveMessage`/`Undo`/`ToolCall` carry those
+  indexes) — generator t5/t7, endpoints t12/t13; **(b)** once at the tail and
+  the prefix-cache argument, **with WP-A's correction stated as the correction
+  it is**: a merge costs one message's tokens, not the prompt — what invalidates
+  is rewriting position 0 or moving a note already in the history; **(c)** the
+  owner's role ruling (`user`, never `system`) with the strict-template evidence
+  (Qwen3.x `raise_exception('System message must be at the beginning.')`, line
+  85 of `Qwen3.5-4B.jinja`; llama.cpp #27367/#20733/#18895, QwenLM/Qwen3.8 #244)
+  and the `user`→`user` merge rule that keeps the alternation family happy, with
+  the grammar argument for why `user` may follow a `tool` run; **(d)** an unknown
+  window answers silence — the same dash as DECISIONS 80 b, read and never
+  probed on the request path, and silence is the door that keeps a request alive
+  because nothing catches a hook on that path; **(e)** the
+  percentage-OR-remaining levels with the worked 32k/64k/128k/200k table, the
+  machine advancing **by rank and never by trigger order** (the 32k
+  announce-order `small_window, warning, critical` with `info` shadowed forever
+  is a design rule), `small_window` orthogonal, the memory-is-the-notes argument
+  and the ONE registration in the module `HOOKS` at `chat.py` import; **(f)** the
+  residual abort-then-type limit — the shape hazard 1 cannot reach, the owner's
+  own months of manual practice, and the escape hatch now filed as P16. A
+  numbering note is inside it (t12/t13 exist in BOTH suites' sequences; a check
+  quoted by full name is `unit:endpoints`'s). 80 gains a cross-link paragraph
+  (the same dash, the same `context_sizes[context_key()]` source feeding the
+  counts row and the hook) and 81 cites 80 b/c throughout — **both ways**.
+- **`doc/PROJECT.md`** — the map gained the note chain in the features paragraph
+  (generator → hook → the private key → `prepare_payload()`'s unpacking, the
+  `user` role, silence on the dash) and three repo-layout lines
+  (`chat/system_note.py`, `chat/token_status.py`, `endpoints/llamacpp.py`), plus
+  `system_note` in the `tests/unit/` list. All of it points at DECISIONS 81; a
+  map, not an essay.
+- **`doc/TESTING.md`** — the one sentence the entry named as history is
+  rewritten to read true after WP-D: the system_note section used to end "The
+  hook is NOT in `HOOKS` and no `Chat` builds it - registering and wiring it is
+  WP-D"; it now says the hook IS registered, once, at `chat.py` import, one
+  shared instance whose memory is its own standing notes, the generator per
+  chat, and that `unit:endpoints` t13 is the wiring proof — and says why this
+  suite stays 219 venv-free anyway (`chat.py` is not in its import graph). The
+  rest of the file's post-wiring prose was read and needs nothing else; no row,
+  no count, no check moved.
+- **`doc/TASKS-PLANNED.md`** — **P13 closed**: the entry became a DONE record
+  with the five WP results in five lines and the pointer to this file and
+  DECISIONS 81, not a sixth essay. The four follow-ups are filed as real entries
+  with their own `Go!`-ahead markers: **P16** `note_mode`
+  (`separate`/`merge`/`off` — the kill switch and the abort-then-type escape
+  hatch, with the `construct_payload` skip-list trap named), **P17** rendering
+  the notes in the UI (invisible today; `chat_smoke`'s golden differential
+  named as the thing a render change must re-pin deliberately), **P18** the four
+  level numbers as settings (with the defaults-must-be-pinned trap), and **P14**
+  the handoff tool, updated for ruling iv — its arrival replaces the
+  fenced-block clause of `critical`, a text change and a `t16` re-pin, not a
+  mechanism change.
+
+**What was NOT done, on purpose.** No code, no test, no new row, no new suite;
+`main` untouched; the P13 mechanism is closed and green and nobody needed to
+touch it to make a doc sentence true (where a sentence looked like it wanted
+one, the sentence was wrong: the `critical` text says *fenced handoff message*
+and that is exactly what is shipped and pinned, and P14's arrival will re-pin
+it). The four handoff files under `spit_app/tests/` stay as the chain's history.
+
+**One stale pointer left on purpose, because only code can fix it.** The module
+docstring of `token_status.py` and the header comment of
+`tests/unit/system_note/test_token_status.py` both say the four texts are "the
+drafts of `doc/TASKS-PLANNED.md`" — and the P13 entry those sentences point at
+is now the closed one, which no longer carries the drafts (DECISIONS 81 and the
+pinned tests are where the wording lives now). Both sentences are inside code,
+and WP-E was docs-only with no `Go!` for a code change (DECISIONS 71), so they
+were left exactly as written rather than edited quietly: the reference still
+resolves in git history, and the next agent who is `Go!`d on either file should
+re-point it at DECISIONS 81 / t16 in passing. Nothing in the closed entry
+contradicts them — the texts they describe are the shipped ones, byte for byte.
+
+**Corrected at the final read-back, in this close-out's own commit.** DECISIONS
+81 first cited two hook checks as `t11-silence-when-the-window-is-unknown` and
+`t11-silence-when-the-chat-has-no-accessor` — those are the *function* names in
+`test_token_status.py`, not the names the suite prints. 81's own rule (a check
+quoted by its full name is quoted as the suite reports it) is what caught it, so
+the citation now names `t11-an-unknown-window-writes-nothing`,
+`t11-a-chat-without-context_window-writes-nothing` and their two
+`t11-CONTROL-…speaks` controls. Every other check name and every sha in 81 was
+then checked against the four test files and `git cat-file`: all real. One docs
+commit holds the decision record; this correction rides the close-out commit
+rather than quietly rewriting it.
+
+**Verified.** Full `bash spit_app/tests/run_tests.sh` from the repo root, run
+**five times** across the sitting — twice on the working tree before the docs
+commit, once after it, twice after the close — and **all five byte-identical to
+each other**, exit 0, stderr
+empty, **every row at
+the `doc/TESTING.md` numbers** — tools 127/24/30/119/80/32/68/29 (509), anchored
+68, arguments 131, chat_smoke 168, chat_window 568, endpoints 442, prompt 33,
+render 278, run_script 121, sandbox 157, system_note 219, terminal 223, FAIL 0
+everywhere — which is the whole Verify of a WP that changes no code: the
+count-unchanged run is the proof no code changed. `chat_smoke`'s `golden.txt`
+md5 `8ae9d1186a59627d30d05dee95f0ad95` **unmoved**. `git status` before the
+docs commit: exactly the four `doc/` files; the commit's diff touches `doc/`
+only. The pre-existing `unit:sandbox` `t3-child-stopped` flake (WP-B measured
+it) **did not fire in either run** — it is not P13's, it was not touched, and
+nothing is booked for it here. The close-out rests on the automated suites:
+there is no screen in this environment (TRAPS #22), and nothing of WP-E is
+runnable anyway — it is prose.
+
+No sign-off step participated (DECISIONS 71); `main` untouched, nothing pushed.
+
+**THE P13 CHAIN IS COMPLETE.** **WP-A, WP-B, WP-C, WP-D and WP-E are all closed**
+in this file — the unpacking (`0afaef8`), the generator (`a6ec179`), the hook
+(`6f1a0ed`), the wiring (`bcdc441`), the decision record (this WP-E) — with the
+`unit:endpoints` row at **442** and `unit:system_note` at **219** and every
+other row where P12 left it. **No handoff message is written after this one**:
+the chain ends with this close-out because there is no next package — WP-F does
+not exist and inventing one would be the invention TRAPS #22 warns about. What
+remains of P13 is the follow-ups' own work, and each is filed with its own
+`Go!` ahead of it (P14 the handoff tool, P16 `note_mode`, P17 the notes in the
+UI, P18 the level numbers as settings). **`p13-wp-a-note-unpacking` now awaits
+the owner's merge** — the only part of finishing that is not the agent's
+(DECISIONS 71 a). Nothing here merges, pushes or pulls; `main` is untouched and
+carries none of P13 until the owner's hand does.

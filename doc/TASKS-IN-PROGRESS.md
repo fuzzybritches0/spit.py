@@ -12,18 +12,30 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **TWO entries are open** in this file: **P13/WP-E** — **the last package of
-> P13**, docs-only: write **DECISIONS 81** (the note-in-the-message-dict
-> contract and why not an index; once-at-the-tail and the prefix-cache
-> argument; silence when the window is unknown; the owner's role ruling and
-> the `user`→`user` merge; the percentage-OR-remaining levels and the rank
-> machine; the strict-template evidence; the residual abort-then-type limit),
-> cross-linked from DECISIONS 80, refresh `PROJECT.md`, close the P13 PLANNED
-> entry and the four follow-up filings; `Go!` GIVEN by the owner's chain
-> instruction of 2026-09-25, arriving through WP-D's handoff message
-> `spit_app/tests/HANDOFF-WP-E.txt`; **its finisher writes a close-out, not a
-> handoff** — after it, the branch awaits the owner's merge), and the
-> `terminal`-tool harness list, followup 4.
+> **ONE entry is open** in this file: the `terminal`-tool harness list
+> (followup 4) below. Nothing else is half-done, and no branch is waiting on an
+> agent.
+
+> **P13 CLOSED COMPLETE 2026-09-25** — **WP-A, WP-B, WP-C, WP-D and WP-E are all
+> closed** in `TASKS-FINISHED.md`, and **the chain ends with WP-E: no handoff
+> message was written after it, because there is no next package** (WP-F does not
+> exist). The five packages: the unpacking `0afaef8` (WP-A), the generator
+> `a6ec179` (WP-B), the token-status hook `6f1a0ed` (WP-C), the wiring `bcdc441`
+> + the TESTING.md row `dadc11b` (WP-D), and WP-E's docs commit (DECISIONS 81
+> with DECISIONS 80 cross-linked both ways, `PROJECT.md`'s note chain,
+> `TESTING.md`'s post-wiring sentence, the P13 entry closed in
+> `TASKS-PLANNED.md` and its follow-ups filed as **P14** (the handoff tool, whose
+> arrival re-pins the `critical` text's fenced-block clause), **P16**
+> (`note_mode` `separate`/`merge`/`off`), **P17** (the notes rendered in the UI),
+> **P18** (the level numbers as settings) — each of those a task of its own with
+> its own `Go!` ahead of it, none of them P13's unfinished work. Ground truth at
+> the close: `unit:endpoints` **442**, `unit:system_note` **219**, every other row
+> where P12 left it, `chat_smoke`'s golden md5
+> `8ae9d1186a59627d30d05dee95f0ad95` unmoved, full suite exit 0 twice
+> byte-identical. **`p13-wp-a-note-unpacking` awaits the OWNER'S MERGE** — the
+> only part of finishing that is not the agent's (DECISIONS 71 a); nothing was
+> pushed and `main` is untouched. Do not start anything from this banner: P13's
+> mechanism is shipped and pinned, and the WHY is DECISIONS 81.
 > **P13/WP-D closed 2026-09-25** on `p13-wp-a-note-unpacking` (`bcdc441` the
 > code+test, `dadc11b` the `unit:endpoints` TESTING.md row 394 → 442, then
 > this close-out): `Chat.__init__` builds `SystemNotes(self)` and the hook
@@ -94,13 +106,17 @@ that is not the agent's.
 > `user`, its own `{"role": "user", ...}` item when it is `tool`/`assistant`, never a
 > `system` item, never a second consecutive `user`. `unit:endpoints` 343 → **394** with
 > the new `test_system_note.py` (t12, 51 checks); resolution in `TASKS-FINISHED.md`.
-> **P13 chains by handoff message now**: the owner's instruction of 2026-09-25 (quoted
-> verbatim in the WP-B entry) gave the `Go!` for **WP-B** and told each finisher to
-> write the next handoff message, so WP-C, WP-D and WP-E run **on top of this branch**
-> as each previous WP's finisher opens its entry — no new branches, and the owner
-> merges `p13-wp-a-note-unpacking` to `main` **after the last package (WP-E) is done**.
-> The owner rulings every package builds on (`user` role, percentage-OR-remaining
-> levels) ride on that branch.
+> **How P13 chained (history now — the chain ran and ended)**: the owner's
+> instruction of 2026-09-25 (quoted verbatim in the WP-B entry) gave the `Go!` for
+> **WP-B** and told each finisher to write the next handoff message, so WP-C, WP-D
+> and WP-E ran **on top of this branch** as each previous WP's finisher opened its
+> entry — no new branches. **All five packages closed on 2026-09-25**, WP-E
+> writing no handoff, and the owner merges `p13-wp-a-note-unpacking` to `main`
+> when the owner chooses. The owner rulings every package built on (`user` role,
+> percentage-OR-remaining levels) ride on that branch and are recorded in
+> DECISIONS 81. The older sentences in the paragraphs above ("WP-E has no `Go!`",
+> "WP-D and WP-E have no `Go!`") are what was true when each finisher wrote
+> them; they are history, not open work.
 > **P15 closed and merged 2026-09-25** (`b969e00`, close-out `d160c2e`): `unit:prompt`
 > reads its pinned **33** on `main` again, so a full-suite run from `main` has no
 > pre-existing red to explain. **P13's owner rulings are on the unmerged docs branch
@@ -214,138 +230,6 @@ that is not the agent's.
 > resolution (root causes, coverage, the two accepted limits, and that
 > checklist kept in case anyone still wants to run it by hand) is in
 > `TASKS-FINISHED.md`.
-
-## P13/WP-E — the docs: DECISIONS 81, cross-links, PLANNED closed — the last package  [`Go!` GIVEN by the owner's chain instruction of 2026-09-25, arriving through WP-D's handoff message — `spit_app/tests/HANDOFF-WP-E.txt`; NOT started; **its finisher writes a close-out, NOT a handoff** — after it the chain ends and `p13-wp-a-note-unpacking` awaits the owner's merge]
-
-**The owner's instruction that chains this entry (2026-09-25, verbatim):** *"Please
-write the initial WP-B message for the next agent. Give them the `Go!` for it. Then
-when they finish WP-B, tell them to write the next handoff message and so on. They
-should do their work on top of your branch and so on. I will merge to main after all
-work is done."* WP-D closed 2026-09-25 (`bcdc441` code+test, `dadc11b` the TESTING.md
-row, resolution in `TASKS-FINISHED.md`) and its finisher opens this entry, so the
-`Go!` for **WP-E** is GIVEN. **This is the last package**: there is no WP-F and no
-handoff file after this one — the WP-E close-out says the chain is complete and the
-branch awaits the owner's merge. Everything lands on **`p13-wp-a-note-unpacking`** —
-no new branch, `main` untouched, nothing pushed.
-
-**The plan is the P13 entry in `doc/TASKS-PLANNED.md`** — read its **owner rulings**
-((i)–(v)), **the two hazards**, the mechanism paragraph and the **WP-E bullet**, plus
-the follow-up list at its end ("to file when WP-E runs"). WP-A…WP-D shipped the
-mechanism; WP-E writes down WHY, so the next reader does not re-litigate it.
-
-### State (crash-recovery record)
-
-- **Branch**: work **on** `p13-wp-a-note-unpacking`, on top of its tip (WP-D:
-  `bcdc441` + `dadc11b` + this entry's opening). Never push, never touch `main`.
-- **What is shipped and closed (do not re-explain it wrong — read the code)**:
-  `endpoints/llamacpp.py` `prepare_payload()` + `append_note()`/`merge_into_content()`
-  (WP-A); `chat/system_note.py` — the generator, the hook contract, module `HOOKS`
-  (WP-B); `chat/token_status.py` — the rank machine and the four texts (WP-C);
-  `chat/chat.py` (`SystemNotes` + `context_window()` + the ONE `HOOKS` registration
-  at import, shared stateless instance — the WP-D decision, argued in its
-  `TASKS-FINISHED.md` entry) and `chat/work.py` (`attach()` immediately before
-  `await self.endpoint.stream()`), with t13 pinning the chain (WP-D). The
-  `doc/TASKS-FINISHED.md` entries for WP-A…WP-D carry the argues; the four handoff
-  files under `spit_app/tests/` carry the history.
-- **Scope — everything WP-E touches** (docs-only; **no code, no tests**):
-  1. **`doc/DECISIONS.md` — write DECISIONS 81**, the P13 decision, covering at
-     least (the WP-E bullet's list): (a) the note-in-the-**message-dict** contract —
-     notes live under the private key `system` inside the message dict they follow,
-     and WHY not an index into `chat.messages` (the index space is the UI's: the
-     sliding window projects by dict identity, `StreamCallback`/`RemoveMessage`/
-     `Undo`/`ToolCall` carry indexes — a note inserted as an item is the bug, not
-     the feature); (b) **once at the tail**, and the prefix-cache argument (a note
-     written once at the moment it becomes true is history thereafter, so the
-     cached prompt stands; a re-injected or hoisted note breaks the whole cache —
-     including WP-A's correction that a MERGE costs one message's tokens, not the
-     prompt); (c) **silence when the window is unknown** (the dash, DECISIONS 80 b,
-     met by `context_window()` → `None` and the hook's total-silence rule — the
-     door that keeps a request alive); (d) **the owner's role ruling** — notes ride
-     the wire as `user`, never `system` (the strict-template evidence: Qwen3.x
-     `raise_exception('System message must be at the beginning.')` and the four
-     issue threads), and the **`user`→`user` merge rule** that keeps the
-     alternation family happy (a note on a `user` carrier merges into the carrier's
-     content — no second consecutive `user`; hazard 1, in full); (e) the
-     **percentage-OR-remaining levels** and the **rank machine** (why 90% alone is
-     the wrong instrument on a small window; the worked 32k/64k/128k/200k table;
-     `small_window` orthogonal; advancing by rank, never by trigger order — the
-     32k announce-order `warning, critical` with `info` shadowed forever is a
-     design rule, not a wart); (f) the **residual abort-then-type limit** (a note
-     emitted as a `user` item followed by a human `user` turn is the shape
-     hazard 1 cannot reach; the owner's own months of manual practice produce it
-     without a refusal; the escape hatch is the `note_mode` follow-up, filed, not
-     built). Cross-link **from DECISIONS 80** (the counts row — the same dash, the
-     same `context_sizes` source) both ways.
-  2. **`doc/PROJECT.md`** — the map gains the note chain where the chat pipeline
-     is described (generator → hooks → the private key → `prepare_payload()`'s
-     unpacking), pointing at DECISIONS 81 and the two modules; match the file's
-     existing voice and length (a map, not a prose dump).
-  3. **`doc/TESTING.md`** — the ground truth already carries this WP's numbers
-     (endpoints 442, system_note 219 — moved by WP-D's commit `dadc11b`); WP-E
-     only checks the prose reads true post-wiring (the system_note section's last
-     line "The hook is NOT in `HOOKS` and no `Chat` builds it - registering and
-     wiring it is WP-D" is now HISTORY and must be rewritten to say what is true
-     after WP-D: the hook IS registered, once, at `chat.py` import, and t13 is the
-     wiring proof), and nothing else moves. No new row, no count change.
-  4. **`doc/TASKS-PLANNED.md`** — **close the P13 entry** (it goes to
-     `TASKS-FINISHED.md` as a P13-close record with the five WP results in one
-     place — five lines, not a sixth essay) and **file the follow-ups** the PLANNED
-     entry lists "to file when WP-E runs": (a) `note_mode` endpoint setting
-     `separate`/`merge`/`off` (the kill switch + the abort-then-type escape hatch),
-     (b) rendering the notes in the UI (today invisible: `Message` renders
-     `reasoning`/`content`/`tool_calls` only), (c) the level numbers as settings,
-     (d) **P14, the handoff tool** (whose arrival replaces the fenced-block clause
-     of the `critical` text — ruling iv says it is a text change, not a mechanism
-     change) — as real entries in `TASKS-PLANNED.md` with their own `Go!`-ahead
-     markers, not as a footnote.
-- **Done**: nothing — the entry is open, no docs written.
-- **Left — the whole of WP-E, in this order** (one sitting):
-  1. Read the four `TASKS-FINISHED.md` WP entries + the P13 PLANNED entry + the
-     shipped code (`system_note.py`, `token_status.py`, the `chat.py`/`work.py`
-     wiring, `prepare_payload`'s unpacking), then DECISIONS 79–80 to match the
-     house style and the cross-link shape.
-  2. Write DECISIONS 81 (with the cross-link from 80), PROJECT.md, the
-     TESTING.md prose fix named in Scope 3.3, the PLANNED close + the four
-     follow-up filings.
-  3. Full `bash spit_app/tests/run_tests.sh` — docs must not move any row
-     (exit 0, every row at the table's numbers; the `unit:sandbox` flake policy
-     stands). No code change is authorized; if a doc sentence seems to need one,
-     it does not — file it.
-  4. One commit for the docs (DECISIONS + PROJECT + TESTING prose + PLANNED
-     close + filings — one concern: the decision record).
-  5. Close this entry into `TASKS-FINISHED.md` — **and with it the P13 chain**:
-     the close-out says plainly that WP-A…WP-E are all closed, that P13 is
-     complete, that **no handoff is written** (the chain ends here), and that
-     `p13-wp-a-note-unpacking` **awaits the owner's merge** — the only part of
-     finishing that is not the agent's (DECISIONS 71). Then STOP.
-- **State hazards**: none in the tree (clean at this commit). Traps ahead:
-  **#13** (the WP-A…D close-outs each verified their claims red-first; WP-E
-  verifies nothing by substitution — its risk is prose drift, so every factual
-  sentence in DECISIONS 81 must name where the code or the suite pins it: t12
-  for the unpacking, t1–t9/t10–t18 for the contract and the hook, t13 for the
-  wiring and the registration, the PLANNED hazard-1 list for the template
-  evidence); **#15** (test numbers are untouched by WP-E — do not "extend" any
-  suite to prove a doc sentence); **#18** (read full outputs; the row a runner
-  reads is a floor); **#22** (close your own entry; no invented gate; no
-  sign-off; and do not merge — the owner merges). **The `unit:sandbox`
-  `t3-child-stopped` flake** is still unfixed and not yours: if it reddens,
-  re-run, say so, book nothing.
-- **Verify**: full `bash spit_app/tests/run_tests.sh` from the repo root,
-  **exit 0, every row unmoved** (tools 127/24/30/119/80/32/68/29 = 509,
-  anchored 68, arguments 131, chat_smoke 168, chat_window 568, endpoints 442,
-  prompt 33, render 278, run_script 121, sandbox 157, system_note 219,
-  terminal 223); `chat_smoke`'s `golden.txt` md5
-  `8ae9d1186a59627d30d05dee95f0ad95` unmoved; `git diff` touches only files
-  under `doc/` (plus `TASKS-FINISHED.md`/this file at the close); DECISIONS 81
-  exists, 80 cross-links it both ways, the P13 PLANNED entry is closed and the
-  four follow-ups are filed, the TESTING.md post-wiring sentence reads true.
-- **Do NOT**: touch any code or any test file (the mechanism is closed and
-  green at 442+219; if a doc sentence would need a code change to be true, the
-  sentence is wrong — write the true one), touch `main`, push, start P14
-  (it is a filing, not this WP), or write a handoff for a WP-F (there is
-  none — this is the last package; the close-out is the end of the chain).
-
----
 
 ## Machine state these entries assume (none of it is in git)
 
