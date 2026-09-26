@@ -47,7 +47,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 157 |
-| unit:system_note | 96 |
+| unit:system_note | 219 |
 | unit:terminal | 223 |
 
 ## The test venv (five suites need it)
@@ -415,10 +415,13 @@ harness **absolute** fixture paths.
   Lifecycle/delivery/streams drive everything through the shared
   `run_as_file(...)` -> `(output, leftovers, elapsed)`.
 
-- `tests/unit/system_note/` - the P13/WP-B **system-note generator** (96 checks):
-  `spit_app/chat/system_note.py`, the hook contract and its five invariants, on
-  plain dicts and a one-attribute chat - no Textual, no endpoint, no network.
-  `test_generator.py` owns **t1-t9** (append-only within the suite; the
+- `tests/unit/system_note/` - the P13 system notes (**219** checks = WP-B's 96
+  plus WP-C's 123, by addition alone): the **generator** `spit_app/chat/system_note.py`
+  (the hook contract and its five invariants) and the **token-status hook**
+  `spit_app/chat/token_status.py`, on plain dicts and stub chats - no Textual,
+  no endpoint, no network.
+  `test_generator.py` owns **t1-t9** and `test_token_status.py` owns **t10-t18**
+  (append-only within the suite; the
   `unit:endpoints` numbers are a separate sequence, and t13 there belongs to
   WP-D). `t1` is the gate with TRAPS #19 **inverted**: the runner has no venv
   preamble because the module imports nothing of the app's runtime (`spit_app/chat/`
@@ -443,6 +446,33 @@ harness **absolute** fixture paths.
   writing an empty `system` key, appending a note as a message, `except:`-ing the
   raise, accepting a bare string, ignoring the `name`), so no green in this suite is
   one that cannot fail (TRAPS #13/#14).
+  `test_token_status.py` (t10-t18, 123 checks, P13/WP-C) pins the hook itself:
+  the t10 gate re-runs the TRAPS #19 probe over `token_status.py` (re-measured
+  both ways - bare interpreter dies, under the venv the dependency check
+  reddens); silence below every trigger, at zero usage, with no counts and with
+  an unknown window, each with the control that makes the same hook speak;
+  tail-only (a note mid-chat is the cached-prompt defect); the rank machine on
+  a 128k walk whose fill drops back; the owner's percentage-OR-remaining table
+  at its exact tokens - the 20 000/10 000 floors governing 64k, the 80%/90%
+  governing 128k and 200k, the 32k announce-order pinned as
+  `small_window, warning, critical` with `info` shadowed forever, and
+  `small_window` once, at 0% fill, never at `total` one over, winning its
+  message with the fill-rank pending for the next; the four model-facing texts
+  pinned **byte-for-byte** at fixtures where used/total/remaining/pct are all
+  distinct (a swap cannot pass; the figures are never clamped - an overrun
+  says 101% and a negative remaining, because they are the server's numbers);
+  WP-B's drop rule met by a hook whose memory is its own standing notes (a
+  verdict dropped off the tail rides the next message; the hook keeps no
+  state on itself, so reload, abort and a dropped note all need no resync);
+  and totality - rubbish counts and rubbish windows (None, prose, lists,
+  floats, bools, a non-callable accessor) answer silence and keep the request
+  alive, since WP-D attaches right before `endpoint.stream()` and nothing
+  there catches. Fifteen defects substituted, each reddening its group (text
+  swaps, pct floor-instead-of-round, a clamp, levels in trigger order, no
+  rank filter, no tail guard, the small-window boundary strict-less and
+  repeating, every totality guard), so again no green here is one that
+  cannot fail (TRAPS #13/#14). The hook is NOT in `HOOKS` and no `Chat`
+  builds it - registering and wiring it is WP-D.
 
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
   (343 checks; **394** since P13/WP-A added `test_system_note.py`, by addition
