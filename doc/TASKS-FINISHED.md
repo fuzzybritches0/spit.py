@@ -1701,3 +1701,134 @@ the four percentage-OR-remaining levels of the owner's ruling, the four texts
 pinned word-for-word, and the 32k announce-order where `info` is shadowed forever.
 Its entry is open in `TASKS-IN-PROGRESS.md`; **WP-D and WP-E have no `Go!`** and
 WP-C does not authorise them. Handoff: `spit_app/tests/HANDOFF-WP-C.txt`.
+
+### P13/WP-C — the token-status hook: the four levels and their four texts (branch `p13-wp-a-note-unpacking`: `6f1a0ed` the code+test, `ad56e2d` the TESTING.md row, then this close-out; awaiting the owner's merge)
+
+**Owner gate.** The `Go!` was GIVEN 2026-09-25 for **WP-C**, by the owner's chain
+instruction arriving through WP-B's handoff message
+(`spit_app/tests/HANDOFF-WP-C.txt`). Worked **on** that branch at its tip
+`afd9733` — no new branch, `main` untouched, nothing pulled, nothing pushed.
+WP-D is opened by this close-out with its own handoff message; WP-E stays
+unauthorised until that finisher's message arrives.
+
+**What landed** (`6f1a0ed`, one concern: the hook and the file that pins it).
+
+- `spit_app/chat/token_status.py` — NEW. `class TokenStatus` with
+  `name = "token_status"` (the name WP-B's generator stamps and keys its
+  once-per-message rule on) and `notice(chat, messages, index)`. The level
+  state machine and the four texts, and nothing else: the owner's levels as
+  module constants (`32768 / 0.5 / 20000 / 10000`, plus the table's `0.8 /
+  0.9`), the three ranks (`info` 1, `warning` 2, `critical` 3, `small_window`
+  deliberately not a rank), and the four texts verbatim from the PLANNED
+  drafts. It imports `Note`, `NOTE_KEY` and `hook_name` from WP-B's
+  `system_note` and nothing else — no Textual, no httpx (TRAPS #19), which is
+  what keeps the suite bare-run.
+- Nothing wired it: `HOOKS` stays empty, `Chat` and `Work` untouched, no
+  endpoint file, no settings, no UI. An unregistered hook changes no behaviour
+  and breaks no golden — which is exactly the WP-C posture, and the two
+  byte-identical full runs below are the proof it held.
+- `spit_app/tests/unit/system_note/test_token_status.py` — NEW file **inside
+  WP-B's suite**, owns **t10–t18** (its own append-only sequence, TRAPS #15 —
+  t1–t9 stay WP-B's, `unit:endpoints` keeps its separate numbers, t13 there
+  stays WP-D's). No new suite directory, no new row: the runner's existing
+  glob picked the file up and the existing row moved 96 → **219**.
+
+**THE DECIDE the entry asked for — how the total reaches the hook** (stated in
+the handoff as instructed): the hook asks the chat for
+**`chat.context_window()`** with `getattr` — callable-or-not, present-or-not —
+and treats every non-answer (no attribute, non-callable attribute, `None`,
+zero, a negative, a string, a float, a `True`) as *window unknown ⇒ silence*.
+Why this shape: the accessor is WP-D's (`Chat.context_window()` over
+`ChatSettings.context_sizes[context_key()]`) and WP-C must not build it early;
+the duck-typed ask is the narrowest thing that lets the hook be tested against
+a stub chat *and* keeps `token_status.py` out of `Chat`'s and Textual's import
+graph — the same posture as WP-B's one-attribute `MMChat` (a hook is handed
+only what it asks for), and it makes "chat predates WP-D" and "endpoint
+reported no window" one rule instead of two. WP-D adds the accessor and wires
+the hook with **zero changes to `token_status.py`**.
+
+**The second design decision, taken inside the code but stated in the module's
+docstring:** the hook keeps **no state on itself**. Its memory is its own
+standing notes — a scan of the message list for entries stamped
+`hook == "token_status"` (resolved through `hook_name()`, so the scanner and
+the stamp can never disagree). That is WP-B's own principle — *the note IS the
+record* — pushed into the hook, and it is what makes the three awkward walks
+fall out for free instead of needing bookkeeping: a **reload** (fresh instance,
+notes persisted, counts reset — P13's consequence 1) never re-announces an
+announced rank; an **abort** (the tail's note removed with the tail —
+consequence 3) re-arms the hook exactly as the entry promises; and a verdict
+the generator **drops** (the hook already spoke on that message) left no
+record, so it is not lost to a remembered-but-unwritten rank — it rides the
+next message (pinned by t17). An instance-memory state machine would have had
+to re-sync against the history anyway at exactly these three points; deriving
+the state from the history instead makes the question not arise, and it also
+means a shared instance cannot cross-contaminate two chats.
+
+**The texts, pinned.** Model-facing text is code: the four drafts of
+`doc/TASKS-PLANNED.md` (ruling iii — wording delegated, re-pinned when the
+owner revisits) sit in the module and are pinned **byte-for-byte** in t16 at
+fixtures where `{used}`, `{total}`, `{remaining}` and `{pct}` are pairwise
+distinct (111200/200000/88800/56 and neighbours), so a used-vs-remaining or
+used-vs-total swap cannot pass; the em-dashes are pinned bytes too. The
+"do not call any more tools and do not start new work after the handoff" half
+of `critical` — the load-bearing half the owner learned the hard way — is
+inside its pin, and P14's fenced-block replacement will re-pin the same way
+(ruling iv). One choice made here and pinned rather than left implicit: the
+figures are **never clamped** — an overrun (`used > total`, measured by t16)
+says 101% and a negative remaining, because the numbers are the server's and
+a rounded-down last word is a lie about the same kind the dash rule exists to
+prevent.
+
+**The test** — 123 checks, written first against a red; stated as measured,
+and the red was again NOT a wall: with the module absent the file dies at its
+`import` and the WP-B runner reports `PASS: 96 FAIL: 1` naming it (the "died
+before reporting" branch, re-used, not rebuilt). What makes the checks real is
+the mutation battery: **fifteen defects substituted one at a time** into
+`token_status.py`, each reddening its group and restored from a pristine copy
+— `remaining→used` and `used↔total` text swaps (t16), `pct` floor-instead-of-
+round and a `max(0, …)` clamp (t16), levels tested in trigger order instead of
+highest-first (31 reds incl. the t14 announce-order and every t11 control that
+expects the highest verdict), the rank filter dropped (20 reds incl. the
+70 000/78 000 non-events of the t12 walk), the tail guard dropped (5 reds),
+`small_window` strict-less (`32768` no longer small: 14 reds), `small_window`
+repeating (7 reds), and each totality guard dropped in turn (positive-total,
+int-only total, callable-accessor, dict-counts, int-only counts, and the
+name-key on the rank scan — each reddening exactly its t18 rows). Two
+vacuous-subcheck finds during the battery, fixed in the test before the code
+was believed: `{"context": True}` as *used* cannot discriminate (1 is below
+every trigger either way) so the bool case moved to the **window** side where
+accepting it would speak (a window of one token ⇒ instant `critical`), and the
+float `used` fixture was moved from 12.5 to 120000.5 for the same reason (a
+float that would stay silent below every trigger tests nothing). The TRAPS #19
+gate was measured again both ways for the new module: with an `import textual`
+added, the bare interpreter run reports `PASS: 96 FAIL: 1` naming the dead
+file, and a run under `~/.venv-spit` reddens
+`t10-importing-it-loaded-no-app-dependency` instead.
+
+**Verified.** Full `bash spit_app/tests/run_tests.sh` from the repo root,
+**exit 0, stderr empty, two consecutive byte-identical runs, every row at the
+`doc/TESTING.md` numbers except the one row that had to move**: tools
+127/24/30/119/80/32/68/29 (509), anchored 68, arguments 131, chat_smoke 168,
+chat_window 568, endpoints **394** (WP-A's pin, unmoved — the hook is not
+registered), prompt 33, render 278, run_script 121, sandbox **157** (the
+pre-existing `t3-child-stopped` reap flake did not fire in either run — and it
+is not WP-C's to fix, per the entry), terminal 223, and **system_note 96 →
+219** = 96 + 123, exactly the new checks, `test_generator.py`'s 96 green
+alongside every single time (the contract was never bent — a red in that file
+is the one thing this handoff forbade and it never appeared). `chat_smoke`'s
+`golden.txt` md5 `8ae9d1186a59627d30d05dee95f0ad95` unmoved. `git status`
+before each commit: exactly the intended paths. The close-out rests on the
+automated suites — there is no screen here (TRAPS #22), and nothing of WP-C
+reaches the UI or the wire, so the automated analogue of "the app is
+unchanged" is the unmoved golden plus the 17 unmoved rows.
+
+No sign-off step participated (DECISIONS 71); `main` untouched, nothing pushed.
+
+**Written when this entry closed:** next in P13 is **WP-D**, the wiring —
+`Chat.__init__` builds the `TokenStatus` and `SystemNotes` (session state,
+next to `token_usage`, for the DECISIONS 80 c reason), `Chat.context_window()`
+lands (the accessor the hook already asks for), `attach()` goes immediately
+before `await self.endpoint.stream()` in `Work.work_stream()`, and
+`unit:endpoints` **t13** proves the chain end to end over the canned server.
+Its entry is open in `TASKS-IN-PROGRESS.md`; **WP-E has no `Go!`** and WP-D
+does not authorise it. Handoff: `spit_app/tests/HANDOFF-WP-D.txt`.

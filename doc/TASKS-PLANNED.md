@@ -259,7 +259,7 @@ the fifth dependency-listed suite.
 
 ---
 
-## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25** and **WP-B DONE 2026-09-25** - resolutions in `TASKS-FINISHED.md`; **WP-C `Go!` GIVEN 2026-09-25**, arriving with WP-B's handoff message (entry "P13/WP-C" in `TASKS-IN-PROGRESS.md`) and the owner's standing instruction chains the rest: each finisher writes the next handoff message, **WP-B…WP-E all land on `p13-wp-a-note-unpacking`**, no new branches, and **the owner merges that branch after WP-E**]
+## P13 - System notes the model is told: the generator, its hooks, and the token-status hook  [owner-requested 2026-09-25; **WP-A DONE 2026-09-25**, **WP-B DONE 2026-09-25** and **WP-C DONE 2026-09-25** - resolutions in `TASKS-FINISHED.md`; **WP-D `Go!` GIVEN 2026-09-25**, arriving with WP-C's handoff message (entry "P13/WP-D" in `TASKS-IN-PROGRESS.md`) and the owner's standing instruction chains the rest: each finisher writes the next handoff message, **WP-B…WP-E all land on `p13-wp-a-note-unpacking`**, no new branches, and **the owner merges that branch after WP-E**]
 
 **Owner rulings of 2026-09-25, which overrule parts of the plan below — read these
 first.** (i) **The injected note's role is `user`, not `system`, always** — the owner's
@@ -446,10 +446,21 @@ code together is ~120 lines.
   message — the whole point, and the check that keeps WP-A's premise true); a raising
   hook is NOT swallowed — a broken hook must not survive by silently doing nothing
   (the same posture as the `{}`-endpoint KeyError pinned as a limit in DECISIONS 80 b).
-- **WP-C — the token-status hook** (`Go!` GIVEN 2026-09-25, arriving with WP-B's
-  handoff message `spit_app/tests/HANDOFF-WP-C.txt`; the entry is open as
-  "P13/WP-C" in `TASKS-IN-PROGRESS.md`, and WP-D/WP-E stay unauthorised until their
-  own messages arrive).
+- **WP-C — the token-status hook** (`Go!` GIVEN and **DONE 2026-09-25**,
+  `p13-wp-a-note-unpacking`: `6f1a0ed` the code+test, `ad56e2d` the TESTING.md
+  row 96 → 219; resolution in `TASKS-FINISHED.md`. It shipped
+  `spit_app/chat/token_status.py` — the rank machine (owner's levels as module
+  constants, `small_window` orthogonal, the 32k announce-order `small_window,
+  warning, critical`, `info` shadowed, pinned as a walk), the four texts
+  byte-for-byte at all-distinct figures (never clamped), **no instance state**:
+  the hook's memory is its own standing notes, so reload, abort and the drop
+  rule need no resync; and it asks the total through `chat.context_window()`
+  with `getattr` — unknown window or counts ⇒ silence, the door that keeps a
+  request alive. 123 checks, `test_token_status.py` t10–t18. **WP-D's
+  `Chat.context_window()` must answer int-or-None over
+  `ChatSettings.context_sizes[context_key()]`; `token_status.py` then needs
+  zero changes.** WP-D's `Go!` arrives with WP-C's handoff message and WP-E
+  stays unauthorised until its own message arrives).
   `spit_app/chat/token_status.py`. Its tests go in **WP-B's suite**
   (`spit_app/tests/unit/system_note/test_token_status.py`, numbers **t10 onward** —
   t1–t9 are WP-B's, and `unit:endpoints` numbers are a separate sequence again), so
@@ -534,8 +545,12 @@ code together is ~120 lines.
   above says; `small_window` fires once and only for `total <= 32768`; the four texts
   pinned byte-for-byte at a fixture where every number is distinct so a substitution
   mistake cannot pass.
-- **WP-D — the wiring, and the proof the chain works** (`Go!` arrives with WP-C's
-  handoff message). `Chat.__init__`: the
+- **WP-D — the wiring, and the proof the chain works** (`Go!` GIVEN 2026-09-25,
+  arriving with WP-C's handoff message `spit_app/tests/HANDOFF-WP-D.txt`; the
+  entry is open as "P13/WP-D" in `TASKS-IN-PROGRESS.md`; WP-E stays unauthorised
+  until its own message arrives, and **WP-E's finisher writes a close-out, not a
+  handoff** — the chain ends there and the branch awaits the owner's merge).
+  `Chat.__init__`: the
   `TokenStatus` and `SystemNotes` instances (session state, next to `token_usage`, for
   the DECISIONS 80 c reason — a `Work` is built per send) and `Chat.context_window()`;
   `Work.work_stream()`: `self.chat.system_notes.attach()` immediately before

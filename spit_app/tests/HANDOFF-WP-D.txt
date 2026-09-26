@@ -1,0 +1,110 @@
+TASK: P13/WP-D - the wiring: Chat builds the hook, Chat.context_window(),
+attach() before endpoint.stream(), and unit:endpoints t13 end to end. Go!
+GIVEN by the owner's chain instruction of 2026-09-25, arriving through this
+message (the finisher of each WP hands off the next). Do WP-D and nothing else.
+
+WORK ON: ~/spit.py, branch p13-wp-a-note-unpacking, at its CURRENT tip (WP-C closed
+at ad56e2d plus the docs that opened this entry - newer doc commits are expected,
+nothing of them is code). Work ON that branch - do NOT cut a new one. Never touch
+main, never push, never pull.
+
+READ FIRST, in this order:
+ 1. doc/TASKS-IN-PROGRESS.md, entry "P13/WP-D" - your crash-recovery record: Scope,
+    what WP-C shipped, the load-bearing attach() position, Left, State hazards
+    (incl. the golden hazard, yours now), Verify, Do NOT.
+ 2. doc/TASKS-PLANNED.md, entry P13 - the owner rulings (i)-(v), hazard 1, hazard 2
+    and the WP-D bullet. They overrule older prose in the same entry.
+ 3. spit_app/chat/token_status.py - its module docstring holds the whole design
+    rationale, and spit_app/chat/system_note.py - the generator. Short files.
+ 4. spit_app/tests/unit/endpoints/ - the canned-server suite (endpoint_harness.py
+    records POST bodies). WP-A's test_system_note.py (t12) is the wire side;
+    numbers there are append-only and t13 is YOURS. Do NOT edit t1-t12 files.
+ 5. spit_app/tests/unit/system_note/ - 219 checks (t1-t9 generator, t10-t18 hook).
+    They must stay green, both files, untouched.
+ 6. doc/TRAPS.md #13, #15, #18, #19, #22.
+
+WHAT WP-D IS:
+ - Chat.__init__: build the TokenStatus and a SystemNotes(self) - session state
+   next to self.token_usage (a Work is built per send, DECISIONS 80 c).
+ - Chat.context_window(): the accessor the hook ALREADY asks for, over
+   ChatSettings.context_sizes[context_key()] - the counts row's own source,
+   read as it stands, NO network on the request path; answers an int or None
+   (the dash). token_status.py needs ZERO changes for it: it asks with getattr
+   and every non-answer is silence.
+ - Work.work_stream(): self.chat.system_notes.attach() IMMEDIATELY BEFORE
+   'await self.endpoint.stream()'. The position is load-bearing: the tool loop
+   re-enters work_stream(), so this asks the hooks before EVERY request,
+   including the ones inside a tool loop, where the window actually fills up.
+ - Register the hook: WP-C deliberately left HOOKS empty (an unregistered hook
+   changed no behaviour and broke no golden - that was the WP-C posture). You
+   register it. Decide and state (one choice, in your handoff, with the
+   reason): the module HOOKS list vs a per-chat registration on SystemNotes.
+   The contract works either way; attach() reads HOOKS per call, so either
+   reaches every chat; say which, and what it means for instances.
+ - NEW test file in spit_app/tests/unit/endpoints/, numbered t13, end to end
+   over the canned server: under threshold => no note in the POST body; over
+   50% => exactly one note in the right position of the next request's
+   messages (a user item - WP-A's unpacking, on the wire); a second request at
+   the same level adds none; the chat.messages list the UI holds never gains
+   an item; on a user carrier the note is MERGED, so the request's message
+   COUNT is the same with the note as without it (hazard 1 proven on the wire).
+   TRAPS #13: every "no note" needs the control that puts one there.
+ - doc/TESTING.md: the unit:endpoints row moves up by exactly your new checks
+   (394 -> 394 + N), prose gains your file. No new row. unit:system_note MUST
+   NOT move - if it reddens, the wiring leaked into the bare-import graph
+   (TRAPS #19: nothing under unit:system_note may import Chat/Work).
+ - Nothing else. No settings, no UI, no DECISIONS.md (WP-E writes 81), no
+   edits to token_status.py or anything in unit:system_note: its 219 are
+   closed and green; a red there against your wiring is a wiring bug or a
+   loud finding, never a re-pin.
+
+MEASURED FOR YOU on this box, so you do not re-derive it:
+ - Fresh numbers at WP-C's tip, two consecutive byte-identical full runs, exit
+   0, stderr empty: tools 127/24/30/119/80/32/68/29 (509), anchored 68,
+   arguments 131, chat_smoke 168, chat_window 568, endpoints 394, prompt 33,
+   render 278, run_script 121, sandbox 157, system_note 219, terminal 223.
+ - chat_smoke's golden.txt md5 is 8ae9d1186a59627d30d05dee95f0ad95 and must
+   NOT move - but you are the first WP whose code runs in a live Chat: the
+   smoke fixture keeps token_usage at {context: 0, ...} and its chat has no
+   real context_sizes, so context_window() answers None there and the hook is
+   silent BY THE UNKNOWN-WINDOW RULE. Prove the md5; if it moves, the hook
+   spoke where silence was owed - that is a WP-D red, not a golden to re-pin.
+ - unit:endpoints needs the venv (httpx, Textual for the counts-row file):
+   bash spit_app/tests/create_venv.sh -> ~/.venv-spit. unit:system_note runs
+   on the BARE python3 with no venv preamble on purpose (TRAPS #19 inverted);
+   keep it that way - a Textual import reachable from those two chat modules
+   must die there loudly.
+ - ONE PRE-EXISTING FLAKE, not yours: unit:sandbox t3-child-stopped races the
+   kernel's reap and reads 156/1 now and then under load (WP-B measured it:
+   2 reds in 15 standalone runs at a byte-identical tree, 0 in 25 more). If it
+   reddens while you verify, re-run it, say so in your close-out, do NOT fix
+   it and do NOT book it against WP-D.
+ - The hook's own invariants you can rely on: it speaks ONLY at the tail; it
+   holds no instance state (its memory is its own standing notes, so reload,
+   abort and the generator's drop all fall out - a verdict dropped off the
+   tail rides the next message); unknown window or unknown counts is silence
+   and keeps the request alive (WP-B t6 pinned that nothing catches a hook,
+   so it stays total - if your real Chat makes it raise, that is a wiring bug
+   in what context_window() returns, and t18 lists the shapes it demands).
+
+VERIFY: t13 green on the venv interpreter; unit:system_note 219 green on the
+bare one (test_generator.py's 96 AND test_token_status.py's 123, unedited);
+full bash spit_app/tests/run_tests.sh from the repo root, exit 0, every
+existing row unmoved except unit:endpoints up by exactly your checks; golden
+md5 unmoved.
+
+STOP AT, in this order: full suite green with only unit:endpoints moved; two
+commits (wiring+test as one concern, then docs); close your OWN entry into
+doc/TASKS-FINISHED.md with its resolution (no sign-off, DECISIONS 71); open
+the "P13/WP-E" entry in doc/TASKS-IN-PROGRESS.md; write the WP-E handoff
+message, fenced, AND save it as spit_app/tests/HANDOFF-WP-E.txt (plain text,
+pointer to the entry, never a second record - the owner copies handoffs with a
+key binding and Markdown pasted out of the chat is lost); then STOP. WP-E is
+the last package: DECISIONS 81 (the note-in-the-message-dict contract and why
+not an index; once-at-the-tail and the prefix-cache argument; silence when the
+window is unknown; the owner's role ruling and the user->user merge; the
+percentage-OR-remaining levels and the rank machine; the strict-template
+evidence; the residual abort-then-type limit), cross-linked from DECISIONS 80,
+TESTING.md and PROJECT.md, the P13 PLANNED entry closed - and its finisher
+writes a CLOSE-OUT, not a handoff: the chain ends, the branch
+p13-wp-a-note-unpacking awaits the owner's merge.
