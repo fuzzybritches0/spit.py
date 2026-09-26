@@ -13,6 +13,24 @@ from .message.message import Message
 from .textual_message import StreamCallback
 from spit_app.tools.run.common import kill_process_group
 
+from .system_note import HOOKS, SystemNotes
+from .token_status import TokenStatus
+
+# The one registration of the token-status hook (P13/WP-D, the decision stated
+# in the close-out): the module list `attach()` reads per call, ONE shared
+# instance, at import of this module. `TokenStatus` is stateless about WHICH
+# chat by construction (WP-C: its memory is its own standing notes, so "a
+# shared instance across chats cannot cross-contaminate them: the memory
+# travels with the messages") - a per-chat registration would put N entries in
+# the list every attach() asks and have N identical verdicts per message, which
+# idempotence keeps harmless but which is N times the asking for zero behaviour.
+# Importing this module IS building the hook: every chat, whenever it is built,
+# asks the same hook, and `attach()` reading HOOKS per call reaches chats that
+# already exist. The bare-interpreter suites never import this module, so the
+# TRAPS #19 graph of system_note/token_status is untouched.
+TOKEN_STATUS = TokenStatus()
+HOOKS.append(TOKEN_STATUS)
+
 class Chat(Vertical):
     BINDINGS = [
         ("ctrl+escape", "abort", "Abort"),
@@ -38,6 +56,15 @@ class Chat(Vertical):
         # write_chat_history() stores ctime/settings/messages, so a reloaded chat
         # starts at zeros.
         self.token_usage = {"context": 0, "generated": 0, "cached": 0}
+        # P13/WP-D, session state next to token_usage for the same DECISIONS
+        # 80 c reason - a Work is built per send, so the note chain has to
+        # live on the Chat. The generator is per-chat (it is bound to THIS
+        # chat's messages); the hook is the ONE shared instance registered in
+        # HOOKS at this module's import (see above) - every chat carries the
+        # same reference, because the hook keeps no state about WHICH chat
+        # (its memory is its own standing notes in the messages it is handed).
+        self.token_status = TOKEN_STATUS
+        self.system_notes = SystemNotes(self)
         self.chat_view = ChatView(self)
         self.text_area = ChatTextArea(self)
         self.chat_settings = ChatSettings(self)
@@ -78,6 +105,19 @@ class Chat(Vertical):
         elif cap == "audio":
             if "audio" in self.model_capabilities or "multimodal" in self.model_capabilities:
                 return True
+
+    def context_window(self) -> int|None:
+        # The window size for this chat's (endpoint, model) pair, read over
+        # ChatSettings.context_sizes[context_key()] - the very source the
+        # counts row renders (P12). The read is as it stands: NOTHING here
+        # touches the network, because the caller is the token-status hook on
+        # the request path, immediately before endpoint.stream() (WP-D), and a
+        # probe with two 3 s GETs there is a frozen request. What was never
+        # asked and what was asked and refused are both the dash, and the dash
+        # answers None: the hook's silence is the door that keeps a request
+        # alive (DECISIONS 80 b - a guessed denominator is a lie about when
+        # the chat dies).
+        return self.chat_settings.context_sizes.get(self.chat_settings.context_key())
 
     def message_index(self, element: dict) -> int:
         count = 0

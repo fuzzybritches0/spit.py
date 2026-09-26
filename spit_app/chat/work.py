@@ -153,6 +153,17 @@ class Work:
         try:
             if self.endpoint == -1:
                 self.app.exception = Exception("No free slot for inference available! Please try again later!")
+            # P13/WP-D: ask the hooks immediately before the request. The
+            # position is load-bearing: the tool loop below re-enters
+            # work_stream(), so this asks before EVERY request - including
+            # the ones inside a tool loop, where the window actually fills
+            # up - and a note written now rides the payload being built
+            # next, into the SAME request's `messages` (WP-A's unpacking).
+            # Nothing catches what a hook raises: that is WP-B's pinned
+            # contract, and the reason the hook is total (unknown figure =>
+            # silence). attach() adds no item to self.messages; it writes
+            # into the dicts.
+            self.chat.system_notes.attach()
             await self.endpoint.stream()
             # after the await and still inside the try: a stream that raised leaves
             # a reply nobody got, and an error is not a counted reply.
