@@ -384,21 +384,41 @@ pane is read and synchronised.
 
 ### State (crash-recovery record)
 
-- **Branch**: none started. Everything marked landed above is on `main` via
-  `task-terminal-empty-output`; this entry has no working branch of its own.
-- **Scope** (when it starts): `spit_app/tools/terminal.py` (DESC + PROMPT),
+- **Branch**: `task-terminal-harness-p0bf4` (cut from `main` `c023a16`, 2026-09-28)
+  under the owner's standing instruction of 2026-09-28 that dropped the per-task
+  `Go!` ("You may work now independently ... only the user may merge your work
+  into `main`") — the merge stays the owner's (DECISIONS 71 a is unchanged).
+  Baseline measured before the first edit: full suite exit 0, every row at the
+  `doc/TESTING.md` numbers, `unit:terminal` 223.
+  Machine facts measured for the design (probes on private sockets `spit-probe-*`,
+  tmux here is 3.7c): `resize-window` (libtmux `Window.resize`) on a clientless
+  session works PER WINDOW (120x40 and 160x30 measured; a second window stays
+  80x24 — geometry is per terminal, not per session); `capture_pane(start=-N)`
+  returns history (62 rows, the early token present); `capture_pane(escape_sequences=True)`
+  carries ESC where the plain capture carries none; and raw injection of ESC bytes
+  (SGR mouse, bracketed paste) is delivered EXACTLY by `send-keys -l -- <bytes>`
+  (a `cat > file` in the pane held `b'\x1b[<0;10;10M mm-A \x1b[5~'`), while
+  libtmux's own `send_keys` routes mangled or lost the same data — so `send_bytes`
+  goes through the raw `tmux` argv, not through libtmux's key layer.
+- **Scope**: `spit_app/tools/terminal.py` (DESC + PROMPT + `call`),
   `spit_app/tools/run/terminal.py` (the state layer every item reads from),
-  `spit_app/tools/lsterm.py`, and `tests/unit/terminal/` (220 checks, real tmux
-  on a private socket through `stub_app.py`).
-- **Done**: items 8, 9, 10 and 12, as marked where each is marked — nothing else.
-- **Left**: pick ONE item, give it its own branch and its own `Go!`. The natural
-  first pair is items 5 + 10 (`wait_for` replaces the blind `delay`, which is
-  also what makes an in-flight call abortable — DECISIONS 68 says the loop is
-  already free, so this is about cancellation and flaky sleeps, not about
-  freezing the UI); the natural single starter is item 1 (`command=` + `env=` +
-  `cwd=`), which is self-contained and is the one item every later
-  UI-under-test harness needs regardless of what that UI turns out to be.
-- **State hazards**: none. `tests/unit/terminal/` leaves stale socket *files*
+  `spit_app/chat/chat.py` (the abort flag the cancellable wait reads — the one
+  line `action_abort` already owns, mirrored into the tmux registry),
+  `spit_app/manage/chat/chat.py` (teardown when a chat is deleted or archived),
+  and `tests/unit/terminal/` (223 checks, real tmux on a private socket through
+  `stub_app.py`; append-only).
+- **Done**: items 8, 9, 10 and 12, as marked where each is marked; the entry's
+  State above (branch, baseline, machine facts).
+- **Left** (in order, one concern per commit): item 1 (`command=`/`env=`/`cwd=`)
+  and item 2 (geometry at creation + resize) in `term_new`; the capture modes and
+  scrollback and the per-call diff; `wait_for`/`wait_stable` + the abort flag;
+  `send_bytes`; `format="json"` (cursor and process state as data); the
+  chat-close teardown; `tests/unit/terminal/test_harness.py` + the tool-call
+  checks; the DESC/PROMPT; then TOOLS.md's spec, the DECISIONS entry, the
+  TESTING.md row, and this entry's close.
+- **State hazards**: probes left `/tmp/p0bf4-*.bin` and socket FILES under
+  `/tmp/tmux-1000/spit-probe-*` with no server behind them — safe to remove.
+  `tests/unit/terminal/` leaves stale socket *files*
   under `/tmp/tmux-1000/spit-unit-terminal-*` with no server behind them —
   safe to remove, and any new test must keep that property.
 - **Verify**: full suite from the repo root. `unit:terminal` goes up by the new
