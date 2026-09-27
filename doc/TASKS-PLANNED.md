@@ -407,7 +407,7 @@ text change and its re-pin, not a mechanism change).
 
 ---
 
-## P14 - New tool: `handoff` — an agent hands the work to the next agent  [owner-described 2026-09-25; not started; needs `Go!`]
+## P14 - New tool: `handoff` — an agent hands the work to the next agent  [owner-described 2026-09-25; **STARTED 2026-09-26, `Go!` given — working entry in `TASKS-IN-PROGRESS.md`**, branch `task-handoff-tool-p14`]
 
 The owner's stated intent, verbatim from the P13 briefing: *"later we will introduce a
 tool call that lets you handoff information to the next agent so they may continue

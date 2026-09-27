@@ -12,8 +12,9 @@ only by the checks the task added, write the resolution into
 changing code, and the merge of the branch, which is the only part of finishing
 that is not the agent's.
 
-> **ONE entry is open** in this file: the `terminal`-tool harness list
-> (followup 4) below. Nothing else is half-done, and no branch is waiting on an
+> **TWO entries are open** in this file: the `terminal`-tool harness list
+> (followup 4) and **P14, the `handoff` tool** (planned below, `Go!` given
+> 2026-09-26). Nothing else is half-done, and no other branch is waiting on an
 > agent.
 
 > **P13 CLOSED COMPLETE 2026-09-25** — **WP-A, WP-B, WP-C, WP-D and WP-E are all
@@ -388,6 +389,63 @@ pane is read and synchronised.
   capture-formatting change **byte-for-byte** against the current output before
   changing behaviour (TRAPS #14), and keep the sandbox on by default (TRAPS #6)
   with `sandbox=False` only inside lifecycle tests.
+
+## P14 - New tool: `handoff` - an agent hands the work to the next chat  [owner `Go!` 2026-09-26]
+
+The tool the P14 entry in `TASKS-PLANNED.md` describes, built to the plan the owner
+`Go!`d on 2026-09-26 (the plan is reproduced in the entry's resolution; the owner's
+brief, verbatim, is there too). The four requirements: (1) inherit the calling chat's
+whole `csettings` (endpoint, model, model settings, system prompt, tools, sandbox) -
+the plan's correction: `desc` is NOT inherited verbatim, it becomes
+`"Handoff: <old desc>"`, overrideable by the optional `description` argument, so two
+sidebar rows never read identically; (2) an argument carrying the first message;
+(3) that message is SET AND SENT in the new chat - the send reuses
+`ChatTextArea.action_submit`, the human ctrl+enter path, so persistence, the undo
+record, the widget mount through the window and `Work` + `run_worker` are all the
+proven path, not a second implementation; (4) the user sees it: the new chat is
+mounted, brought to the foreground (the others hidden - `SidePanel.set_active`'s
+display dance), focused, and its sidebar row exists (`option_list()`) and is
+`highlighted`. The current chat ends by `chat._work.exit_after_busy = True` -
+the plan's correction of the brief's `chat.work` (`chat.work` is the Worker, `_work`
+is the `Work`; the check at `work.py` after every tool call does the rest). The flag
+is set LAST, only after a successful handoff; a failed handoff never ends a working
+chat. `TEXT_CRITICAL` (the token-status hook) is re-worded per owner ruling iv to
+call the tool - the fenced-block route stays as the fallback for chats without the
+tool enabled - and `unit:system_note` t16 is re-pinned in the SAME commit; the
+load-bearing half ("Do not call any more tools and do not start new work after the
+handoff") stays byte-identical.
+
+Consequences owned by this design (each is a DECISIONS note, not an oversight): a
+sibling tool call in the same reply as `handoff` is SKIPPED (`work_stream` returns
+inside its per-tool loop) - the PROMPT orders the model to call it alone; the old
+chat's widget stays mounted and usable (the brief's "ends" is the work stream, as
+after an abort); its tmux sessions are NOT torn down (terminal-harness item 12's
+territory); a chat without `handoff` in its selected tools cannot hand off - existing
+chats gain no tool retroactively, the owner enables it.
+
+### State (crash-recovery record)
+
+- **Branch**: `task-handoff-tool-p14` (cut from `main` `98631e6`, P13 merged).
+- **Scope**: new `spit_app/tools/handoff.py` (DESC/PROMPT/SETTINGS, async `call` -
+  on the app loop, the `set_chat_description` precedent); new
+  `spit_app/tests/unit/handoff/` (venv suite: canned HTTP server, real `Chat` +
+  real `SidePanel` + real `Work`/`ToolCall` over it, fixture data dir under
+  `./fixtures/`); `spit_app/chat/token_status.py` `TEXT_CRITICAL` + the t16 pins in
+  `unit/system_note/test_token_status.py`; docs (TESTING row, TOOLS spec, DECISIONS,
+  PROJECT map, close-outs).
+- **Done**: nothing yet (entry opened).
+- **Left**: write the tool, then its suite, then the critical-text re-pin, then docs.
+- **State hazards**: none yet. Known traps ahead: the canned server MUST answer
+  `GET /models` (a ChatSettings `update_models` worker on every chat mount loops
+  60x10 s on an empty answer); `/props`+`/slots` MUST answer 404 (unknown window =>
+  the token-status hook is silent => the new chat's POST body is note-free and the
+  suite is deterministic); `unit:prompt` reads its stub table (33 unmoved);
+  `chat_smoke`'s golden md5 `8ae9d118...` must not move; `ToolCall(app)` loads every
+  real tool module (needs ddgs/playwright/libtmux - all in `~/.venv-spit`, verified).
+- **Verify**: `unit:handoff` green (new TESTING.md row); `unit:system_note` 219
+  unmoved in COUNT with the t16 critical strings re-pinned; `unit:prompt` 33;
+  `chat_smoke` golden md5 unmoved; full `bash spit_app/tests/run_tests.sh` exit 0
+  with every other row at the `doc/TESTING.md` numbers.
 
 ## Protocol when starting a task from TASKS-PLANNED.md
 
