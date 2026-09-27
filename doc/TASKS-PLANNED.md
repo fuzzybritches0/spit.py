@@ -407,7 +407,27 @@ text change and its re-pin, not a mechanism change).
 
 ---
 
-## P14 - New tool: `handoff` — an agent hands the work to the next agent  [owner-described 2026-09-25; **STARTED 2026-09-26, `Go!` given — working entry in `TASKS-IN-PROGRESS.md`**, branch `task-handoff-tool-p14`]
+## P14 - DONE - New tool: `handoff` — an agent hands the work to the next agent  [owner-described 2026-09-25; `Go!` given 2026-09-26; closed 2026-09-27]
+
+Implemented 2026-09-26 → 2026-09-27 on **`task-handoff-tool-p14`** (cut from
+`main` `98631e6`, P13 merged): `ff0a4b8` the entry opened, `961eac1`
+`spit_app/tools/handoff.py` and its new `spit_app/tests/unit/handoff/`
+(**60 checks**, the sixth dependency-listed suite), `6a994f7` the `critical`
+note re-worded to call the tool with the `t16` re-pin in the same commit,
+`8a8f904` the decision record and the tool spec, then the close-out; awaiting
+the owner's merge, `main` untouched throughout, nothing pushed. **Resolution:
+`TASKS-FINISHED.md`** (the mechanic, the two corrections of the brief —
+`chat._work` not `chat.work`, and `desc` becoming `"Handoff: <desc>"` rather
+than inherited verbatim — the three consequences the design owns: sibling tool
+calls in the same reply are skipped, the old chat's widget survives, and a chat
+without the tool selected cannot hand off) **and DECISIONS 82**; the spec is
+`TOOLS.md` #15. Ruling iv arrived here: *what P13 already does for it* below is
+superseded in one respect only — the `critical` note now names the tool and the
+fenced block survives as the fallback for a chat that has not `handoff`
+selected, the load-bearing stop-clause byte-identical, the mechanism
+untouched. The original entry stays below as it was written: it is the owner's
+brief verbatim and the three-way decision it posed, and the answer — (b), the
+NEXT chat, created here — is why DECISIONS 82 exists.
 
 The owner's stated intent, verbatim from the P13 briefing: *"later we will introduce a
 tool call that lets you handoff information to the next agent so they may continue

@@ -2113,3 +2113,166 @@ UI, P18 the level numbers as settings). **`p13-wp-a-note-unpacking` now awaits
 the owner's merge** — the only part of finishing that is not the agent's
 (DECISIONS 71 a). Nothing here merges, pushes or pulls; `main` is untouched and
 carries none of P13 until the owner's hand does.
+
+
+### P14 — the `handoff` tool: the owner's manual loop becomes one tool call (branch `task-handoff-tool-p14`: `ff0a4b8` the entry opened, `961eac1` the tool and its suite, `6a994f7` the `critical` note re-worded with its `t16` re-pin, `8a8f904` the decision record, then this close-out; the branch awaits the owner's merge)
+
+**Owner gate.** The `Go!` was GIVEN **2026-09-26** for this task and it covered
+every code step of it (DECISIONS 71 (c)); nothing here re-asks it. The branch was
+cut from `main` at `98631e6` — P13 merged — so P14 stands on the shipped note
+mechanism and not on P13's unmerged docs branch. `main` untouched throughout,
+nothing pulled, nothing pushed; the branch is the owner's to merge.
+
+**What landed, commit by commit.**
+
+- `ff0a4b8` — docs only: the working entry in `TASKS-IN-PROGRESS.md` with the
+  State fields and the hazards measured **before** the first line of code (the
+  canned server must answer `GET /models`, or a `ChatSettings` `update_models`
+  worker on every chat mount loops 60 × 10 s; `/props` and `/slots` must answer
+  404, so the window is unknown, the token-status hook is silent, and every POST
+  the suite asserts on is note-free), and P14's flip to STARTED in
+  `TASKS-PLANNED.md`.
+- `961eac1` — `spit_app/tools/handoff.py` (129 lines) and
+  `spit_app/tests/unit/handoff/`, **60 checks**, the **sixth dependency-listed
+  suite** (TRAPS #19: the gate probes `textual, httpx, libtmux, ddgs,
+  playwright`, because the code under test reaches `ToolCall`, which loads the
+  whole tool tree). `async def call`, deliberately: `tool_call.py` awaits a
+  coroutine `call` on the app's own loop instead of pushing widget work through
+  `asyncio.to_thread` (the `set_chat_description` precedent). The `TOOLS.md`
+  matrix reads `sync` for it, and that is right in the column's own terms — the
+  column says *in-process `call()`, no sandbox script*; whether that `call` is a
+  coroutine is the other axis, and the comment above the function in `handoff.py`
+  is where this is written down.
+- `6a994f7` — `chat/token_status.py`'s `TEXT_CRITICAL` re-worded to call the
+  tool, and `unit:system_note` **t16 re-pinned in the same commit**, byte for
+  byte against the rendered template. The generator, the rank machine, the
+  private key and the unpacking are untouched: **DECISIONS 81 stands as the
+  record of the mechanism**, exactly as ruling iv predicted (a text change plus
+  its re-pin, not a mechanism change).
+- `8a8f904` — **DECISIONS 82** (the argues: the `action_submit` reuse against a
+  second write path, whole-`csettings` inheritance with `desc` excepted, the
+  flag set LAST on `chat._work`, the two owned consequences, the suite's
+  real/stub split, the three measured harness lessons), the `handoff` spec as
+  `TOOLS.md` **#15** plus its matrix row, `TESTING.md`'s `unit:handoff` **60**
+  row with "five suites" → "**six**" and the gate explained, and `PROJECT.md`'s
+  map sentence.
+- this close-out — docs, no code.
+
+**The mechanic** (the short form; DECISIONS 82 and `TOOLS.md` #15 carry the
+argues). The tool writes the new chat's JSON in `Manage.save_managed`'s shape
+with the calling chat's whole `csettings` deep-copied and a fresh id in
+`Manage`'s scheme plus the bump-loop `Manage` never needed (two handoffs in one
+clock tick); `SidePanel.option_list()` makes the sidebar entry exist; the real
+`Chat` is mounted, the others hidden, the new row `highlighted`, the new chat
+focused; the text area is set and `ChatTextArea.action_submit()` is awaited —
+**the human ctrl+enter path**, so the user-message dict, the undo `insert`, the
+mount through the sliding window, `write_chat_history()` and the started `Work`
+are the ones a human typing the same message would leave; and LAST, only after
+all of that succeeded, `chat._work.exit_after_busy = True` — the flag
+`action_abort` already sets and the one `work.py` checks after every tool call.
+A refusal (blank or non-string `message`, unwritable file) returns before any of
+it: nothing created, no flag, the working chat keeps working. `t7` pins the
+refusal with its control.
+
+**Two corrections of the brief, made while planning and shipped as planned** —
+both recorded in the (now closed) entry and in 82, because both are the kind of
+slip that fails silently:
+
+- the flag lives on **`chat._work`, not `chat.work`**: `chat.work` is the Textual
+  `Worker` wrapped around the `Work`, and a flag set on the Worker is read by
+  nobody; `work.py`'s per-tool-call check (`if self.exit_after_busy: return
+  None`) is on the `Work`.
+- **`desc` is not inherited verbatim**: the new chat reads
+  `"Handoff: <old desc>"` unless the optional `description` argument says
+  otherwise (t1 pins the default and the whole-block inheritance, t8 pins the
+  override and its junk-value control). Verbatim inheritance would put two
+  identical rows in the sidebar — the one thing the owner's manual loop never
+  suffered.
+
+**The consequences this design OWNS** (DECISIONS 82 (d) — each is a decision and
+each is pinned; none is a hole to be filled quietly later):
+
+- **a sibling tool call in the same assistant reply is SKIPPED.** `handoff` ends
+  the stream by returning inside `work_stream`'s per-tool loop, so a second call
+  in the one turn never runs. Work-loop **t15** pins it: two calls asked,
+  exactly one new chat, one tool result, and the second message never reached any
+  wire — with the control that the first one did. The `DESC`/PROMPT line *"Call
+  it alone"* is load-bearing, not decoration.
+- **"this chat ends" is its work stream, not the widget.** The old `Chat` stays
+  mounted, readable and usable, exactly as after an abort; its tmux sessions stay
+  alive with it, which is terminal-harness **item 12**'s territory and not this
+  tool's. Ripping the widget out was never in the contract.
+- **a chat without `handoff` in its selected tools cannot hand off.** Existing
+  chats gain no tool retroactively; the owner enables it per chat. That is
+  precisely why the fenced-block wording survives inside `critical` as the
+  fallback instead of being deleted.
+
+**The note re-pin (ruling iv, arrived).** `TEXT_CRITICAL` now sends the model to
+the tool — *"Hand the work off NOW: call the `handoff` tool with your handoff
+message…"* — and the fenced block is what it writes *when no handoff tool is
+available*. The load-bearing stop-clause, *"Do not call any more tools and do not
+start new work after the handoff — the chat dies inside this reply"*, is
+byte-identical inside the new wording, and `unit:system_note` stayed at **219**
+in count with the `t16` strings moved in the same commit as the text: the text
+came to the pin, the pin did not come to the code (TRAPS #18).
+
+**Verified.** Full `bash spit_app/tests/run_tests.sh` from the repo root at this
+tip, run **five times** for the close-out — three before its own edits, twice
+after them — **byte-identical across all five** (the md5 of the captured stdout
+of every run: `5a7e48a4270a10f3a47d1fd3a89921a6`), **exit 0**, stderr empty,
+**every row at the `doc/TESTING.md` numbers** — tools 127/24/30/119/80/32/68/29
+(509), anchored 68, arguments 131, chat_smoke 168, chat_window 568, endpoints
+442, **handoff 60** (this entry's own row), prompt 33, render 278, run_script
+121, sandbox 157, system_note **219**, terminal 223, FAIL 0 everywhere.
+`unit:prompt` reads its pinned **33** because the new `DESC`/PROMPT are not in
+the stub table that suite drives — the row neither moves nor lies.
+`chat_smoke`'s `golden.txt` md5 `8ae9d1186a59627d30d05dee95f0ad95` **unmoved**:
+the handoff tool is not selected by the smoke chat, so nothing on that wire
+changed. The close-out adds no checks and touches no code, so the
+count-unchanged run is itself the proof of that.
+
+**Corrected by the runs taken after the close-out commit: stderr is not always
+clean.** The five runs above had stderr empty, and nine further runs were then
+taken at the same tree for the record — **fourteen in all, every one of them
+exit 0 with stdout byte-identical** — but **two of the fourteen printed a
+traceback**: the canned
+server's `do_GET` 404 branch (`handoff_harness.py:209`) dies on
+`BrokenPipeError` when the client is gone before the 404 body lands — the
+`update_models` / `/props` / `/slots` probe path, which hangs up because the
+answer is a 404 or the worker is being torn down. The `do_POST` handler already
+catches `(BrokenPipeError, ConnectionResetError)` for exactly this reason, with
+the comment saying the recording already happened; the GET path simply never got
+the same guard, and Python's `socketserver` prints the traceback and carries on.
+**Nothing is measured wrong** — no check moved, the suite still reports 60/0, and
+the full suite still exits 0 — but the claim "stderr empty" is true of the five
+close-out runs and not of every run, so it is stated that way here. **Not fixed
+here**: it is a one-line guard in a test file, a code change, and DECISIONS 71
+keeps a `Go!` in front of those; whoever next is `Go!`d on this suite (or on any
+red in it) should wrap the `do_GET` `_send` in the same `except
+(BrokenPipeError, ConnectionResetError): pass` the POST path has and say so in
+the commit. Recorded rather than quietly patched, so that the next agent reading
+a stderr wall out of a green suite knows what it is before spending an afternoon
+on it.
+
+**Which verification the close-out rested on, plainly.** The **automated headless
+suites**, and only those. `unit:handoff` drives the real `Chat` (window, undo,
+stream callbacks), the real `SidePanel` `OptionList`, the real `Work` and the
+real `ToolCall` over a canned 127.0.0.1 SSE server: *"sent"* is proven by the
+POST the server records and by the streamed reply landing in the new chat, and
+*"ends"* by the **absence** of the next request — the one assertion a tool that
+merely sets a flag cannot satisfy. This environment has **no screen** (TRAPS #22),
+so nothing here was confirmed by watching a new chat appear in the running app; a
+by-hand look at a real handoff (does the sidebar row read well, does the
+foreground switch feel right, does the reply stream into the mounted window) is a
+**note for whoever next runs the app**, never a condition of closing.
+
+**No handoff is written after this one.** P14 was one package, not a chain: the
+work is done, the entry is closed, and what the branch needs next is not another
+agent but the owner's hand. **`task-handoff-tool-p14` now awaits the OWNER'S
+MERGE** — the only part of finishing that is not the agent's (DECISIONS 71 a). No
+sign-off step participated; nothing merged, pushed or pulled; `main` is at
+`98631e6` and carries none of P14 until the owner's hand does. What P14 leaves
+for later work is already filed, each with its own `Go!` ahead of it — P16
+`note_mode`, P17 the notes in the UI, P18 the level numbers as settings — and
+the tmux teardown a closed chat still does not get belongs to terminal-harness
+**item 12**, not to P14.
