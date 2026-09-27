@@ -52,7 +52,11 @@ chain, DECISIONS 81: generator (`chat/system_note.py`, module `HOOKS`) → hook
 `user` message, merged into the carrier's content when the carrier is `user`.
 `Work.work_stream()` asks the hooks before every request; the notes are
 invisible in the UI and the hook says nothing when the window is unknown (the
-dash again). Repo `README.md` has install and usage
+dash again). When the `critical` note fires the model calls the **`handoff`
+tool** (DECISIONS 82): a new chat is created inheriting this chat's settings,
+the handoff message goes into it as its first message and starts working, the
+new chat opens foreground and highlighted in the sidebar, and this chat's work
+stream ends. Repo `README.md` has install and usage
 instructions (venv, `libcairo2`, `bubblewrap`, `tmux`,
 `playwright install chromium-headless-shell`). Tested with Python 3.13.
 

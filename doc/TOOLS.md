@@ -30,6 +30,7 @@ code. The full design-rationale log lives in `DECISIONS.md`.
 | run_command | async | text | - | wrap_script, PROMPT_INST, STREAM_TOOL_RESPONSE, MAX_SECONDS=0 |
 | run_script | async | text | - | PROMPT_INST ([interpreters]), STREAM_TOOL_RESPONSE, MAX_SECONDS=0, separate_stderr, wrap_script (bash only), interpreters allow-list (enforced) |
 | search_replace | async | (markdown) | path | PROMPT_INST, MAX_SECONDS=0 |
+| handoff | sync | - | - | ends the calling chat (`_work.exit_after_busy`); DECISIONS 82 |
 | set_chat_description | sync | - | - | |
 | terminal | sync | text | - | tmux backend, SANDBOX=True |
 | websearch | sync | - | - | PROMPT_INST ([max_results], [save_search]) |
@@ -764,5 +765,29 @@ rename(old_path="a.txt", new_path="b.txt", dry_run=True)
 ```
 Renamed file `notes.txt` to `archive/notes-2026.txt`.
 ```
+
+---
+
+### 15. `handoff` (NEW - branch `task-handoff-tool-p14`, decision 82)
+**Purpose**: Hand the work over to a new chat. The mechanic of the owner's
+manual loop ("tokens are running out — write a handoff message I can paste into
+the next chat"): the new chat inherits the calling chat's settings, the handoff
+message becomes its first user message and starts working immediately, the
+calling chat's work ends. The `critical` token-status note
+(`chat/token_status.py`, DECISIONS 81/82) sends the model to this tool; the
+fenced-block wording survives only as the fallback for a chat that has not
+`handoff` selected.
+
+**Parameters**:
+- `message` (required): the complete handoff text. It arrives in the new chat as a plain `user` message; a fresh agent continues from it alone.
+- `description` (optional): sidebar description for the new chat. Default: `"Handoff: " + this chat's desc` (two identical sidebar rows are the bug this avoids).
+
+**What it does, in order**: writes the new chat's JSON in `Manage.save_managed`'s shape (whole `csettings` deep-copied, desc excepted, fresh `ctime`, `messages: []`); `SidePanel.option_list()`; mounts the real `Chat`, hides the others, highlights the new entry, focuses it; sets the text area and awaits `ChatTextArea.action_submit` — the human ctrl+enter path — so the message dict, the undo record, the window mount, the persistence and the started `Work` are the proven ones; THEN, last and only on success, `chat._work.exit_after_busy = True`, which `work.py` checks after every tool call.
+
+**Output**: `Handoff ok: new chat \`chat-…\` …` — or `ERROR: …` with nothing created and this chat continuing (blank `message`, unwritable file). The refusal cannot half-happen; a failed handoff never ends a working chat (the flag line is the tool's last statement).
+
+**Consequences owned (DECISIONS 82 d)**: a sibling tool call in the same reply is SKIPPED (`work_stream` returns inside its per-tool loop; the PROMPT orders the model to call `handoff` alone — pinned by work-loop t15); "this chat ends" is its work stream, not the widget (the old chat stays mounted and usable, like after an abort); only chats with `handoff` selected can hand off — existing chats gain no tool retroactively.
+
+**Test**: `spit_app/tests/unit/handoff/` (60 checks, the sixth dependency-listed suite) — real `Chat`/`SidePanel`/`Work`/`ToolCall` over a canned 127.0.0.1 SSE server; "sent" proven by the recorded POST and the streamed reply, "ends" by the ABSENCE of the next request.
 
 ---

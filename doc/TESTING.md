@@ -43,6 +43,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:chat_smoke | 168 |
 | unit:chat_window | 568 |
 | unit:endpoints | 442 |
+| unit:handoff | 60 |
 | unit:prompt | 33 |
 | unit:render | 278 |
 | unit:run_script | 121 |
@@ -50,7 +51,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:system_note | 219 |
 | unit:terminal | 223 |
 
-## The test venv (five suites need it)
+## The test venv (six suites need it)
 
 `unit:terminal` drives a **real tmux** through `libtmux`; `unit:anchored`,
 `unit:chat_smoke` and `unit:chat_window` drive a **real headless Textual**
@@ -59,7 +60,12 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 `spit_app/endpoints/llamacpp.py`, imports it, and the bare system python3 does
 not have it (measured: `ModuleNotFoundError: No module named 'httpx'`) - and
 **Textual** too, because its counts-row file drives `chat_settings` headless.
-The bare system python3 has no app dependencies (TRAPS #19), so all five need a
+`unit:handoff` (P14) drives the real `Chat`, `SidePanel`, `Work` and `ToolCall`
+headless over a canned 127.0.0.1 SSE server - and its gate probes
+`textual, httpx, libtmux, ddgs, playwright`, because `ToolCall` loads the whole
+tool tree and that tree imports all of it (TRAPS #19: the dependency is what
+the code UNDER TEST imports, not what the test file happens to import).
+The bare system python3 has no app dependencies (TRAPS #19), so all six need a
 venv. Build it once:
 
 ```
