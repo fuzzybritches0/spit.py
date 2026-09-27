@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
+import difflib
+import json
 import os
+import re
+import shlex
+import time
 from collections import namedtuple
 
 import libtmux
@@ -59,9 +64,16 @@ MODS = ["C-", "S-", "M-"]
 # format itself, so they name the daemon that answered, not this Python process --
 # measured: pid 11 from a process whose own pid was 6); see Snapshot.
 LISTING_SEPARATOR = "\x1f"
+# `pane_dead_signal`/`pane_dead_time` are tmux >= 3.3; on an older server the
+# format expands to the empty string, the row still parses (the fields are
+# positional), and only the two signals of death read None — every OTHER row
+# still answers, which is what the `continue` on a wrong field count guards
+# against: a separator disappearing would shift the fields, an empty expansion
+# cannot. `pane_current_command` stays LAST for the maxsplit rule above.
 LISTING_TOKENS = ("pid", "start_time", "session_id", "window_id", "pane_id",
                   "pane_dead", "pane_dead_status", "pane_pid", "pane_width",
-                  "pane_height", "cursor_x", "cursor_y", "pane_current_command")
+                  "pane_height", "cursor_x", "cursor_y",
+                  "pane_dead_signal", "pane_dead_time", "pane_current_command")
 PaneState = namedtuple("PaneState", " ".join(LISTING_TOKENS))
 LISTING_FORMAT = LISTING_SEPARATOR.join("#{" + token + "}" for token in LISTING_TOKENS)
 
@@ -186,6 +198,28 @@ def window_state(chat: dict, name: str, snapshot: Snapshot):
 # report must not dump that into the model's context.
 DEAD_REPORT_HISTORY = "50"
 
+# How far a LIVE capture may pull scrollback when the caller asks for history.
+# Same reason as the 50 above, different number: the pane's history can be 2000
+# lines, a caller asking for scrollback wants the lines that just went by, and
+# everything a capture returns goes into the model's context. 500 is the ceiling;
+# asking for more gets the ceiling, not an error (the caller's INTENT — see what
+# scrolled off — is satisfied at any N the pane still holds).
+HISTORY_REPORT_LIMIT = 500
+
+# How often a wait_for() loop looks at the pane. 100 ms is one tenth of the
+# median time tmux needs to answer (snapshot + capture is ~17 ms measured), so
+# the loop never queues behind itself, and it is ten times finer than any delay
+# the blind `delay` argument ever offered.
+WAIT_POLL_SECONDS = 0.1
+
+def to_int(value):
+    """tmux prints numbers as strings and prints nothing for a field it does not
+    have; both answer None here rather than raising out of a report."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
 def pane_of_id(server, pane_id):
     """A libtmux Pane for an id from the snapshot, for capturing or sending.
 
@@ -199,6 +233,59 @@ def pane_of_id(server, pane_id):
 def window_of_id(server, window_id):
     """The same, for the one thing a window is ever asked here: to be killed."""
     return libtmux.Window(server=server, window_id=window_id)
+
+def resize_window(server, window_id, cols: int, rows: int) -> None|str:
+    """resize-window by id. Both dimensions, always.
+
+    On a CLIENTLESS session -- every session this tool makes, since no client
+    ever attaches -- tmux 3.7 sizes the WINDOW, not the session: measured, one
+    window at 120x40 and a window created after it still 80x24. That is what
+    makes geometry per terminal rather than per chat, and it is why a capture's
+    width can be an assertion's fact instead of a property of whoever ran the
+    test (DECISIONS 73 named this; harness item 2 ships it). Half a geometry is
+    refused at the tool layer: a window has ONE size, and the other half would
+    be a guess.
+    """
+    try:
+        window_of_id(server, window_id).resize(width=cols, height=rows)
+    except libtmux.exc.LibTmuxException as exc:
+        return f"ERROR: could not resize to {cols}x{rows}: {exc}"
+    return None
+
+def close_chat(tmux: dict, chat_id: str) -> None:
+    """Everything a chat owns on the tmux server, gone: its session, its windows,
+    its registry entry. Harness item 12's open half — until now the only thing
+    that freed a chat's terminals was actions.py at APP exit, so deleting or
+    archiving a chat left its panes (and whatever still ran in them) alive for
+    the rest of the app's life on our socket.
+
+    The kill is `kill-session`, and only the session: the SERVER belongs to the
+    whole process (`spit-<pid>` is shared by every chat) and only the exit path
+    may kill it. Killing a session destroys all its windows at once, registered
+    and stray alike — which is the point: the registry cannot be trusted to hold
+    every window a chat ever made, and it need not, because the session is the
+    unit that owns them.
+
+    Same id discipline as retire(): the id is only believed when a fresh listing
+    comes from the server the chat's stamp names AND the listing still holds that
+    session — a restarted tmux numbers from $0 again, and an id kept from a dead
+    server could name some other chat's live session. When the stamp disagrees
+    there is nothing to destroy and nothing to fear: the pop is the whole of it.
+    """
+    chat = tmux.pop(chat_id, None)
+    if not chat:
+        return
+    server = chat.get("server")
+    session = chat.get("session")
+    if server is None or session is None:
+        return
+    snapshot = pane_snapshot(server)
+    if not snapshot.is_the_server_of(chat) or not snapshot.holds_session(session):
+        return
+    try:
+        server.cmd("kill-session", "-t", session.session_id)
+    except libtmux.exc.LibTmuxException:
+        pass        # gone between the listing and the kill: nothing left to destroy
 
 def dead_report_text(server, name: str, state) -> str|None:
     """The report for a retained corpse: its real final screen and exit status.
@@ -517,21 +604,55 @@ class Terminal(CommonMixIn):
         except libtmux.exc.LibTmuxException:
             pass        # already gone: nothing to destroy, and nothing left to do
 
-    def term_new(self, name: str) -> None|str:
-        ret = self.check_bwrap(["bash"])
+    def term_new(self, name: str, command=None, env: dict = None, cwd: str = None,
+                 cols: int = None, rows: int = None) -> None|str:
+        # Harness item 1: "start the UI under test" is the primitive and the
+        # interactive bash is the special case, so `command` (an argv, as a list
+        # or as one string meaning that one program) replaces the hardcoded bash
+        # and defaults to it. `env` and `cwd` are the caller's own, applied to
+        # the launched command — in sandbox mode as bwrap's own --setenv/--chdir
+        # (both last-one-wins, so they answer the caller without disturbing what
+        # bwrap_args() sets; the cwd is a path as the PANE's filesystem sees it,
+        # whose relationship to the carried shell state is P11's open question,
+        # untouched here).
+        argv = [command] if isinstance(command, str) else list(command or ["bash"])
+        ret = self.check_bwrap(argv)
         if ret:
             return ret
         if self.sandbox:
-            cmd_args = self.bwrap_args() + ["bash"]
+            cmd_args = self.bwrap_args()
+            for key, value in (env or {}).items():
+                cmd_args += ["--setenv", str(key), str(value)]
+            if cwd:
+                cmd_args += ["--chdir", cwd]
+            cmd_args += argv
         else:
-            cmd_args = [self.SANDBOX_ENV] + ["bash"]
-        cmd_args = " ".join(cmd_args)
+            # sandbox_env.sh execs "$@" (its own state-load, then the command),
+            # so env and cwd ride it rather than bypass it: `env K=V ...` for the
+            # one, a cd the script never performs for an explicit request for the
+            # other. The default call — command=None, env=None, cwd=None — builds
+            # exactly the `[SANDBOX_ENV, "bash"]` it always built.
+            inner = list(argv)
+            if env:
+                inner = (["env"] + [f"{key}={value}" for key, value in env.items()]
+                         + inner)
+            if cwd:
+                inner = ["bash", "-c",
+                         f"cd -- {shlex.quote(cwd)} && exec " + shlex.join(inner)]
+            cmd_args = [self.SANDBOX_ENV] + inner
+        # shlex.join, not " ".join: the old join could only ever carry arguments
+        # with no metacharacters in them, which was invisible while the only argv
+        # was the word `bash` and would corrupt anything a caller actually names.
+        cmd_args = shlex.join(cmd_args)
         # A chat with no tmux entry, or with one whose session was destroyed (see
         # ensure_session: the last window of a session takes the session, and on our
         # socket the last window is usually all the server had). The screen cache
         # survives that; `forget_screen` below keeps it out of THIS name's way.
         chat = self.ensure_session()
         self.forget_screen(name)
+        self.forget_raw(name)   # decision 66's rule, applied to the diff baseline:
+        # a reused name is a new session, and the old session's screen is not this
+        # one's "last capture" to compare against.
         windows = chat["windows"]
         # A reused name is a NEW session, never the old one (TOOLS.md 8, and t7 in
         # test_screen). tmux reuses window INDEXES -- measured: kill index 2, the
@@ -583,7 +704,30 @@ class Terminal(CommonMixIn):
                     f"should run in it exited immediately or could not be started. "
                     f"Nothing is running under that name. ({exc})")
         windows[name] = window.window_id
+        # Register BEFORE the resize: a window that exists but did not take its
+        # geometry is still somebody's window, and it has to be listed, killable
+        # and reported — an error return may not orphan it.
+        if cols is not None and rows is not None:
+            geometry = resize_window(chat["server"], window.window_id, cols, rows)
+            if geometry:
+                return geometry
         self.remove_stray_window(chat)
+
+    def resize(self, name: str, cols: int, rows: int) -> None|str:
+        """Harness item 2's resize action, on a session that already exists.
+
+        A dead one is REPORTED, not resized: resize-window on a retained corpse
+        succeeds in tmux and says nothing the caller could act on, while the dead
+        report says everything — so the refusal carries the news, not just the no.
+        """
+        snapshot = self.snapshot()
+        state = self.window_state(name, snapshot)
+        if state is None or pane_is_dead(state):
+            self.dead_report(name, state, snapshot)
+            return (f"ERROR: session `{name}` is not live, nothing was resized. "
+                    f"Send input to that name to start a new one.")
+        return resize_window(self.server(), self.chat_state()["windows"][name],
+                             cols, rows)
 
     def pane_active(self, name: str) -> bool:
         return pane_active(self.tmux, self.chat_id, name)
@@ -635,13 +779,19 @@ class Terminal(CommonMixIn):
             return self.term_send_keys(name, inp, False)
         return self.term_send_keys(name, inp, True)
 
-    def term_screen(self, name: str) -> str:
+    def term_screen(self, name: str, mode: str = "text", history: int = None,
+                    marker: bool = True) -> str:
         # One listing, then read -- and `window_state()`, not `pane_active()`: the
         # latter FORGETS a name it finds dead, and a name forgotten before it is
         # read is a corpse whose real screen nobody can report, which is the whole
         # point of remain-on-exit. Liveness, cursor and exit status all come from
         # the SAME snapshot, so they cannot disagree with each other the way three
         # separate reads could.
+        #
+        # mode/history/marker are the capture arguments (harness items 3, 4 and 7)
+        # and every default is exactly the call that has always been made: plain
+        # text, visible screen, cursor spliced. The contract is the rendered screen
+        # (TRAPS #14), and it moved by zero bytes for a caller who passes nothing.
         snapshot = self.snapshot()
         chat = self.chat_state()
         state = window_state(chat, name, snapshot)
@@ -652,29 +802,220 @@ class Terminal(CommonMixIn):
             return self.dead_report(name, None)
         if pane_is_dead(state):
             return self.dead_report(name, state, snapshot)
-        return self.live_screen(name, state, snapshot)
+        return self.live_screen(name, state, snapshot, mode=mode, history=history,
+                                marker=marker)
 
-    def live_screen(self, name: str, state, snapshot: Snapshot = None) -> str:
-        # The splice is byte-for-byte what it has always been -- same capture flags,
-        # same `█`, same rule for the character under it -- and only WHERE x and y
-        # come from has changed: the snapshot carries `cursor_x`/`cursor_y`, measured
-        # equal to `display_message('#{cursor_x}')` for a fresh prompt, a half-typed
-        # line, after Enter, a wrapped line and a screenful (identical in all five).
-        # Two fewer tmux invocations per capture, same bytes out -- TRAPS #14: a
-        # refactor is proven by comparing the output, not by a green suite.
-        _output = pane_of_id(self.server(), state.pane_id).capture_pane(
+    def capture_pane_of(self, state, mode: str = "text", history: int = None) -> list:
+        """The raw rows of one live pane, in the given capture mode.
+
+        text     the plain screen (the flags every older read used);
+        styled   the same rows with tmux's own ANSI attributes (`-e`), which is
+                 how a heading, a colour or a border gets asserted (item 3);
+        bytes    styled plus non-printables octal-escaped (`-e -C`), the byte-safe
+                 view — stated honestly: this is the pane's GRID as tmux keeps it.
+                 A sequence tmux does not model in the grid (a Kitty/Sixel image)
+                 is consumed by tmux and appears here as its placeholder, never
+                 as its bytes; asserting the graphics byte stream needs a pane
+                 recorder (pipe-pane), which this deliberately does not ship —
+                 DECISIONS 84 owns that limit, and the probe that measured it.
+
+        history pulls N lines of scrollback above the visible screen (item 7),
+        capped at HISTORY_REPORT_LIMIT for the same context reason the dead
+        report's 50 exists.
+        """
+        flags = {"preserve_trailing": True, "join_wrapped": True}
+        if mode in ("styled", "bytes"):
+            flags["escape_sequences"] = True
+        if mode == "bytes":
+            flags["escape_non_printable"] = True
+        if history:
+            flags["start"] = -min(int(history), HISTORY_REPORT_LIMIT)
+        return pane_of_id(self.server(), state.pane_id).capture_pane(**flags)
+
+    def capture_text(self, state) -> list:
+        """The plain-text rows with the tool's OWN flags — one reader, one set of
+        flags, inside the tool exactly as DECISIONS 73 demanded of the harness.
+        wait_for(), diff_screen() and the text render all read through here, so
+        the pattern a caller waits for is matched against exactly the text
+        term_screen() would report."""
+        return pane_of_id(self.server(), state.pane_id).capture_pane(
             preserve_trailing=True, join_wrapped=True)
-        x, y = cursor_of(state)
+
+    def remember_raw(self, name: str, rows: list) -> None:
+        self.chat_state().setdefault("last_capture", {})[name] = list(rows)
+
+    def last_raw(self, name: str):
+        return self.chat_state().get("last_capture", {}).get(name)
+
+    def forget_raw(self, name: str) -> None:
+        self.chat_state().get("last_capture", {}).pop(name, None)
+
+    def diff_screen(self, name: str) -> str:
+        """Only the lines that changed since the last plain read of this name
+        (harness item 7's second half). The baseline moves on every TEXT capture —
+        term_screen()'s default path and a previous diff both set it; styled and
+        byte captures leave it alone, so opting into escapes never silently
+        resets what "changed" is compared against. No baseline yet is said out
+        loud and answers with the whole screen, because inventing an empty
+        baseline would report every line as a deletion of nothing.
+        """
+        snapshot = self.snapshot()
+        chat = self.chat_state()
+        state = window_state(chat, name, snapshot)
+        if state is None or pane_is_dead(state):
+            # dead/absent have their own established sentences; a diff on top of
+            # them would bury the report a model must act on
+            return self.term_screen(name)
+        rows = self.capture_text(state)
+        previous = self.last_raw(name)
+        self.remember_raw(name, rows)
+        if previous is None:
+            return (f"Session: {name}\n\n(first capture: no previous screen to "
+                    f"compare against, so every line follows)\n\n"
+                    + "\n".join(rows))
+        body = list(difflib.unified_diff(previous, rows, lineterm="", n=0))[2:]
+        if not body:
+            return f"Session: {name}\n\n(no lines changed since the last capture)"
+        return f"Session: {name}\n\n" + "\n".join(body)
+
+    def wait_for(self, name: str, pattern: str = None, stable_ms: int = None,
+                 timeout: float = 15.0):
+        """Poll the pane until `pattern` (a regex) matches, or until the screen has
+        held still for `stable_ms` milliseconds, or until `timeout` seconds pass,
+        or until the chat's abort flag is set. Returns (kind, rows): kind is
+        matched / stable / timeout / aborted / dead / bad-pattern.
+
+        Item 5 replaces the blind sleep — streaming is tested by waiting for the
+        thing that streams, not for a number of seconds — and its abort check IS
+        the remaining half of item 10: a thread cannot be interrupted, so
+        Chat.action_abort stamps a flag in the plain dict this loop already
+        touches, and an in-flight wait returns at the next poll with 'aborted'
+        instead of at its timeout. The flag is consumed here and re-armed by no
+        one; tools/terminal.py also clears it at the start of a call, so an abort
+        can never cancel a wait that began after it.
+
+        The rows come back for the caller's convenience; the report a call
+        returns is term_screen()'s, taken after this loop, so a matched wait
+        still reports through the one renderer every screen goes through.
+        """
+        if pattern is None and stable_ms is None:
+            return ("bad-pattern", [])      # nothing to wait for is not a wait
+        try:
+            needle = re.compile(pattern) if pattern else None
+        except re.error:
+            return ("bad-pattern", [])
+        deadline = time.monotonic() + timeout
+        previous = None
+        since_change = time.monotonic()
+        while True:
+            state = self.window_state(name)
+            if state is None or pane_is_dead(state):
+                return ("dead", [])
+            rows = self.capture_text(state)
+            if needle is not None and needle.search("\n".join(rows)):
+                return ("matched", rows)
+            now = time.monotonic()
+            if rows != previous:
+                previous, since_change = rows, now
+            elif stable_ms is not None and (now - since_change) * 1000 >= stable_ms:
+                return ("stable", rows)
+            if self.chat_state().pop("abort", None):
+                return ("aborted", rows)
+            if now >= deadline:
+                return ("timeout", rows)
+            time.sleep(WAIT_POLL_SECONDS)
+
+    def send_bytes(self, name: str, data: str) -> bool:
+        """Raw injection (harness item 6): these bytes reach the pane with nothing
+        interpreted, which is the only way to test a program's SGR mouse handling
+        or its bracketed paste against the real sequences.
+
+        Measured, libtmux's key layer is the wrong tool for this exact job: the
+        same string carrying a literal ESC arrived mangled or lost through
+        send_keys(), while `send-keys -l -- <bytes>` put the bytes on the wire
+        byte-exact (the probe read back, from a `cat` running in the pane,
+        b'\\x1b[<0;10;10M mm-A \\x1b[5~'). So this asks tmux directly, through the
+        chat's own Server object, with `--` before the data so a leading dash is
+        data and never a flag. A NUL cannot cross an argv at all and is refused
+        by the tool layer before it gets here.
+        """
+        snapshot = self.snapshot()
+        state = self.window_state(name, snapshot)
+        if state is None or pane_is_dead(state):
+            self.dead_report(name, state, snapshot)
+            return False
+        self.server().cmd("send-keys", "-l", "-t", state.pane_id, "--", data)
+        return True
+
+    def screen_json(self, name: str, mode: str = "text", history: int = None,
+                    wait: str = None) -> str:
+        """Harness items 8 and 11: the state of one terminal as DATA — rows,
+        cursor, geometry, pid, current command, and for a dead pane the exit
+        status, signal and death time, straight from the snapshot fields the
+        state layer already pays for. A test asserts on these instead of parsing
+        prose, and the cursor is two numbers here (item 4) precisely so the
+        splice above never has to be the carrier of that fact."""
+        snapshot = self.snapshot()
+        chat = self.chat_state()
+        state = window_state(chat, name, snapshot)
+        report = {"session": name}
+        if wait:
+            report["wait"] = wait
+        if state is None:
+            report["state"] = "absent"
+            return json.dumps(report)
+        dead = pane_is_dead(state)
+        report["state"] = "dead" if dead else "live"
+        report["cols"] = to_int(state.pane_width)
+        report["rows"] = to_int(state.pane_height)
+        report["pane_pid"] = to_int(state.pane_pid)
+        report["command"] = state.pane_current_command
+        if dead:
+            report["exit_status"] = to_int(state.pane_dead_status)
+            report["signal"] = to_int(state.pane_dead_signal)
+            report["dead_time"] = to_int(state.pane_dead_time)
+            rows = pane_of_id(self.server(), state.pane_id).capture_pane(
+                start=f"-{DEAD_REPORT_HISTORY}", preserve_trailing=True,
+                join_wrapped=True)
+        else:
+            report["cursor_x"], report["cursor_y"] = cursor_of(state)
+            rows = self.capture_pane_of(state, mode, history)
+        report["screen"] = rows
+        return json.dumps(report)
+
+    def live_screen(self, name: str, state, snapshot: Snapshot = None,
+                    mode: str = "text", history: int = None, marker: bool = True) -> str:
+        # The DEFAULT path is byte-for-byte what it has always been -- same capture
+        # flags, same `█`, same rule for the character under it -- and only WHERE x
+        # and y come from changed with the state layer: the snapshot carries
+        # `cursor_x`/`cursor_y`, measured equal to `display_message('#{cursor_x}')`
+        # in five states (identical in all five). Two fewer tmux invocations per
+        # capture, same bytes out -- TRAPS #14: a refactor is proven by comparing
+        # the output, not by a green suite.
+        #
+        # mode != "text" or marker=False means NO splice: the rows are exactly what
+        # the pane holds, because splicing a character into styled rows corrupts the
+        # attributes around the splice point, and item 4 names the corruption the
+        # marker causes (the character under the cursor is overwritten, and
+        # double-width characters break under it) as the reason cursor must be data.
+        _output = self.capture_pane_of(state, mode, history)
+        if mode == "text":
+            self.remember_raw(name, _output)   # the diff's baseline is the plain read
         output = f"Session: {name}\n\n"
-        count_y = 0
-        for line in _output:
-            if count_y == y:
-                output += line[0:x] + "█"
-                if len(line)-1 >= x+1:
-                    output += line[x+1:]
-                output += "\n"
-            else:
+        if mode == "text" and marker:
+            x, y = cursor_of(state)
+            count_y = 0
+            for line in _output:
+                if count_y == y:
+                    output += line[0:x] + "█"
+                    if len(line)-1 >= x+1:
+                        output += line[x+1:]
+                    output += "\n"
+                else:
+                    output += line + "\n"
+                count_y += 1
+        else:
+            for line in _output:
                 output += line + "\n"
-            count_y += 1
         self.remember_screen(name, output)
         return output

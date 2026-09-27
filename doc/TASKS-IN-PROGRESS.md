@@ -407,15 +407,90 @@ pane is read and synchronised.
   `spit_app/manage/chat/chat.py` (teardown when a chat is deleted or archived),
   and `tests/unit/terminal/` (223 checks, real tmux on a private socket through
   `stub_app.py`; append-only).
-- **Done**: items 8, 9, 10 and 12, as marked where each is marked; the entry's
-  State above (branch, baseline, machine facts).
-- **Left** (in order, one concern per commit): item 1 (`command=`/`env=`/`cwd=`)
-  and item 2 (geometry at creation + resize) in `term_new`; the capture modes and
-  scrollback and the per-call diff; `wait_for`/`wait_stable` + the abort flag;
-  `send_bytes`; `format="json"` (cursor and process state as data); the
-  chat-close teardown; `tests/unit/terminal/test_harness.py` + the tool-call
-  checks; the DESC/PROMPT; then TOOLS.md's spec, the DECISIONS entry, the
-  TESTING.md row, and this entry's close.
+- **Done**: items 8, 9, 10 and 12 (as marked above); the entry's State
+  (branch, baseline, machine facts); commits `8f3a038` (entry+State) and
+  (this commit) the BACKEND of every remaining item, all of it in
+  `spit_app/tools/run/terminal.py`, uncommitted-in-branch at the time of
+  writing — READ THAT FILE, it carries the design in its comments:
+  * `LISTING_TOKENS` + `pane_dead_signal`/`pane_dead_time` (empty expansion on
+    old tmux, positional parse unaffected);
+  * `term_new(name, command=, env=, cwd=, cols=, rows=)` — argv default
+    ["bash"], sandbox via bwrap `--setenv`/`--chdir` (last wins), unsandboxed
+    via `env K=V` / `bash -c 'cd && exec'`, `shlex.join` for window_shell
+    (the old `" ".join`), geometry applied AFTER registering the name (a failed
+    resize must not orphan the window), diff baseline cleared by `forget_raw`;
+  * `Terminal.resize(name, cols, rows)` — dead is reported not resized;
+    `resize_window()` module fn (measured: clientless resize is PER WINDOW);
+  * `term_screen(name, mode=, history=, marker=)` — defaults byte-identical to
+    the old call; `capture_pane_of(state, mode, history)` modes text/styled
+    (`escape_sequences`)/bytes (`+escape_non_printable`; the GRID view —
+    Kitty/Sixel byte stream needs a recorder, documented limit, DECISIONS
+    number not yet written — the DECISIONS entry for all of this is still to
+    write, next free number 83 unless one lands first; 74/75 are reserved);
+  * `capture_text` (one reader one flags), `remember_raw`/`last_raw`/
+    `forget_raw` (chat["last_capture"], separate from last_screen),
+    `diff_screen` (difflib unified n=0 minus headers; baseline moves on TEXT
+    captures only; no-baseline says so; dead/absent delegate to term_screen);
+  * `wait_for(name, pattern=, stable_ms=, timeout=15)` ->
+    (kind, rows), kind matched/stable/timeout/aborted/dead/bad-pattern,
+    0.1 s poll (`WAIT_POLL_SECONDS`), consumes `chat_state().pop("abort")`;
+  * `send_bytes(name, data)` — raw `server.cmd("send-keys","-l","-t",pane_id,
+    "--",data)` (libtmux's key layer mangles ESC — measured);
+  * `screen_json(name, mode=, history=, wait=)` — state live/dead/absent,
+    cols/rows/pane_pid/command, cursor_x/y (or exit_status/signal/dead_time),
+    screen rows; `to_int` helper;
+  * `close_chat(tmux, chat_id)` module fn — kill-session by id, only after the
+    stamp AND the fresh listing vouch for it; the pop is everything when they
+    don't; the Server object belongs to the process and is never killed here.
+- **Left** (next agent, in order):
+  1. COMMIT the backend above as its own commit ("terminal: the harness layer
+     — command/env/cwd, geometry, capture modes, scrollback, diff, wait, raw
+     bytes, json state"), after a quick `unit:terminal` run (must stay 223/0:
+     `cd spit_app/tests/unit/terminal && bash run_tests.sh`, venv ok here).
+  2. `spit_app/tools/terminal.py`: new optional DESC args — `command` (array),
+     `env` (object), `cwd` (string), `cols`/`rows` (integer; on an existing
+     live session call Terminal.resize, both-or-neither -> ERROR; at creation
+     pass through), `capture` (text|styled|bytes), `history` (int), `diff`
+     (bool), `wait_for` (string regex) + `wait_stable` (int ms) + `wait_timeout`
+     (int s default 15; when given they REPLACE delay, delay untouched and
+     default 1 otherwise), `send_bytes` (array of strings, sent after `input`,
+     reject NUL with an ERROR), `format` (text|json; json returns screen_json).
+     Keep every existing error sentence byte-identical. At call start
+     `app.tmux.get(chat_id, {}).pop("abort", None)`. Append PROMPT bullets —
+     NEVER delete the existing ones.
+  3. chat.py `action_abort` busy branch: next to `exit_after_busy = True` add
+     `entry = self.app.tmux.get(self.id); if entry is not None: entry["abort"]
+     = True`. Guarded for stub apps; keep chat_smoke golden md5
+     8ae9d1186a59627d30d05dee95f0ad95 unmoved.
+  4. `spit_app/manage/chat/actions.py` delete/archive paths (read them first):
+     call `close_chat(self.app.tmux, <chat widget id>)` — id is the widget id
+     ("chat-..."), the manage uuid maps to it; actions.py exit path already
+     guards `if cont.id in self.tmux` so the pop is safe there.
+  5. Tests: new file `tests/unit/terminal/test_harness.py`, SOCKET
+     "spit-unit-terminal-harness", sandbox=False except one bwrap launch check
+     IF bwrap available; cover each item with a control that can fail (TRAPS
+     #13): command/env/cwd (dead pane reports exit code for `command=["true"]`
+     — remain-on-exit works for any argv), styled/bytes contain ESC where text
+     has none, history finds an early token visible-capture misses,
+     diff baseline rules (no-baseline says so; styled does NOT move baseline;
+     stable screen says no lines changed), wait_for match/timeout/aborted (set
+     the abort flag from a thread), send_bytes lands `\x1b[<0;10;10M` EXACTLY
+     (cat-in-pane trick, the proven recipe), screen_json live/dead/absent
+     fields, resize changes reported cols/rows, close_chat frees the session
+     without taking the server of the OTHER test chat. Keep the suite's two
+     properties (private socket; stale FILES no server at exit).
+  6. Docs: TOOLS.md #7 spec rewrite for the new args; DECISIONS 83 (the why:
+     every measurement above incl. libtmux mangling ESC vs `send-keys -l --`,
+     per-window clientless resize, grid-vs-byte-stream limit and why NO
+     recorder shipped, the abort-flag contract with action_abort, close_chat
+     id discipline, owner's Go!-drop ruling verbatim); TESTING.md row 223 ->
+     new number; PROJECT.md/AGENTS.md: the Go! line is superseded by the
+     owner's 2026-09-28 ruling (quote it, keep "only the owner merges");
+     close this entry into TASKS-FINISHED.md with the resolution.
+  7. FULL suite; ground truth: everything at TESTING.md numbers except
+     unit:terminal up by the new checks; chat_smoke golden md5 unmoved.
+- **Verify**: full suite from the repo root. `unit:terminal` goes up by the new
+  checks and nothing else moves. The rendered screen is the contract: prove any
 - **State hazards**: probes left `/tmp/p0bf4-*.bin` and socket FILES under
   `/tmp/tmux-1000/spit-probe-*` with no server behind them — safe to remove.
   `tests/unit/terminal/` leaves stale socket *files*
