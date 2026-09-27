@@ -45,8 +45,10 @@ in `doc/TASKS-PLANNED.md` (wording delegated by the owner, ruling iii), at
 fixtures where {used}/{total}/{remaining}/{pct} are all distinct, so a used-vs-
 remaining swap cannot pass. The "do not call any more tools and do not start
 new work after the handoff" half of `critical` is load-bearing (the owner
-learned it the hard way) and P14 will replace the fenced-block clause with a
-tool call - a text change plus this re-pin.
+learned it the hard way); P14 (Go! 2026-09-26) replaced the fenced-block
+clause with the `handoff` tool call and the fenced text became the fallback
+for a chat without the tool - a text change plus this re-pin, the same
+commit, the stop-clause byte-identical.
 
 NUMBERS are append-only WITHIN THIS FILE (TRAPS #15): t10-t18 belong to WP-C.
 t1-t9 are WP-B's `test_generator.py` - which must stay green alongside this
@@ -521,8 +523,8 @@ def t15_small_window_wins_its_message_and_the_level_follows():
 # ------------------------------------------------------------------------- t16
 # The four expected strings are the drafts of `doc/TASKS-PLANNED.md` (owner ruling iii:
 # wording delegated to the implementer, pinned here word-for-word, re-pinned
-# when the owner revisits it, and re-pinned again when P14 replaces the fenced-
-# block clause of `critical` with the handoff tool call). Written here with
+# when the owner revisits it; the P14 re-pin of the `critical` clause is
+# applied below). Written here with
 # their numbers substituted, next to each fixture, so the pin is the literal
 # the model reads and not a re-derivation of the template.
 
@@ -550,11 +552,12 @@ def t16_the_four_texts_pinned_byte_for_byte():
          "properly."),
         ("critical", 180300, TOTAL_200K,
          "Critical: 180300 of 200000 used (90%), 19700 tokens left. Stop working "
-         "now. Write a fenced handoff message NOW: the task in one line, what "
-         "you changed (paths), what is unfinished, the exact next step, and "
-         "anything you learned that is not in the repo. Do not call any more "
-         "tools and do not start new work after the handoff \u2014 the chat dies "
-         "inside this reply."),
+         "now. Hand the work off NOW: call the `handoff` tool with your handoff "
+         "message - the task in one line, what you changed (paths), what is "
+         "unfinished, the exact next step, and anything you learned that is not "
+         "in the repo. If no handoff tool is available, write that message as a "
+         "fenced block instead. Do not call any more tools and do not start new "
+         "work after the handoff \u2014 the chat dies inside this reply."),
         ("small_window", 0, 32768,
          "This chat's context window is only 32768 tokens. That is small enough "
          "to run out during ordinary work, so work narrowly: read the range you "
@@ -580,11 +583,13 @@ def t16_an_overrun_is_reported_as_the_arithmetic_says():
     attach(chat, ts.TokenStatus())
     check("t16-the-overrun-text", chat.messages[-1][NOTE_KEY][0]["text"],
           "Critical: 100700 of 100000 used (101%), -700 tokens left. Stop "
-          "working now. Write a fenced handoff message NOW: the task in one "
-          "line, what you changed (paths), what is unfinished, the exact next "
-          "step, and anything you learned that is not in the repo. Do not call "
-          "any more tools and do not start new work after the handoff \u2014 the "
-          "chat dies inside this reply.")
+          "working now. Hand the work off NOW: call the `handoff` tool with "
+          "your handoff message - the task in one line, what you changed "
+          "(paths), what is unfinished, the exact next step, and anything you "
+          "learned that is not in the repo. If no handoff tool is available, "
+          "write that message as a fenced block instead. Do not call any more "
+          "tools and do not start new work after the handoff \u2014 the chat "
+          "dies inside this reply.")
 
 
 # ------------------------------------------------------------------------- t17

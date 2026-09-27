@@ -72,8 +72,11 @@ would put a note into the middle of a chat and is the defect, not the feature.
 THE FOUR TEXTS are model-facing text, i.e. CODE: the drafts of
 `doc/TASKS-PLANNED.md` (wording delegated by the owner, ruling iii), pinned
 byte-for-byte by `spit_app/tests/unit/system_note/test_token_status.py` t16
-and re-pinned when the owner revisits them or when P14 replaces the fenced-
-block clause of `critical` with the handoff tool call (ruling iv). They give
+and re-pinned when the owner revisits them. Ruling iv arrived with P14:
+`critical` now sends the model to the `handoff` tool; the fenced block
+survives in the text as the fallback for a chat that has not the tool
+selected - the machine, the levels and the load-bearing stop-clause
+unchanged. They give
 the model the verdict and the action, never arithmetic - except the figures
 themselves, and no clamping: if the server's `used` exceeds the window the
 text says so (negative remaining and all), because the numbers are the
@@ -119,11 +122,13 @@ TEXT_WARNING = (
     "properly.")
 TEXT_CRITICAL = (
     "Critical: {used} of {total} used ({pct}%), {remaining} tokens left. "
-    "Stop working now. Write a fenced handoff message NOW: the task in one "
-    "line, what you changed (paths), what is unfinished, the exact next "
-    "step, and anything you learned that is not in the repo. Do not call any "
-    "more tools and do not start new work after the handoff \u2014 the chat "
-    "dies inside this reply.")
+    "Stop working now. Hand the work off NOW: call the `handoff` tool with "
+    "your handoff message - the task in one line, what you changed (paths), "
+    "what is unfinished, the exact next step, and anything you learned that "
+    "is not in the repo. If no handoff tool is available, write that "
+    "message as a fenced block instead. Do not call any more tools and do "
+    "not start new work after the handoff \u2014 the chat dies inside this "
+    "reply.")
 
 # Highest first: the first trigger that holds IS the verdict, and a verdict at
 # or below the announced rank says nothing (an implementation that tested the
