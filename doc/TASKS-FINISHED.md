@@ -2276,3 +2276,124 @@ for later work is already filed, each with its own `Go!` ahead of it — P16
 `note_mode`, P17 the notes in the UI, P18 the level numbers as settings — and
 the tmux teardown a closed chat still does not get belongs to terminal-harness
 **item 12**, not to P14.
+
+### P0b-followup 4 — the `terminal` tool as a UI-under-test harness: items 1-12 shipped (branch `task-terminal-harness-p0bf4`: `8f3a038` the entry opened with the baseline and the machine facts, `85d33e2` the backend in `run/terminal.py`, `dc23995` the tool's arguments in `tools/terminal.py`, `d1a5688` the abort flag in `chat/chat.py`, `c3f69a1` the teardown in `manage/chat/chat.py`, `5368883` the 123-check suite, `cef8169` DECISIONS 83 + TOOLS.md #7 + the TESTING.md row + the owner's ruling in PROJECT.md/AGENTS.md, then this close-out; the branch awaits the owner's merge)
+
+**WHAT WAS ASKED AND WHAT THE OWNER RULED.** The list is the one written during P0b:
+twelve things a pane must be able to report before the `terminal` tool is a harness
+for a program under test rather than a convenience (items 8, 9, 10 and 12 had
+landed partly in earlier followups and are marked where they are done, never where
+they are open). The branch was cut from `main` `c023a16` under the owner's ruling of
+2026-09-28, quoted verbatim in DECISIONS 83 and now in `PROJECT.md`/`AGENTS.md`:
+*"You may work now independently without asking the user for any permission. One
+thing remains the same: only the user may merge your work into main."* No `Go!` was
+asked for anything on this branch; nothing was merged, pushed or pulled; `main` is
+untouched and carries none of it until the owner's hand does.
+
+**WHAT SHIPPED** — every item that was open, in the two layers the list implies
+(the backend in `spit_app/tools/run/terminal.py`, the caller-visible arguments in
+`spit_app/tools/terminal.py`):
+
+1. `command` (argv), `env`, `cwd` at creation — "start the UI under test" is the
+   primitive and interactive bash is its default; creation-only, and naming an
+   existing session together with them is refused rather than typed into it.
+2. `cols`/`rows` at creation and `resize` on a live session, both-or-neither;
+   measured per WINDOW on a clientless session, which is what turns DECISIONS 73's
+   "a capture's width must not belong to the machine" from a guard into an argument.
+3. `capture` = `text` | `styled` (`-e`) | `bytes` (`-e -C`), with the grid limit
+   stated in the DESC, the PROMPT, TOOLS.md and DECISIONS 83 (b).
+4. The cursor as data — `cursor_x`/`cursor_y` in `screen_json`, `marker=False` to
+   drop the `█` splice that overwrites the character under it.
+5. `wait_for` (regex) / `wait_stable` (ms) / `wait_timeout` (default 15 s), which
+   REPLACE `delay`; six kinds, and a timeout that answers with a WARNING instead of
+   silence.
+6. `send_bytes`, raw through `send-keys -l --`, byte-exact; NUL refused.
+7. `history` (capped at 500) and `diff` with a text-only baseline.
+8/11. `format="json"` — `state`/`cols`/`rows`/`pane_pid`/`command`/`cursor_x`/
+   `cursor_y`/`screen[]` live, `exit_status`/`signal`/`dead_time` dead, and
+   `{session, state: "absent"}` for a name the chat never had.
+10. The cancellable wait, completed: `Chat.action_abort` stamps the `abort` flag the
+    poll reads, the flag is consumed, and `call()` clears it at the start.
+12. `close_chat` — a deleted or archived chat's session dies with it, called from
+    `manage/chat/chat.py:delete()` after the file is gone (which covers `archive()`
+    too), killing the session and never the Server.
+
+**GROUND TRUTH AT THE CLOSE.** Full suite from the repo root, exit 0, twice with the
+PASS/FAIL rows identical: tools 127/24/30/119/80/32/68/29 (509), `unit:anchored` 68,
+`unit:arguments` 131, `unit:chat_smoke` 168, `unit:chat_window` 568,
+`unit:endpoints` 442, `unit:handoff` 60, `unit:prompt` 33, `unit:render` 278,
+`unit:run_script` 121, `unit:sandbox` 157, `unit:system_note` 219, and
+**`unit:terminal` 223 → 346** — the whole rise is the new `test_harness.py` (123
+checks) and nothing else moved; the five existing files of that suite were not
+touched. `chat_smoke`'s golden `golden.txt` md5
+`8ae9d1186a59627d30d05dee95f0ad95` unmoved (the `action_abort` change is a no-op on
+the stub app that golden drives, which is what its `getattr` guard is for). The
+suite keeps the terminal directory's two properties: a private socket, and at exit
+stale socket FILES with **no running server** (`tmux -L spit-unit-terminal-harness
+ls` fails after a run; `pgrep tmux` finds nothing).
+
+**WHICH VERIFICATION THE CLOSE-OUT RESTED ON, plainly.** The automated suites only —
+this environment has no screen (TRAPS #22), so nothing was confirmed by watching a
+terminal in the running app. Within those, the evidence is of three kinds: the green
+run; the **substituted defects** (forcing the tool's capture mode to `text` reddens
+exactly the two tool-level capture checks; forcing the backend's mode reddens `t3`'s
+four; `close_chat` reduced to its pop reddens three of `t9`; a disabled abort check
+reddens three of `t6`), so no green in the new file is one that cannot fail; and the
+**byte-for-byte default path** — `t3` asserts `term_screen(name)` equals
+`term_screen(name, mode="text")`, and `test_screen`'s 93 checks passed untouched
+through a refactor of the same function, which is TRAPS #14 done in the only way
+that counts.
+
+**THE LIMITS, stated plainly, because three of them are things the list asked for
+that this did not deliver.**
+
+- **The graphics byte stream is NOT assertable and no recorder ships.** Every
+  capture mode reads the pane's GRID: a Kitty/Sixel sequence is consumed by tmux and
+  comes back as its placeholder, never as its bytes — item 3's original hope ("this
+  is how the Kitty/Sixel path gets asserted") is not reachable through
+  `capture-pane`. `pipe-pane` would reach it and was **rejected**: it opens a file
+  the tmux server keeps writing to, from a process that outlives the pane, into a
+  path the model itself can read and grow, with no lifetime the tool layer controls
+  and no cap. That belongs in its own task with its own file discipline.
+  DECISIONS 83 (b); the code comment in `capture_pane_of` points at the same entry.
+- **An argv that exits before tmux answers cannot be retained at all** —
+  `command=["true"]` makes `new_window()` raise (`no such window: @1`, measured), so
+  `term_new` reports its error string and registers nothing. "A dead pane reports its
+  exit code" is therefore pinned with a command that prints, waits a beat and exits
+  7. A harness that wants to assert on an instant exit asserts on the error string.
+- **libtmux's key layer does not mangle ESC** — the claim written from the first
+  probe did not reproduce (its routes delivered the ESC payloads byte-exact on this
+  tmux 3.7c / libtmux 0.62 pair). What it cannot carry is a payload that BEGINS WITH
+  A FLAG: `-l …`, `-t …`, `-- …` arrive as `b''`. `send_bytes` stays on tmux's own
+  argv with `--` for the reason that reproduces, and the suite pins both halves.
+- **`cwd` is a path as the PANE's filesystem sees it**, not as the carried shell
+  state sees it; its relationship to `run_command`'s carried `cd` is P11's open
+  question and this task did not touch it.
+- **A `wait_for` is cancellable; nothing else is.** A program already running in a
+  pane is stopped by what you type into it, not by a tool call.
+- **The PROMPT keeps the owner's now-half-false sentence** ("The terminal is 24x80
+  characters with no scroll-back") — true as a default, false as a limit — because
+  the PROMPT is the owner's text and the rule that it is what the model reads
+  outlived the `Go!`; the two new blocks state the capability next to it and
+  `doc/TOOLS.md` #7, the spec, drops the two false claims outright. DECISIONS 83 (i)
+  records the choice, so nobody reads the PROMPT as the last word on what the tool
+  can do.
+- **The manage `delete()` call site is pinned by no test**: no suite here constructs
+  that widget. `close_chat`'s behaviour and its stranger-id no-op are pinned (t9);
+  the id shape at the call site (`chat-<uuid>`, not the bare manage uuid) is carried
+  by the comment and by this note. Getting it wrong would be silent, which is exactly
+  why it is written down twice.
+
+**WHAT THIS LEAVES OPEN** in the list: nothing that is not filed. Item 9's "fail
+loudly beyond 'no such session'" remains the choice it was; item 12's remaining
+exposure (a chat whose windows outlived it because the app was killed rather than
+quit) is the socket's own teardown, unchanged by this. The stale socket FILES this
+task's probes left under `/tmp/tmux-1000/spit-probe-*` are removed; the suites'
+own `/tmp/tmux-1000/spit-unit-terminal-*` files stay, as they always have, and are
+harmless.
+
+**No handoff is written after this one.** The entry is closed, the branch is
+complete, and what it needs next is not another agent but the owner's hand:
+**`task-terminal-harness-p0bf4` awaits the OWNER'S MERGE** — the only part of
+finishing that is not the agent's (DECISIONS 71 a, unchanged by the 2026-09-28
+ruling).

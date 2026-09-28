@@ -5,6 +5,13 @@ referenced guides carry the detail. On starting a task: move its entry to
 `TASKS-IN-PROGRESS.md`, create a branch first (never touch `main`, never
 push), and keep the State field honest so an abandoned task is recoverable.
 
+> **No entry below waits on a `Go!`.** The owner's ruling of 2026-09-28 dropped
+> the per-task gate — *"You may work now independently without asking the user
+> for any permission. One thing remains the same: only the user may merge your
+> work into main"* (DECISIONS 83, and `AGENTS.md`/`PROJECT.md`). Where an entry
+> below still says "its own `Go!`", read **its own task, on its own branch**:
+> picking it up needs no permission, and merging it needs the owner's.
+
 ---
 
 ## P0 - DONE - garbled streaming render: tool-call arguments and streamed tool output
