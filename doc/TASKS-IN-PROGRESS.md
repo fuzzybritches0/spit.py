@@ -30,36 +30,106 @@ the only part of finishing that is not the agent's.
 `docs-plan-failure-recovery-p19` @ `9e40465` (which carried the planning entry
 itself, docs only, not merged). Last commit: the entry move you are reading.
 
-**Scope** (so far): `doc/TASKS-PLANNED.md` (the entry moved out, a stub left),
-this file. WP-1's code scope is two files: new `spit_app/chat/handoff.py` and
-`spit_app/tools/handoff.py`.
+**Scope**: `doc/TASKS-PLANNED.md` (the entry moved out, a stub left) and this
+file at `99e1338`; WP-1 at `738b788` — new `spit_app/chat/handoff.py` (58
+lines) and `spit_app/tools/handoff.py` (−37/+20). Nothing else in the tree is
+touched. **The branch is not merged**; `main` is at `edba920` and untouched,
+and `docs-plan-failure-recovery-p19` (the planning entry) plus the older
+branches still await the owner's merge.
 
-**Done**: baseline taken on this box before touching code — full suite from the
-repo root, **every row at the `doc/TESTING.md` ground truth** (tools 509 across
-the eight rows, anchored 68, arguments 131, chat_smoke 168, chat_window 568,
-endpoints 442, handoff 60, prompt 33, render 278, run_script 121, sandbox 157,
-system_note 219, terminal 346; FAIL 0 everywhere), so every later "unmoved" is
-a comparison and not an assumption. The P19 entry itself is here.
+**Done**: **WP-1 is closed** (`738b788`, cut at `99e1338` after this entry's
+move): new `spit_app/chat/handoff.py` with `new_chat_id(app)` and
+`async create_and_submit(app, settings, message) -> str|None` (chat file in
+`Manage.save_managed`'s shape, `option_list()`, `mount`, display-toggle +
+`highlighted` + `focus`, `text_area.text`, `await action_submit()`, return the
+id; None only when the file could not be written — the helper knows nothing
+about ending a chat). `tools/handoff.py` keeps `DESC`/`PROMPT`/`SETTINGS`, the
+deepcopy of `csettings` + the `"Handoff: …"` rule, the success string, and
+`exit_after_busy = True` **last, only on success**. Verified the WP-1 way, not
+by argument: full suite before (baseline below) and after, **every row
+byte-for-byte, `unit:handoff` 60/0**, and the commit touches those two files
+only. No test seam was needed — `t1`-`t9` drive the real tool and `t10`-`t15`
+the real work loop, so the move is pinned through the file shape, the sidebar,
+the flag, the wire and the absent second request.
 
-**Left**: WP-1, in full: move `tools/handoff.py:call`'s create-and-submit
-sequence into a module-level `spit_app/chat/handoff.py` (chat file in
-`Manage.save_managed`'s shape, `option_list()`, `mount(Chat(new_id))`,
-display-toggle + `highlighted` + `focus`, `text_area.text`, `await
-action_submit()`, return the id); the tool keeps `DESC`/`PROMPT`/`SETTINGS`,
-the `"Handoff: …"` desc rule, the success string, and `chat._work
-.exit_after_busy = True` **last and only on success** (DECISIONS 82 c — that
-ordering is the guarantee, it does not move into the helper). Then WP-2 (typed
-failures + retry + the slot leak + the dead `endpoint == -1`), WP-3 (`journal`),
-WP-4 (wire the recovery, `DECISIONS 84`).
+**Baseline** (measured on this box before any code changed, so "unmoved" is a
+comparison): every row at the `doc/TESTING.md` ground truth — tools 509
+(127/24/30/119/80/32/68/29), anchored 68, arguments 131, chat_smoke 168,
+chat_window 568, endpoints 442, handoff 60, prompt 33, render 278, run_script
+121, sandbox 157, system_note 219, terminal 346, FAIL 0 everywhere.
 
-**State hazards**: none — the working tree is clean and no code file is touched
-yet. `~/.venv-spit` exists and works (textual 8.2.8, httpx 0.28.1, libtmux
-0.62), so the six dependency-listed suites run here.
+**Left — WP-2 next, and here is what the reading turned up** (all measured at
+this tip, so the next agent does not re-derive it):
 
-**Verify** (WP-1): `bash spit_app/tests/run_tests.sh` → `unit:handoff` still
-**60 / 0** and every other row byte-for-byte where the baseline above put it;
-`git diff` touching only the two files. TRAPS #18: the proof is the suite
-unmoved, not an argument that the move was faithful.
+- `unit:endpoints` **t6 pins the present error contract twice** and both will
+  go red when `llamacpp` raises typed failures: `t6-refused-both-times-raises-
+  RuntimeError` (`test_requests.py:74`) and `t6-the-error-name-is-the-one_-
+  work_stream-catches` (`:78`, membership in the name tuple). Re-pin those two
+  **in place, numbers kept, count never down** (DECISIONS 70's precedent for a
+  deliberate behaviour change) and say in the commit which behaviour moved; the
+  rest of t6 — the `stream_options` retry, the request counts — must stay green
+  untouched. The `Endpoint returned {code}: {text}` message shape is also
+  pinned at `:76` and `:90`: keep the wording inside the new exception's `str()`.
+- The canned server (`endpoint_harness.py`) routes by **first path segment** and
+  `post_reply()` is the switch: add scenarios there (a deterministic 400, a
+  429, a 503-then-200, an in-stream `error` payload). `server.posts()` /
+  `.bodies` are the recording the counts assert on. `run_stream()` never raises
+  and hands back `(endpoint, error)` — an exception is a value, so a new check
+  cannot kill the file.
+- `saved_endpoint()` has no `parallel` / `save_cache_prompt` / attempts field;
+  a **new endpoint field joins the `construct_payload` skip list**
+  (`llamacpp.py:152`) or it leaks — t5 proves leaks with the deliberately
+  leaking `n_ctx_control` 4242, so the control shape already exists.
+- The awaited rollback has **no seam today**: `RemoveMessage` is handled by
+  `ChatView.on_remove_message` (`chat_view.py:747`, async: undo `remove` record,
+  widget `remove()` under `child.lock`, `window_start -= 1` when below the
+  window, `del messages[i]`, `write_chat_history()`, `focus_after_removal`,
+  `is_removing = False`). WP-2 needs that awaited, not posted — expose it as a
+  method the handler *and* `work.py` both call, so there is one rollback.
+- `work.py`'s slot bookkeeping: `self.slot` starts **-2**, `before_work()` only
+  touches it when `save_cache_prompt()` is true, and `-1` is
+  `get_slot_limited()`'s no-free-slot answer. `after_work()` is also gated on
+  `save_cache_prompt()`, so "always reach `after_work()`" means a `finally`
+  around the stream that keeps that gate — and the `slot == -1` report belongs
+  where the slot question is actually answered.
+- Abort: `action_abort` (`chat.py:159`) branches on `_work.busy`, which is True
+  **only** around a tool call (`work.py:145-148`). During a retry sleep it must
+  take the flag path, so either the sleep sets a `Work` flag abort tests too,
+  or `busy` is held across the retry — decide, and pin "abort costs no further
+  request **and** deletes the right message".
+
+**Then WP-3** (`journal`, in-process tool: `call(app, arguments, chat_id)`,
+`app.path["data"]`, capped read, `unit:prompt` 33 moves by **added** checks
+because `t8` walks `spit_app/tools/`) **and WP-4** (the recovery brief, the
+probe, `recovered_from`, chain depth 1, the in-chat notice, new `unit:recovery`
+on `unit/handoff/handoff_harness.py`).
+
+**The three open decisions, taken** (no gate exists; the owner can reverse any
+of them — write these into `DECISIONS 84` with their argues when WP-2/WP-4
+land, and revisit them in the close-out): **(a)** `attempts`/`delay` **per
+endpoint**, like `timeout`/`context_size`, new fields added to
+`Endpoints.NEW` and to the `construct_payload` skip list; **(b)** **auto-submit**
+the recovery chat when the probe (`get_models`, timeout 3) answers, and put the
+brief in the new chat's **text area as a draft** when it does not; **(c)** keep
+the modal `ErrorScreen` for a **deterministic 4xx** the app cannot fix (a real
+user error deserves a dialog), and make transient/exhausted failures an
+**in-chat notice** — the modal that blocks every chat is a large part of why a
+failure feels like a halt.
+
+**State hazards**: none. Working tree clean, `main` untouched, nothing pushed.
+`~/.venv-spit` works (textual 8.2.8, httpx 0.28.1, libtmux 0.62) so all six
+dependency-listed suites run here. The outer runner hides a crashing file
+behind `| tail -n 1` — read the files' own output, not only the row.
+
+**Verify**: WP-1's is met and recorded above. WP-2's: `unit:endpoints` moves by
+**new checks plus exactly the two re-pinned t6 checks**, asserting request
+counts — a 400 costs **one** request, a 500 costs `attempts`, an abort during a
+retry sleep costs no further request and deletes the right message — with
+`chat_smoke`'s golden md5 `8ae9d1186a59627d30d05dee95f0ad95` unmoved and every
+other row at the baseline. WP-3: new suite row, `unit:prompt` up by checks only
+(never a red), `unit:system_note` moves by the `t16` re-pin alone. WP-4: new
+`unit:recovery`, including the **absence** of a second recovery chat and the
+draft-not-submitted path with the canned server stopped.
 
 ---
 
