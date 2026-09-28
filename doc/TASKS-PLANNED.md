@@ -16,6 +16,175 @@ push), and keep the State field honest so an abandoned task is recoverable.
 
 ## P0 - DONE - garbled streaming render: tool-call arguments and streamed tool output
 
+## P19 - Failure recovery: an endpoint failure must not need a human  [owner-requested 2026-09-28; evaluated, not started]
+
+**The owner's brief, in substance:** *"When an endpoint failure occurs the endpoint
+raises an error (maybe due to a llama.cpp bug, or max tokens reached), the app halts.
+This means the agent cannot continue their work and needs human intervention. What
+should happen instead: (1) `spit_app/chat/work.py` should at least retry sending the
+request to the endpoint after the first failure with a delay, at least 3 times; if
+this fails it should open a new chat just like the tool `handoff`, with the current
+chat's settings cloned and a recovery message as the first message. (2) A new tool
+the agent can use while still alive to keep records — a kind of journal — which then
+becomes the recovery message in the new chat."*
+
+Asked whether that was the right approach; the answer is **yes in shape, with three
+alterations** (below), and the owner directed the entry be filed with everything
+documented. Four packages, each closeable on its own.
+
+### What the code does today (read at `edba920`, not theorised)
+
+- `Work.work_stream()` catches `TimeoutError, ReadTimeout, ConnectError, RuntimeError,
+  ConnectTimeout, ReadError, RemoteProtocolError` **by `type(exception).__name__`**
+  (`chat/work.py:171-181`); it sets `app.exception`, posts
+  `RemoveMessage(len(messages)-1)`, refreshes the model list and **returns**. Anything
+  else is re-raised out of the Textual worker.
+- `app.exception` is a reactive var; `SpitApp.watch_exception` (`app.py:45-53`) pushes
+  the modal `ErrorScreen` (`modal_screens.py:109`) and the only exit is OK
+  (`handlers.py:50-52`). So the "halt" is **a dead worker plus a blocking modal**: no
+  retry, no continuation, the human presses OK and re-prompts.
+- **The two failure kinds share one bucket.** `RuntimeError` is in the catch list and
+  it is exactly what the endpoint raises for a refused request
+  (`endpoints/llamacpp.py:307`, `Endpoint returned {code}`) and for an in-stream
+  `error` payload (`:255 maybe_error`). A 400 "prompt too long" is deterministic —
+  the same payload gives the same 400 three times — while a `ConnectError` is transient
+  and is fixed by waiting. Any retry rule must therefore classify, and the present
+  code throws the status away and compares *names*.
+- `stream()` (`llamacpp.py:286-308`) **appends the assistant message and fires
+  `maybe_callback(1)` before the request**, so a mid-stream death leaves a partial
+  assistant dict — and possibly a half-accumulated `tool_calls` list
+  (`llamacpp.py:tool_calls`) — in `chat.messages`. The rollback is
+  `post_message(RemoveMessage(...))`, handled asynchronously by
+  `ChatView.on_remove_message` (`chat_view.py:747`), which does the data delete and
+  the write. A retry loop that simply calls `stream()` again stacks a second assistant
+  message on the corpse; the rollback must be complete and awaited.
+- **Adjacent, in scope:** the error path returns before `after_work()`
+  (`work.py:182`), so the prompt-cache slot from `before_work()` is never returned
+  (`endpoints/manage_cache.py:return_slot`) — a leak that with `parallel` set
+  starves every chat of slots. And `work.py:154`'s `if self.endpoint == -1:` is dead
+  code: `self.endpoint` is an object, while `-1` is the answer
+  `get_slot_limited()` gives (`manage_cache.py:84`). Same defect family, same file,
+  fix it in the retry package.
+- **Retry is safe at exactly one point.** `work_stream()` runs the tools *before* the
+  request and recurses after it, so re-issuing `endpoint.stream()` never re-executes a
+  tool. Any wrapper wider than that call re-runs side effects.
+- **Abort during a retry sleep mis-deletes.** `action_abort` (`chat.py:159-161`) tests
+  `self._work.busy`, which is True only around a tool call (`work.py:145-148`); during
+  a stream or a sleep it is False, so abort takes `self.work.cancel()` and deletes
+  `messages[-1]` whatever it is. The retry loop must sleep in slices and check
+  `exit_after_busy`, and abort must know it is cancelling a retry.
+- **The recovery chat inherits a corpse.** `tools/handoff.py` deep-copies the whole
+  `csettings` (DECISIONS 82 b — right for a handoff). For a *failure* recovery the
+  copy means the new chat points at the same dead endpoint and auto-submits, so it
+  dies the same way and (if that death also recovers) spawns unbounded chats.
+- **A sandboxed script tool cannot write the journal.** `bwrap_args()` binds
+  `app_home/sandbox` over `/home/<user>` and `sandbox_tmp` over `/tmp`
+  (`tools/run/common.py:53-67`); the app's data dir (`settings.py`, `user_data_dir`)
+  lives at its real path only outside the sandbox. So `journal` is an **in-process
+  module tool** (`call(app, arguments, chat_id)`, the `set_chat_description`/`handoff`
+  shape), not a `scripts/` tool.
+- **The note chain is blind in exactly this case.** `warning`/`critical` need the
+  window figure and are silent when it is a dash (DECISIONS 80 b, 81 d), so on an
+  endpoint that answers neither `/props` nor `/slots` the 400 *is* the first signal.
+  P19 is the safety net for the blind case, not a competitor to the notes; the dash
+  must not be turned into a guess to make notes fire.
+- **Recovery is about continuation, not about lost bytes.** `write_chat_history()`
+  persists the transcript, so the successor can read `chats/<id>.json` with
+  `read_files`. The recovery brief should say so and point at the file rather than
+  invent a summary of what the app did not witness.
+
+### The three alterations to the owner's proposal
+
+1. **Classify before retrying** — raise typed failures from the endpoint (status code,
+   retryable flag) instead of comparing exception-name strings; retry the transient
+   set with backoff, send the deterministic set straight to recovery, and stop
+   swallowing unrelated `RuntimeError`s.
+2. **Recovery must not recurse and must not inherit a dead endpoint** — extract the
+   create-and-submit sequence of `handoff` into one shared function, stamp the new
+   chat `recovered_from`, cap the chain at one, and **probe the endpoint before
+   auto-submitting**: reachable ⇒ submit and let the agent run; unreachable ⇒ create
+   the chat with the brief in its text area as a ready draft and notify, which still
+   beats a modal that halts.
+3. **The journal is the improvement on the recovery message, never its only source** —
+   the model will not always have written it, so the app scaffolds the brief from what
+   it does know (chat id, the transcript path, the error, the attempts made, the last
+   N messages, the token counts) and appends the journal when there is one. The
+   journal's fields are `doc/TASKS-IN-PROGRESS.md`'s (`Branch / Scope / Done / Left /
+   State hazards / Verify`) — that file is the same mechanism already proven in this
+   repo across three crashed sessions.
+
+### Packages
+
+**WP-1 — extract the new-chat sequence from `handoff` (refactor, no behaviour change).**
+`spit_app/chat/handoff.py` (module-level, no widget): write the chat file in
+`Manage.save_managed`'s shape, `option_list()`, mount, foreground, highlight, focus,
+set `text_area.text`, `await action_submit()`, return the id. `tools/handoff.py` keeps
+its `DESC`/`PROMPT`/`SETTINGS`, the `desc` naming, the success string and the
+**flag-set-last** rule (DECISIONS 82 c), and delegates everything else.
+*Verify*: `unit:handoff` still **60**, every other row at the `TESTING.md` numbers,
+`git diff` touching only those two files plus the suite if a seam needs exposing.
+
+**WP-2 — typed endpoint failures, retry, and the slot leak.** `endpoints/llamacpp.py`
+raises a small hierarchy carrying `status_code`/`retryable` (transient:
+`ConnectError`/`ConnectTimeout`/`ReadError`/`ReadTimeout`/`RemoteProtocolError`/429/5xx;
+deterministic: the 4xx set, naming a context-length refusal explicitly); `work.py`
+loops `stream()` with `attempts`/`delay` settings, rolls the attempt back completely
+before the next one, sleeps in slices honouring `exit_after_busy`, and **always**
+reaches `after_work()`. `work.py:154`'s dead `endpoint == -1` branch becomes a real
+`slot == -1` answer. *Verify*: new checks in `unit:endpoints` over the existing canned
+server asserting **request counts** — the `test_requests.py` t6 precedent and
+`unit:handoff`'s `recorded bodies` both exist for exactly this; a 400 costs **one**
+request (the control that a retry is not unconditional), a 500 costs `attempts`;
+`abort during a retry sleep` costs no further request and deletes the right message;
+`chat_smoke`'s golden md5 `8ae9d1186a59627d30d05dee95f0ad95` unmoved.
+
+**WP-3 — the `journal` tool.** In-process tool, per chat, under `app.path["data"]`;
+append-only, timestamped, fields as above; `journal(entry="…")` appends, no `entry`
+returns the tail. **Capped on read** — it is destined for a fresh chat's context, so a
+`journal_max_chars` setting, the same reasoning as the dead-report's 50-line cap
+(DECISIONS 69 d). Its `PROMPT` must tell the model when (after every commit, before a
+risky operation, and on the token-status `critical` note before `handoff`), and
+`TEXT_CRITICAL`/`TEXT_WARNING` gain one clause each saying *journal before you hand
+off* — a text change plus its `t16` re-pin in the same commit, exactly the ruling-iv
+precedent (DECISIONS 82). *Verify*: new suite row; `unit:prompt` picks the module up
+automatically — `t8` walks `spit_app/tools/`, requires every module to define `PROMPT`
+and counts one `## ` heading per tool (`test_prompt_assembly.py:186-213`), so
+**33 moves by checks, never by a red**; `unit:system_note` moves by the re-pin only.
+
+**WP-4 — wire the recovery.** On exhaustion of WP-2's retries: build the brief
+(app-scaffolded, journal appended, transcript path named, error and attempt count
+quoted, "continue the work"), probe the endpoint, then WP-1's function with
+`recovered_from` in the new `csettings` and `desc` `"Recovery: …"`; the old chat gets
+an in-chat notice of what happened instead of a modal, and the depth cap means a
+recovery chat that fails again **does not** recover — it reports. *Verify*: a new
+`unit:recovery` built on `unit/handoff/handoff_harness.py` (canned server, real `Chat`
+/`Work`/`ToolCall`), asserting the chat file with cloned settings, the brief as its
+first message, the **absence** of a second recovery chat (the P14 "ends by absence"
+shape), and the draft-not-submitted path with the canned server stopped — the control
+that the probe is actually consulted.
+
+### Decisions for the owner (none blocks WP-1)
+
+- `attempts`/`delay` per **endpoint** (like `timeout`/`context_size`, remembering the
+  `construct_payload` skip list, DECISIONS 80 d) or app-wide? The recommendation is
+  per endpoint — a flaky host and a local server want different numbers.
+- Auto-submit when the endpoint answers the probe, or always draft? The proposal above
+  is auto-submit; the conservative answer is always draft.
+- Is the `ErrorScreen` still pushed for a deterministic 4xx (a real user error the app
+  cannot fix), or does everything become an in-chat notice?
+
+### Gotchas
+
+TRAPS #19 (`journal` is a module tool: its suite needs the venv, and the gate probes
+what the code under test imports), #15 (append-only test numbers, in `unit:prompt`
+too), #13 (every silence/no-retry green needs the control that it could have failed),
+#18 (WP-1 is a behaviour-free refactor — prove it by the suite unmoved, not by
+argument), #21 (`PATH_ARGS` only if the tool takes paths — it should not),
+#24/#25. DECISIONS 82 (the handoff contract, and the `handoff`-not-selected
+consequence: a tool-based recovery would be unavailable to chats without the tool —
+the recovery path bypasses `ToolCall` deliberately), 81 (the note texts and the dash),
+80 b/d, 71 a (close your own task; the merge is the owner's).
+
 Branch `task-streaming-render-bugs` (`69bd1ba`, `ba87435`, `8cadc85`,
 `c5a5443`), **merged into `main`**; resolution in `TASKS-FINISHED.md` (root
 causes, the 278 checks of `tests/unit/render/`, the two accepted limits), the
