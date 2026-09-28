@@ -8,6 +8,7 @@ from textual import events, work
 from textual.widgets import Select
 from .actions import ActionsMixIn
 from spit_app.manage.manage import Manage
+from spit_app.tools.run.terminal import close_chat
 from spit_app.endpoints.llamacpp import get_models, get_models_tuple, get_models_list
 
 class Chat(ActionsMixIn, Manage):
@@ -93,6 +94,18 @@ class Chat(ActionsMixIn, Manage):
         except Exception as exception:
             self.app.exception = exception
             return False
+        # Harness item 12's teardown, in the one method both delete and archive walk
+        # through (archive() copies the file to the archive and then calls this).
+        # Until now the only thing that ever freed a chat's terminals was actions.py
+        # at APP exit, so a chat deleted or archived mid-run left its panes -- and
+        # whatever still ran in them -- alive on our socket for the rest of the run.
+        # After the file is gone, not before: a delete that fails must leave a chat's
+        # terminals alone, because the chat is still there and still using them.
+        # The key is the CHAT WIDGET's id ("chat-<uuid>") -- that is what the tools
+        # register under and what actions.py's exit path matches on, not the bare
+        # manage uuid -- and close_chat pops a key it has never heard of, so a chat
+        # that never opened a terminal costs nothing here.
+        close_chat(self.app.tmux, f"chat-{self.uuid}")
         if not self.cur_dir == "chats_archive":
             self.app.query_one("#side-panel").option_list()
             if self.app.query_one("#side-panel").highlighted:
