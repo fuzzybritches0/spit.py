@@ -60,19 +60,9 @@ SETTINGS = {
     "prompt": { "value": PROMPT, "stype": "text", "desc": "Prompt" }
 }
 
-import time
 from copy import deepcopy
-from spit_app.chat.chat import Chat
+from spit_app.chat.handoff import create_and_submit
 from spit_app.tool_call import load_user_settings
-
-def new_chat_id(app) -> str:
-    # The id scheme `Manage` gives a new chat (`str(time())` with the dot
-    # replaced), plus the one case Manage never faces: two handoffs inside
-    # the same clock tick must not overwrite each other's file.
-    chat_id = f"chat-{str(time.time()).replace('.', '-')}"
-    while (app.settings.path["chats"] / f"{chat_id}.json").exists():
-        chat_id = f"chat-{str(time.time()).replace('.', '-')}"
-    return chat_id
 
 async def call(app, arguments: dict, chat_id: str) -> str|None:
     # `async def`, not a plain function: tool_call.py dispatches a plain
@@ -90,32 +80,14 @@ async def call(app, arguments: dict, chat_id: str) -> str|None:
     if not (isinstance(desc, str) and desc.strip()):
         desc = f"Handoff: {settings['desc']['value']}"
     settings["desc"]["value"] = desc
-    new_id = new_chat_id(app)
-    # The exact shape `Manage.save_managed` writes for a new chat. The handoff
-    # message is NOT written into it: it enters through the new chat's own
-    # submit path below, so its persistence, its undo record, its widget mount
-    # through the window and the Work it starts are the human path's, not a
-    # second implementation of them that could drift.
-    if not app.write_json(f"chats/{new_id}.json",
-                          {"ctime": time.time(), "settings": settings,
-                           "messages": [], "model": None}):
-        return (f"ERROR: could not write `chats/{new_id}.json`. Nothing was "
-                "handed off and this chat continues.")
-    side_panel = app.query_one("#side-panel")
-    side_panel.option_list()         # the entry exists now that the file does
-    main = app.query_one("#main")
-    await main.mount(Chat(new_id))
-    new_chat = main.query_one(f"#{new_id}")
-    # Foreground the new chat: the display-toggle of `SidePanel.set_active`,
-    # with the focus given to the new chat itself (an empty Chat focuses its
-    # text area, so the user lands in a ready chat while the reply streams).
-    for cont in main.children:
-        cont.display = (cont is new_chat)
-    side_panel.highlighted = side_panel.get_option_index(new_id)
-    side_panel.can_focus = False
-    new_chat.focus()
-    new_chat.text_area.text = message
-    await new_chat.text_area.action_submit()
+    # The create-and-submit sequence lives in `spit_app/chat/handoff.py` since
+    # P19/WP-1, so that P19's recovery opens its continuation chat through the
+    # same code and not through a copy of it. The `settings` dict is the whole
+    # inheritance decision (DECISIONS 82 b) and stays here, with the desc rule.
+    new_id = await create_and_submit(app, settings, message)
+    if new_id is None:
+        return ("ERROR: could not write the new chat's file under `chats/`. "
+                "Nothing was handed off and this chat continues.")
     # LAST, and only on success: a failed handoff must never end a working
     # chat. work_stream() checks this flag after every tool call and returns
     # there, so this reply ends after its tool result and no further request
