@@ -21,7 +21,8 @@ development of the project; everything here reflects the repo at
      The widget tree is a window over the message data: 7-15 mounted at every
      scroll depth at 1k and at 5k, and the numbers, the four instrument lessons
      and what the window does NOT buy are DECISIONS 76. The one hole it found is
-     P9 in `TASKS-PLANNED.md` and needs its own `Go!`.
+     P9 in `TASKS-PLANNED.md`, a code change of its own (no `Go!` is asked for one:
+     the owner's ruling of 2026-09-28, see Ground rules).
 5. `TASKS-IN-PROGRESS.md` - is someone's work half-done? Recover it first.
 6. `TASKS-PLANNED.md` - pick up work here.
 7. `TASKS-FINISHED.md` - what is already done (do not redo or "fix" it).
@@ -145,10 +146,16 @@ bare system python3**. The app runs elsewhere (container/venv). Consequences:
   untouched**: work on a descriptively named branch (list existing branches
   first), one concern per commit, `--ff-only` merge only where the existing
   practice says so. Full rules: CONVENTIONS.md.
-- **Wait for the owner's `Go!` before changing any code in the repo** - a
-  tool's PROMPT text counts as code, because it is what the model reads and
-  `tests/unit/prompt/` pins it. Ask once per task, before the first change.
-- **There is no other approval gate.** The documentation and the task files are
+- **No `Go!` is needed to change code** - the owner's ruling of 2026-09-28
+  superseded the per-task gate DECISIONS 71 used to describe, verbatim: *"You
+  may work now independently without asking the user for any permission. One
+  thing remains the same: only the user may merge your work into main."* So:
+  work on your branch, edit what the task needs - a tool's PROMPT text included
+  (it is still code: it is what the model reads, and `tests/unit/prompt/` pins
+  the prompt machinery) - and ask the owner nothing first. **What is unchanged
+  is the merge: only the owner merges into `main`, and nothing else about
+  finishing moved to the owner either** (DECISIONS 71 a, 83).
+- **There is no approval gate at all, before or after.** The documentation and the task files are
   the agent's own working material: keep them current without asking, and
   **close your own finished work** - when an entry's `Verify` is met, move it to
   `TASKS-FINISHED.md` with its resolution. Nothing in this repo waits on an

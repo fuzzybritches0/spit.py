@@ -49,7 +49,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:run_script | 121 |
 | unit:sandbox | 157 |
 | unit:system_note | 219 |
-| unit:terminal | 223 |
+| unit:terminal | 346 |
 
 ## The test venv (six suites need it)
 
@@ -93,7 +93,7 @@ byte-for-byte where WP-C left it, and three consecutive full runs byte-identical
 (`unit:chat_window` is **568** since WP-E: the new file `test_window_edits.py`
 (298 checks) added by addition alone - the three WP-C/WP-D files untouched, every
 other row byte-for-byte (tools 509, anchored 68, arguments 131, chat_smoke 168,
-prompt 33, render 278, run_script 121, sandbox 119, terminal 223), two consecutive
+prompt 33, render 278, run_script 121, sandbox 119, terminal 223 as it then stood), two consecutive
 full runs identical, and the chat_smoke `golden.txt` md5
 `8ae9d1186a59627d30d05dee95f0ad95` unmoved: the WP-B differential is intact.)
 
@@ -104,7 +104,8 @@ up, per the rule above.)
 (It is **157** since `fix-tool-interpreter-path-shadowing`: one new file,
 `test_python_path.py`, 38 checks, by addition alone - every other row
 byte-for-byte where it was (tools 509, anchored 68, arguments 131, chat_smoke
-168, chat_window 568, prompt 33, render 278, run_script 121, terminal 223).
+168, chat_window 568, prompt 33, render 278, run_script 121, terminal 223 as it then
+stood — it is 346 since P0b-followup 4, see the `unit:terminal` note below).
 29 of the 38 are red against the pre-fix interpreter, which is the point of the
 file: the first section is the control that shows a `types.py` in the working
 directory really does poison a stdlib-only script, so the checks after it cannot
@@ -156,6 +157,25 @@ reading the pane with different capture flags than `live_screen()` uses. The
 whole diagnosis, including the four-way `HOME` decomposition that reproduced the
 owner's exact three check names, is DECISIONS 73 and the `TASKS-FINISHED.md`
 entry for branch `test-terminal-pane-read-parity`.)
+
+(It is **346** since P0b-followup 4 (`task-terminal-harness-p0bf4`): the new file
+`test_harness.py`, **123 checks**, added by addition alone — the five existing files
+untouched, every other row where the table says it is, `chat_smoke`'s golden md5
+`8ae9d1186a59627d30d05dee95f0ad95` unmoved, the full suite exit 0. Its sections are
+the item numbers of the harness list in the task docs: `command`/`env`/`cwd` and the
+argv that exits too fast to be retained, geometry at creation and `resize` (per
+WINDOW, measured), the three capture modes and the grid limit that no mode escapes,
+the cursor as data versus the `█` splice, scrollback and the diff's baseline rules,
+`wait_for` in all six kinds with the abort stamped from another thread, `send_bytes`
+byte-exact against libtmux's key layer losing a leading-dash payload, `screen_json`
+live/dead/absent, `close_chat` with the sessions counted **relative** (every section
+shares one private socket, so tmux holds the earlier sections' sessions too — an
+absolute count is a property of the file's order), the tool's own argument wiring,
+and one real bwrap launch guarded by `shutil.which`. It keeps the directory's two
+properties: a private socket, and at exit stale socket FILES with **no running
+server** (`tmux -L spit-unit-terminal-harness ls` fails after a run). Every group was
+verified red by substituting its defect — DECISIONS 83 (h) lists which mutation
+reddened which checks, including the two harness-side reds it found in this file.)
 
 `unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
 `Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
@@ -408,6 +428,19 @@ harness **absolute** fixture paths.
   the control that produces the freeze on demand (the hop removed), and its
   section 3 compares two gaps measured in the same process (medians of three), so
   the assertion is about the hop and not about how fast tmux is on the box.
+- `tests/unit/terminal/test_harness.py` (123 checks, the row's 223 → 346) is the
+  harness list of the task docs turned into checks: sections 1-12 are its item numbers
+  (start a program under test with `command`/`env`/`cwd`; set and resize the geometry;
+  the three capture modes and what none of them can see; the cursor as data; scrollback
+  and the diff baseline; `wait_for` in its six kinds and the abort that ends it;
+  `send_bytes` byte-for-byte against libtmux's key layer as the control; `screen_json`;
+  `close_chat`; the tool's own argument wiring; one real bwrap launch). Two things it
+  adds to the directory's own lessons, both because a check of its own was red for the
+  wrong reason first: a session started with `command` has no shell to read what is
+  typed (the tty echoes it as literal text, so a `printf` "sent" to a `sleep 60` pane
+  never runs), and sessions are counted **relative**, through a surviving chat's server
+  object, because every section shares one private socket and an absolute session count
+  is a property of the file's order.
 - `tests/unit/sandbox/` - script wrapper and delivery: trailer, state
   (env/cwd carry-over), streams (stderr separation), lifecycle (background -
   MUST use sandbox=False, TRAPS #6), delivery, prompt (asserts the

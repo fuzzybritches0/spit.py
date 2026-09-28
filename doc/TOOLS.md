@@ -319,22 +319,38 @@ Would replace 3 with `new_text`. File not modified.
 ---
 
 ### 7. `terminal` (NEW - Recently Implemented)
-**Purpose**: Control persistent interactive terminal sessions with a 24×80 character window. Best for long-running processes, interactive CLIs, REPLs, TUI applications, and background services.
+**Purpose**: Control persistent interactive terminal sessions — an interactive shell, **or a program started under test** (`command`). Best for long-running processes, interactive CLIs, REPLs, TUI applications, background services, and for driving and observing another program's front end end-to-end from a tool call. It is 24×80 by *default*, not by law: `cols`/`rows` size it.
 
 **Parameters**:
 - `name` (required): The terminal session name. A new name creates a new session; an existing name sends input to that session.
 - `input` (optional): An array of string-of-characters and/or key names to send to the terminal.
-- `delay` (optional): Seconds to wait before capturing the screen after sending input. Default: `1`. Honoured exactly, including `delay: 0` for no wait at all (a non-integer value is ignored and the default applies).
+- `delay` (optional): Seconds to wait before capturing the screen after sending input. Default: `1`. Honoured exactly, including `delay: 0` for no wait at all (a non-integer value is ignored and the default applies). `wait_for`/`wait_stable` **replace** it when either is given.
+- `command` (optional): argv to run in a **new** session instead of the default `bash` (`["python3", "main.py"]`). Creation only — with an existing session it is an ERROR, because typing into whatever already stands under that name is worse than an error.
+- `env` (optional): `{"NAME": "value"}` extra environment for the launched command. Creation only. In sandbox mode these are bwrap's own `--setenv` (last-one-wins), added after the sandbox's own so the caller's value is the one the pane sees.
+- `cwd` (optional): working directory of the launched command, as **the pane's own filesystem** sees it (`~` and `$VAR` are NOT expanded). Creation only. In sandbox mode bwrap's `--chdir`; unsandboxed a `cd` the shell script never performs on its own.
+- `cols`, `rows` (optional): the size of a new session, and the resize of an existing live one. **Both or neither** (half a geometry is an ERROR — a window has one size). Geometry is per terminal: on a clientless session `resize-window` sizes the WINDOW, and a window created afterwards keeps its own size (measured, decision 83) — so a capture's width can be a fact of the test rather than of tmux's default (decision 73).
+- `capture` (optional): `text` (the default, plain), `styled` (tmux's own attributes, `capture-pane -e` — how a colour, a heading or a border is asserted), `bytes` (`-e -C`: styled with non-printables octal-escaped).
+- `history` (optional): pull N lines of scrollback above the visible screen, **capped at 500** (asking for more gets the ceiling, not an error — everything a capture returns goes into the model's context).
+- `diff` (optional, bool): report only the lines that changed since your last plain-text read of that name, instead of the whole screen. Takes no `capture`, no `history`, no `format:"json"` — a `diff` compares plain text, and reading an argument then ignoring it is an ERROR here.
+- `wait_for` (optional): a regular expression to wait for in the pane. **Replaces `delay`.**
+- `wait_stable` (optional): milliseconds the screen must hold still before the call returns. **Replaces `delay`.**
+- `wait_timeout` (optional): how long a wait may take, seconds. Default `15`. A timeout is not silence: the answer is the screen plus `WARNING: Wait timed out after N s: …`, and an aborted one says the user aborted the chat.
+- `send_bytes` (optional): raw strings sent **after** `input`, delivered exactly and with nothing interpreted — SGR mouse sequences, bracketed paste. A NUL byte is refused (it cannot cross an argv; delivering the truncated stream would be a lie).
+- `format` (optional): `text` (default) or `json`.
 
-**Output**: The current 24×80 terminal screen with cursor position indicated by `█`. If the session has died: its **real final screen and exit status** (see Features), followed by `INFO: Session dead.` — or, when nothing was ever captured from it, the last screen cached under that name plus the notice. A name the chat has **never had** is a different answer and says so — `INFO: No such session. … Send input to that name to start one.` — because a reported death is something a model acts on, and no session of that name ever died (decision 70). The last screen is cached per session name in `app.tmux[chat_id]["last_screen"]`, which is what lets a later call report it; a name reused by a new session starts with an empty cache, because the dead one's screen is not this one's history (decision 66).
+**Output**: the current screen with the cursor position indicated by `█`, in the mode `capture` asked for. If the session has died: its **real final screen and exit status** (see Features), followed by `INFO: Session dead.` — or, when nothing was ever captured from it, the last screen cached under that name plus the notice. A name the chat has **never had** is a different answer and says so — `INFO: No such session. … Send input to that name to start one.` — because a reported death is something a model acts on, and no session of that name ever died (decision 70). The last screen is cached per session name in `app.tmux[chat_id]["last_screen"]`, which is what lets a later call report it; a name reused by a new session starts with an empty cache, because the dead one's screen is not this one's history (decision 66).
+
+`format="json"` answers data instead of prose: `{session, state: "live"|"dead"|"absent", cols, rows, pane_pid, command, screen: [rows]}`, plus `cursor_x`/`cursor_y` on a live pane and `exit_status`/`signal`/`dead_time` on a dead one; `wait_for`, when it was asked, is echoed back as `wait`. An absent name is `{session, state: "absent"}` and nothing else — no geometry to report. A `diff` answers a unified diff with no context lines, or `(no lines changed since the last capture)`, or `(first capture: no previous screen to compare against, …)` followed by the whole screen.
 
 **Architecture**:
 - Uses `libtmux` to create persistent tmux sessions (one tmux session per chat conversation)
-- Each terminal is a tmux window running a bash shell
+- Each terminal is a tmux window running `command`, defaulting to a bash shell
 - Sandboxed by default with `bwrap` (bubblewrap) for security
 - The registry (`app.tmux[chat_id]`) holds **ids, not objects**: window name →
   `window_id`, plus the session and the server identity (its pid and start time) those
-  ids belong to, and the per-name screen cache. Every call answers liveness, exit
+  ids belong to, the per-name screen cache, and the diff's per-name raw baseline
+  (`last_capture`, deliberately separate from `last_screen`: the cache holds what was
+  *rendered*, the baseline what was *read plain*). Every call answers liveness, exit
   status, geometry and cursor from ONE narrow `tmux list-panes -a` snapshot taken on
   the way in; libtmux `Pane`/`Window` objects are built from ids on demand, only for
   capturing, sending and killing. A cached libtmux object was measured lying
@@ -343,16 +359,25 @@ Would replace 3 with `new_text`. File not modified.
   (`cursor_x`/`cursor_y`, measured equal to the old `display_message()` reads), so a
   capture is now exactly TWO `tmux` invocations (~17 ms) where the object layer paid
   six plus two `display_message` calls (45 ms documented, 69 ms measured)
-- No scrollback — only the current 24 lines are captured
+- Scrollback is `capture-pane start=-N`, capped at 500 lines; the visible screen stays
+  the default, and the cursor marker, the diff baseline and every older read are
+  unaffected by the mode arguments when none is passed
+- `wait_for`/`wait_stable` poll that same single-reader text (`capture_text()`, one
+  reader and one set of flags *inside* the tool, as decision 73 demanded of the
+  harness) every 100 ms, so the pattern is matched against exactly what `term_screen`
+  would report; the loop also checks the chat's `abort` key — see Features
 
 **Supported Keys**:
 `Up`, `Down`, `Left`, `Right`, `Space`, `Tab`, `Delete`, `End`, `Enter`, `Escape`/`Esc`, `F1`–`F12`, `Home`, `Insert`, `PageDown`/`PgDn`, `PageUp`/`PgUp`
 Modifier prefixes: `C-` (Ctrl), `S-` (Shift), `M-` (Alt)
+Raw bytes are not keys: `send_bytes` sends them through `send-keys -l -- <bytes>`, where a leading `-` and a literal ESC are data (decision 83 measured both routes; libtmux's own key layer loses a payload that begins with a flag).
 
 **Features**:
 - Persistent sessions that survive across tool calls within a chat
 - Auto-creates a new session if the name does not already exist
-- Cursor position rendered with `█` in the screen capture
+- Cursor position rendered with `█` in the text capture; `screen_json` reports it as
+  two numbers instead (`marker=False` drops the splice, which otherwise overwrites the
+  character it lands on)
 - Sandbox support (bwrap) for security; can be disabled (at the user's own risk)
 - Dead session detection with automatic cleanup
 - A session that dies unattended reports its **real final screen and exit status**: the
@@ -362,6 +387,13 @@ Modifier prefixes: `C-` (Ctrl), `S-` (Shift), `M-` (Alt)
   scrollback, because tmux writes its own `Pane is dead (status N, …)` line into the
   pane and that scrolls the top line off — a session that printed one line would
   otherwise report nothing at all. The corpse is then destroyed and its name freed.
+  An argv that exits *before tmux answers* cannot be retained at all (`command:
+  ["true"]`): `term_new` reports its established error string and registers nothing
+  (decision 83).
+- A `wait_for` is cancellable: `Chat.action_abort` stamps `abort` into the chat's tmux
+  entry, the poll sees it at the next 100 ms tick and returns `aborted` (measured:
+  ~0.6 s against a 20 s ceiling), and `call()` clears the flag at the start of every
+  call so an abort can never cancel a wait that began after it (decision 83)
 - The sessions live on a tmux socket of spit.py's own (`spit-<pid>`), never on the
   user's default socket, so quitting the app cannot take down the user's tmux
 - A tmux id is only trusted when the listing it came from is from the server the chat
@@ -374,10 +406,24 @@ Modifier prefixes: `C-` (Ctrl), `S-` (Shift), `M-` (Alt)
   so the server goes too. The chat entry survives with its `server` key and its
   screen cache, the same `Server` object revives on the next call, and no second
   server is ever built for a chat
+- **A deleted or archived chat's terminals go with it**: `manage/chat/chat.py`'s
+  `delete()` — which `archive()` also walks through — calls `close_chat(app.tmux,
+  "chat-<uuid>")` after the chat's file is gone. It kills the chat's SESSION (never
+  the Server, which belongs to the process and to every chat), by the same id
+  discipline as `retire()`: only after the stamp AND a fresh listing vouch that the
+  session is this chat's (decision 83)
 
 **Limitations**:
-- 24×80 character window with **no scrollback**
-- Output that scrolls off a live session is lost (a dead one's last 50 lines are not)
+- The default size is 80×24; `cols`/`rows` change it, and a window that was never
+  given a geometry keeps tmux's clientless default
+- Every capture mode reads the pane's **grid** as tmux keeps it. A graphics sequence
+  tmux does not model (Kitty/Sixel) is consumed by tmux and appears as its placeholder
+  or not at all — **no capture mode here can assert that byte stream**, and no pane
+  recorder (`pipe-pane`) ships to work around it (decision 83 says why)
+- Output that scrolls off a live session past the pane's history is lost, and a
+  capture returns at most the 500-line cap (a dead session's report reaches 50)
+- A `wait_for` can be cancelled; nothing else can be. A program already running in a
+  pane is stopped by what you type into it (or by `kill`), not by the tool call
 - For verbose or long-lived processes, redirect output to a file (`> log.txt 2>&1`)
 - Not ideal for one-shot file operations — prefer dedicated file and command tools
 
@@ -387,6 +433,15 @@ terminal(name="dev", input=["npm run dev > dev.log 2>&1 &", "Enter"])
 terminal(name="dev", delay=3)                    # screen snapshot
 terminal(name="dev", input=["C-c"])              # send Ctrl+C
 terminal(name="dev", input=["exit", "Enter"])    # close session
+
+# the same tool as a harness for a program under test
+terminal(name="ui", command=["python3", "main.py"], cwd="/app",
+         env={"TERM": "xterm-256color"}, cols=120, rows=40,
+         wait_for="ready", wait_timeout=30)      # start it, wait for the fact
+terminal(name="ui", capture="styled")            # how it painted
+terminal(name="ui", diff=True)                   # only what changed since last read
+terminal(name="ui", format="json")               # rows + cursor + geometry + pid
+terminal(name="ui", send_bytes=["\x1b[<0;10;10M\x1b[<0;10;10m"])   # a click
 ```
 
 ---

@@ -817,7 +817,8 @@ class Terminal(CommonMixIn):
                  is consumed by tmux and appears here as its placeholder, never
                  as its bytes; asserting the graphics byte stream needs a pane
                  recorder (pipe-pane), which this deliberately does not ship —
-                 DECISIONS 84 owns that limit, and the probe that measured it.
+                 DECISIONS 83 owns that limit, its cost and the probe that
+                 measured it.
 
         history pulls N lines of scrollback above the visible screen (item 7),
         capped at HISTORY_REPORT_LIMIT for the same context reason the dead

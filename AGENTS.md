@@ -21,9 +21,13 @@ Quick map:
 
 Non-negotiables (details in the docs above):
 
-- **No code change without the owner's `Go!`** — ask once per task, before the
-  first edit. A tool's PROMPT text counts as code (the model reads it and
-  `tests/unit/prompt/` pins it).
+- **No `Go!` is needed to change code.** Owner's ruling of 2026-09-28, verbatim:
+  *"You may work now independently without asking the user for any permission.
+  One thing remains the same: only the user may merge your work into main."* So
+  nothing is asked before an edit — a tool's PROMPT text included, since it is
+  still code (the model reads it, and `tests/unit/prompt/` pins the prompt
+  machinery). **Only the merge is the owner's** (DECISIONS 71 a, as amended
+  by 83).
 - **Never `git pull` or `git push`. Leave `main` untouched.** Work on a
   descriptively named branch; commit with `git commit -F file` (house
   style; the heredoc-pollution reason it used to give is fixed — TRAPS #2).
