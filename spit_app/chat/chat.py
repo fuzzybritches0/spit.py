@@ -159,6 +159,16 @@ class Chat(Vertical):
     async def action_abort(self) -> None:
         if self._work.busy:
             self._work.exit_after_busy = True
+            # The terminal tool's `wait_for` runs in a worker thread, which nothing
+            # can interrupt; the flag in this chat's tmux registry entry is how the
+            # abort reaches it (DECISIONS 83, harness item 10). Stamped next to
+            # exit_after_busy because they mean the same thing to the two halves of
+            # the chat: stop as soon as you can. `getattr` because the headless
+            # suites drive a Chat on a stub app that owns no tmux at all, and an
+            # abort must not fail there over a bookkeeping key.
+            entry = getattr(self.app, "tmux", {}).get(self.id)
+            if entry is not None:
+                entry["abort"] = True
             return None
         self.work.cancel()
         # The last MESSAGE, addressed by data index - not `children[-1]`, the
