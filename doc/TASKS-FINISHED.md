@@ -2397,3 +2397,52 @@ complete, and what it needs next is not another agent but the owner's hand:
 **`task-terminal-harness-p0bf4` awaits the OWNER'S MERGE** — the only part of
 finishing that is not the agent's (DECISIONS 71 a, unchanged by the 2026-09-28
 ruling).
+
+### P19/WP-1 — the new-chat sequence extracted from `handoff` into `chat/handoff.py` (branch `task-recovery-handoff-helper-p19wp1`: `99e1338` the entry moved into TASKS-IN-PROGRESS with its State fields, `738b788` the refactor, `6ad4a7c` the state record; the branch awaits the owner's merge)
+
+**What it is**: the first of P19's four packages, and deliberately the only
+code change of it — a **behaviour-free refactor**. `tools/handoff.py:call`
+built the next chat itself: id, chat file, sidebar, mount, foreground, focus,
+`text_area.text`, `await action_submit()`. That sequence is now one module-level
+function in `spit_app/chat/handoff.py`, because WP-4's failure-recovery chat
+must be opened by the **same** code and not by a copy of it that can drift
+(DECISIONS 82 a: the message enters through the human submit path, so the file
+on disk, the undo history and the widget tree are what a human typing the same
+message would leave).
+
+**The split, and why it falls there**:
+
+- `spit_app/chat/handoff.py`: `new_chat_id(app)` (the `Manage` id scheme plus
+  the bump-loop, moved whole) and `async create_and_submit(app, settings,
+  message) -> str|None`. It takes settings already built and returns the id, or
+  **None when the chat file could not be written** — the only step that can
+  fail. It knows nothing about ending a chat, and that is the point: nothing in
+  it can set a flag.
+- `spit_app/tools/handoff.py` keeps everything that belongs to the *tool*:
+  `DESC`/`PROMPT`/`SETTINGS`, the deepcopy of `csettings` and the `"Handoff: …"`
+  desc rule (82 b — the inheritance decision), the success string, the refusal
+  of a blank message, and **`chat._work.exit_after_busy = True` as the last
+  statement of a successful call** (82 c — a handoff that failed halfway must
+  leave the working chat working, and the flag line being last *is* the
+  guarantee, so it did not travel into the helper).
+
+**Verification it rests on** — TRAPS #18, the suite and not the argument that
+the move was faithful: the full suite was run from the repo root **before** any
+code changed (the baseline: tools 509, anchored 68, arguments 131, chat_smoke
+168, chat_window 568, endpoints 442, handoff 60, prompt 33, render 278,
+run_script 121, sandbox 157, system_note 219, terminal 346, FAIL 0 everywhere —
+exactly `doc/TESTING.md`) and **after**: every row byte-for-byte the same,
+`unit:handoff` still **60 / 0**, and `git show --stat` on the code commit is the
+two files. No test needed a seam and no check moved: `t1`-`t9` drive the real
+tool and `t10`-`t15` the real `Work` + `ToolCall` over the canned server, so
+what they pin through the move is the chat file's shape, the sidebar's
+highlight and display state, the undo record, the POST the new chat makes, the
+streamed reply that lands in it, and — for the flag — the **absence** of a
+second request from the old chat.
+
+**Limits accepted**: none new. This WP changed no behaviour, so there is nothing
+to accept; `P19` stays open in `TASKS-IN-PROGRESS.md` with WP-2 (typed endpoint
+failures, the retry loop, the slot leak, the dead `endpoint == -1`), WP-3
+(`journal`) and WP-4 (wire the recovery, `DECISIONS 84`) left, and the entry
+carries what the reading for WP-2 measured — including the two `unit:endpoints`
+t6 checks that today's error contract pins and that WP-2 must re-pin in place.
