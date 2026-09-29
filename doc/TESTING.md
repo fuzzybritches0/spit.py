@@ -42,7 +42,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
 | unit:chat_window | 568 |
-| unit:endpoints | 442 |
+| unit:endpoints | 512 |
 | unit:handoff | 60 |
 | unit:prompt | 33 |
 | unit:render | 278 |
@@ -519,9 +519,13 @@ harness **absolute** fixture paths.
   where the app is real, by `unit:endpoints` t13.
 
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
-  (343 checks; **442** since - P13/WP-A's `test_system_note.py` brought 51 and
-  P13/WP-D's `test_note_chain.py` brought 48, both by addition alone - the five
-  P12 files untouched at 88/132/61/19/43):
+  (343 checks; 442 since P13/WP-A's `test_system_note.py` brought 51 and
+  P13/WP-D's `test_note_chain.py` brought 48, both by addition alone; **512**
+  since P19/WP-2 - the new `test_retry.py` brought t14's **69** by addition
+  alone, and `test_requests.py` moved 61 → **62**: t6's re-pin re-worded two
+  checks with the behaviour and ADDED one control, numbers kept and the count
+  not down, so it is the one file in this suite whose number moved without a
+  new section. Per file now **88/132/62/19/43/51/48/69** = 512):
   `endpoints/llamacpp.py`, `Work.harvest_usage()` and the
   chat-settings counts row, driven against a **canned stdlib `http.server`**
   bound to `127.0.0.1` port 0 - no live model, no port but loopback, no user
@@ -534,7 +538,7 @@ harness **absolute** fixture paths.
   t4 the usage object, 132), `test_requests.py` (t6 the one-retry rule around
   `stream_options`, t7 the `/props` → `/slots` → override chain - both read the
   server's **recorded request lines**, because those behaviours *are* request
-  counts and request order, 61), `test_harvest_usage.py` (t10, driven with a
+  counts and request order, **62** since t6's P19/WP-2 re-pin), `test_harvest_usage.py` (t10, driven with a
   `SimpleNamespace` because the harvest reads `self.endpoint.usage` and
   `self.chat.token_usage` and nothing else - 19), `test_counts_row.py` (t11, the
   counts row in a real headless widget tree, 43), `test_system_note.py` (t12,
