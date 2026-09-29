@@ -549,10 +549,12 @@ def t16_the_four_texts_pinned_byte_for_byte():
          "out: no new files unless the task cannot go on without them, targeted "
          "reads instead of whole files, and begin writing down what you have "
          "done and what is still left, while you still have room to say it "
-         "properly."),
+         "properly. If a `journal` tool is available, write an entry now: it is "
+         "what a chat that takes this work over is told about first."),
         ("critical", 180300, TOTAL_200K,
          "Critical: 180300 of 200000 used (90%), 19700 tokens left. Stop working "
-         "now. Hand the work off NOW: call the `handoff` tool with your handoff "
+         "now. Write a `journal` entry first if the journal tool is available, "
+         "then hand the work off NOW: call the `handoff` tool with your handoff "
          "message - the task in one line, what you changed (paths), what is "
          "unfinished, the exact next step, and anything you learned that is not "
          "in the repo. If no handoff tool is available, write that message as a "
@@ -583,7 +585,8 @@ def t16_an_overrun_is_reported_as_the_arithmetic_says():
     attach(chat, ts.TokenStatus())
     check("t16-the-overrun-text", chat.messages[-1][NOTE_KEY][0]["text"],
           "Critical: 100700 of 100000 used (101%), -700 tokens left. Stop "
-          "working now. Hand the work off NOW: call the `handoff` tool with "
+          "working now. Write a `journal` entry first if the journal tool is "
+          "available, then hand the work off NOW: call the `handoff` tool with "
           "your handoff message - the task in one line, what you changed "
           "(paths), what is unfinished, the exact next step, and anything you "
           "learned that is not in the repo. If no handoff tool is available, "

@@ -119,10 +119,12 @@ TEXT_WARNING = (
     "closing out: no new files unless the task cannot go on without them, "
     "targeted reads instead of whole files, and begin writing down what you "
     "have done and what is still left, while you still have room to say it "
-    "properly.")
+    "properly. If a `journal` tool is available, write an entry now: it is "
+    "what a chat that takes this work over is told about first.")
 TEXT_CRITICAL = (
     "Critical: {used} of {total} used ({pct}%), {remaining} tokens left. "
-    "Stop working now. Hand the work off NOW: call the `handoff` tool with "
+    "Stop working now. Write a `journal` entry first if the journal tool is "
+    "available, then hand the work off NOW: call the `handoff` tool with "
     "your handoff message - the task in one line, what you changed (paths), "
     "what is unfinished, the exact next step, and anything you learned that "
     "is not in the repo. If no handoff tool is available, write that "
