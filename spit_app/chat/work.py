@@ -1,7 +1,8 @@
 # SPDX-Liicense-Identifier: GPL-2.0
 import os
+import asyncio
 from copy import deepcopy
-from spit_app.endpoints.llamacpp import LlamaCppEndpoint
+from spit_app.endpoints.llamacpp import LlamaCppEndpoint, EndpointFailure
 from .textual_message import RemoveMessage
 from spit_app.endpoints.manage_cache import ManageCache
 
@@ -18,6 +19,12 @@ class Work:
         self.messages = chat.messages
         self.busy = False
         self.exit_after_busy = False
+        # True ONLY in the delay between two requests (P19/WP-2). `busy` is True
+        # only around a tool call, so without this flag `action_abort` takes its
+        # cancel-and-delete branch during that sleep - and by then the attempt's
+        # corpse is already rolled back, so `messages[-1]` is the USER message and
+        # abort would delete the human's own turn.
+        self.retrying = False
         prompt = self.prompt()
         endpoint = deepcopy(self.app.get_endpoint(self.cs("endpoint")))
         self.slot = -2
@@ -116,7 +123,12 @@ class Work:
             self.endpoint.endpoint["slot_id"] = {"stype": "uinteger", "value": self.slot}
 
     async def after_work(self) -> None:
-        if self.save_cache_prompt():
+        # `slot >= 0` is the other half of the gate: -2 is "never took one" (the
+        # gate above is then false anyway) and -1 is `get_slot_limited()`'s ANSWER
+        # THAT THERE IS NO FREE SLOT - nothing was taken, so there is nothing to
+        # hand back, and `slots[model][-1] = ...` would mark somebody ELSE'S slot
+        # idle. The no-slot report is `work_stream`'s, where the question is asked.
+        if self.save_cache_prompt() and self.slot >= 0:
             await self.manage_cache.return_slot(self.cs("model"), self.chat.id, self.slot)
 
     def harvest_usage(self) -> None:
@@ -150,35 +162,100 @@ class Work:
         count = len(self.messages)
         await self.maybe_load_model()
         await self.before_work()
+        if self.slot == -1:
+            # The real answer to the question this file has asked since before P19
+            # of the wrong object (`if self.endpoint == -1`, an object that is
+            # never -1, so the branch was dead and the request went out carrying
+            # `slot_id = -1`). -1 is `get_slot_limited()`'s reply when every
+            # parallel slot is busy: no slot, no request, and nothing to return
+            # below - `after_work` keeps that half.
+            self.app.exception = Exception(
+                "No free slot for inference available! Please try again later!")
+            return None
+        failure = None
         try:
-            if self.endpoint == -1:
-                self.app.exception = Exception("No free slot for inference available! Please try again later!")
-            # P13/WP-D: ask the hooks immediately before the request. The
-            # position is load-bearing: the tool loop below re-enters
-            # work_stream(), so this asks before EVERY request - including
-            # the ones inside a tool loop, where the window actually fills
-            # up - and a note written now rides the payload being built
-            # next, into the SAME request's `messages` (WP-A's unpacking).
-            # Nothing catches what a hook raises: that is WP-B's pinned
-            # contract, and the reason the hook is total (unknown figure =>
-            # silence). attach() adds no item to self.messages; it writes
-            # into the dicts.
-            self.chat.system_notes.attach()
-            await self.endpoint.stream()
-            # after the await and still inside the try: a stream that raised leaves
-            # a reply nobody got, and an error is not a counted reply.
-            self.harvest_usage()
-        except Exception as exception:
-            if type(exception).__name__ in ("TimeoutError", "ReadTimeout", "ConnectError",
-                                            "RuntimeError", "ConnectTimeout", "ReadError",
-                                            "RemoteProtocolError"):
-                self.app.exception = exception
-                if len(self.messages) > count:
-                    self.chat_view.post_message(RemoveMessage(len(self.messages)-1))
-                self.chat.chat_settings.update_models()
-                return None
-            else:
-                raise exception
-        await self.after_work()
+            failure = await self.stream_attempts(count)
+        finally:
+            # The slot goes back on EVERY way out of the reply. The old code
+            # `return`ed on the error path before `after_work()`, so the slot
+            # `before_work()` took was never returned - with `parallel` set that
+            # starves every other chat of a slot for the rest of the run. The gate
+            # is `after_work`'s own (`save_cache_prompt`), so this finally costs
+            # nothing on a chat that never took one.
+            await self.after_work()
+        if failure is not None:
+            return None
         if "tool_calls" in self.messages[-1]:
             await self.work_stream()
+
+    async def stream_attempts(self, count: int) -> Exception|None:
+        """The ONE retry loop, around `endpoint.stream()` and nothing else.
+
+        The width is the whole design (P19): `work_stream()` runs the tools BEFORE
+        the request and recurses AFTER it, so a loop wrapped around anything wider
+        would re-execute every tool call - files already written, commands already
+        run - on each attempt. Here the second request is the only second thing.
+
+        Answers None when a reply landed, or the failure that is reported. A
+        non-`EndpointFailure` is NOT caught: it is a bug somewhere else and it
+        re-raises out of the worker, past the `finally` above (which still returns
+        the slot), exactly as it did before.
+
+        `count` is the message length BEFORE the attempt: `stream()` appends the
+        assistant dict and fires signal 1 BEFORE it asks, so a dead attempt leaves
+        that dict behind, and after a half-streamed tool call a half-built
+        `tool_calls` list. `remove_message_at` is awaited (not posted) because the
+        next attempt must not start while the corpse still stands; it is the ONE
+        rollback (the posted `RemoveMessage` handler is a thin caller of the same
+        method), so the undo record, the widget, the window and the disk write all
+        move together, once per attempt.
+        """
+        attempts = max(1, int(self.endpoint.attempts))
+        for attempt in range(1, attempts + 1):
+            try:
+                # P13/WP-D: ask the hooks immediately before the request. The
+                # position is load-bearing: this asks before EVERY request, the
+                # retries included - and a note written now rides the payload
+                # being built next (WP-A's unpacking). Nothing catches what a
+                # hook raises: WP-B's contract, and the hook is total (unknown
+                # figure => silence). attach() writes into the dicts; it adds no
+                # item to self.messages, so it never disturbs the rollback below.
+                self.chat.system_notes.attach()
+                await self.endpoint.stream()
+            except Exception as exception:
+                if not isinstance(exception, EndpointFailure):
+                    raise exception
+                if not exception.retryable or attempt >= attempts:
+                    return self.report_failure(exception, count)
+                if len(self.messages) > count:
+                    await self.chat_view.remove_message_at(len(self.messages) - 1)
+                # The delay between two REQUESTS, in slices: an abort must end it
+                # within about a tenth of a second, and `exit_after_busy` is the
+                # flag abort sets on the branch `retrying` now selects.
+                self.retrying = True
+                try:
+                    remaining = max(0.0, float(self.endpoint.delay))
+                    while remaining > 0 and not self.exit_after_busy:
+                        slice = min(0.1, remaining)
+                        await asyncio.sleep(slice)
+                        remaining -= slice
+                finally:
+                    self.retrying = False
+                if self.exit_after_busy:
+                    # Aborted: the human's own turn is the tail, the attempt's
+                    # corpse is already gone, and NO FURTHER REQUEST is made.
+                    return exception
+        return None
+
+    def report_failure(self, exception: Exception, count: int) -> Exception:
+        # The same report the name-matching branch made, and by design the same
+        # one a deterministic refusal gets on its FIRST attempt: the app shows it,
+        # the attempt's dict is taken back, the model list is refreshed (a dead
+        # endpoint may have lost its models). WP-4 turns the transient and
+        # exhausted cases into an in-chat notice (DECISIONS 84 c); until then this
+        # is the failure path, and it is reached once per reply, not per attempt.
+        self.app.exception = exception
+        if len(self.messages) > count:
+            self.chat_view.post_message(RemoveMessage(len(self.messages)-1))
+        self.chat.chat_settings.update_models()
+        return exception

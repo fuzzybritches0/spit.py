@@ -67,18 +67,32 @@ def t6_retry(server):
     check("t6-no-error-raised-for-a-retry-that-worked", repr(error), "None")
 
     # a 4xx that refuses both times: exactly two requests, then the error
-    # work.py already catches - same type, same message shape.
+    # the work loop now classifies. RE-PINNED IN PLACE by P19/WP-2 (numbers kept,
+    # count not down, DECISIONS 70's precedent for a deliberate behaviour change):
+    # this check used to pin `RuntimeError` and membership in `work_stream`'s
+    # exception-NAME tuple. What moved is the type - the endpoint answers a
+    # refusal with a `DeterministicFailure`, which carries the status code and
+    # `retryable = False` so the work loop decides on a flag instead of on a name
+    # (the typed hierarchy and its argues are DECISIONS 84). The WORDING inside
+    # `str()` is the same sentence the app has always shown and the check below
+    # still pins byte-for-byte.
     server.reset()
     _endpoint, error = run_stream(NEW, f"{server.base}/refuse-always/v1")
     check("t6-refused-both-times-two-requests-only", len(server.posts()), 2)
-    check("t6-refused-both-times-raises-RuntimeError", type(error).__name__, "RuntimeError")
+    check("t6-refused-both-times-raises-a-DeterministicFailure",
+          type(error).__name__, "DeterministicFailure")
     check("t6-refused-both-times-message-is-the-HEAD-shape",
           str(error), 'Endpoint returned 403: ' + json.dumps(
               {"error": {"message": "mm-denied-every-time"}}))
-    check("t6-the-error-name-is-the-one-work_stream-catches",
-          type(error).__name__ in ("TimeoutError", "ReadTimeout", "ConnectError",
-                                   "RuntimeError", "ConnectTimeout", "ReadError",
-                                   "RemoteProtocolError"), True)
+    check("t6-the-error-is-the-typed-failure-carrying-status-and-retryable",
+          (isinstance(error, harness.new_mod.EndpointFailure),
+           error.status_code, error.retryable), (True, 403, False))
+    check("t6-CONTROL-the-classifier-is-not-name-matching-a-429-is-the-same-shape-retryable",
+          (type(harness.new_mod.refusal_failure(429, "x")).__name__,
+           harness.new_mod.refusal_failure(429, "x").retryable,
+           harness.new_mod.refusal_failure(503, "x").status_code,
+           type(harness.new_mod.refusal_failure(503, "x")).__name__),
+          ("TransientFailure", True, 503, "TransientFailure"))
     check("t6-neither-request-dropped-its-flag-on-the-first-try",
           ["stream_options" in body for body in server.bodies], [True, False])
 
