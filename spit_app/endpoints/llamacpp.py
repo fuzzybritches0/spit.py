@@ -83,6 +83,106 @@ async def get_context_size(endpoint: dict, model: str = None) -> int|None:
         return value
     return None
 
+class EndpointFailure(Exception):
+    # The typed failure of ONE attempt at the endpoint. It carries the two facts
+    # the work loop needs and the bare RuntimeError carried neither: `status_code`,
+    # what the server answered (None when there was no answer at all, because the
+    # request never completed), and `retryable`, whether asking again could possibly
+    # change the answer. The classification lives HERE, at the one place that knows
+    # what an HTTP status means, so `work.py` can decide on a flag instead of
+    # comparing `type(exception).__name__` against a list of names.
+    status_code = None
+    retryable = False
+
+    def __init__(self, message: str, status_code: int = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class TransientFailure(EndpointFailure):
+    # The server was not able to answer THIS time and might answer the next: the
+    # transport died, or it said 429/5xx. Asking again is the remedy.
+    retryable = True
+
+
+class ConnectionFailure(TransientFailure):
+    # No answer at all - refused, timed out, hung up mid-stream. `status_code` is
+    # None because no status was ever received; the retry rule does not need one.
+    pass
+
+
+class StreamFailure(TransientFailure):
+    # The request was accepted and the stream then reported an `error` payload and
+    # stopped. The answer arrived, so there is a status when the payload carries
+    # one; the attempt itself is still worth repeating.
+    pass
+
+
+class DeterministicFailure(EndpointFailure):
+    # The server refused this exact payload and will refuse it every time: the 4xx
+    # family except 429. Retrying it buys the same refusal three times over and the
+    # latency of all three - the reason this hierarchy exists at all.
+    pass
+
+
+class ContextLengthExceeded(DeterministicFailure):
+    # The one refusal the app itself cannot answer for: the conversation no longer
+    # fits the window. Named because it is the failure the token-status notes try to
+    # warn about, and the case where "prompt too long" arriving as a plain 400 IS
+    # the first signal on an endpoint that answers neither /props nor /slots.
+    pass
+
+
+CONTEXT_REFUSALS = ("context length", "context_length", "context size", "context window",
+                    "maximum context", "max tokens", "too many tokens", "reduce the length")
+
+
+def is_context_refusal(text: str) -> bool:
+    lowered = str(text).lower()
+    return any(marker in lowered for marker in CONTEXT_REFUSALS)
+
+
+def setting_value(endpoint: dict, setting: str, default):
+    # An endpoint setting read FOR THE APP rather than for the wire. The saved shape
+    # is {"value": ...}; a field emptied in the settings screen keeps the key and
+    # leaves value None, and a field saved before it existed is absent at all. All
+    # three, and a hand-edited non-number, answer the default.
+    entry = endpoint.get(setting)
+    value = entry.get("value") if isinstance(entry, dict) else None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return default
+    return value
+
+
+def status_of(code) -> int|None:
+    if isinstance(code, bool) or not isinstance(code, int):
+        return None
+    return code
+
+
+def refusal_failure(status_code: int, text: str) -> EndpointFailure:
+    # The wording is the one the app has always shown the user and the suite pins
+    # (`Endpoint returned {code}: {text}`) - the typing adds the two attributes, it
+    # does not reword the error.
+    message = f"Endpoint returned {status_code}: {text}"
+    if is_context_refusal(text):
+        return ContextLengthExceeded(message, status_code)
+    if status_code == 429 or status_code >= 500:
+        return TransientFailure(message, status_code)
+    return DeterministicFailure(message, status_code)
+
+
+def stream_failure(code, typ, message: str) -> EndpointFailure:
+    text = f"Endpoint raised Error: {code}, Type: {typ}, {message}"
+    if is_context_refusal(f"{code} {typ} {message}"):
+        return ContextLengthExceeded(text, status_of(code))
+    return StreamFailure(text, status_of(code))
+
+
+def transport_failure(error: Exception) -> EndpointFailure:
+    return ConnectionFailure(f"Endpoint request failed: {type(error).__name__}: {error}")
+
+
 def nameid(model: dict) -> str:
     if "name" in model:
         return "name"
@@ -136,6 +236,13 @@ class LlamaCppEndpoint:
         self.timeout = self.endpoint["timeout"]["value"]
         if self.timeout == 0:
             self.timeout = None
+        # The retry rule is a fact about the ENDPOINT, like the timeout above and
+        # `context_size` (DECISIONS 84 a). Read with .get() and a default, so an
+        # endpoint saved before these fields existed - every endpoint saved so far -
+        # asks for the default instead of raising KeyError: the settings file is
+        # read verbatim and no migration was authorised.
+        self.attempts = setting_value(self.endpoint, "retry_attempts", 3)
+        self.delay = setting_value(self.endpoint, "retry_delay", 1.0)
         self.prompt = prompt
         self.tools = tools
         self.usage = None
@@ -150,7 +257,7 @@ class LlamaCppEndpoint:
             # context_size is a client-side fact about the endpoint, not an inference
             # parameter: forwarding it would make the server reject the request.
             if not setting in ["name", "endpoint_url", "key", "reasoning_key", "save_cache_prompt",
-                               "parallel", "context_size"]:
+                               "parallel", "context_size", "retry_attempts", "retry_delay"]:
                 if "." in setting and (value or value is False):
                     dot2obj(payload, setting, value)
                 else:
@@ -257,7 +364,7 @@ class LlamaCppEndpoint:
             code = delta["error"].get("code", "unknown")
             message = delta["error"].get("message", "Unknown error occurred.")
             typ = delta["error"].get("type", "unknown")
-            raise RuntimeError(f"Endpoint raised Error: {code}, Type: {typ}, {message}")
+            raise stream_failure(code, typ, message)
 
     async def stream_request(self, client, headers: dict, payload: dict) -> tuple|None:
         async with client.stream("POST", self.api_endpoint, headers=headers, json=payload) as resp:
@@ -294,15 +401,26 @@ class LlamaCppEndpoint:
         self.messages.append({"role": "assistant", "reasoning": "", "content": [{"type": "text", "text": ""}]})
         self.message_index = len(self.messages) - 1
         self.maybe_callback(1)
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            refusal = await self.stream_request(client, headers, payload)
-            if refusal and 400 <= refusal[0] < 500 and "stream_options" in payload:
-                # A server that refuses the request outright may be refusing the
-                # unknown stream_options field. Token counts are never worth losing
-                # a reply over (old llama.cpp sends the usage unconditionally), so
-                # ask once more without it.
-                del payload["stream_options"]
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 refusal = await self.stream_request(client, headers, payload)
-            if refusal:
-                raise RuntimeError(f"Endpoint returned {refusal[0]}: {refusal[1]}")
+                if refusal and 400 <= refusal[0] < 500 and "stream_options" in payload:
+                    # A server that refuses the request outright may be refusing the
+                    # unknown stream_options field. Token counts are never worth losing
+                    # a reply over (old llama.cpp sends the usage unconditionally), so
+                    # ask once more without it.
+                    del payload["stream_options"]
+                    refusal = await self.stream_request(client, headers, payload)
+                if refusal:
+                    raise refusal_failure(refusal[0], refusal[1])
+        except httpx.TransportError as error:
+            # The transport set that used to reach `work.py` as five different
+            # httpx classes it recognised by NAME: ConnectError, ConnectTimeout,
+            # ReadError, ReadTimeout, RemoteProtocolError and the rest of
+            # TransportError. They are transient by nature - there was no answer -
+            # so they leave here as ONE type carrying retryable, with the httpx
+            # error kept as `__cause__` so the user still reads what really
+            # happened. CancelledError is not a TransportError and is deliberately
+            # not caught: an abort must stop reaching the stream at all.
+            raise transport_failure(error) from error
         self.maybe_callback(0)
