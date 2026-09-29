@@ -744,23 +744,48 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         if neighbour is not None:
             neighbour.focus(scroll_visible=False)
 
-    async def on_remove_message(self, message: RemoveMessage) -> None:
-        self.chat.undo.append_undo("remove", self.messages[message.index], message.index)
-        child = self.widget(message.index)
+    async def remove_message_at(self, index: int) -> None:
+        """Remove `messages[index]` from the data AND the widget tree, completely,
+        and be finished when this returns.
+
+        The ONE rollback, with two callers by design (P19/WP-2). `on_remove_message`
+        handles the POSTED `RemoveMessage` (the message-level remove action);
+        `Work` awaits this directly between endpoint attempts, where posting is not
+        enough: the next attempt must not start while the corpse still stands, or
+        `stream()` appends a second assistant message - and after a half-streamed
+        tool call, a second half-built `tool_calls` list - on top of it, and the
+        transcript carries both. `post_message` only queues; the handler runs when
+        the loop next gets to it, which is the one ordering a retry cannot depend
+        on.
+
+        Everything a removal owns is here and nowhere else: the undo record, the
+        widget removal under the child's own lock, the window start sliding with
+        the data when the removal is below the window (nothing mounted moved, so
+        the focus does not move either), the data delete, the write to disk, the
+        ONE focus rule, the `is_removing` release.
+        """
+        self.chat.undo.append_undo("remove", self.messages[index], index)
+        child = self.widget(index)
         if child is not None:
             async with child.lock:
                 await child.remove()
-        elif message.index < self.window_start:
+        elif index < self.window_start:
             # A removal BELOW the window (the streaming-error path removes
             # `messages[-1]`, which may already have been evicted): the data
             # shifts under the window, so lo slides with it. Nothing mounted
             # moved, so the focus does not move either - see
             # `focus_after_removal`.
             self.window_start -= 1
-        del self.messages[message.index]
+        del self.messages[index]
         self.chat.write_chat_history()
-        self.focus_after_removal(message.index, child is not None)
+        self.focus_after_removal(index, child is not None)
         self.is_removing = False
+
+    async def on_remove_message(self, message: RemoveMessage) -> None:
+        # The posted message and the awaited call are ONE operation now, so the two
+        # removal sites cannot drift: `Work` awaits `remove_message_at` between
+        # endpoint attempts, where a queued handler is not an ordering it can use.
+        await self.remove_message_at(message.index)
 
     def on_focus(self, event: Focus) -> None:
         event.prevent_default()
