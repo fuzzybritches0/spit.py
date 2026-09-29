@@ -107,6 +107,10 @@ class FakeWork:
 
     def __init__(self, busy: bool = False) -> None:
         self.busy = busy
+        # P19/WP-2: `action_abort` reads `busy or retrying`, so the stub that
+        # stands in for `Work` here must carry the attribute or every abort step
+        # of the golden run raises AttributeError.
+        self.retrying = False
         self.is_running = False
         self.exit_after_busy = False
         self.cancelled = 0

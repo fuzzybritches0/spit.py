@@ -157,7 +157,15 @@ class Chat(Vertical):
             self.text_area.focus()
 
     async def action_abort(self) -> None:
-        if self._work.busy:
+        # `busy` is True only around a TOOL call; `retrying` is True only in the
+        # delay between two endpoint requests (P19/WP-2). Both mean "the worker is
+        # somewhere it must be told to stop, and there is nothing on screen to
+        # tear down yet", so both take the flag path. Without `retrying` here, an
+        # abort during a retry sleep falls to the cancel-and-delete branch below -
+        # and by then the failed attempt has already been rolled back, so
+        # `messages[-1]` is the HUMAN's own turn: abort would delete the message
+        # the user just wrote instead of the reply that never arrived.
+        if self._work.busy or self._work.retrying:
             self._work.exit_after_busy = True
             # The terminal tool's `wait_for` runs in a worker thread, which nothing
             # can interrupt; the flag in this chat's tmux registry entry is how the

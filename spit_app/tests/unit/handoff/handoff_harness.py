@@ -284,6 +284,9 @@ class FakeWork:
     def __init__(self) -> None:
         self.exit_after_busy = False
         self.busy = False
+        # P19/WP-2: `action_abort` reads `busy or retrying`; a stub without the
+        # attribute raises there.
+        self.retrying = False
         self.is_running = False
 
 
