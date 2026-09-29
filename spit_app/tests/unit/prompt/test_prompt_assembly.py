@@ -212,6 +212,25 @@ glued = [name for name, spec in real.items() if spec.get("prompt_inst") and
          "\n" + spec["prompt_inst"].strip().split("\n")[0] not in assembled]
 check("t8-no_instructions_glued_to_their_prompt", glued, [])
 
+# t9 (P19/WP-3): the `journal` tool is in the tree the model reads, and its
+# block is assembled like every other tool's. t8 already refuses a tool module
+# without a PROMPT and counts one heading per tool, so the ARRIVAL needed no
+# change here; these checks are the ones that say what arrived, because "the
+# count went up" is not evidence that the model can see the tool.
+journal_block = [line for line in assembled.split("\n") if line == "## journal"]
+check("t9-journal-has-its-own-heading", journal_block, ["## journal"])
+check("t9-the-journal-heading_starts_a_line",
+      [line for line in assembled.split("\n")
+       if line.startswith("## journal")], ["## journal"])
+journal_section = assembled.split("## journal\n", 1)[1].split("\n## ", 1)[0]
+check("t9-the-journal-block-is-not-glued-to-the-next-tool",
+      journal_section.endswith("\n"), True)
+check("t9-it-tells-the-model-to-journal-before-a-handoff",
+      "handoff" in journal_section, True)
+check("t9-and-it-states-the-fields",
+      all(word in journal_section for word in
+          ("Branch", "Done", "Left", "State hazards", "Verify")), True)
+
 print()
 print("==============================")
 print(f"PASS: {pass_}  FAIL: {fail_}")
