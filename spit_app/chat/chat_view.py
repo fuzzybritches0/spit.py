@@ -748,15 +748,22 @@ class ChatView(ChatViewActionsMixIn, CallbackMixIn, AnchoredScroll):
         """Remove `messages[index]` from the data AND the widget tree, completely,
         and be finished when this returns.
 
-        The ONE rollback, with two callers by design (P19/WP-2). `on_remove_message`
-        handles the POSTED `RemoveMessage` (the message-level remove action);
-        `Work` awaits this directly between endpoint attempts, where posting is not
-        enough: the next attempt must not start while the corpse still stands, or
-        `stream()` appends a second assistant message - and after a half-streamed
-        tool call, a second half-built `tool_calls` list - on top of it, and the
-        transcript carries both. `post_message` only queues; the handler runs when
-        the loop next gets to it, which is the one ordering a retry cannot depend
-        on.
+        The ONE rollback (P19/WP-2): one body, reached by `on_remove_message` for
+        every posted `RemoveMessage` - the message-level remove action, and the
+        retry loop between endpoint attempts (`Work.roll_back_attempt`, which posts
+        and then WAITS for the data to move, because the next request must not
+        start while the corpse still stands).
+
+        It was extracted so a retry could AWAIT it, and the measurement of that
+        first shape is why the body is reached by the queue and not around it:
+        called straight from the worker it deletes the data while the dead
+        attempt's own `StreamCallback`s are still in this widget's queue, and the
+        queued signal-1 then mounts an index one past the end (`_grow_down` ->
+        IndexError out of a message handler). The queue is FIFO, so the removal
+        posted here runs AFTER those signals and sees the dict it is about. What
+        the seam buys is therefore not a way around the queue - it is that both
+        callers share one rollback, so the undo record, the widget, the window,
+        the write and the focus rule cannot drift between them.
 
         Everything a removal owns is here and nowhere else: the undo record, the
         widget removal under the child's own lock, the window start sliding with

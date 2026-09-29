@@ -204,11 +204,12 @@ class Work:
         `count` is the message length BEFORE the attempt: `stream()` appends the
         assistant dict and fires signal 1 BEFORE it asks, so a dead attempt leaves
         that dict behind, and after a half-streamed tool call a half-built
-        `tool_calls` list. `remove_message_at` is awaited (not posted) because the
-        next attempt must not start while the corpse still stands; it is the ONE
-        rollback (the posted `RemoveMessage` handler is a thin caller of the same
-        method), so the undo record, the widget, the window and the disk write all
-        move together, once per attempt.
+        `tool_calls` list. `roll_back_attempt` puts that back through the ONE
+        rollback (`remove_message_at`, which the posted `RemoveMessage` handler
+        also calls) and does not return until the data is back where the attempt
+        found it - the next attempt must not start on the corpse, and it must not
+        overtake the signals the dead attempt posted. Once per attempt, and the
+        undo record that goes with it is the accepted cost (DECISIONS 84).
         """
         attempts = max(1, int(self.endpoint.attempts))
         for attempt in range(1, attempts + 1):
@@ -222,13 +223,26 @@ class Work:
                 # item to self.messages, so it never disturbs the rollback below.
                 self.chat.system_notes.attach()
                 await self.endpoint.stream()
+                # A reply LANDED. Leave the loop - there is no `else` of a `try`
+                # that could carry this, and falling out of the `try` would run
+                # straight into the rollback-and-sleep below: measured, a plain
+                # text reply was requested THREE times on a default `attempts` of 3
+                # and left three identical assistant messages behind (t14 pins the
+                # one-post-per-success rule). The `return None` is the answer the
+                # docstring promises, and the ONLY way out of a loop whose other
+                # exits are all inside the `except`.
+                return None
             except Exception as exception:
                 if not isinstance(exception, EndpointFailure):
                     raise exception
                 if not exception.retryable or attempt >= attempts:
                     return self.report_failure(exception, count)
-                if len(self.messages) > count:
-                    await self.chat_view.remove_message_at(len(self.messages) - 1)
+                if not await self.roll_back_attempt(len(self.messages) - 1):
+                    # The rollback did not land, so the corpse still stands and a
+                    # second request would stack a reply on it. Report this
+                    # failure and stop: a retry that cannot clean up after itself
+                    # is worse than no retry.
+                    return self.report_failure(exception, count)
                 # The delay between two REQUESTS, in slices: an abort must end it
                 # within about a tenth of a second, and `exit_after_busy` is the
                 # flag abort sets on the branch `retrying` now selects.
@@ -246,6 +260,48 @@ class Work:
                     # corpse is already gone, and NO FURTHER REQUEST is made.
                     return exception
         return None
+
+    async def roll_back_attempt(self, index: int) -> bool:
+        """Take the attempt's corpse back through the ONE rollback, and be done
+        before the next request starts. Answers whether the data is back at
+        `len(messages) <= index` (the state the next attempt needs).
+
+        POSTED, then waited for - not awaited directly, and that is the whole
+        story (measured, t14). `stream()` posts its own StreamCallback signals on
+        the ChatView, so a failed attempt leaves signal 1 (and any 2s) sitting in
+        that widget's queue. Textual dispatches a widget's queue IN ORDER; the
+        removal therefore runs after those signals, while the dict they are about
+        still exists. `remove_message_at` awaited straight from this worker races
+        them: it deletes the data, the queued signal-1 then mounts the index the
+        window is growing over, and `_grow_down` hits `self.messages[index]` one
+        past the end - `IndexError` out of a Textual message handler, which takes
+        the app down (and takes the retry with it, which is the thing P19 is for).
+        The awaited seam is not the wrong shape - it is the wrong ORDER.
+
+        The wait's exit condition is the invariant the next attempt needs: the
+        message list back to where this attempt found it. It is bounded, and a
+        rollback that never lands (no pump, shutting down) costs a skipped retry,
+        never a second assistant dict stacked on the corpse.
+        """
+        if len(self.messages) <= index:
+            return True
+        # The flag does three jobs here, all of them wanted, and the handler
+        # releases it (`remove_message_at`'s last statement is `is_removing =
+        # False`): prune refuses while the removal is in flight, the Message's own
+        # remove action cannot post a second one behind this one, and a wait on it
+        # is a wait on the handler - the same handshake the user's own remove
+        # already uses.
+        self.chat_view.is_removing = True
+        self.chat_view.post_message(RemoveMessage(index))
+        for _ in range(200):
+            if len(self.messages) <= index:
+                return True
+            await asyncio.sleep(0.01)
+        # Nobody ran the handler. Let the flag go (a held `is_removing` would keep
+        # prune away for the rest of the chat's life) and say so: the caller stops
+        # asking rather than stacking a second reply on the corpse.
+        self.chat_view.is_removing = False
+        return len(self.messages) <= index
 
     def report_failure(self, exception: Exception, count: int) -> Exception:
         # The same report the name-matching branch made, and by design the same

@@ -54,6 +54,22 @@ class CallbackMixIn:
                 await message.process()
 
     async def on_stream_callback(self, message: StreamCallback) -> None:
+        # A signal about a message that is NO LONGER A MESSAGE is a signal about a
+        # reply that was taken back, and there is nothing here to do with it (P19
+        # /WP-2). `post_message` only queues, so the signals a stream posted before
+        # it died are still in this widget's queue when the reply is rolled back -
+        # and both rollback callers delete by DATA index: `action_abort` (which
+        # could already meet this, since cancelling the worker leaves the queue
+        # behind) and `Work.stream_attempts`, which AWAITS `remove_message_at`
+        # between attempts because the next request must not start on the corpse.
+        # Without this guard the stale signal-1 reaches `message_start` ->
+        # `materialize(index)` -> `self.messages[index]` on an index one past the
+        # end: an IndexError out of a Textual message handler (measured, t14's
+        # abort case). The guard fires ONLY on a reply that no longer exists:
+        # signal 1 is posted immediately after `messages.append(...)`, and signals
+        # 2 and 0 while that dict stands, so a live reply can never match it.
+        if not 0 <= message.index < len(self.messages):
+            return None
         if message.signal == 0:
             await self.message_finish(message.index)
             # The token counts on the chat-settings row, at the end of every
