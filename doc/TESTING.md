@@ -44,7 +44,8 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:chat_window | 568 |
 | unit:endpoints | 512 |
 | unit:handoff | 60 |
-| unit:prompt | 33 |
+| unit:journal | 69 |
+| unit:prompt | 38 |
 | unit:render | 278 |
 | unit:run_script | 121 |
 | unit:sandbox | 157 |
@@ -177,9 +178,17 @@ server** (`tmux -L spit-unit-terminal-harness ls` fails after a run). Every grou
 verified red by substituting its defect — DECISIONS 83 (h) lists which mutation
 reddened which checks, including the two harness-side reds it found in this file.)
 
-`unit:prompt` (33) is new: `tests/unit/prompt/` drives the real
+`unit:prompt` is new: `tests/unit/prompt/` drives the real
 `Work.prompt()` with httpx/Textual stubbed out (`stub_modules.py`, TRAPS #19),
 so the one string the model reads about its tools is covered without the app.
+It is **38** since P19/WP-3 (was 33): `t8` walks `spit_app/tools/` and needs no
+edit when a tool arrives - it requires a `PROMPT` of every module and counts one
+`## ` heading per tool - and the +5 is `t9`, the group that says *what* arrived
+(`## journal` is its own heading at the start of a line, its block is not glued
+to the next tool, and it tells the model to journal before a handoff, in the
+fields a record of work has). A new tool moving this row by ADDED checks and not
+by a red is the point: the count going up is the expected outcome of adding a
+tool, and a red would mean the new tool broke the assembly.
 `unit:run_script` (121) covers a tool *module* two ways - a spy `Run`
 (`stub_run.py`) for the call it makes, and the real bash/python3/perl for the
 payload it builds, because a wrong payload is a parse failure and only the real
@@ -518,6 +527,36 @@ harness **absolute** fixture paths.
   graph, which is why the row stays 219 venv-free, and the wiring is proved
   where the app is real, by `unit:endpoints` t13.
 
+- `tests/unit/journal/` - the P19/WP-3 **journal** tool (**69** checks, t1-t8),
+  on the **bare python3 with no venv preamble and that absence is the gate**
+  (TRAPS #19 inverted, the `unit:system_note` precedent): measured, loading
+  `spit_app/tools/journal.py` puts no `textual`/`httpx`/`libtmux`/`ddgs`/
+  `playwright` in `sys.modules`, so `t1` asserts that stays true and a future
+  app import reddens HERE instead of quietly making the row venv-bound. The tool
+  is loaded by `load_module_from_path` from the real tool tree (the function
+  `load_tools` uses), driven with a two-field stub app - `settings.path["data"]`
+  and `settings.tool_settings`, and that small surface IS the point of building
+  it in-process - and its data home is the generated, disposable
+  `./fixtures/journal-data` (`KEEP_FIXTURES=1` to inspect; the journal dir itself
+  is NOT pre-made, so a refusal to create it cannot hide behind the setup).
+  What it pins: `entry` WRITES one timestamped MULTI-LINE entry into
+  `journal/<chat-id>.txt` and the answer is checked against the file's bytes
+  (t2); no `entry`, a `None` entry and a blank one all READ (t3); the read cap
+  cuts at an **entry boundary** and a cap smaller than the newest entry shows
+  that entry WHOLE, while the journal file itself stays uncapped (t4);
+  `journal_max_chars` is a setting, with blank / string / zero / negative / bool
+  / float all answering the default and a small legal value still cutting as the
+  control (t5); append-only, fields are ONE entry, and a body line opening with
+  `[` is body not a second entry (t6); one file per chat, so what one chat wrote
+  is neither readable nor writable through another (t7); and every refusal - a
+  chat id outside `chat-<chars>` including `a\b`, a non-text `entry`, a journal
+  path that is a file - writes NOTHING and has the control that the good value
+  writes (t8). Two real defects the new checks caught in the first draft, both
+  recorded in DECISIONS 85: the cap read back out of the module `SETTINGS` dict
+  (process state - one chat's 300 became the next chat's) and the `..`-style
+  id check that a whitelist replaces. `run_tests.sh` is executable, and the row
+  that shows a shell `Permission denied` instead of a `PASS:` line is the outer
+  runner's `| tail -n 1` hazard (TRAPS #18) wearing a different hat.
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
   (343 checks; 442 since P13/WP-A's `test_system_note.py` brought 51 and
   P13/WP-D's `test_note_chain.py` brought 48, both by addition alone; **512**

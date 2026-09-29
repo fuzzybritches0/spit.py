@@ -19,6 +19,7 @@ code. The full design-rationale log lives in `DECISIONS.md`.
 | get_current_weather | sync | json | - | |
 | grep | async | text | path | PROMPT_INST, MAX_SECONDS=0 |
 | insert_line | async | text | path | common: lines.py |
+| journal | sync | text | - | in-process, append-only, read capped by `journal_max_chars`; DECISIONS 85 |
 | list_directory | async | (markdown) | path | common: file.py |
 | load_image | sync | - | - | REQUIRES_MULTIMODAL_IMAGE=True |
 | lsterm | sync | - | - | tmux backend |
@@ -846,3 +847,59 @@ fenced-block wording survives only as the fallback for a chat that has not
 **Test**: `spit_app/tests/unit/handoff/` (60 checks, the sixth dependency-listed suite) — real `Chat`/`SidePanel`/`Work`/`ToolCall` over a canned 127.0.0.1 SSE server; "sent" proven by the recorded POST and the streamed reply, "ends" by the ABSENCE of the next request.
 
 ---
+
+---
+
+### 16. `journal` (NEW - branch `task-endpoint-retry-p19wp2`, decision 85)
+
+The owner's second half of the failure-recovery brief: *"a new tool the agent can use
+while still alive to keep records — a kind of journal — which then becomes the recovery
+message in the new chat"*. It is the agent's own crash-recovery note, and the fields are
+`doc/TASKS-IN-PROGRESS.md`'s (`Branch / Scope / Done / Left / State hazards / Verify`),
+the shape that has carried this repo across three crashed sessions.
+
+**In-process, not a `scripts/` tool**: `call(app, arguments, chat_id)`, a plain `def`
+(so `ToolCall` runs it through `asyncio.to_thread` and its disk I/O stays off the event
+loop — decision 68), its file at `app.settings.path["data"]/journal/<chat-id>.txt`.
+A sandboxed script could never write there: `bwrap_args()` binds `app_home/sandbox` over
+`/home/<user>` and `sandbox_tmp` over `/tmp`.
+
+**Arguments**: `entry` only, and not required — `entry` **writes**, no `entry` **reads**
+(one tool for both, so a read costs no second tool call). `entry=None` and a blank
+`entry` read too: there is nothing honest to record about "nothing".
+
+**File shape**: append-only, one file per chat. One entry = a marker line
+(`[YYYY-MM-DD HH:MM:SS]`, its own full line), a **multi-line** body, a blank line. So the
+fields of a record are ONE entry, and a body line that opens with `[` (a checkbox, a
+footnote) is body and never a second entry — the count the tool prints counts markers.
+
+**Read cap** `journal_max_chars` (setting, default 4000): the tail of a journal is
+destined for a *fresh chat's* context, so the cap is what keeps that affordable — the
+same reasoning as the dead terminal report's 50 lines (decision 69 d). It cuts at an
+**entry boundary**, never mid-entry; a cap smaller than the newest entry shows that entry
+**whole** (a truncated record is indistinguishable from a complete one to a reader who
+was not here); and what is cut is **still in the file** — the cap is on the read, never on
+the journal. A blanked field, a string, zero, a negative, a bool or a float answer the
+default (the field is a `uinteger`; truncating `1.5` to `1` would be a cap that reads
+almost nothing).
+
+**Output**: `Journal ok: entry N appended to \`…\`` — `Journal of <chat-id>: N entries, …
+(newest last):\n…` — `Journal of … SHOWING THE LAST n FROM THE END …` — `No journal for
+this chat yet. …` — `ERROR: …` (a chat id outside `[A-Za-z0-9_-]+`, a non-text `entry`, a
+journal path that cannot hold the file). Every refusal writes NOTHING, and a refusal does
+not even create the `journal/` directory.
+
+**Consequences owned**: the journal is the *improvement* on a recovery message and never
+its only source (P19 alteration 3) — a chat that never wrote one still gets the app's own
+brief, so nothing here may be load-bearing for a recovery to exist; it never touches the
+conversation it records (no message, no widget, no undo entry); and the `warning` /
+`critical` notes point at it ("if the `journal` tool is available", because existing chats
+gain no tool retroactively — decision 82 d).
+
+**Test**: `spit_app/tests/unit/journal/` (69 checks, t1–t8) on the **bare python3** — the
+tool imports nothing of the app's runtime, so the runner has no venv preamble and t1
+assertes that stays true (TRAPS #19 inverted). The tool is loaded by
+`load_module_from_path` from the real tool tree; the app is a two-field stub
+(`settings.path["data"]`, `settings.tool_settings`) because that small surface *is* the
+point of building it in-process; every absence carries the control that the good value
+writes.

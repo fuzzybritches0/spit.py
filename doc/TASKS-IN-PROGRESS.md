@@ -37,7 +37,9 @@ this entry update.
 (`chat/work.py` + the t6 re-pin), `020f502` (`chat/chat.py` + the two FakeWork
 stubs), `b4b4759` (`chat/callback.py`, `work.py`, `chat_view.py`), `f67bc04`
 (`tests/unit/endpoints/endpoint_harness.py`, new `test_retry.py`,
-`tests/unit/prompt/stub_modules.py`), then this docs commit.
+`tests/unit/prompt/stub_modules.py`). WP-3 at `dd351a2` (new
+`tools/journal.py`, new `tests/unit/journal/`, `tests/unit/prompt/`) and
+`5967054` (`chat/token_status.py` + its `t16` pin), then this docs commit.
 
 **Done**: **WP-1 is closed** (`738b788`, cut at `99e1338` after this entry's
 move): new `spit_app/chat/handoff.py` with `new_chat_id(app)` and
@@ -75,12 +77,15 @@ full-suite runs this took are `/tmp/p19wp2-run1.log` (before the queue-ordered
 rollback and the stale-signal guard), `/tmp/p19wp2-run2.log` and
 `/tmp/p19wp2-run3.log`.
 
-**Baseline** (measured on this box at the WP-2 tip, which is the comparison
+**Baseline** (measured on this box at the WP-3 tip, which is the comparison
 "unmoved" now means, and the same numbers as `doc/TESTING.md`'s table): tools
 509 (127/24/30/119/80/32/68/29), anchored 68, arguments 131, chat_smoke 168,
-chat_window 568, endpoints **512**, handoff 60, prompt 33, render 278,
-run_script 121, sandbox 157, system_note 219, terminal 346, FAIL 0 everywhere,
-`chat_smoke`'s golden md5 `8ae9d1186a59627d30d05dee95f0ad95`.
+chat_window 568, endpoints **512**, handoff 60, **journal 69** (WP-3's new
+row), **prompt 38** (WP-3's t9), render 278, run_script 121, sandbox 157,
+system_note 219, terminal 346, FAIL 0 everywhere, `chat_smoke`'s golden md5
+`8ae9d1186a59627d30d05dee95f0ad95`. Log of the run these numbers are from:
+`/tmp/p19wp3-run2.log` (and `/tmp/p19wp3-run.log`, the one that showed the
+new `run_tests.sh` was not yet executable — see State hazards).
 
 **The three open decisions are taken and recorded**: (a) `retry_attempts` /
 `retry_delay` **per endpoint**, (b) **auto-submit** the recovery chat when the
@@ -90,33 +95,32 @@ an **in-chat notice** — all three in **DECISIONS 84 a/b/c** with their argues,
 and what measuring the first shape of the loop changed is 84 d–h. Nothing is
 left open for WP-3 or WP-4 to decide.
 
-**Left — WP-3, the `journal` tool, one sitting**:
+**Done — WP-3 is closed** (`dd351a2` the tool + `unit:journal` + the prompt
+t9 group, `5967054` the two note texts with their `t16` re-pin, then this entry
+and the DECISIONS 85 / TESTING / TOOLS docs): new
+`spit_app/tools/journal.py`, an in-process `call(app, arguments, chat_id)` with
+a plain `def` (DECISIONS 68: the disk I/O goes off the event loop through
+`asyncio.to_thread`, and only the widget tools belong on the loop), one
+append-only file per chat at `app.settings.path["data"]/journal/<chat-id>.txt`,
+multi-line timestamped entries, `entry` writes and no `entry` reads, and the
+read capped by `journal_max_chars` at an ENTRY boundary with the newest entry
+always shown whole. `TEXT_WARNING` and `TEXT_CRITICAL` each gained one
+"journal now / journal before the handoff" clause — "if the … tool is
+available", since existing chats gain no tool retroactively (82 d) — with their
+`t16` pins re-worded in the same commit (DECISIONS 82's ruling-iv precedent).
+Measured: `unit:journal` **69** new, `unit:prompt` 33 → **38** by added checks
+and no red, `unit:system_note` **219** by the re-pin alone, every other row at
+the baseline above, golden md5 unmoved. Two real defects the new suite caught
+in the first draft, both recorded in DECISIONS 85: the cap read back out of the
+module `SETTINGS` dict (process state — one chat's 300 became the next chat's
+default), and an id check on `..` that a `\b` walked through; the first is now
+`effective_cap(app)`, the second a `[A-Za-z0-9_-]+` whitelist. **The same
+module-state hazard sits in every other in-process tool that reads a numeric
+setting out of `SETTINGS` after `load_user_settings`** — untouched here (not
+WP-3's concern), filed so whoever next touches one of them finds it written
+down.
 
-- new `spit_app/tools/journal.py`, an **in-process** module tool —
-  `call(app, arguments, chat_id)`, its file under `app.path["data"]`,
-  append-only and timestamped, with `TASKS-IN-PROGRESS.md`'s own fields
-  (`Branch / Scope / Done / Left / State hazards / Verify`); `journal(entry=…)`
-  appends and no `entry` returns the tail. Never a `scripts/` tool: `bwrap`
-  binds the app's data dir out of a sandboxed script's reach, so a script tool
-  could write a journal only somewhere else.
-- **capped on read** by the new `journal_max_chars` setting — the tail is
-  destined for a fresh chat's context, so an uncapped read is a context bomb on
-  exactly the path that needs the room; the dead-report's 50-line cap is the
-  same reasoning (DECISIONS 69 d).
-- its `PROMPT` says **when**: after every commit, before a risky operation, and
-  on the token-status `critical` note before `handoff`.
-- a **new suite row** in `doc/TESTING.md` (the suite itself is new; its
-  interpreter is decided by what the module under test imports, TRAPS #19).
-- `unit:prompt` **33 moves by ADDED checks only, never by a red**: `t8` walks
-  `spit_app/tools/`, requires every module to define `PROMPT` and counts one
-  `## ` heading per tool (`test_prompt_assembly.py:186-213`), so the new tool
-  is picked up by the existing checks and the file grows by whatever WP-3 adds.
-- `TEXT_CRITICAL` and `TEXT_WARNING` each gain **one** clause saying *journal
-  before you hand off*, **with their `t16` re-pin in the same commit** (the
-  ruling-iv precedent of DECISIONS 82: model-facing text and the checks that
-  quote it move together); `unit:system_note` moves by the re-pin alone.
-
-**Then WP-4 — wire the recovery**: the brief, app-scaffolded from what the app
+**Left — WP-4, wire the recovery** (the one package this entry still owes): the brief, app-scaffolded from what the app
 witnesses (chat id, the transcript path, the error, the attempts made, the last
 N messages, the token counts) with the journal appended when there is one; the
 probe (`get_models` at `timeout=3`); auto-submit versus draft per 84 b;
@@ -128,7 +132,14 @@ of 84 c; and a new `unit:recovery` built on
 no recovery at all), so the path bypasses `ToolCall` deliberately.
 
 **State hazards**: none. Working tree clean apart from this docs commit, `main`
-untouched at `edba920`, nothing pushed, no fixtures left behind. `~/.venv-spit`
+untouched at `edba920`, nothing pushed, no fixtures left behind (the journal
+suite writes only into its own generated `./fixtures/journal-data` and removes
+it; `KEEP_FIXTURES=1` keeps it). One hazard already met and fixed, written
+because it will be met again by anyone who adds a suite: a new `run_tests.sh`
+written by a file tool arrives mode 644, and the outer runner then prints
+`…/run_tests.sh: Permission denied` **into the row** where a `PASS:` line
+belongs — no FAIL, and `/tmp/p19wp3-run.log` shows it. `chmod +x` it, and read
+the row. `~/.venv-spit`
 works (textual 8.2.8, httpx 0.28.1, libtmux 0.62), so all six dependency-listed
 suites run here. Four things to know about **running** the suite here, all
 measured, none of them in the code:
@@ -155,11 +166,12 @@ whole, so **WP-1 and WP-2 do NOT move to `TASKS-FINISHED.md`** on their own
 merits; whoever holds the entry closes it when its Verify is met (DECISIONS 71
 a), and only the owner merges.
 
-- **WP-3**: `bash spit_app/tests/run_tests.sh` from the repo root, FAIL 0, with
-  the new `journal` row present, `unit:prompt` **above 33 by added checks and
-  no red**, `unit:system_note` moved by the `t16` re-pin alone, every other row
-  at the baseline above, `chat_smoke`'s golden md5
-  `8ae9d1186a59627d30d05dee95f0ad95` unmoved.
+- **WP-3: MET**, and recorded above — `bash spit_app/tests/run_tests.sh` from
+  the repo root gave `unit:journal: PASS: 69 FAIL: 0`,
+  `unit:prompt: PASS: 38 FAIL: 0` (added checks, no red),
+  `unit:system_note: PASS: 219 FAIL: 0` (the re-pin alone), every other row at
+  the baseline, FAIL 0 everywhere, golden md5 unmoved
+  (`/tmp/p19wp3-run2.log`).
 - **WP-4**: a new `unit:recovery` row including the **absence** of a second
   recovery chat (the P14 "ends by absence" shape) and the **draft-not-submitted**
   path with the canned server stopped — the control that the probe is actually
