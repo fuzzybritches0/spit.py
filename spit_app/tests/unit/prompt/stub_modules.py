@@ -13,7 +13,11 @@ import types
 
 STUBBED = {
     "httpx": (),
-    "spit_app.endpoints.llamacpp": ("LlamaCppEndpoint",),
+    # `EndpointFailure` since P19/WP-2: work.py imports the typed failure beside
+    # the endpoint class to decide retry-or-report. The stub only has to EXIST
+    # under that name (class `Stub` is not instantiated here), and the import
+    # line is what the bare interpreter fails on without it.
+    "spit_app.endpoints.llamacpp": ("LlamaCppEndpoint", "EndpointFailure"),
     "spit_app.endpoints.manage_cache": ("ManageCache",),
     "spit_app.chat.textual_message": ("RemoveMessage",),
 }

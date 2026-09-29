@@ -536,8 +536,18 @@ SCENARIOS = {
 }
 
 
-def post_reply(scenario: str, body: dict, headers) -> tuple:
-    """(status, body, content-type) for one recorded POST."""
+def post_reply(scenario: str, body: dict, headers, seen: int = 0) -> tuple:
+    """(status, body, content-type) for one recorded POST.
+
+    `seen` is how many POSTs this SAME scenario answered before this one (the
+    canned server counts its own recording and passes it in), which is all a
+    "fails first, works the second time" scenario needs - P19/WP-2's 503-then-200.
+    It is derived from the request log rather than kept in a counter of its own,
+    so `server.reset()` resets it exactly when it resets the log the counts are
+    asserted on - a state a test cannot forget to clear is a state that cannot
+    leak into the next check. 0 for every caller that does not care (all the
+    scenarios that ever existed).
+    """
     if scenario == "refuse-flag":
         if "stream_options" in body:
             return (400, {"error": {"message": "mm-refuses-stream_options"}},
@@ -550,6 +560,32 @@ def post_reply(scenario: str, body: dict, headers) -> tuple:
     if scenario == "echo-auth":
         echo = headers.get("Authorization") or "<no-header>"
         return (200, sse(chunk(text=echo)), "text/event-stream")
+    # ---- P19/WP-2 (t14): the failure CLASSES, one scenario each.
+    if scenario == "refuse-400":
+        # deterministic: a 4xx that is not 429 and says nothing about the window.
+        return (400, {"error": {"message": "mm-bad-request-no-retry"}},
+                "application/json")
+    if scenario == "refuse-context":
+        # the one deterministic refusal the app cannot answer for - named out of
+        # the body text, the way a real llama.cpp/OpenAI server spells it.
+        return (400, {"error": {"message": "mm-request: this model's context length "
+                                           "is 4096; reduce the length of the input"}},
+                "application/json")
+    if scenario == "refuse-429":
+        # transient by status, not by transport: the server is alive and says later.
+        return (429, {"error": {"message": "mm-rate-limited-try-again"}},
+                "application/json")
+    if scenario == "flaky-503":
+        if seen == 0:
+            return (503, b"mm-unavailable-first-time", "text/plain")
+        return (200, SHAPES["content"]["body"], "text/event-stream")
+    if scenario == "stream-error":
+        # accepted (200) and then the STREAM carries an `error` payload: the reply
+        # half-exists when it dies, which is the corpse the rollback must take.
+        return (200, sse(chunk(text="mm-before-the-error-"),
+                         {"error": {"message": "mm-mid-stream-death",
+                                    "type": "server_error", "code": 500}}),
+                "text/event-stream")
     shape = SHAPES.get(scenario)
     if shape and shape["body"] is not None:
         return (200, shape["body"], "text/event-stream")
@@ -628,7 +664,14 @@ class CannedServer:
                     body = {"__not-json__": raw.decode("utf-8", "replace")}
                 outer.lines.append(f"POST {self.path}")
                 outer.bodies.append(body)
-                code, payload, ctype = post_reply(scenario_of(self.path), body, self.headers)
+                # `seen` counts the POSTs this scenario answered BEFORE this one,
+                # read out of the recording (so `reset()` clears it with it) - the
+                # one bit of state the "503 first, 200 after" scenario needs.
+                scenario = scenario_of(self.path)
+                seen = sum(1 for line in outer.lines[:-1]
+                           if line.startswith("POST ")
+                           and scenario_of(line[len("POST "):]) == scenario)
+                code, payload, ctype = post_reply(scenario, body, self.headers, seen)
                 self._send(code, payload, ctype)
 
             def do_GET(self) -> None:
