@@ -31,7 +31,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 |---|---|
 | delete_lines | 127 |
 | insert_line | 119 |
-| patch | 80 |
+| patch | 107 |
 | read_files | 32 |
 | grep | 30 |
 | search_replace | 29 |

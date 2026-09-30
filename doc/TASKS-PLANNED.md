@@ -16,14 +16,17 @@ push), and keep the State field honest so an abandoned task is recoverable.
 
 ## P0 - DONE - garbled streaming render: tool-call arguments and streamed tool output
 
-## P19 - IN PROGRESS - Failure recovery: an endpoint failure must not need a human
+## P19 - DONE - Failure recovery: an endpoint failure must not need a human  [closed 2026-09-30; on `main`]
 
-The entry moved to `doc/TASKS-IN-PROGRESS.md` on 2026-09-28 with its first
-package started (branch `task-recovery-handoff-helper-p19wp1`, cut from
-`docs-plan-failure-recovery-p19` @ `9e40465`). Its measured code facts, the four
-packages and each `Verify` live there while the work is open, so the recovery
-record and the plan are one document; when P19 closes, the resolution comes back
-here as a DONE stub.
+Implemented as the four packages the entry planned and **closed 2026-09-30** on
+`task-endpoint-retry-p19wp2`: WP-1 the `create_and_submit` helper extracted from
+`handoff`, WP-2 the typed endpoint failures + the retry loop + the slot leak,
+WP-3 the `journal` tool, WP-4 the recovery chat through `chat/recovery.py`.
+**Resolution: `TASKS-FINISHED.md`** (the P19 entry) and **DECISIONS 84/85/86**;
+new ground-truth rows `unit:journal` 69 and `unit:recovery` 55, `unit:endpoints`
+512, `unit:prompt` 38. The owner has merged that line into `main` — WP-1…WP-4 are
+reachable from `main`'s history (`git log --oneline -- spit_app/chat/recovery.py`),
+and `doc/TASKS-IN-PROGRESS.md` carries no open entry.
 ---
 
 ## P8 - DONE - On-demand message loading with a top-anchored scroll container
@@ -535,18 +538,23 @@ pick-up work, and no gate, spike or prerequisite is defined for it.
 
 ---
 
-## P1 - patch: the `is_header_pair` adjacency edge  [open, deliberate]
+## P1 - DONE - patch: the `is_header_pair` adjacency edge  [closed 2026-10-01]
 
-- **Scope**: `spit_app/tools/scripts/patch.py` (+ its test suite)
-- **Status**: left open ON PURPOSE during the patch redesign. Not a forgotten bug.
-- **Verify**: `cd ~/spit.py/spit_app/tests/tools/patch && bash run_tests.sh` (80 green);
-  a fix adds tests without reusing freed numbers 5-9 (append-only).
-- **Gotchas**: TRAPS #13/#15; DECISIONS 37 and the section below.
-- **How to start**: read the verbatim record below first; the natural fix is to
-  require a genuine file header to be followed by a `@@` hunk header or end of
-  input. Prove the change by differential over every fixture (TESTING.md).
+Fixed on `fix-patch-header-pair-adjacency-p1` (`a1f1032` the script, tests and
+the tool's PROMPT sentence, then the docs commit). `patch` **80 -> 107**
+(t40-t45; 14 of the new checks red against `main`'s script), full suite exit 0
+with every other row at the `doc/TESTING.md` numbers, `chat_smoke`'s golden md5
+`8ae9d1186a59627d30d05dee95f0ad95` unmoved. **Resolution: `TASKS-FINISHED.md`**
+and **DECISIONS 87**, which is where the why now lives: what was measured before
+writing anything (the consequence was a *silent no-op reported as success*, not
+the loud failure this entry predicted), why the entry's own suggested fix was not
+taken (it refuses t11, a patch that applies today), the rule that replaced it (the
+file decides which readings are open; one open reading is the answer, two is a
+refusal naming the `@@` remedy), and the 58-row differential. The verbatim record
+below stays as it was written — it is the shape, and the words "Consequence is a
+loud no-match failure" are what the next agent should measure, not trust.
 
-### 4. OPEN — the `is_header_pair` adjacency edge in `patch`
+### 4. CLOSED — the `is_header_pair` adjacency edge in `patch`
 
 `is_header_pair()` decides a `--- old`/`+++ new` **pair** is a file header and skips
 it. A *headerless* hunk that removes a line starting with `--` directly above an

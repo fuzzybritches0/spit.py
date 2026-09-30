@@ -538,7 +538,7 @@ Summary: 1 line(s) added, 0 line(s) removed, 1 line(s) changed.
 
 ---
 
-### 10. `patch` (REWRITTEN — branch `patch-tool-fixes-2`, decisions 53-58)
+### 10. `patch` (REWRITTEN — branch `patch-tool-fixes-2`, decisions 53-58; the pair-vs-body rule is decision 87)
 **Purpose**: Apply unified diff patches to a file
 
 **Parameters**:
@@ -569,7 +569,7 @@ Summary: 1 line(s) added, 0 line(s) removed, 1 line(s) changed.
 **Syntax accepted**:
 - **Empty lines separate hunks — any number of them.** An empty line belongs to no hunk, so the body run below it starts a new one. The old parser dropped empty lines before parsing, which made them invisible rather than separating: two headerless hunks split by a blank line were merged into one and refused.
 - A blank line *inside* a hunk is ` ` (single space) for context, `+` for an added blank, `-` for a removed blank — verified against `diff -u`, `git diff` and `difflib`, which all encode it exactly that way and never emit a truly empty line inside a hunk. GNU patch does tolerate a bare empty line, but only because it consumes exactly `old_count` body lines and so always knows where the hunk ends; since the counts are deliberately not trusted here, the same trick would mean guessing, and the visible price of that tolerance is `Hunk #1 succeeded at 1 with fuzz 2`.
-- `--- old` / `+++ new` file headers are recognised as a *pair*, so a body line whose text merely starts with `--`/`++` (removing `--x` renders as `---x`) is not mistaken for a header.
+- `--- old` / `+++ new` file headers are recognised as a *pair*, so a body line whose text merely starts with `--`/`++` (removing `--x` renders as `---x`) is not mistaken for a header. A pair with a body run **under** it is the one shape pairing cannot decide — the first two lines of a hunk that removes `--x` and adds `++y` complete a pair exactly as a header does — and there **the file decides** (decision 87): the reading that places a hunk wins, the pair is content if that is the body reading, and when the file places both the patch is refused with the remedy named (`Write the hunk's @@ header between them`). A pair with nothing under it — end of input, a blank line, or a `@@` header next — is a header whoever the file is, so `diff`/`git`/`difflib` output never takes this path.
 - Abbreviated headers (`@@ -1 +1 @@`) and function-context suffixes (`@@ -1,5 +1,5 @@ def foo():`) are accepted. Markdown code fences around the patch are stripped, so output pasted straight from the `diff` tool works. `diff` accepts either patch content or a path to a patch file (auto-detected).
 - **The `^^ -1,4 +1,4 ^^` trailing-header notation is gone**, along with its right-to-left pre-pass. It existed so a model could write the counts *after* the body; with the counts ignored there is nothing to get right afterwards, and in practice no model ever used it.
 

@@ -2560,3 +2560,94 @@ State hazards did **not** fire in this run.
 finishing that is not the agent's. Nothing was pushed, `main` is
 untouched at `edba920`. The P19 entry is deleted from
 `TASKS-IN-PROGRESS.md` and **no entry is open**.
+
+### P1 — the `---`/`+++` pair above a headerless hunk (branch `fix-patch-header-pair-adjacency-p1`: `a1f1032` code + tests + PROMPT sentence, then the docs commit)
+
+**What this was**: the edge `DECISIONS 37` left open on purpose (planned P1,
+"open, deliberate"): `is_header_pair()` skipped any `--- old` over `+++ new`
+outside a hunk, and a headerless hunk whose first two body lines remove a
+`--…` line and add a `++…` line completes exactly that pair — `---x` over
+`+++y` — so those two lines were skipped as a file header and the hunk lost
+its edit.
+
+**What measuring it found, before any code** (the entry's own premise was
+wrong, and the direction of the error matters): the entry says "Consequence is
+a loud no-match failure". It is not. On file `--x\nkeep\nmore` the patch
+`---x / +++y / ␠keep / ␠more` ran on `main` with **rc 0** and printed
+`Patched …: 1 hunk(s) applied. 0 line(s) added, 0 line(s) removed.` The pair
+was dropped, the hunk that remained was pure context, context matches, and the
+tool reported success for a patch whose whole content it had thrown away — a
+silent no-op with a success line on it. The reference implementations were
+measured too (TRAPS #16/#17): GNU patch 2.8 answers `Only garbage was found in
+the patch input` for that input *and* for the t11 shape (`--- work.txt /
++++ work.txt / <headerless body>`), and `git apply` answers `No valid patches in
+input`: **neither supports headerless hunks at all**, so there was no reference
+behaviour to copy and the disambiguation rule was this tool's to choose inside
+decision 34's decision that headers are optional per hunk.
+
+**What shipped**: the file decides. A pair with **no body run under it** —
+end of input, a blank line, or a `@@` header next — is a header whoever the
+file is (this is the half of the entry's suggested rule that was right, and it
+is why `diff`/`git`/`difflib` output never takes this path at all). For a pair
+over a body run both readings are built and each asks the file whether it
+places a hunk — the side a hunk must find is the old side forward and the new
+side in reverse, the same swap `sides()` performs, so `reverse` needs no
+separate rule. Body open, header closed → **content**, and the model's edit is
+applied; header open, body closed → **header** (t11, unchanged); **both open →
+refused**, atomically, naming the remedy:
+
+`ERROR: The `---`/`+++` pair at lines 1-2 is a file header or the first two
+body lines of the hunk under it, and the file matches both readings. Write the
+hunk's `@@ -start +start @@` header between them to say which it is.`
+
+A run of pure context is *not* an open header reading, because it places no
+edit anywhere — which is why the shape from the measurement above is fixed
+rather than merely made loud. Full why in **DECISIONS 87**.
+
+**What was measured and NOT taken**: the entry's own fix — "require that a
+genuine file header be followed by a `@@` hunk header or end of the input".
+It is one line and it breaks `t11`, which is a file header followed by
+neither, applies today, and is exactly the shape decision 34 exists to accept:
+under that rule its pair becomes body, its old block opens with a line
+`-- work.txt` no file contains, and a patch that applies today is refused.
+TRAPS #18 calls that an applied→refused nobody asked for; the rule above keeps
+it green and still closes the hole.
+
+**Proved by differential, not by the suite** (58 rows: every
+source/patch pair `run_tests.sh` uses — mapping read out of the suite and
+printed before the run, TRAPS #13 — plus 20 synthetic pair shapes forward and
+in reverse): **41 applied→applied**, 37 byte-identical and the 4 others
+changing bytes *because the fix applied the edit `main` dropped* (`--x`
+present with a context-only run, its CRLF and unterminated variants, and that
+patch reversed); **3 applied→refused**, the three genuinely ambiguous shapes,
+intended and named — one of them a real-looking `--- original.txt /
++++ expected.txt` header on a file that happens to hold a line
+`-- original.txt` above the block, which now needs its `@@` line (pinned
+both ways as t44: refused as written, applying once the header is there);
+**14 refused→refused**, two of them with the line numbers in the message
+shifted by one because the pair is now content — same verdict, same class. No
+applied→applied row moved bytes that had no reason to.
+
+**Ground truth at the close**: `patch` **107** (was 80; t40–t45, and **14 of
+the 27 new checks are red against `main`'s script**, so no green here is one
+that could not fail — TRAPS #13), every other row at the `doc/TESTING.md`
+numbers, `unit:prompt` **38** unmoved (the PROMPT gained one sentence about the
+pair rule; `t8` counts one `## ` heading per tool and requires a PROMPT of every
+module, and neither moved), full suite `SUITE-EXIT:0` with stderr empty,
+`chat_smoke`'s golden md5 `8ae9d1186a59627d30d05dee95f0ad95` unmoved.
+
+**Files**: `spit_app/tools/scripts/patch.py` (the reading functions and the
+file read moved above the parse loop, because a pair's meaning is only
+decidable against the file — nothing there can fail on a missing file, which
+is refused at the top), `spit_app/tools/patch.py` (one PROMPT sentence),
+`spit_app/tests/tools/patch/{run_tests.sh,create_fixtures.sh}` (t40–t45,
+append-only numbers, no freed number reused).
+
+**Process note**: the entry never sat in `TASKS-IN-PROGRESS.md` — it opened,
+measured, shipped and closed inside one sitting, so the crash-recovery record is
+this entry plus the journal file the agent wrote as it went. Where a task spans
+sittings the protocol still applies (entry moved in, State fields kept current).
+
+**What this leaves**: nothing half-done in P1. `fix-patch-header-pair-adjacency-p1`
+**awaits the OWNER'S MERGE** (DECISIONS 71 a) — the only part of finishing that
+is not the agent's. Nothing was pushed; `main` untouched.
