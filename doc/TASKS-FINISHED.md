@@ -2446,3 +2446,117 @@ failures, the retry loop, the slot leak, the dead `endpoint == -1`), WP-3
 (`journal`) and WP-4 (wire the recovery, `DECISIONS 84`) left, and the entry
 carries what the reading for WP-2 measured — including the two `unit:endpoints`
 t6 checks that today's error contract pins and that WP-2 must re-pin in place.
+
+### P19 — failure recovery: an endpoint failure must not need a human (branch `task-endpoint-retry-p19wp2`, cut from `task-recovery-handoff-helper-p19wp1` @ `85e012a`: WP-1 `738b788` on that parent branch, WP-2 `44b8739`, `2728272`, `391bb3a`, `020f502`, `b4b4759`, `f67bc04`, WP-3 `dd351a2`, `5967054`, WP-4 `1e4d132`, `5c6853a`, `8fef3fb`, then the two WP-4 docs commits `a2d033d` (DECISIONS 86) and `9514ada` (the `unit:recovery` row and its spec), then this close-out; **the branch awaits the OWNER'S MERGE**)
+
+**What this is**: the owner's brief in full — an endpoint failure must
+not halt a working agent and must not need a human. (1) retry the
+request with a delay; (2) when the retries are exhausted, open a new
+chat exactly like the `handoff` tool does, the current chat's settings
+cloned, a recovery message as its first message; (3) a `journal` tool
+the agent uses while still alive, whose entries become that recovery
+message. Four packages, and the entry closes as a whole — that was
+P19's rule from the start, no WP moves to this file on its own merits —
+so this is the entry's only close-out; WP-1 carries its own entry above
+because it was cut and closed as a separate branch-level package. The
+decisions taken live in **DECISIONS 84** (WP-2: a failure carries its
+status, the retry wraps only the request, the rollback keeps the
+queue's order; per-endpoint `retry_attempts`/`retry_delay`; auto-submit
+when the probe answers and a draft when it does not; the modal stays
+for a deterministic 4xx while transient and exhausted failures become
+an in-chat notice), **85** (WP-3: the journal is an in-process tool,
+its cap a ceiling on the READ only, read from the app not the module)
+and **86** (WP-4: the recovery is a message in a new chat, the notice
+a message in the old one, the chain one deep).
+
+**What shipped**:
+
+- **WP-1** (`738b788`, see the entry above): the new-chat sequence
+  extracted from `tools/handoff.py` into `chat/handoff.py` —
+  `new_chat_id` and `async create_and_submit(app, settings, message) ->
+  str|None` — so WP-4's recovery chat opens through the **same** code
+  and not a copy that can drift.
+- **WP-2** (the six commits): typed failures carrying
+  `status_code`/`retryable` in `endpoints/llamacpp.py`
+  (`EndpointFailure` and five named subclasses, the `str()` sentences
+  byte-identical to what the app always showed), the retry loop around
+  `attach() + endpoint.stream()` **and nothing wider**, the rollback
+  through the widget's own queue, the stale-signal guard,
+  `Work.retrying`, and the prompt-cache slot returned on every way out.
+  `unit:endpoints` 442 → **512**.
+- **WP-3** (`dd351a2`, `5967054`): `tools/journal.py` — one append-only
+  file per chat, multi-line timestamped entries, `entry` writes and no
+  `entry` reads, the read capped by `journal_max_chars` at an ENTRY
+  boundary with the newest entry whole — and the "journal now /
+  journal before the handoff" clause in the two note texts with their
+  `t16` re-pin. New `unit:journal` **69**, `unit:prompt` 33 → **38**,
+  `unit:system_note` **219** by the re-pin alone.
+- **WP-4** (`1e4d132`, `5c6853a`, `8fef3fb`): new `chat/recovery.py` —
+  the brief built from what the app itself witnesses (chat id, the
+  transcript path, the error, the attempts made, the last N messages,
+  the token counts) with the journal appended when there is one; the
+  one probe (`get_models` at `timeout=3`, answering `[]` on any
+  failure) deciding auto-submit versus draft per 84 b; the cloned
+  `csettings` with `recovered_from` and the **chain depth capped at 1**
+  — a recovery chat that fails again reports, it does not recover; and
+  the in-chat notice of 84 c in the dead chat. `create_and_submit`
+  gains the `submit: bool = True` draft switch; `Work.report_failure`
+  becomes async and takes the attempt number, splitting off
+  `report_modal` for the deterministic 4xx; `DeterministicFailure`
+  joins `tests/unit/prompt/stub_modules.py` because `work.py` imports
+  it at module level. New `unit:recovery` **55**
+  (`tests/unit/recovery/`, built on `unit:handoff`'s harness), the
+  absence-of-a-second-recovery-chat and draft-not-submitted checks
+  included. Recovery is **not** behind the `handoff` tool (DECISIONS
+  82 d), so the path bypasses `ToolCall` deliberately.
+
+**Verified** — the FULL suite from the repo root at this tree
+(`bash spit_app/tests/run_tests.sh`, log `/tmp/p19wp4-run1.log`):
+tools 509 (127/24/30/119/80/32/68/29), anchored 68, arguments 131,
+`chat_smoke` 168, `chat_window` 568, endpoints **512**, handoff 60,
+journal 69, **recovery 55** (the new row), prompt 38, render 278,
+run_script 121, sandbox 157, system_note 219, terminal 346, FAIL 0
+everywhere, `SUITE-EXIT:0`. `chat_smoke`'s golden md5
+`8ae9d1186a59627d30d05dee95f0df0ad95` verified unmoved; no stray
+`core.N`, no fixtures left behind. The `unit:chat_window`
+`t11-a-second-scroll-settles-too` load flake filed in the entry's
+State hazards did **not** fire in this run.
+
+**Things the recovery work learned that the code does not show**:
+
+- The recovery's new chat FILE is its first act and the in-chat NOTICE
+  is its last: a test that asserts on the world the moment the file
+  appears reads a recovery that has not finished. The harness gates on
+  `recovery_reported(pilot)` for exactly this reason.
+- `Work.report_failure` sends the corpse back through the awaited
+  `roll_back_attempt` **before** the recovery appends the notice,
+  because the removal's index is `len(messages)-1`: a removal posted
+  after the append would take the NOTICE back and leave the corpse
+  standing in the dead chat (DECISIONS 86 f).
+- `unit:endpoints` stays at **512** only because `can_recover(app)` —
+  which requires `app.settings.path["chats"]` — answers False **before
+  any probe** for those bare `StubSettings` apps. That gate is
+  load-bearing for the suites; do not remove or reorder it.
+- A suite built on `unit:handoff`'s harness must redirect
+  `handoff_harness.FIXTURES`/`DATA` **module globals** to its own
+  fixtures — `StubSettings` builds its `path` from them and
+  `ToolCall.__init__` wants `custom_tools` before a subclass can
+  intervene.
+- The recovery suite's server subclass answers **503 on POST replies
+  while `/models` still answers 200** — the probe answered, the
+  request refused — and `server.stop()` mid-case is the DRAFT branch:
+  the brief is on the wire in one and nowhere on it in the other, the
+  same marker evidencing both.
+- Carried forward from the deleted entry because it outlives P19: the
+  outer `spit_app/tests/run_tests.sh` pipes every suite through
+  `| tail -n 1` **and the pipeline swallows the suites' exit status** —
+  a crashing suite reports `PASS: 0 FAIL: 0` and the run still ends
+  `SUITE-EXIT:0`. Read each suite's own output, never only the row;
+  and the full suite does not survive backgrounding inside
+  `run_command` — run it in a `terminal` session through `tee`.
+
+**What this leaves**: nothing half-done. `task-endpoint-retry-p19wp2`
+**awaits the OWNER'S MERGE** (DECISIONS 71 a) — the only part of
+finishing that is not the agent's. Nothing was pushed, `main` is
+untouched at `edba920`. The P19 entry is deleted from
+`TASKS-IN-PROGRESS.md` and **no entry is open**.

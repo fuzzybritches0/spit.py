@@ -14,170 +14,20 @@ independently without asking the user for any permission. One thing remains the
 same: only the user may merge your work into main."*). The merge of the branch is
 the only part of finishing that is not the agent's.
 
-> **One entry is open**: **P19 — failure recovery**, below. WP-1 and WP-2 are
-> closed on `task-endpoint-retry-p19wp2` (WP-3, the `journal` tool, is the next
-> sitting, then WP-4); the entry closes as a whole, so neither package moves to
-> `TASKS-FINISHED.md` on its own. Everything after that banner is closed work
-> kept for its lessons.
+> **No entry is open.** The last one, **P19 — failure recovery**, closed
+> 2026-09-30 on `task-endpoint-retry-p19wp2`, all four packages with it:
+> the typed endpoint failures and the retry loop, the `journal` tool, and
+> the recovery chat wired through `chat/recovery.py` (new `unit:recovery`
+> **55**, full suite `SUITE-EXIT:0`, `chat_smoke`'s golden md5 unmoved).
+> Its resolution is in `TASKS-FINISHED.md` and that branch awaits the
+> **OWNER'S MERGE** (DECISIONS 71 a). Everything after this banner is
+> closed work kept for its lessons.
 > Before P19, no entry was open: the last one, the `terminal`-tool harness
 > list (P0b-followup 4), closed 2026-09-28 on `task-terminal-harness-p0bf4`
 > (`unit:terminal` 223 -> 346, full suite exit 0, `chat_smoke`'s golden md5
 > unmoved); its resolution is in `TASKS-FINISHED.md` and the branch awaits the
 > OWNER'S MERGE, which is the only part of finishing that is not the agent's
 > (DECISIONS 71 a). Nothing else is half-done.
-
-## P19 - Failure recovery: an endpoint failure must not need a human  [started 2026-09-28]
-
-**Branch**: `task-endpoint-retry-p19wp2`, cut from
-`task-recovery-handoff-helper-p19wp1` @ `85e012a` (WP-1, closed). Last commit:
-this entry update.
-
-**Scope**: WP-1 as before (`738b788`); WP-2 at `44b8739` (`chat/chat_view.py`),
-`2728272` (`endpoints/llamacpp.py`, `manage/endpoint/endpoint.py`), `391bb3a`
-(`chat/work.py` + the t6 re-pin), `020f502` (`chat/chat.py` + the two FakeWork
-stubs), `b4b4759` (`chat/callback.py`, `work.py`, `chat_view.py`), `f67bc04`
-(`tests/unit/endpoints/endpoint_harness.py`, new `test_retry.py`,
-`tests/unit/prompt/stub_modules.py`). WP-3 at `dd351a2` (new
-`tools/journal.py`, new `tests/unit/journal/`, `tests/unit/prompt/`) and
-`5967054` (`chat/token_status.py` + its `t16` pin), then this docs commit.
-
-**Done**: **WP-1 is closed** (`738b788`, cut at `99e1338` after this entry's
-move): new `spit_app/chat/handoff.py` with `new_chat_id(app)` and
-`async create_and_submit(app, settings, message) -> str|None` (chat file in
-`Manage.save_managed`'s shape, `option_list()`, `mount`, display-toggle +
-`highlighted` + `focus`, `text_area.text`, `await action_submit()`, return the
-id; None only when the file could not be written — the helper knows nothing
-about ending a chat). `tools/handoff.py` keeps `DESC`/`PROMPT`/`SETTINGS`, the
-deepcopy of `csettings` + the `"Handoff: …"` rule, the success string, and
-`exit_after_busy = True` **last, only on success**. Verified the WP-1 way, not
-by argument: full suite before (baseline below) and after, **every row
-byte-for-byte, `unit:handoff` 60/0**, and the commit touches those two files
-only. No test seam was needed — `t1`-`t9` drive the real tool and `t10`-`t15`
-the real work loop, so the move is pinned through the file shape, the sidebar,
-the flag, the wire and the absent second request.
-
-**Done — WP-2 is closed**, the six commits under **Scope** and nothing else in
-the tree: typed failures carrying `status_code`/`retryable` in
-`endpoints/llamacpp.py` (`EndpointFailure` and the five named subclasses, the
-`str()` sentences byte-identical to what the app always showed), the two
-per-endpoint settings `retry_attempts`/`retry_delay`, the retry loop around
-`attach() + endpoint.stream()` **and nothing wider** (a loop around anything
-broader re-executes the tools), the rollback through the widget's own queue
-(`ChatView.remove_message_at` + `Work.roll_back_attempt`, since awaiting it
-from the work loop let a queued `StreamCallback` mount an index past the end),
-the stale-signal guard in `chat/callback.py`, `Work.retrying` so an abort
-during the delay stops taking the cancel-and-delete branch and eating the
-human's own message, and the prompt-cache slot returned on every way out with
-`slot == -1` finally answered. Verified by measurement, not by argument:
-`unit:endpoints` **512** (t14's 69 checks new; `test_requests.py` 61 → 62
-because the t6 re-pin re-worded two checks with the behaviour and ADDED one
-control — numbers kept, count never down, DECISIONS 70's precedent),
-`chat_smoke`'s golden md5 unmoved, every other row at the baseline. The three
-full-suite runs this took are `/tmp/p19wp2-run1.log` (before the queue-ordered
-rollback and the stale-signal guard), `/tmp/p19wp2-run2.log` and
-`/tmp/p19wp2-run3.log`.
-
-**Baseline** (measured on this box at the WP-3 tip, which is the comparison
-"unmoved" now means, and the same numbers as `doc/TESTING.md`'s table): tools
-509 (127/24/30/119/80/32/68/29), anchored 68, arguments 131, chat_smoke 168,
-chat_window 568, endpoints **512**, handoff 60, **journal 69** (WP-3's new
-row), **prompt 38** (WP-3's t9), render 278, run_script 121, sandbox 157,
-system_note 219, terminal 346, FAIL 0 everywhere, `chat_smoke`'s golden md5
-`8ae9d1186a59627d30d05dee95f0ad95`. Log of the run these numbers are from:
-`/tmp/p19wp3-run2.log` (and `/tmp/p19wp3-run.log`, the one that showed the
-new `run_tests.sh` was not yet executable — see State hazards).
-
-**The three open decisions are taken and recorded**: (a) `retry_attempts` /
-`retry_delay` **per endpoint**, (b) **auto-submit** the recovery chat when the
-probe answers and a **draft** when it does not, (c) the modal `ErrorScreen`
-stays for a **deterministic 4xx** while transient and exhausted failures become
-an **in-chat notice** — all three in **DECISIONS 84 a/b/c** with their argues,
-and what measuring the first shape of the loop changed is 84 d–h. Nothing is
-left open for WP-3 or WP-4 to decide.
-
-**Done — WP-3 is closed** (`dd351a2` the tool + `unit:journal` + the prompt
-t9 group, `5967054` the two note texts with their `t16` re-pin, then this entry
-and the DECISIONS 85 / TESTING / TOOLS docs): new
-`spit_app/tools/journal.py`, an in-process `call(app, arguments, chat_id)` with
-a plain `def` (DECISIONS 68: the disk I/O goes off the event loop through
-`asyncio.to_thread`, and only the widget tools belong on the loop), one
-append-only file per chat at `app.settings.path["data"]/journal/<chat-id>.txt`,
-multi-line timestamped entries, `entry` writes and no `entry` reads, and the
-read capped by `journal_max_chars` at an ENTRY boundary with the newest entry
-always shown whole. `TEXT_WARNING` and `TEXT_CRITICAL` each gained one
-"journal now / journal before the handoff" clause — "if the … tool is
-available", since existing chats gain no tool retroactively (82 d) — with their
-`t16` pins re-worded in the same commit (DECISIONS 82's ruling-iv precedent).
-Measured: `unit:journal` **69** new, `unit:prompt` 33 → **38** by added checks
-and no red, `unit:system_note` **219** by the re-pin alone, every other row at
-the baseline above, golden md5 unmoved. Two real defects the new suite caught
-in the first draft, both recorded in DECISIONS 85: the cap read back out of the
-module `SETTINGS` dict (process state — one chat's 300 became the next chat's
-default), and an id check on `..` that a `\b` walked through; the first is now
-`effective_cap(app)`, the second a `[A-Za-z0-9_-]+` whitelist. **The same
-module-state hazard sits in every other in-process tool that reads a numeric
-setting out of `SETTINGS` after `load_user_settings`** — untouched here (not
-WP-3's concern), filed so whoever next touches one of them finds it written
-down.
-
-**Left — WP-4, wire the recovery** (the one package this entry still owes): the brief, app-scaffolded from what the app
-witnesses (chat id, the transcript path, the error, the attempts made, the last
-N messages, the token counts) with the journal appended when there is one; the
-probe (`get_models` at `timeout=3`); auto-submit versus draft per 84 b;
-`recovered_from` in the new `csettings` with the chain depth capped at **1** — a
-recovery chat that fails again reports, it does not recover; the in-chat notice
-of 84 c; and a new `unit:recovery` built on
-`spit_app/tests/unit/handoff/handoff_harness.py`. Recovery is **not** behind the
-`handoff` tool (DECISIONS 82 d — a chat that never selected `handoff` would have
-no recovery at all), so the path bypasses `ToolCall` deliberately.
-
-**State hazards**: none. Working tree clean apart from this docs commit, `main`
-untouched at `edba920`, nothing pushed, no fixtures left behind (the journal
-suite writes only into its own generated `./fixtures/journal-data` and removes
-it; `KEEP_FIXTURES=1` keeps it). One hazard already met and fixed, written
-because it will be met again by anyone who adds a suite: a new `run_tests.sh`
-written by a file tool arrives mode 644, and the outer runner then prints
-`…/run_tests.sh: Permission denied` **into the row** where a `PASS:` line
-belongs — no FAIL, and `/tmp/p19wp3-run.log` shows it. `chmod +x` it, and read
-the row. `~/.venv-spit`
-works (textual 8.2.8, httpx 0.28.1, libtmux 0.62), so all six dependency-listed
-suites run here. Four things to know about **running** the suite here, all
-measured, none of them in the code:
-
-- the outer `run_tests.sh` pipes every suite through `| tail -n 1` **and the
-  pipeline swallows the suites' exit status**: a crashing file reports `PASS: 0
-  FAIL: 0` and the run still ends `SUITE-EXIT:0`. Read each suite file's own
-  output, never only the row.
-- `unit:chat_window`'s `t11-a-second-scroll-settles-too`
-  (`test_window_triggers.py:247`) is a **load flake** — 567 + FAIL 1 in
-  `/tmp/p19wp2-run2.log`, `-run3.log` and a third dedicated run, clean in two
-  others and in isolation. Nothing in WP-2 reaches the settle timer; treat it
-  as pre-existing and re-run before blaming a change.
-- `unit:handoff` prints a `BrokenPipeError` traceback on stderr with 60/0 and
-  exit 0 — pre-existing, recorded since P14.
-- `spit_app/tests/unit/prompt/stub_modules.py` must list **every** name
-  `chat/work.py` imports from `spit_app.endpoints.llamacpp`, or `unit:prompt`
-  dies at import and reports `PASS: 0  FAIL: 0`. A `run_command` abort has also
-  dropped a `core.N` file inside a suite directory once (`core.8` in
-  `tests/unit/endpoints/`, deleted here): look for strays before committing.
-
-**Verify** — and **P19 stays open until WP-4 closes**: the entry closes as a
-whole, so **WP-1 and WP-2 do NOT move to `TASKS-FINISHED.md`** on their own
-merits; whoever holds the entry closes it when its Verify is met (DECISIONS 71
-a), and only the owner merges.
-
-- **WP-3: MET**, and recorded above — `bash spit_app/tests/run_tests.sh` from
-  the repo root gave `unit:journal: PASS: 69 FAIL: 0`,
-  `unit:prompt: PASS: 38 FAIL: 0` (added checks, no red),
-  `unit:system_note: PASS: 219 FAIL: 0` (the re-pin alone), every other row at
-  the baseline, FAIL 0 everywhere, golden md5 unmoved
-  (`/tmp/p19wp3-run2.log`).
-- **WP-4**: a new `unit:recovery` row including the **absence** of a second
-  recovery chat (the P14 "ends by absence" shape) and the **draft-not-submitted**
-  path with the canned server stopped — the control that the probe is actually
-  consulted — every other row at the baseline and the golden md5 unmoved.
-
----
 
 **The owner's brief, in substance:** *"When an endpoint failure occurs the endpoint
 raises an error (maybe due to a llama.cpp bug, or max tokens reached), the app halts.
