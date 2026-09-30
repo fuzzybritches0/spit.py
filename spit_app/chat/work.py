@@ -223,6 +223,18 @@ class Work:
                 # item to self.messages, so it never disturbs the rollback below.
                 self.chat.system_notes.attach()
                 await self.endpoint.stream()
+                # DECISIONS 80 c, restored: the line P19/WP-2 lost when the request
+                # moved out of `work_stream()` into this loop. It sits where it sat
+                # before WP-2, after the await and inside the `try`, for the reason
+                # the old comment gave - a stream that raised leaves a reply nobody
+                # got, and an error is not a counted reply. `stream()` resets
+                # `self.usage` at its own start, so no dead attempt leaves a figure
+                # for this to read; the tool-loop recursion re-enters `work_stream()`
+                # and so this line, which is what refreshes the count on every
+                # request of a loop. AFTER the await is also what puts the numbers on
+                # the chat before the signal-0 handler redraws the row (t11's
+                # ordering, now pinned on the wired path by t15).
+                self.harvest_usage()
                 # A reply LANDED. Leave the loop - there is no `else` of a `try`
                 # that could carry this, and falling out of the `try` would run
                 # straight into the rollback-and-sleep below: measured, a plain

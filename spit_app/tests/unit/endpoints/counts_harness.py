@@ -87,7 +87,16 @@ class FakeEndpoint:
 
 class Reply:
     """The two statements of Work.work_stream() around one stream(), with the
-    REAL harvest: what a reply does to chat.token_usage and then to the row."""
+    REAL harvest: what a reply does to chat.token_usage and then to the row.
+
+    READ THIS BEFORE TRUSTING IT AS THE WIRED PATH. These two statements are a
+    COPY of what `work_stream()` does, not a call into it, and that is exactly
+    how the suite stayed green at 512 through `391bb3a` while the production
+    line was gone: a fake endpoint plus a hand-written flow proves the ORDERING
+    (signal 0 posted before the harvest, the `defer` control above) and nothing
+    else. What the real worker does with the real endpoint is `test_harvest_wiring.py`
+    - t15 - which runs `Work.work_stream()` itself. A test here that reaches for
+    this class because it is convenient is a test that is not testing the flow."""
 
     def __init__(self, chat, endpoint) -> None:
         self.chat = chat

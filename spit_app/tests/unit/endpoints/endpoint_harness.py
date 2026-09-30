@@ -317,6 +317,22 @@ USAGE = {"prompt_tokens": 41, "completion_tokens": 7, "total_tokens": 48,
          "prompt_tokens_details": {"cached_tokens": 30}}
 OTHER_USAGE = {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120}
 
+# A reply whose usage is LARGE ENOUGH TO FILL A REAL WINDOW: 119000 + 1000 =
+# 120000, which is exactly `FILL_INFO` of `test_note_chain.py`'s WINDOW (200000),
+# i.e. 60% -> the `info` note. t13's harvest group needs a stream whose OWN
+# figure crosses a threshold, because the check it makes is "the NEXT request
+# carries the note" WITHOUT any test hand-setting `chat.token_usage`: with the
+# harvest missing the fill stays 0 and the wire stays empty, and a fixture small
+# enough for `USAGE` (48 tokens) could only be pushed over a threshold by a
+# window so small the orthogonal `small_window` note would fire first and answer
+# for the wrong reason. `BIG_USAGE` is the object; the scenario that serves it is
+# the `bigusage` branch of `post_reply` (a post_reply scenario, like `refuse-400`
+# and `flaky-503`, NOT a SHAPES entry: SHAPES is the differential's table and
+# t2/t3/t4 iterate it, so nothing there is added without re-pinning them).
+BIG_USAGE = {"prompt_tokens": 119000, "completion_tokens": 1000,
+             "total_tokens": 120000,
+             "prompt_tokens_details": {"cached_tokens": 90000}}
+
 
 def chunk(text=None, reasoning=None, tool=None, finish=False, usage=None,
           choices=True) -> dict:
@@ -555,8 +571,40 @@ def post_reply(scenario: str, body: dict, headers, seen: int = 0) -> tuple:
         return (200, SHAPES["flagless"]["body"], "text/event-stream")
     if scenario == "refuse-always":
         return (403, {"error": {"message": "mm-denied-every-time"}}, "application/json")
+    if scenario == "bigusage":
+        # A reply whose OWN usage figure fills a real window (BIG_USAGE, 120000 of
+        # the 200000 the t15 harvest group gives it): 60% -> the `info` note. The
+        # usage chunk is the last one and carries "choices": [] (the shape llama.cpp
+        # >= #15444 and OpenAI send, and the reason t3 exists).
+        return (200, sse(chunk(text="mm-big-"), chunk(text="reply"),
+                         chunk(choices=False, usage=BIG_USAGE)),
+                "text/event-stream")
+    if scenario == "usage-then-error":
+        # The stream carries its usage and THEN dies: `stream_request` reads
+        # `usage` before `extract_fields`, so `endpoint.usage` holds BIG_USAGE at
+        # the moment the error raises. This is the fixture that makes "a stream
+        # that raised leaves a reply nobody got, and an error is not a counted
+        # reply" (DECISIONS 80 c) fail-able at the CALL SITE: a harvest sitting in
+        # a `finally`, or before the `try`, counts this corpse and the t15 check
+        # reddens, while every other scenario here would answer the same either
+        # way.
+        return (200, sse(chunk(text="mm-half-"),
+                         chunk(choices=False, usage=BIG_USAGE),
+                         {"error": {"message": "mm-died-after-its-own-usage",
+                                    "type": "server_error", "code": 500}}),
+                "text/event-stream")
     if scenario == "refuse-500":
         return (503, b"mm-unavailable", "text/plain")
+    if scenario == "flaky-503-usage":
+        # `flaky-503`'s shape with a usage-carrying answer: the first POST is
+        # refused 503 (the attempt's corpse, its `usage` reset to None by
+        # `stream()`), the second is `finishusage`'s reply. The pair a retry
+        # needs to be pinned by its COUNTS and not only by its request lines:
+        # `generated` after this is the ONE completion of the ONE landed reply,
+        # and a harvest that ran twice says 14 where the truth says 7.
+        if seen == 0:
+            return (503, b"mm-unavailable-first-time", "text/plain")
+        return (200, SHAPES["finishusage"]["body"], "text/event-stream")
     if scenario == "echo-auth":
         echo = headers.get("Authorization") or "<no-header>"
         return (200, sse(chunk(text=echo)), "text/event-stream")
