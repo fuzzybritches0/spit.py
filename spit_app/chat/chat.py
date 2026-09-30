@@ -207,11 +207,11 @@ class Chat(Vertical):
                 return None
         if image:
             if self.messages and self.messages[-1]["role"] == "user":
-                self.undo.append_undo("change", self.messages[-1])
+                self.undo.append_undo("change", self.messages[-1], len(self.messages)-1)
                 self.messages[-1]["content"].append(image_url(image))
             else:
                 self.messages.append({"role": "user", "content": [image_url(image)]})
-                self.undo.append_undo("insert", self.messages[-1])
+                self.undo.append_undo("insert", self.messages[-1], len(self.messages)-1)
                 index = len(self.messages)-1
                 self.chat_view.post_message(StreamCallback(index, 1))
             self.write_chat_history()
