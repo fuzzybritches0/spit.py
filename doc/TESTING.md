@@ -45,6 +45,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:endpoints | 512 |
 | unit:handoff | 60 |
 | unit:journal | 69 |
+| unit:recovery | 55 |
 | unit:prompt | 38 |
 | unit:render | 278 |
 | unit:run_script | 121 |
@@ -557,6 +558,46 @@ harness **absolute** fixture paths.
   id check that a whitelist replaces. `run_tests.sh` is executable, and the row
   that shows a shell `Permission denied` instead of a `PASS:` line is the outer
   runner's `| tail -n 1` hazard (TRAPS #18) wearing a different hat.
+- `tests/unit/recovery/` - the P19/WP-4 **failure recovery** (**55** checks,
+  t1-t6). It IMPORTS `tests/unit/handoff/handoff_harness.py` rather than
+  rebuilding it - the real `Chat`, `SidePanel`, `Work` and `ToolCall`, the
+  sidebar-mounted fixture, `until`, `quiesce`, `new_id_from`, the counters - and
+  adds the two things a recovery needs and a handoff never meets: a canned server
+  that answers every request for a reply with 503 while `GET /models` keeps
+  answering 200 (`RecoveryServer`: that split IS DECISIONS 84 b - the probe
+  answered, the request did not), and an app with the `data` directory the journal
+  lives in. `handoff_harness`'s module-level `FIXTURES`/`DATA` are pointed at this
+  suite's own generated `./fixtures/recovery-data`, because `StubSettings.__init__`
+  builds `path` from those globals and `ToolCall.__init__` wants `custom_tools`
+  before any subclass could intervene. The dependency gate is `unit:handoff`'s
+  verbatim (`textual, httpx, libtmux, ddgs, playwright`) - the same reason: it is
+  what the code under test reaches through `ToolCall`, TRAPS #19.
+  Every failure is driven the way a human drives it (`text_area.text`, then
+  `action_submit()`), so no check hands `recover()` a convenient object, and
+  `retry_attempts` is 1 with no delay because the retry counts are
+  `unit:endpoints` t14's subject - this suite waits for the RECOVERY. What it
+  pins: the continuation chat's file with its settings differing from the dead
+  chat's in EXACTLY `desc` and `recovered_from` (a set of key names, so any other
+  drift is named); the brief as its first message, carrying the dead chat's id,
+  `chats/<id>.json`, the failure's class and text, the token line, the quoted
+  turns with a long one cut and marked, and "Continue the work."; the brief
+  RECORDED on the wire as a POST body with the refused request recorded beside it
+  as the control; `app.exception` None (no modal) in every branch; the dead chat's
+  notice naming the new chat. **The absence of a second recovery chat is not
+  proved by timing**: t1's continuation chat is submitted into the same refusing
+  server, so it fails for real and reaches the recovery itself, and t2 waits for
+  THAT failure's notice before it counts the chat files (TRAPS #13). Depth 1 from
+  the start (a chat PRE-STAMPED with `recovered_from`) creates no file at all. The
+  DRAFT branch runs with the canned server STOPPED - the chat file exists, its
+  `messages` are `[]`, its text area holds the brief and NO POST carries it, the
+  control being t1 where the same marker reaches the wire. The journal is written
+  by the REAL `journal` tool and asserted inside the brief, with the control that
+  a chat which kept none gets one plain sentence and not `read_journal`'s
+  writer-facing prose (DECISIONS 86 e). And the notice keeps the sliding window:
+  `window_consistent()` holds with the notice having its own widget at the tail
+  (DECISIONS 86 a). `recovery_reported(pilot)` waits for the notice because the
+  new chat's FILE is the recovery's first act - asserting on the world the moment
+  a file appears reads a recovery that has not finished.
 - `tests/unit/endpoints/` - the P12 **token counts and context sizes** suite
   (343 checks; 442 since P13/WP-A's `test_system_note.py` brought 51 and
   P13/WP-D's `test_note_chain.py` brought 48, both by addition alone; **512**
