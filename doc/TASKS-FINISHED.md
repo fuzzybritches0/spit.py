@@ -2652,7 +2652,7 @@ sittings the protocol still applies (entry moved in, State fields kept current).
 **awaits the OWNER'S MERGE** (DECISIONS 71 a) — the only part of finishing that
 is not the agent's. Nothing was pushed; `main` untouched.
 
-### Token counts stuck at zero — the harvest call P19/WP-2 left behind (branch `fix-token-harvest-call-site`: `17615f6` the line + t15 + its fixtures, then the docs commit)
+### Token counts stuck at zero — the harvest call P19/WP-2 left behind (branch `fix-token-harvest-call-site`: `17615f6` the line + t15 + its fixtures, `8ea5442` the docs, `ff7737a` the dead import t15 never called)
 
 **What the owner reported**: since `task-endpoint-retry-p19wp2` was merged, the
 three numbers on the chat-settings row — the token count, the generation count,
@@ -2707,10 +2707,52 @@ red), the harvest ahead of `stream()` (15), in a `finally` (the corpse check),
 in the retry branch too (the same check) — so no green in it is one that could
 not fail (TRAPS #13).
 
-**Process note**: like P1 above, this never sat in `TASKS-IN-PROGRESS.md` — it
-was diagnosed, fixed, tested and closed inside one sitting, and the crash-recovery
-record is this entry plus the journal the agent wrote as it went.
+**Corrected by the runs taken after the close-out: stderr is not always clean,
+and it is not this branch.** The sentence above — "stderr empty" — is true of the
+run it was taken from and of most runs, and the same over-claim was made and
+corrected in the P14 entry three days earlier. Measured 2026-09-30 in a second
+sitting, after `ff7737a`: **20 consecutive `unit:recovery` runs on this branch →
+1 run with a stderr traceback**; the **same 20 runs in a clean worktree of
+`main` → 1 run** with the same traceback, from
+`unit/handoff/handoff_harness.py`'s `do_GET` 404 branch (`BrokenPipeError`, the
+client already hung up; stdlib `socketserver` prints it and carries on). Same
+rate on both sides, same frame, and this branch never opens that file: it is
+pre-existing and environmental, and nothing in the counts moves with it — the
+full suite is `SUITE-EXIT:0` and every row at its number either way. It is filed
+as **P20** with the one-line guard its own `do_POST` already carries, so the
+next agent neither re-derives it nor mistakes it for whatever they just changed.
+
+**Ground truth, re-taken at this branch's final tip (`ff7737a`)**: full suite
+`SUITE-EXIT:0`, every row at its `doc/TESTING.md` number — tools
+127/24/30/119/107/32/68/29, anchored 68, arguments 131, chat_smoke 168,
+chat_window 568, **endpoints 547**, handoff 60, journal 69, prompt 38, recovery
+55, render 278, run_script 121, sandbox 157, system_note 219, terminal 346,
+FAIL 0 everywhere — and `chat_smoke`'s `golden.txt` md5
+`8ae9d1186a59627d30d05dee95f0ad95` unmoved. The per-file split of the endpoints
+row was re-counted file by file at this tip: **88 / 132 / 62 / 19 / 43 / 51 / 48
+/ 69 / 35 = 547**, which is the list `doc/TESTING.md` pins, so the row is 547
+because its files are those nine numbers and not because a total was typed.
+
+**Process note**: this entry is the record of a task that spanned two sittings,
+which is the case the crash-recovery files exist for, so it says plainly how it
+was picked up. The first sitting diagnosed, fixed, tested and closed it and died
+of token exhaustion **with the tree dirty** — one uncommitted line, the removal
+of `fixture_chat` from an import that file never used, and a half-formed plan to
+fold it into `17615f6` with `git commit --fixup` and an autosquash rebase. The
+second sitting found that state in `git status` and the reasoning in the dead
+agent's last trace. Two things came of it:
+
+- The tidy-up became **`ff7737a`, its own commit**, not a rewrite. The autosquash
+  instinct was wrong: `17615f6` is cited by SHA in this entry's own heading and in
+  `8ea5442`'s message, so rewriting it would have left two citations pointing at
+  commits that no longer exist. **Once a doc names a SHA, that commit is fixed; a
+  correction lands on top.** Now a rule in `doc/CONVENTIONS.md`.
+- The claim in the paragraph above, "closed inside one sitting", was true when
+  written and is false now, so it is replaced rather than kept. A close-out that
+  cannot survive the next `git status` is not a record.
 
 **What this leaves**: nothing half-done. `fix-token-harvest-call-site` **awaits
 the OWNER'S MERGE** (DECISIONS 71 a) — the only part of finishing that is not the
-agent's. Nothing was pushed; `main` untouched.
+agent's. Nothing was pushed; `main` untouched. The one thing this task found and
+did not fix is **P20** (the canned servers' `do_GET` traceback), which is not its
+concern and is not a red.

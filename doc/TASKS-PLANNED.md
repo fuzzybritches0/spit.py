@@ -29,6 +29,47 @@ reachable from `main`'s history (`git log --oneline -- spit_app/chat/recovery.py
 and `doc/TASKS-IN-PROGRESS.md` carries no open entry.
 ---
 
+## P20 - The canned servers' `do_GET` prints a `BrokenPipeError` traceback on a green suite
+
+**Not started.** Found 2026-09-30 while re-running the full suite to close
+`fix-token-harvest-call-site`, where it briefly read as a regression of that
+branch; it is not one (measured below). A one-line fix, already half-written by
+its neighbours.
+
+- **The symptom**: `bash spit_app/tests/run_tests.sh` exits **0** with every row
+  at its `doc/TESTING.md` number, but stderr carries a
+  `BrokenPipeError: [Errno 32] Broken pipe` traceback from
+  `spit_app/tests/unit/handoff/handoff_harness.py`'s `do_GET` 404 branch
+  (`self._send(404, …)` → `self.wfile.write(raw)`), printed by stdlib
+  `socketserver`, which catches it and carries on. It comes from `unit:recovery`
+  and `unit:handoff`, which import that harness.
+- **The measurement**: 20 consecutive `unit:recovery` runs on
+  `fix-token-harvest-call-site` → **1 run with stderr**, 19 clean; the same 20
+  runs in a clean worktree of `main` (`git worktree add`) → **1 run with
+  stderr**, 19 clean. Same rate on both sides, same frame, and the branch does
+  not touch `handoff_harness.py`: pre-existing, environmental (the client hangs
+  up before the 404 body lands), NOT a regression of anything. The same flake is
+  already recorded twice in `TASKS-FINISHED.md` — in the P14 entry (2 of 14 runs,
+  2026-09-27) and in the 2026-09-30 harvest close-out — where it was explained
+  and deliberately left unfixed **because a code change then needed a `Go!`**.
+  That gate is gone (DECISIONS 83), so there is no reason left not to fix it.
+- **The fix**: wrap the `do_GET` `_send` in the
+  `except (BrokenPipeError, ConnectionResetError): pass` that `do_POST` in the
+  SAME file already has, with the same comment (the recording of the request
+  already happened, which is all the assertions read). Check the two other
+  canned servers while there — `unit/endpoints/endpoint_harness.py` and
+  `unit/handoff/handoff_harness.py` are the same shape, and
+  `endpoint_harness`'s `_send` has the guard on **neither** verb.
+- **Verify**: no check count moves — this only silences a traceback the suite
+  never asserted on, so every row stays at its `doc/TESTING.md` number, and the
+  full suite must stay `SUITE-EXIT:0` with **stderr empty over ~20 runs** of
+  `unit:recovery` and `unit:handoff`, which is the before/after measurement
+  (1-in-20 today). Take the before figure from a clean worktree of `main`, not
+  from the branch — TRAPS #14's lesson is that the two trees must be built from
+  different objects for the comparison to mean anything.
+
+---
+
 ## P8 - DONE - On-demand message loading with a top-anchored scroll container
 
 **Implemented and measured 2026-09-14 → 2026-09-20** as the six-package pipeline

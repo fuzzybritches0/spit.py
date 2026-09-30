@@ -89,6 +89,18 @@ argument block prepended to the script.
   written clean (TRAPS #2 is resolved; re-measured 2026-09-05 - `git commit`
   via `-m`, via `cat > f <<EOF` + `-F f`, and via `-F - <<EOF` all produce
   byte-exact messages with no wrapper text). Do not restate the old warning.
+- **Once a doc names a commit by SHA, that commit is fixed — a correction lands
+  on top, never as a rewrite.** Docs here cite work by SHA (`391bb3a`, `68cff03`,
+  `b799526`, …), and so do other commits' messages. An `--amend` or a
+  `git commit --fixup` + autosquash rebase of a cited commit rewrites that SHA,
+  and every citation to it — in files already committed, and in messages you
+  cannot edit without rewriting them too — then names an object that no longer
+  exists. Paid for on `fix-token-harvest-call-site`: a one-line dead-import
+  tidy-up of a file `17615f6` added was first routed to autosquash, which would
+  have stranded the citation in that branch's own `TASKS-FINISHED.md` heading
+  and in `8ea5442`'s message; it became its own commit, `ff7737a`. Amending is
+  for a **tip** commit nothing cites yet — and even then, if a commit *below*
+  the tip quotes the tip's own SHA in its message, do not.
 - Clean `__pycache__` before `git add -A` (gitignored anyway, but keep the
   tree honest).
 - Author file content with `write_file`/`search_replace` rather than shell
