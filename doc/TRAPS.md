@@ -86,6 +86,29 @@ matching area.
 15. **Test numbers are append-only.** Freed numbers (5-9 in patch) stay
     unused; new checks get new numbers so `tNN-*` keeps one meaning forever.
 
+26. **A harness that COPIES the flow it tests keeps the suite green when
+    production stops running that flow.** `391bb3a` (P19/WP-2) moved the request
+    out of `Work.work_stream()` into the new `stream_attempts()` loop and left
+    `self.harvest_usage()` behind. The whole `unit:endpoints` suite stayed at
+    **512 green** while the chat's token counts sat at `ctx 0 · gen 0 · cached 0`
+    and the token-status notes went permanently silent - three symptoms the owner
+    reported weeks later. Nothing could have reddened it: the method had its own
+    19 checks (`t10`, driven on a `SimpleNamespace`), the row had its own 43
+    (`t11`, driven through `counts_harness.Reply.one()` - a hand-written
+    `await stream(); Work.harvest_usage(self)` that COPIED the two statements of
+    `work_stream()` instead of calling it), the file that does run the real
+    worker deliberately used a scenario with no usage chunk and hand-set the
+    fill, and the retry file that also runs the real worker never read
+    `token_usage`. Every piece was tested; only the JOIN was not. Three rules
+    come out of it: **(i)** a behaviour that lives in the line between two
+    correct components is pinned by a check that drives the REAL seam end to end
+    (`test_harvest_wiring.py`, t15), not by the sum of checks on the components;
+    **(ii)** a stub that re-implements a production sequence must say so in its
+    own docstring and point at the file that tests the sequence, or the next
+    author trusts it as the flow; **(iii)** when a refactor moves a call, the
+    diff's removed lines are read as a list of behaviours to re-pin, not as
+    formatting. DECISIONS 88, and the four-way red verification there.
+
 ## Design process
 
 16. **Before writing leniency into a parser, MEASURE the reference

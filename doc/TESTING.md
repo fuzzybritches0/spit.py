@@ -42,7 +42,7 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
 | unit:chat_window | 568 |
-| unit:endpoints | 512 |
+| unit:endpoints | 547 |
 | unit:handoff | 60 |
 | unit:journal | 69 |
 | unit:recovery | 55 |
@@ -604,8 +604,12 @@ harness **absolute** fixture paths.
   since P19/WP-2 - the new `test_retry.py` brought t14's **69** by addition
   alone, and `test_requests.py` moved 61 → **62**: t6's re-pin re-worded two
   checks with the behaviour and ADDED one control, numbers kept and the count
-  not down, so it is the one file in this suite whose number moved without a
-  new section. Per file now **88/132/62/19/43/51/48/69** = 512):
+  not down. **547** since the harvest regression of 2026-09-30 - the new
+  `test_harvest_wiring.py` brought t15's **35** by addition alone and no other
+  file moved; the row had been green at 512 the whole time the chat's three
+  counts sat at zero, which is the hole that file exists to make impossible
+  (TRAPS #26, DECISIONS 88).
+  Per file now **88/132/62/19/43/51/48/69/35** = 547):
   `endpoints/llamacpp.py`, `Work.harvest_usage()` and the
   chat-settings counts row, driven against a **canned stdlib `http.server`**
   bound to `127.0.0.1` port 0 - no live model, no port but loopback, no user
@@ -644,8 +648,23 @@ harness **absolute** fixture paths.
   so `harvest_usage()` never moves a hand-set fill, and the mount's own probe
   is awaited before the test writes the window, so nothing can clobber it;
   verified red before the wiring and against substituted defects - attach after
-  the stream, a guessed denominator, a per-chat registration, 48). Shared code lives in
-  `endpoint_harness.py` and `counts_harness.py`, deliberately **not** `test_*`:
+  the stream, a guessed denominator, a per-chat registration, 48),
+  `test_retry.py` (t14, the retry loop over request counts, 69) and
+  `test_harvest_wiring.py` (**t15, 35** - THE HARVEST IS WIRED, the file the
+  regression of 2026-09-30 left behind): a real `Work.work_stream()` against the
+  canned server, and the counts, the row and the NEXT request's note read from
+  it - the landed reply moves all three figures and the row shows them, the
+  CONTROL of a reply with no usage chunk leaves all three exactly where they
+  were, three corpses of an in-stream death are asked for and counted NONE (the
+  shape that reddens a harvest in a `finally`, or ahead of the `try`, or in the
+  retry branch), a retry's success is counted once, `context` FALLS on a smaller
+  second reply while `generated` adds it, and the fill a reply earned is the
+  figure the next request's `info` note quotes byte for byte. Three canned
+  scenarios were added for it to `post_reply` and NOT to `SHAPES`, which is
+  t2/t3/t4's differential table: `bigusage`, `usage-then-error`,
+  `flaky-503-usage`. Verified red four ways - see DECISIONS 88). Shared code
+  lives in `endpoint_harness.py` and `counts_harness.py`, deliberately **not**
+  `test_*`:
   the runner's glob would turn a harness into a suite file (the `stub_app.py` /
   `window_harness.py` precedent), and `counts_harness.py` imports
   `chat_smoke/smoke_scenario.py`'s `SmokeApp` and overrides `endpoint_list()` -

@@ -2651,3 +2651,66 @@ sittings the protocol still applies (entry moved in, State fields kept current).
 **What this leaves**: nothing half-done in P1. `fix-patch-header-pair-adjacency-p1`
 **awaits the OWNER'S MERGE** (DECISIONS 71 a) — the only part of finishing that
 is not the agent's. Nothing was pushed; `main` untouched.
+
+### Token counts stuck at zero — the harvest call P19/WP-2 left behind (branch `fix-token-harvest-call-site`: `17615f6` the line + t15 + its fixtures, then the docs commit)
+
+**What the owner reported**: since `task-endpoint-retry-p19wp2` was merged, the
+three numbers on the chat-settings row — the token count, the generation count,
+the cached count — stay at `0` through a whole progressing chat, and the model
+stopped being told about its token consumption through `system_note.py`.
+
+**The finding (investigated first, no code touched until it was written down)**:
+one missing line. `Work.harvest_usage()` is intact and correct and has **no
+caller** — `391bb3a` moved the request out of `work_stream()` into the new
+`stream_attempts()` loop and carried the `attach()` line and the `return None`
+across but not the harvest that used to sit between the await and the `except`.
+So `chat.token_usage` never leaves `Chat.__init__`'s three zeros and every
+consumer renders them: the counts row (`usage_text`, refreshed faithfully on
+signal 0 — it redraws zeros because that is what it is told), `TokenStatus`
+(`used = 0` is below every percentage and every remaining-token floor, so it
+answers silence forever and no note ever reaches the wire — which is the
+`system_note` symptom, and why nothing in `system_note.py` or `token_status.py`
+was wrong), and `recovery.recovery_brief()`, which tells a successor chat "Token
+counts when it died: context 0, generated 0, cached 0". `endpoints/llamacpp.py`
+still parses and keeps the usage object: the figures arrived and were thrown
+away. Proven read-only before the fix, with a real headless `Chat` and a real
+`Work` over the canned server — `endpoint.usage` full, `chat.token_usage` at
+zeros, no note on the next request; the same chat after one hand-called harvest
+moves to `121000/1000/90000` and the very next request carries the `info` note.
+
+**What shipped**: the line, back where it was — after the await, inside the
+`try`, before the success path's `return None` (the position is the decision:
+only a landed reply is counted, `stream()` resets `usage` at its own start so a
+dead attempt cannot leave a figure, the tool-loop recursion re-passes it, and it
+runs before the signal-0 redraw of the row). Plus `test_harvest_wiring.py`,
+**t15, 35 checks**, pinning the JOIN rather than the method: a real
+`Work.work_stream()` over the canned server, and the counts, the row and the
+recorded POST bodies read off it. Three canned scenarios were added for it to
+`post_reply` — `bigusage`, `usage-then-error`, `flaky-503-usage` — and
+deliberately **not** to `SHAPES`, which is t2/t3/t4's differential table.
+`counts_harness.Reply`'s docstring now says out loud that it copies the flow and
+where the real one is tested.
+
+**Why the suite could not see it, which is the part that was written down twice
+(TRAPS #26, DECISIONS 88)**: `t10` drives the method on a `SimpleNamespace`,
+`t11` drives a `FakeEndpoint` through a hand-written `Reply.one()` that copies
+the two statements, `t13` runs the real worker against a scenario with **no
+usage chunk** and hand-sets the fill, `t14` runs the real worker and never reads
+`token_usage`. `unit:endpoints` was at **512 green** the whole time.
+
+**Ground truth at the close**: `unit:endpoints` 512 → **547** (t15's 35 by
+addition alone, every other file at its own number), every other row at the
+`doc/TESTING.md` numbers, `chat_smoke`'s golden md5
+`8ae9d1186a59627d30d05dee95f0ad95` unmoved, full suite `SUITE-EXIT:0` with
+stderr empty. The new file was verified red four ways — no line at all (14 of 35
+red), the harvest ahead of `stream()` (15), in a `finally` (the corpse check),
+in the retry branch too (the same check) — so no green in it is one that could
+not fail (TRAPS #13).
+
+**Process note**: like P1 above, this never sat in `TASKS-IN-PROGRESS.md` — it
+was diagnosed, fixed, tested and closed inside one sitting, and the crash-recovery
+record is this entry plus the journal the agent wrote as it went.
+
+**What this leaves**: nothing half-done. `fix-token-harvest-call-site` **awaits
+the OWNER'S MERGE** (DECISIONS 71 a) — the only part of finishing that is not the
+agent's. Nothing was pushed; `main` untouched.
