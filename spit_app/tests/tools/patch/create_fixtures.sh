@@ -100,3 +100,29 @@ testfile ./fixtures/t38-split-nonadjacent.diff '@@ -1,3 +1,3 @@\n a\n-b\n+B\n\n-
 
 testfile ./fixtures/t39-src.txt 'alpha\n\nbeta\n'
 testfile ./fixtures/t39-blank-miss.diff '@@ -1,2 +1,2 @@\n alpha\n-beta\n+BETA\n'
+
+testfile_bytes ./fixtures/t40-src.txt '--x\nkeep\nmore\n'
+testfile_bytes ./fixtures/t40-exp.txt '++y\nkeep\nmore\n'
+testfile ./fixtures/t40-body.diff '---x\n+++y\n keep\n more\n'
+testfile_bytes ./fixtures/t40-plain.txt 'keep\nmore\n'
+
+testfile_bytes ./fixtures/t41-src.txt '--x\nkeep\nmore\n'
+testfile ./fixtures/t41-ambiguous.diff '---x\n+++y\n keep\n-more\n+MORE\n'
+testfile_bytes ./fixtures/t41-no-dashes.txt 'keep\nmore\n'
+testfile_bytes ./fixtures/t41-no-dashes-exp.txt 'keep\nMORE\n'
+
+testfile_bytes ./fixtures/t42-src.txt '++y\nkeep\nmore\n'
+testfile_bytes ./fixtures/t42-exp.txt '--x\nkeep\nmore\n'
+
+testfile_bytes ./fixtures/t43-crlf.txt '--x\r\nkeep\r\nmore\r\n'
+testfile_bytes ./fixtures/t43-crlf-exp.txt '++y\r\nkeep\r\nmore\r\n'
+
+testfile ./fixtures/t44-src.txt '-- original.txt\nLine six\nLine seven\nLine eight\n'
+testfile ./fixtures/t44-real-header.diff '--- original.txt\n+++ expected.txt\n Line six\n-Line seven\n+Line seven CHANGED\n Line eight\n'
+testfile ./fixtures/t44-remedy.diff '--- original.txt\n+++ expected.txt\n@@ -1,4 +1,4 @@\n Line six\n-Line seven\n+Line seven CHANGED\n Line eight\n'
+testfile ./fixtures/t44-remedy-exp.txt '-- original.txt\nLine six\nLine seven CHANGED\nLine eight\n'
+
+testfile_bytes ./fixtures/t45-src.txt '--x\nkeep\n'
+testfile ./fixtures/t45-adds.diff '---x\n+++y\n+new\n keep\n'
+testfile ./fixtures/t45-nopair.diff '+++deep\n+new\n keep\n'
+testfile_bytes ./fixtures/t45-nopair-exp.txt '--x\n++deep\nnew\nkeep\n'

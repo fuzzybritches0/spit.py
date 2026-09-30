@@ -267,4 +267,72 @@ expect_output "t39-says-blank" "$out" "found a BLANK line"
 expect_output "t39-tells-how" "$out" "only separates hunks"
 unchanged "t39" "$md5b" "$(md5 fixtures/t39-src.txt)"
 
+echo
+echo "=== 40. '---x' over '+++y' as the first two BODY lines of a headerless hunk ==="
+cp fixtures/t40-src.txt fixtures/t40-work.txt
+out=$($H --path fixtures/t40-work.txt --diff fixtures/t40-body.diff ${RD_FALSE})
+check "t40-rc" 0 $?
+expect_output "t40-says-1-removed" "$out" "1 line(s) added, 1 line(s) removed"
+expect_file "t40-bytes" fixtures/t40-work.txt fixtures/t40-exp.txt
+md5b=$(md5 fixtures/t40-plain.txt)
+out=$($H --path fixtures/t40-plain.txt --diff fixtures/t40-body.diff ${RD_FALSE})
+check "t40-CONTROL-plain-file-unchanged-rc" 0 $?
+unchanged "t40-CONTROL-plain-file-unchanged" "$md5b" "$(md5 fixtures/t40-plain.txt)"
+
+echo
+echo "=== 41. the pair the file reads BOTH ways is refused, not guessed ==="
+cp fixtures/t41-src.txt fixtures/t41-work.txt
+md5b=$(md5 fixtures/t41-work.txt)
+out=$($H --path fixtures/t41-work.txt --diff fixtures/t41-ambiguous.diff ${RD_FALSE})
+check "t41-rc" 1 $?
+expect_output "t41-says-both" "$out" "matches both readings"
+expect_output "t41-names-the-pair" "$out" "lines 1-2"
+unchanged "t41" "$md5b" "$(md5 fixtures/t41-work.txt)"
+cp fixtures/t41-no-dashes.txt fixtures/t41-ctrl.txt
+out=$($H --path fixtures/t41-ctrl.txt --diff fixtures/t41-ambiguous.diff ${RD_FALSE})
+check "t41-CONTROL-same-patch-applies-elsewhere" 0 $?
+expect_file "t41-CONTROL-bytes" fixtures/t41-ctrl.txt fixtures/t41-no-dashes-exp.txt
+
+echo
+echo "=== 42. the body reading reversed (the pair restores '--x') ==="
+cp fixtures/t42-src.txt fixtures/t42-work.txt
+out=$($H --path fixtures/t42-work.txt --diff fixtures/t40-body.diff --reverse True --dry_run False)
+check "t42-rc" 0 $?
+expect_file "t42-bytes" fixtures/t42-work.txt fixtures/t42-exp.txt
+
+echo
+echo "=== 43. the body reading keeps a CRLF file's terminators ==="
+cp fixtures/t43-crlf.txt fixtures/t43-work.txt
+out=$($H --path fixtures/t43-work.txt --diff fixtures/t40-body.diff ${RD_FALSE})
+check "t43-rc" 0 $?
+expect_file "t43-bytes" fixtures/t43-work.txt fixtures/t43-crlf-exp.txt
+assert_cr_lines "t43-crlf-held" fixtures/t43-work.txt 3
+assert_last_byte "t43-final-nl" fixtures/t43-work.txt "0a"
+
+echo
+echo "=== 44. a real '--- original.txt' header whose own text is in the file: refused, and the remedy applies ==="
+cp fixtures/t44-src.txt fixtures/t44-work.txt
+md5b=$(md5 fixtures/t44-work.txt)
+out=$($H --path fixtures/t44-work.txt --diff fixtures/t44-real-header.diff ${RD_FALSE})
+check "t44-rc" 1 $?
+expect_output "t44-says-both" "$out" "matches both readings"
+unchanged "t44" "$md5b" "$(md5 fixtures/t44-work.txt)"
+cp fixtures/t44-src.txt fixtures/t44-fix.txt
+out=$($H --path fixtures/t44-fix.txt --diff fixtures/t44-remedy.diff ${RD_FALSE})
+check "t44-REMEDY-rc" 0 $?
+expect_file "t44-REMEDY-bytes" fixtures/t44-fix.txt fixtures/t44-remedy-exp.txt
+
+echo
+echo "=== 45. '+++' with no '---' above it is still body; a pair over an insertion-only run is refused ==="
+cp fixtures/t45-src.txt fixtures/t45-work.txt
+md5b=$(md5 fixtures/t45-work.txt)
+out=$($H --path fixtures/t45-work.txt --diff fixtures/t45-adds.diff ${RD_FALSE})
+check "t45-rc" 1 $?
+expect_output "t45-says-both" "$out" "matches both readings"
+unchanged "t45" "$md5b" "$(md5 fixtures/t45-work.txt)"
+cp fixtures/t45-src.txt fixtures/t45-ctrl.txt
+out=$($H --path fixtures/t45-ctrl.txt --diff fixtures/t45-nopair.diff ${RD_FALSE})
+check "t45-CONTROL-nopair-applies" 0 $?
+expect_file "t45-CONTROL-bytes" fixtures/t45-ctrl.txt fixtures/t45-nopair-exp.txt
+
 summary

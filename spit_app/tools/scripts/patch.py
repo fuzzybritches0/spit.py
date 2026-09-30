@@ -28,15 +28,63 @@ try:
     hunk_re = re.compile(r"^@@ -(?P<old_start>\d+)(?:,\d+)? \+(?P<new_start>\d+)(?:,\d+)? @@")
 
     # A real file header always comes as a `--- old` line directly followed
-    # by a `+++ new` line. A body line whose text starts with `--`/`++`
-    # renders as `---…`/`+++…` but is NOT part of such a pair, so pairing is
-    # how we tell a header apart from a body line without a hunk header.
+    # by a `+++ new` line. A body line whose text starts with `--`/`++` renders
+    # as `---…`/`+++…` too, so pairing is how a header is recognised but it is
+    # not how a header is PROVED: the first two lines of a headerless hunk that
+    # removes a `--…` line and adds a `++…` line complete a pair exactly as a
+    # header does, and they are content. `pair_is_body()` asks the file.
     def is_header_pair(arr, i):
         if arr[i][:3] == "---":
             return i + 1 < len(arr) and arr[i + 1][:3] == "+++"
         if arr[i][:3] == "+++":
             return i > 0 and arr[i - 1][:3] == "---"
         return False
+
+    def body_run(arr, i):
+        end = i
+        while end < len(arr) and arr[end][:1] in (" ", "-", "+"):
+            end += 1
+        return arr[i:end]
+
+    def findable_side(block):
+        # the lines a hunk has to find in the file to be placed: the old side
+        # going forward, the new side in reverse -- the swap `sides()` performs.
+        if reverse:
+            return [line[1:] for line in block if line[0] in " +"]
+        return [line[1:] for line in block if line[0] in " -"]
+
+    def has_changes(block):
+        # a run of pure context places an edit nowhere, so it is not evidence for
+        # the header reading against the body reading of the pair above it.
+        return any(line[0] in "-+" for line in block)
+
+    def places_a_hunk(block):
+        # A hunk with nothing to find is placed by a `@@` header or not at all
+        # (decision 35), so an empty block places nothing and cannot argue for a
+        # reading of the pair above it.
+        return bool(block) and bool(find_all(orig_lines, block))
+
+    def pair_is_body(arr, i):
+        # `---x` over `+++y`, with a body run under them: the file header of the
+        # hunk below, or that hunk's own first two lines. A pair with no body run
+        # under it -- end of input, a blank line, or a `@@` header next -- is a
+        # header whoever the file is, which is why every real diff is untouched
+        # by this: `diff`/`git` always write the `@@` line.
+        if arr[i][:3] != "---":
+            return False
+        run = body_run(arr, i + 2)
+        if not run:
+            return False
+        as_body = places_a_hunk(findable_side(arr[i:i + 2] + run))
+        as_header = has_changes(run) and places_a_hunk(findable_side(run))
+        if as_body and as_header:
+            err(f"The `---`/`+++` pair at lines {i + 1}-{i + 2} is a file header or the first two "
+                f"body lines of the hunk under it, and the file matches both readings. Write the "
+                f"hunk's `@@ -start +start @@` header between them to say which it is.")
+        # A body reading that places a real edit wins over a header reading that
+        # places none: a patch whose only content is context is not what a patch
+        # is for, and the silent no-op it produced was the whole of the defect.
+        return as_body
 
     def new_hunk(old_start, new_start, headed=True):
         return {
@@ -50,6 +98,20 @@ try:
             "last": None,
             "headed": headed,
         }
+
+    # The file is read before the patch is parsed because the pair above a
+    # headerless hunk is only decidable against it. Nothing here can fail on a
+    # missing file: that is refused at the top.
+    original = read_text_raw(p)
+    newline_style = detect_newline(original)
+    orig_lines = original.splitlines()
+
+    def find_all(lines_, block):
+        # all 0-based positions where `block` appears in `lines_`
+        n, m = len(lines_), len(block)
+        if m > n:
+            return []
+        return [i for i in range(n - m + 1) if lines_[i:i + m] == block]
 
     hunks = []
     cur = None
@@ -67,7 +129,7 @@ try:
             continue
         if line[:1] in (" ", "-", "+"):
             if cur is None:
-                if is_header_pair(lines, idx):
+                if is_header_pair(lines, idx) and not pair_is_body(lines, idx):
                     continue  # `--- old` / `+++ new` file header, not a body line
                 # body lines with no header: the body alone has to place the hunk
                 cur = new_hunk(1, 1, headed=False)
@@ -92,16 +154,6 @@ try:
     for i, h in enumerate(hunks, 1):
         if not h["old"] and not h["new"]:
             err(f"Hunk {i} is empty.")
-    original = read_text_raw(p)
-    newline_style = detect_newline(original)
-    orig_lines = original.splitlines()
-
-    def find_all(lines_, block):
-        # all 0-based positions where `block` appears in `lines_`
-        n, m = len(lines_), len(block)
-        if m > n:
-            return []
-        return [i for i in range(n - m + 1) if lines_[i:i + m] == block]
 
     def at_lines(positions):
         return ", ".join(f"line {pos_ + 1}" for pos_ in positions)
