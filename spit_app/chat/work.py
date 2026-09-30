@@ -2,7 +2,7 @@
 import os
 import asyncio
 from copy import deepcopy
-from spit_app.endpoints.llamacpp import LlamaCppEndpoint, EndpointFailure
+from spit_app.endpoints.llamacpp import LlamaCppEndpoint, EndpointFailure, DeterministicFailure
 from .textual_message import RemoveMessage
 from spit_app.endpoints.manage_cache import ManageCache
 
@@ -236,13 +236,13 @@ class Work:
                 if not isinstance(exception, EndpointFailure):
                     raise exception
                 if not exception.retryable or attempt >= attempts:
-                    return self.report_failure(exception, count)
+                    return await self.report_failure(exception, count, attempt)
                 if not await self.roll_back_attempt(len(self.messages) - 1):
                     # The rollback did not land, so the corpse still stands and a
                     # second request would stack a reply on it. Report this
                     # failure and stop: a retry that cannot clean up after itself
                     # is worse than no retry.
-                    return self.report_failure(exception, count)
+                    return await self.report_failure(exception, count, attempt)
                 # The delay between two REQUESTS, in slices: an abort must end it
                 # within about a tenth of a second, and `exit_after_busy` is the
                 # flag abort sets on the branch `retrying` now selects.
@@ -303,13 +303,59 @@ class Work:
         self.chat_view.is_removing = False
         return len(self.messages) <= index
 
-    def report_failure(self, exception: Exception, count: int) -> Exception:
-        # The same report the name-matching branch made, and by design the same
-        # one a deterministic refusal gets on its FIRST attempt: the app shows it,
-        # the attempt's dict is taken back, the model list is refreshed (a dead
-        # endpoint may have lost its models). WP-4 turns the transient and
-        # exhausted cases into an in-chat notice (DECISIONS 84 c); until then this
-        # is the failure path, and it is reached once per reply, not per attempt.
+    async def report_failure(self, exception: Exception, count: int,
+                             attempt: int) -> Exception:
+        # The failure report, reached ONCE per reply and not once per attempt.
+        #
+        # A DETERMINISTIC refusal is the report it has always been, byte for byte
+        # (DECISIONS 84 c): the app shows it in the modal, the attempt's dict is
+        # taken back, the model list is refreshed. A 400 the app cannot answer for
+        # is a real user error and a dialog is the honest way to stop and say so -
+        # recovery would only re-ask the same refusal in a new chat.
+        if isinstance(exception, DeterministicFailure):
+            return self.report_modal(exception, count)
+
+        # A transient or exhausted failure is the case P19 exists for: the work
+        # may go on in a new chat, and the chat that died gets an in-chat notice
+        # instead of the modal that halts every chat in the app. The import is
+        # LOCAL on purpose - `chat.recovery` reaches `chat.handoff` and Textual,
+        # and `work.py` must stay importable by `unit:prompt`'s bare interpreter
+        # (TRAPS #19), which never runs this branch.
+        #
+        # And the fallback is LOAD-BEARING, not decoration: whatever recovery
+        # cannot do - an app with no settings home to write a chat into, a widget
+        # tree without the side panel a new chat needs, a bug in the recovery
+        # itself - lands back on the report that was here before it. That is what
+        # keeps the suites that drive `Work` on a bare `StubSettings` reporting
+        # their failures exactly as they did pre-WP-4 (`unit:endpoints` 512
+        # unchanged), and it means a failed recovery can never LOSE the user's
+        # error: the exception they would have read is still what they read.
+        #
+        # The attempt's corpse goes back FIRST and AWAITED, before the recovery
+        # reads or writes a message - and the order is not a tidy-up. Two things
+        # downstream touch the tail: the brief quotes the transcript (a corpse
+        # would be quoted at the successor as if it were a reply), and the notice
+        # is APPENDED. The removal's index is `len(messages) - 1`, so removing
+        # after the append would take the NOTICE back and leave the corpse standing
+        # in the dead chat forever. `roll_back_attempt` is the same post-and-wait
+        # the retries between attempts already use, so the one rollback is reached
+        # the one way (DECISIONS 84 e) and it has landed before anything indexes
+        # the tail again.
+        if len(self.messages) > count:
+            await self.roll_back_attempt(len(self.messages) - 1)
+        try:
+            from .recovery import recover
+            if await recover(self.chat, exception, attempt):
+                self.chat.chat_settings.update_models()
+                return exception
+        except Exception:
+            pass
+        return self.report_modal(exception, count)
+
+    def report_modal(self, exception: Exception, count: int) -> Exception:
+        # The report this file has always made, and the one a deterministic
+        # refusal still gets: the app shows it, the attempt's dict is taken back,
+        # the model list is refreshed (a dead endpoint may have lost its models).
         self.app.exception = exception
         if len(self.messages) > count:
             self.chat_view.post_message(RemoveMessage(len(self.messages)-1))

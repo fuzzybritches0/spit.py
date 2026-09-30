@@ -17,7 +17,10 @@ STUBBED = {
     # the endpoint class to decide retry-or-report. The stub only has to EXIST
     # under that name (class `Stub` is not instantiated here), and the import
     # line is what the bare interpreter fails on without it.
-    "spit_app.endpoints.llamacpp": ("LlamaCppEndpoint", "EndpointFailure"),
+    # `DeterministicFailure` since P19/WP-4, the same reason and the same shape:
+    # `report_failure` asks `isinstance(exception, DeterministicFailure)` to keep
+    # the modal for a refusal the app cannot answer for.
+    "spit_app.endpoints.llamacpp": ("LlamaCppEndpoint", "EndpointFailure", "DeterministicFailure"),
     "spit_app.endpoints.manage_cache": ("ManageCache",),
     "spit_app.chat.textual_message": ("RemoveMessage",),
 }
