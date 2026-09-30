@@ -22,11 +22,17 @@ def new_chat_id(app) -> str:
     return chat_id
 
 
-async def create_and_submit(app, settings: dict, message: str) -> str|None:
+async def create_and_submit(app, settings: dict, message: str, submit: bool = True) -> str|None:
     # The new chat's id, or None when its file could not be written - the only
     # step that can fail, and the reason the caller decides what a failure
     # means (the handoff tool keeps working and says so; a recovery says so
     # too rather than half-opening a chat).
+    #
+    # `submit=False` is P19/WP-4's DRAFT switch (DECISIONS 84 b): everything up to
+    # and including putting the message into the new chat's text area happens, and
+    # the submit does not - a recovery that found the endpoint dead hands the human
+    # a ready message instead of a second failure with their words inside it. The
+    # default path is byte-identical to what it always did.
     #
     # `async def`, not a plain function: this is widget work - mounting,
     # focusing, starting a worker - which belongs on the app's event loop.
@@ -54,5 +60,6 @@ async def create_and_submit(app, settings: dict, message: str) -> str|None:
     side_panel.can_focus = False
     new_chat.focus()
     new_chat.text_area.text = message
-    await new_chat.text_area.action_submit()
+    if submit:
+        await new_chat.text_area.action_submit()
     return new_id
