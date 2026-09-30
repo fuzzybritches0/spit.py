@@ -69,7 +69,7 @@ from endpoint_harness import (BIG_USAGE, CannedServer, OTHER_USAGE, USAGE,  # no
                               check, guarded, saved_endpoint, summary)
 import endpoint_harness as harness  # noqa: E402
 
-from counts_harness import StubEndpointApp, fixture_chat, row_text, settle  # noqa: E402
+from counts_harness import StubEndpointApp, row_text, settle  # noqa: E402
 from smoke_scenario import fixture_settings  # noqa: E402 (path via counts_harness)
 
 from spit_app.chat.token_status import TEXT_INFO  # noqa: E402
