@@ -38,10 +38,8 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | rename | 68 |
 | diff | 24 |
 | tools total | 536 |
-| unit:anchored | 68 |
 | unit:arguments | 131 |
-| unit:chat_smoke | 168 |
-| unit:chat_window | 568 |
+| unit:chat_smoke | 116 |
 | unit:endpoints | 547 |
 | unit:handoff | 60 |
 | unit:journal | 69 |
@@ -53,6 +51,15 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:system_note | 219 |
 | unit:terminal | 346 |
 
+
+**Two rows left this table on 2026-10-01: `unit:anchored` (68) and
+`unit:chat_window` (568).** They tested the windowed message loading of
+`doc/UI-ONDEMAND-LOADING.md`, which was REVERTED that day (DECISIONS 89) and whose
+suites went with the code - `chat_smoke` is the UI suite that stays, and its row
+is 168 -> **116** because its accessor-contract half became the whole-history
+invariant. The dated parentheticals below that quote `anchored` 68 and
+`chat_window` 270/568 are kept exactly as the "tools 509" rule above keeps its
+figures: they are measurements of the trees they were taken from, not live rows.
 
 Two things the table itself got wrong until 2026-09-30, both found by *comparing*
 it with a run rather than reading it: the row was named `insert_line` while the
@@ -70,11 +77,11 @@ this table is the live one. `doc/TOOLS.md` still calls the tool `insert_line` in
 its inventory and its spec section 12 — filed as **P21**, because the tool's
 `NAME` is `insert_lines`, which the tool derives from its own filename, and that
 matters to anything keying on it.
-## The test venv (six suites need it)
+## The test venv (five suites need it)
 
-`unit:terminal` drives a **real tmux** through `libtmux`; `unit:anchored`,
-`unit:chat_smoke` and `unit:chat_window` drive a **real headless Textual**
-(`App.run_test` - frame and geometry accuracy cannot be checked against a stub).
+`unit:terminal` drives a **real tmux** through `libtmux`; `unit:chat_smoke`
+drives a **real headless Textual** (`App.run_test` - frame and geometry accuracy
+cannot be checked against a stub) over a real `Chat`.
 `unit:endpoints` needs **httpx** - the module under test,
 `spit_app/endpoints/llamacpp.py`, imports it, and the bare system python3 does
 not have it (measured: `ModuleNotFoundError: No module named 'httpx'`) - and
@@ -264,141 +271,28 @@ harness **absolute** fixture paths.
 
 ## Unit suites
 
-- `tests/unit/chat_smoke/` - the WP-B differential (168 checks) for the
-  `ChatView` index-accessor seam. `smoke_scenario.py` drives a real `Chat`
-  headless over a generated fixture chat - mount, focus, `edit_on/off`, the
-  message-level add/remove actions, the three stream signals, undo/redo of
-  insert and remove, abort with a fake worker, plus a second headed run for
-  `action_add` (reachable only with an empty chat) - and dumps plain data per
-  step. It uses no new API so it can drive the pre-refactor tree too; the
-  golden dump was generated from `f201700` by the recipe in
-  `test_chat_smoke.py`, which adds the accessor contract (window_start 0, the
-  `len(children) == len(messages) - window_start` invariant at every step, the
-  forward/reverse maps agreeing with the raw child list, None from `widget()`
-  and IndexError from `require_widget()` out of window). The app is a stub (in-
-  memory `read_json`/`write_json`, `endpoint_list*`, a fake `#side-panel`), not
-  `SpitApp` - the real app starts the llama.cpp server and reads the user's own
-  settings and chats, which would make the dump machine-dependent. Venv-
-  dependent, FAIL-with-remedy like `unit:anchored` (TRAPS #19).
-- `tests/unit/anchored/` - the `AnchoredScroll` container (68 checks), the P8
-  probes (`/tmp/anchor-probe/`, see `TASKS-PLANNED.md` P8 and
-  `UI-ONDEMAND-LOADING.md` WP-A) rebuilt as permanent checks. Runs a **real
-  headless Textual** (`App.run_test`, the venv - TRAPS #19), so no stubbing:
-  the instrument is a spy on `App._display` - one call is one emitted frame -
-  which is what turns "the correction lands in the same frame" into an
-  assertion (`0 jump frames` == no emitted frame shows the tracked widget at
-  the wrong screen row). `test_oneshot.py`: the plain-`VerticalScroll` defect
-  as the control (every painted frame shows the jump), single + batched
-  mounts above, bottom-anchor (`Widget.anchor`) coexistence, manual scroll /
-  follow-bottom after a correction, disarm-if-anchor-gone. `test_pin.py`: the
-  persistent pin - user-scroll re-baseline, mount above, late growth above,
-  unpin returns the defect, anchor-removed re-baselines without a phantom
-  correction. `test_eviction.py`: the sliding window - evict-above holds the
-  view and shifts `scroll_y` by exactly the evicted height, evict-below moves
-  nothing and corrects nothing, remount-below holds, 20x churn keeps the
-  mounted count flat (worst 13 at viewport 10 / margin 20 - the window, not
-  the history). The shared harness is `anchored_app.py` (not `test_*` on
-  purpose, the `stub_app.py` precedent).
-- `tests/unit/chat_window/` - the WP-C **sliding window** (98 checks): a real
-  headless `Chat` over a **generated** 1000-message fixture, asserting the window
-  and never the data (`Chat.messages is ChatView.messages` is a check). `t1` open:
-  exactly `INITIAL_WINDOW` (50) mounted, window `(950, 1000)`, at the bottom, no
-  JSON written; `t1b` gives it teeth (a 120-message chat also mounts 50 - without
-  windowing the number is unreachable). `t2` slide: `load_older(25)` moves `lo` by
-  −25, the tracked anchor holds, **0 jump frames**, exactly one correction; **`t2c`
-  is its control** - the same operation with `arm_top_anchor` disarmed paints the
-  jump and leaves `scroll_y` alone, which is what makes `t2`'s zeros evidence
-  rather than an accident (TRAPS #13). `t3` evict-below moves neither `scroll_y`
-  nor the correction counter, and `load_newer` remounts into the gap holding (rules
-  2-3). `t4` `prune()` at the open state evicts above back to the margin with
-  `scroll_y` shifting by exactly the evicted height clamped at the new max, 0 jump
-  frames, and a second `prune()` is a no-op (steady state). `t5` the fact-5 pins
-  bound each walk (an `is_edit` widget stops the above-walk after the one unpinned
-  widget above it; the streaming tail while `is_working()`, and a focused widget
-  below the viewport, block the below-walk). `t6` abort-while-scrolled-up
-  materializes the tail and removes it from **both** sides. `t7` `materialize()` at
-  both edges, `IndexError` for −1 and for `len(messages)`. `t8` 8× churn: mounted
-  count flat and ≤ `INITIAL_WINDOW` at every depth, 0 jump frames, chat-JSON md5
-  fixed and zero writes. `t9` the chat-switch interplay pinned as it works today:
-  every opened `Chat` stays mounted in `#main` (hidden, never stacked twice), each
-  `ChatView` keeps its own window, and a **hidden** chat is never a prune target.
-  Two harness facts worth knowing before writing another UI suite here: the stub app
-  and `FakeWork` are **imported from `chat_smoke/smoke_scenario.py`** rather than
-  copied, so the two suites' stubs cannot drift (cross-suite import is new, and the
-  close-out says so), and `WindowApp` adds the app's own `spit_app/styles.css`
-  because **without the stylesheet the messages lay out at zero height and every
-  viewport computation goes vacuous** - TRAPS #24.
-- `tests/unit/chat_window/test_window_triggers.py` - the **WP-D scroll triggers**
-  (172 checks, so `unit:chat_window` is 98 + 172 = 270): a real wheel notch
-  (`window_harness.wheel_event`, forwarded with `app.screen._forward_event`) drives
-  `watch_scroll_y`, never a `scroll_to`. `t10` the headline - 200 notches up through
-  the 1k fixture page history in **and** prune the bottom, mounted count flat, 0 jump
-  frames per settle, with the frozen-triggers control that makes the flatness
-  evidence (TRAPS #13); `t11` the debounce as a mechanism (`arms == watches`) and as
-  a ratio, not as a constant; `t12` the prune **behind every load**, both arms walked
-  into the same sliding state and both with the settle taken away, so the only prune
-  left is the one each page operation runs (15 mounted, flat; control with the prune
-  stubbed: 18 → 63, past `INITIAL_WINDOW`); `t13` the walk back down, driven to the
-  STATE with a ceiling rather than for a fixed number of bursts; `t14` the
-  follow-bottom release measured three ways; `t15` the parked-at-the-window-bottom
-  starvation the settle's edge re-check exists to close, with the defect itself as
-  the control; `t16` the true ends; `t17` the freezes (`is_edit`, a working chat, a
-  page operation in flight); `t18` the guard save/restore on `materialize()`; `t19`
-  the anti-oscillation fixed point; `t20` **`prune()` takes the page-op guard** -
-  asked from inside the removal batch, which is where the settled `set_timer` task
-  and the `call_after_refresh` page operation interleave, and the one check that
-  pins a real code bug (without the guard the two `window_start` writes - `_grow_up`
-  assigning absolutely, prune adding the eviction count - corrupt the mounted range:
-  2 of 3 forced runs inconsistent). The two WP-C files now call
-  **`freeze_triggers(view)`** after their `load()`: the triggers are live on every
-  `ChatView`, so a setup `scroll_to` would page and prune on its own account and
-  rewrite the page-operation arithmetic those checks measure (the combined walk is
-  `t10`'s subject).
-
-  Two instruments were added to `window_harness.py` for this file, and both are the
-  same lesson `unit:terminal` wrote down - **wait for the widget's state, not for
-  your own clock**. `SCROLL_SETTLE_DELAY` is a 0.15 s **wall-clock** timer while a
-  headless notch costs a frame plus the pump (measured 66-71 ms), so burst timing is
-  not a thing a suite can control: a 200-notch burst fired **17 settles** and a
-  30-notch burst taken where every notch mounts fired **3**. `freeze_settle` /
-  `thaw_settle` therefore remove the debounce so "this burst never settles" is a fact
-  about the widget (that is `t12`'s premise, asserted as
-  `t12-the-burst-really-never-settled`), and `rest(pilot, view)` / `at_rest(view)`
-  wait for quiescence before any invariant is sampled, because
-  `window_consistent()` is an invariant of QUIESCENCE - sampled mid-page-operation
-  it read False 231 times in four walks and **zero** times sampled at rest, with
-  nothing wrong either time.
-- `tests/unit/chat_window/test_window_edits.py` - the **WP-E edits/undo/focus across
-  the window edges** (298 checks, so `unit:chat_window` is 98 + 172 + 298 = 568):
-  `t21` `mount_message` at every index class (the insert-below-the-top branch is
-  `window_start += 1` + a `materialize`, never a front mount - the pre-WP-E front
-  mount left a one-message HOLE even for the adjacent index; the in-window branch
-  is the neighbour mount and is pinned as NOT delegable, because between the insert
-  and the mount `widget(index)` is the right-hand neighbour); `t22` the crash with
-  no keypress - `check_action("add_message_next")` asked a widget for the next
-  message's role and raised out of `refresh_bindings` with the bottom pruned; it
-  answers from the data now, and the row asks the same question pruned and mounted
-  in both answer directions. `t23`/`t24` the undo insert/remove primitives at every
-  edge class and through the real `append_undo` + `action_undo`/`action_redo` path
-  (the chat is WRITTEN now - a DELTA, never absolute - and a below-window removal
-  tracks the reader as a WIDGET, since lo sliding renumbers every index); `t25`
-  `_change` data-first with the entry holding the PREVIOUS state (the setup lesson:
-  an entry built from the CURRENT dict writes the current state over the current
-  state - "no change", three reds, nothing wrong with the code); `t26` the ONE
-  focus rule both removal sites use, with the `widget_was_removed` question pinned
-  (a bare `widget(index) or widget(index-1)` drags focus for the streaming-error
-  path's removal at `index == window_hi`); `t27` the owner's ruling - `prune()`
-  REFUSES while `is_edit`, held live through `action_edit_on`, released by the first
-  settle after `edit_off`, measured by **lo** because a settled settle is prune PLUS
-  the edge re-check and the parked reader gets a page back below; `t28` the mode is
-  inherited AT MOUNT (target and gap widgets), so `show_cots`/`reset_message_edit`
-  need no replay code; `t29` the undo primitives hold the page-op guard and give
-  back what they found. Two instrument lessons from this file, both reds that
-  blamed the code and were about the harness: **the setup's `freeze_triggers` is
-  part of the state a later row reads** - a row exercising a trigger path must
-  `thaw_triggers` and assert the triggers LIVE first, or the harness answers for
-  the thing under test and a "dropped" green is about nothing (t27-live, t29) - and
-  **an undo "change" entry holds the PREVIOUS state** (t25).
+- `tests/unit/chat_smoke/` - **the ChatView regression pair (116 checks), and
+  the fixture harness the other UI suites stand on.** `smoke_scenario.py` drives
+  a real `Chat` headless over a generated fixture chat - mount, focus,
+  `edit_on/off`, the message-level add/remove actions, the three stream signals,
+  undo/redo of insert and remove, abort with a fake worker, plus a second headed
+  run for `action_add` (reachable only with an empty chat) - and dumps plain
+  data per step; `test_chat_smoke.py` keeps that dump byte-identical to
+  `golden.txt`, generated from `f201700`, and adds the whole-history invariant
+  at every step: `len(children) == len(messages)`, `children[i].message is
+  messages[i]`, the last child projects the last message, `is_present()` true on
+  every child index and false at `len(children)` and for a NEGATIVE index, and
+  `mount_message()` raising IndexError without mounting for an index outside the
+  data while returning the widget it mounted inside it. It was written as the
+  differential of the 2026-09 index-accessor refactor and it is what proved the
+  REVERT of that whole experiment (DECISIONS 89) restored the old behaviour: the
+  golden is the old tree's own output and it did not move. The app is a stub
+  (in-memory `read_json`/`write_json`, `endpoint_list*`, a fake `#side-panel`),
+  not `SpitApp` - the real app starts the llama.cpp server and reads the user's
+  own settings and chats, which would make the dump machine-dependent. Its
+  `SmokeApp`/`fixture_chat`/`fixture_settings`/`CHAT_ID` are IMPORTED by
+  `unit:endpoints`, `unit:handoff` and `unit:recovery`, so this directory is
+  furniture: it does not go. Venv-dependent, FAIL-with-remedy (TRAPS #19).
 - `tests/unit/arguments/` - schema coercion, paths, pipeline (131 checks).
 - `tests/unit/terminal/` - the tmux backend and the two tools on it, against a
   **real tmux on a private socket** (`libtmux.Server` is wrapped to pass

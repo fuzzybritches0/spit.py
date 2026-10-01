@@ -104,7 +104,26 @@ table mechanically comparable with a run (that fix is already in: the row is
 
 ---
 
-## P8 - DONE - On-demand message loading with a top-anchored scroll container
+## P8 - REVERTED - On-demand message loading with a top-anchored scroll container
+
+> **REVERTED 2026-10-01, DECISIONS 89. This work is OPEN again and the code below
+> describes is NO LONGER IN THE TREE.** The six packages were built, measured
+> green headless, and shipped; the owner then used them and the app got worse:
+> wheel-scrolling froze for as long as a page took to mount and re-render, the
+> view jumped back down and would not let the reader move up, and nothing paged
+> or pruned at all while the chat was working - which is exactly when a long tool
+> loop grows the tree. `ChatView` is a `VerticalScroll` that mounts the whole
+> history again (branch `revert-on-demand-loading`); `anchored_scroll.py`,
+> `unit:anchored` (68) and `unit/chat_window` (568) are deleted and
+> `doc/UI-ONDEMAND-LOADING.md` with them. What survives as a result: **the
+> top-anchor compensation holds a position across a batch mounted ABOVE the
+> viewport with 0 jump frames** - the one mechanism worth keeping - and **the
+> prune is the half to throw away**, because eviction is what forced the clamp,
+> the two margins, the settle timer, the re-entrancy guard and the frame-stale
+> region reads that became the jitter. **The route question is now P22**; the
+> owner's report and the four failure modes are DECISIONS 89, the numbers are
+> DECISIONS 76. Everything below this banner is the original entry, kept verbatim
+> as the record of what was asked, what was proven and what was measured.
 
 **Implemented and measured 2026-09-14 → 2026-09-20** as the six-package pipeline
 `doc/UI-ONDEMAND-LOADING.md` (WP-A…WP-F): `AnchoredScroll`, the index-accessor
@@ -227,7 +246,16 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
 
 ---
 
-## P9 - Burst page-in: `_page_count()` sizes a page from regions that are not laid out yet  [found by WP-F 2026-09-20; needs its own `Go!`]
+## P9 - VOID (2026-10-01) - Burst page-in: `_page_count()` sizes a page from regions that are not laid out yet
+
+> **VOID: the code this entry is about no longer exists.** `_page_count()`,
+> `INITIAL_WINDOW`, `_load_at_edge` and the mounted-window it sized were deleted
+> with the windowing revert (DECISIONS 89), so there is nothing here to fix and
+> the entry must not be picked up. The FINDING outlives the code and is what a
+> future attempt has to design against: a real wheel delivers several notches
+> between two frames, and anything that sizes a page from not-yet-laid-out
+> regions will read a mean height of ~0.7 rows and balloon. That general form is
+> TRAPS #27. What follows is the original entry, kept verbatim.
 
 - **The gap** (measured, not theorised): N wheel events delivered **between two
   frames** queue N `_load_at_edge` callbacks through `call_after_refresh`, and each
@@ -265,6 +293,113 @@ viewport, scrolled to y=15, mount a 4-row message at index 0; a spy on
   same burst with the page count pinned to a constant), and WP-E's instrument lesson
   (a row that exercises a trigger must `thaw_triggers` and assert the triggers live
   first, or the harness answers for the thing under test).
+
+---
+
+## P22 - The chat view: what to do about long histories now that the window is reverted  [owner-level route decision; no code before the owner picks one]
+
+- **Why this exists.** The problem P8 was written for did not go away with the
+  revert - only its fix did. Opening a long chat is the whole-history mount again
+  and DECISIONS 76 measured what that costs on this tree: **115.28-187.02 s to
+  open 5,000 messages, ~1.1 GB RSS, 5.7-6.9 s per page-down** (a 1k chat is
+  roughly a tenth of it). At 100-300 messages nothing hurts; that is the band
+  most chats live in, and the app is fine there. What is decided is only *which
+  cost to pay*: the window paid per notch of scrolling, and the owner chose the
+  mount-time cost instead (DECISIONS 89). **Naming the route is the owner's** -
+  DECISIONS 77 retired the last one for exactly that reason - so this entry
+  carries options and a recommendation for the FIRST STEP, and no `Go!` for any
+  of them.
+- **The four constraints every option is measured against** (all learned the
+  expensive way, DECISIONS 89 / 76 / TRAPS #27): (1) scrolling must never mount,
+  unmount or re-render anything - a `Message` re-renders Markdown and LaTeX from
+  its dict on every re-entry, and that is the freeze; (2) the visual position
+  must not depend on a `scroll_y` the layout pass can clamp, or on a
+  `max_scroll_y` that describes a *window* instead of the history; (3) paging may
+  never be frozen by `chat.is_working()`, because a long `work_stream()` tool
+  recursion is exactly when the tree grows; (4) the per-message widgets are not
+  free decoration: `Message` is a `VerticalScroll` holding `Content`/`Process`/
+  `Markdown`, and the edit flows mount `TextAreaEdit`/`TextAreaTool` **inside**
+  a message. Any view that stops being a tree of widgets has to answer for
+  in-place editing and for the images LaTeX renders through `textual_image`.
+- **Option A - MEASURE FIRST (recommended as the next task, and cheap).** Half a
+  day, no UI change: where does a message's cost actually go - Textual's layout
+  of N children, the Markdown/`rich` render, or cairosvg/LaTeX? The two measurement
+  passes in the repo (DECISIONS 65, 76) both used *synthetic* corpora (65: fenced
+  code, tables and lists, 17 widgets per message; 76: one-line messages, 6 widgets
+  per message) and neither split mount into layout-vs-render. Split it on a real
+  chat of 1k messages with `cProfile` + a per-phase wall clock, and measure the
+  owner's actual complaint - scrolling up in a whole-history tree of that size -
+  which no suite has ever measured because scrolling is free once the tree is
+  laid out. **Every option below gets cheaper and better aimed after this
+  number**, and it may show the real cost is the render, in which case the fix is
+  a cache and not a rewrite. Deliverable: the table in this entry, no code.
+- **Option B - explicit paging, grow-only, no prune (the small fix, keeps Textual).**
+  Open with the last N messages (N a setting, 50-200) and page older history in
+  ONLY on an explicit request - a key, or a "load older" row at the top - with
+  the one-shot top anchor that is proven to hold the position (DECISIONS 76 /
+  the deleted `unit:anchored`). Nothing is ever evicted, so there is no clamp, no
+  margin chase, no settle timer, no re-entrancy guard, nothing frozen by
+  `is_working()`, and the jump risk is one deliberate action instead of a
+  per-frame negotiation. Buys: the slow open and the memory. Does NOT buy: a
+  bounded tree once the reader asks for all of it, and history-proportional
+  scrolling. Risk: low. This is the shape P8's first revision had before the
+  owner correctly rejected unbounded growth - the rejection was of *unbounded*
+  growth, not of paging, and an explicit grow-only page-in stays bounded by what
+  the human asks for.
+- **Option C - render cache (independent of the route, and probably worth doing
+  anyway).** Cache the rendered projection per message dict (invalidate on the
+  dict's identity/version), so `finish()` on re-entry and the stream's repeated
+  `process()` do not re-parse and re-render what has not changed. It makes B and
+  D cheaper and the current code faster; it is not a virtualisation and does not
+  touch the scroll model.
+- **Option D - one self-drawn chat widget inside Textual (the honest
+  virtualisation, if we stay).** Textual *can* virtualise - `TextArea` and
+  `DataTable` do it by drawing their own lines/rows instead of mounting a widget
+  per item - so a single widget that keeps the transcript as pre-rendered styled
+  lines and paints the visible slice is the only shape in Textual where cost is
+  per visible row and never per message. Buys: everything, including a scrollbar
+  whose thumb means the history. Costs: our own line layout, our own scroll
+  math, selection, and the hard parts - inline LaTeX/images and the in-place
+  editors of constraint (4), which would have to move to an overlay editor
+  (a UX change the owner has not asked for). Weeks, and it is a rewrite of the
+  chat half of the app while keeping the side panel, the screens and the
+  bindings.
+- **Option E - leave Textual for the chat view (curses / urwid / another kit).**
+  The owner raised this. It is the only route where nothing has to be negotiated
+  with a foreign layout pass, and `urwid`'s `ListWalker` + slice canvases is
+  already the virtualised-line model Option D has to invent. Cost: the whole UI,
+  not the chat view - side panel, endpoint/manage screens, modal screens, the
+  `Select`s, a text editor with the same editing ergonomics - **plus** the
+  rendering this app currently gets for free: Markdown and the LaTeX images
+  through `cairosvg`/`textual_image` and the Kitty graphics protocol, which a
+  curses front end has to reimplement or lose. Read as: weeks to months, and it
+  changes what the product is. If the owner wants this, it is its own plan with
+  its own gates (the retired route of DECISIONS 65/77 shows how that goes), and
+  A is still the first task because the measurement decides whether a rewrite is
+  warranted at all.
+- **Option F - stop rendering the whole history at all (product-level, cheapest
+  to accept, costs UX).** Cap what a chat keeps *on screen* by collapsing old
+  turns into a one-line stub the reader expands, or by paging a chat into
+  sessions the way `handoff` already does (DECISIONS 82), and keep the tree
+  trivially small by policy instead of by mechanism. This is the only option that
+  also fixes the memory, the open time and the token counts of the transcript
+  with one rule.
+- **Recommendation, stated as a recommendation and not a decision**: **A first**
+  (measure, no code), then **B + C** as the smallest pair that removes the
+  owner's two remaining complaints (slow open, memory) without touching the
+  editing model; D and E only if A's numbers say the widget tree itself is the
+  wall. The one thing the record rules out is a return of the prune: eviction is
+  what made P8 undeliverable (DECISIONS 89).
+- **Verify**: for A, a measured table in this entry (mount split into layout /
+  render / images at 100/1k/5k on a REAL corpus, plus the scroll cost in a laid-
+  out tree) and no other row of the suite moved; for B/C, `unit:chat_smoke`'s
+  golden re-pinned deliberately with the steps that moved named in the commit
+  (TRAPS #18), every other row at the `TESTING.md` ground truth.
+- **Gotchas**: TRAPS #24 (a Textual suite without `spit_app/styles.css` measures
+  nothing), TRAPS #27 (the four Textual limits this whole area is made of),
+  TRAPS #22 (there is no screen here - every close-out must have an automated
+  analogue), and DECISIONS 77 (naming a front end is the owner's act, not this
+  entry's).
 
 ---
 

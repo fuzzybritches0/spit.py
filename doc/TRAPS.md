@@ -154,10 +154,11 @@ matching area.
     `content_region.height`, each child's `region.height` and `max_scroll_y` are
     all 0, so every viewport computation (margins, what is "outside the viewport",
     what a correction should shift `scroll_y` by) is **vacuously satisfied**. Found
-    while building `unit:chat_window`, whose whole contract is viewport geometry:
-    its `WindowApp` sets `CSS_PATH` to the repo's `spit_app/styles.css` (absolute,
-    so it resolves from the test module, not a package-relative path) for exactly
-    this reason. The tell is a dump whose `scroll_y` is 0 at every step - which is
+    while building `unit:chat_window` - a suite since REVERTED with the window it
+    pinned (DECISIONS 89), and the lesson outlives it: whoever next measures rows
+    in a headless `ChatView` must set `CSS_PATH` to the repo's
+    `spit_app/styles.css` (absolute, so it resolves from the test module, not a
+    package-relative path) for exactly this reason. The tell is a dump whose `scroll_y` is 0 at every step - which is
     what `unit:chat_smoke`'s golden has, harmless for a data differential and
     useless for a scroll check. Mount the real CSS, and show the geometry move at
     least once (a control that can fail, TRAPS #13) before trusting a zero.
@@ -186,6 +187,27 @@ matching area.
     suites cannot see the change, because `tests/tools/harness.py` runs the script
     in the suite's own directory and never through `Run`/`sandbox_env.sh` — every
     row stays green while the live behaviour moves (#14, same shape).
+
+27. **A widget tree you unmount to save memory re-pays its RENDER cost on every
+    pass, and Textual has no way to reserve the height of what you unmounted.** The
+    sliding window of 2026-09 (WP-A..F, reverted 2026-10-01, DECISIONS 89) held the
+    mounted count flat at 7-15 and STILL froze the wheel, and the four facts that
+    made it so are the ones to check before anyone virtualises a view again:
+    **(i)** a page in is `mount()` + `Message.finish()` per message - Markdown,
+    LaTeX through cairosvg, six widgets each - and it is re-rendered on every
+    re-entry (measured 613-651 ms per page of wheel, DECISIONS 76);
+    **(ii)** `scroll_y` is a prefix HEIGHT OF MOUNTED CONTENT, so unmounting above
+    the viewport moves the view unless something compensates it;
+    **(iii)** `max_scroll_y` is the WINDOW's bottom, and Textual re-arms
+    follow-bottom (`Widget._check_anchor`) whenever the view sits at it - a page-in
+    below a pruned end drags the reader somewhere else;
+    **(iv)** a child's `region` is one frame stale while a scroll is being
+    reported, so an edge test in the watcher decides on the previous frame, and
+    there is no `scroll_ended` hook at all in 8.2.8 (`is_scrolling` is a 0.1 s
+    recency window). The rule that follows: **do not virtualise by eviction.**
+    Grow-only paging on an explicit request, with the one-shot top anchor mounted
+    ABOVE the viewport (that half measured 0 jump frames and is the only surviving
+    result), moves nothing and re-renders nothing the reader has already passed.
 
 ## Working agreements (who decides what)
 

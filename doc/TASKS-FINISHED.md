@@ -6,6 +6,16 @@ Test-count ground truth: see TESTING.md.
 
 ## Milestones
 
+> **REVERTED 2026-10-01 — DECISIONS 89: the windowed message loading (P8,
+> WP-A…WP-F) is OUT of the tree.** `ChatView` is a `VerticalScroll` that mounts
+> the whole history again; `chat/anchored_scroll.py`, `unit:anchored` (68),
+> `unit:chat_window` (568) and `doc/UI-ONDEMAND-LOADING.md` are deleted. The WP
+> entries below stay for their measurements and their instrument lessons — read
+> them as the record of a built-and-unshipped feature, NOT as the state of the
+> code, and do not "fix" them: the code they describe is gone. Branch
+> `revert-on-demand-loading`; the route forward is P22.
+
+
 - **13 file-tools implemented and tested** (find_files, write_file,
   list_directory, read_files, file_info, search_replace, terminal, lsterm,
   diff, patch, grep, insert_line, delete_lines) - full specs in TOOLS.md.
