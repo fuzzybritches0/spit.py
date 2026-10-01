@@ -70,6 +70,40 @@ its neighbours.
 
 ---
 
+## P21 - `doc/TOOLS.md` still documents the tool as `insert_line`; its `NAME` is `insert_lines`
+
+**Not started.** Found 2026-09-30 while making `doc/TESTING.md`'s ground-truth
+table mechanically comparable with a run (that fix is already in: the row is
+`insert_lines` and `tools total` is 536 again).
+
+- **The fact**: `51bcda0` ("tools: rename insert_line -> insert_lines") renamed
+  `spit_app/tools/insert_line.py` → `insert_lines.py`, and a tool's `NAME` is
+  `__file__.split("/")[-1][:-3]` — so the tool the app loads, the settings key
+  `load_user_settings(app, NAME, SETTINGS)` writes under, and the `DESC` function
+  name are all **`insert_lines`** now. `doc/TOOLS.md` still says `insert_line` in
+  nine places: the inventory table (line 21), the attribute matrix (111), the
+  shared-helpers and read_files prose (83, 206, 577), its **spec section 12**
+  heading and its two call examples (669, 696-697), and the rename tool's
+  dry-run contrast (809).
+- **Why it is not a pure find-and-replace**: the rename moved a *settings key*.
+  `git show 51bcda0 --stat` is seven files, file-to-file, and **no migration of
+  any kind** — so settings a user had saved under `insert_line` (`prompt`,
+  `sandbox`, the tool's own fields) are orphaned under the name the app no longer
+  asks about, and nothing says so. Whether that is a bug to fix or an accepted
+  cost of renaming a tool is the owner's call, not a doc edit's; what this entry
+  owns is that `TOOLS.md` must stop naming a tool that does not exist. Measured
+  today: `grep -rn "insert_line\b" --include=*.py spit_app/` (excluding
+  `insert_lines`) returns **nothing** — no code keys on the old string any more,
+  so the drift is purely in the docs.
+- **Scope**: `doc/TOOLS.md` only. `doc/DECISIONS.md` names the tool
+  `insert_line` in 30/31/32/44/45/46/52 too, and it is **append-only** — those
+  entries record what was decided under the name of the day and are not rewritten.
+- **Verify**: `bash spit_app/tests/run_tests.sh` unchanged (`unit:prompt` walks
+  `spit_app/tools/` and counts one `## ` heading per tool, so it answers for the
+  live name already and must not move); no code change is expected at all.
+
+---
+
 ## P8 - DONE - On-demand message loading with a top-anchored scroll container
 
 **Implemented and measured 2026-09-14 → 2026-09-20** as the six-package pipeline

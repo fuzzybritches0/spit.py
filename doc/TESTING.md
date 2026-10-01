@@ -30,14 +30,14 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | suite | checks |
 |---|---|
 | delete_lines | 127 |
-| insert_line | 119 |
+| insert_lines | 119 |
 | patch | 107 |
 | read_files | 32 |
 | grep | 30 |
 | search_replace | 29 |
 | rename | 68 |
 | diff | 24 |
-| tools total | 509 |
+| tools total | 536 |
 | unit:anchored | 68 |
 | unit:arguments | 131 |
 | unit:chat_smoke | 168 |
@@ -53,6 +53,23 @@ stdlib; the sandbox unit tests drive `Run` through `stub_app.py`
 | unit:system_note | 219 |
 | unit:terminal | 346 |
 
+
+Two things the table itself got wrong until 2026-09-30, both found by *comparing*
+it with a run rather than reading it: the row was named `insert_line` while the
+suite directory — and so the runner's row, `run_tests.sh` prints
+`basename ${tool}` — has been **`insert_lines`** since the tool was renamed
+(`51bcda0`), which makes a name-keyed comparison of the run against the table
+report a false `MISMATCH` for that suite and a phantom missing row; and **`tools
+total` was 509**, a figure from when `patch` was at 80 — `patch` has been 107
+since the P1 work, and the total was never re-summed, so the row that exists to
+be checked against arithmetic could not pass it. It is now the sum of the eight
+rows above it (127+119+107+32+30+29+68+24 = **536**). The prose notes below still
+quote "tools 509" where they quoted it, because those are dated measurements of
+the trees they were taken from and rewriting them would be rewriting history;
+this table is the live one. `doc/TOOLS.md` still calls the tool `insert_line` in
+its inventory and its spec section 12 — filed as **P21**, because the tool's
+`NAME` is `insert_lines`, which the tool derives from its own filename, and that
+matters to anything keying on it.
 ## The test venv (six suites need it)
 
 `unit:terminal` drives a **real tmux** through `libtmux`; `unit:anchored`,
