@@ -6,6 +6,34 @@ Test-count ground truth: see TESTING.md.
 
 ## Milestones
 
+### REVERTED (2026-10-01) — the windowed message loading is out of the tree (branch `revert-on-demand-loading`, awaiting the owner's merge)
+
+Cut from `main` `d0a8e30`; `main` untouched, nothing pushed. **What**: the
+sliding-window loading of P8 / WP-A…WP-F is reverted in behaviour and in shape —
+`ChatView` is a `VerticalScroll` again and `load()` mounts the whole history;
+`chat/anchored_scroll.py`, `unit:anchored` (68 checks), `unit:chat_window` (568)
+and `doc/UI-ONDEMAND-LOADING.md` are deleted. **Why**: the owner used it and the
+app was worse — the wheel froze for as long as a page took to mount and
+re-render, the view jumped back down and would not let the reader scroll up, and
+nothing paged or pruned while the chat worked, which is when a long tool loop
+grows the tree. The owner's words, the four failure modes and the Textual
+limits behind them are **DECISIONS 89**; the numbers stay in DECISIONS 76; the
+pre-flight list is TRAPS #27; the route forward is **P22** (options, nothing
+chosen — naming a front end is the owner's, DECISIONS 77). **What was kept and
+why**: P19's `remove_message_at` (the ONE rollback its retry awaits) and the
+shared `focus_after_removal`, `mount_message` returning what it mounted,
+`is_present`'s two-sided bound, the stale-signal guard, the data-based next-role
+question, and all of P12/P13/P14/P19/P0b — later work grew onto those seams,
+which is why a mechanical `git revert` of the range could not be done and no one
+should try. **Verify**: the differential is the proof — `unit:chat_smoke` t1
+compares against the golden generated from `f201700`, the tip BEFORE the whole
+experiment, and it passes byte-for-byte on this tree; its t2 is now the
+whole-history invariant (`children[i].message is messages[i]`, `is_present` on
+both bounds, `mount_message`'s bounds check), 168 → 116. Full suite, every FAIL
+0: tools 536 (127/24/30/119/107/32/68/29), arguments 131, chat_smoke 116,
+endpoints 547, handoff 60, journal 69, prompt 38, recovery 55, render 278,
+run_script 121, sandbox 157, system_note 219, terminal 346.
+
 > **REVERTED 2026-10-01 — DECISIONS 89: the windowed message loading (P8,
 > WP-A…WP-F) is OUT of the tree.** `ChatView` is a `VerticalScroll` that mounts
 > the whole history again; `chat/anchored_scroll.py`, `unit:anchored` (68),

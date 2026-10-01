@@ -2,17 +2,20 @@
 """The WP-B differential smoke: ONE scripted walk over a real Chat, dumped
 canonically, run against two trees - the pre-refactor tip and the refactor.
 
-This is the Accept proof of doc/UI-ONDEMAND-LOADING.md WP-B ("scripted
-app-level smoke over a fixture chat (mount/edit/remove/undo/abort)
-byte-identical before/after", TRAPS #14/#18): a green suite cannot see an
-accessor refactor that quietly addressed a different widget, so the proof is a
-differential - and a differential needs one script that runs on both sides.
+It began (WP-B, 2026-09) as a differential proof in the sense of TRAPS
+#14/#18: a green suite cannot see a refactor that quietly addressed a different
+widget, so the proof is a byte-for-byte dump of a scripted walk, taken against
+an older tree. That purpose outlived the refactor and the sliding window that
+followed it and their revert (DECISIONS 89): `golden.txt` is the OLD tree's
+output - generated from `f201700`, before any of it - and it is what proved the
+revert restored the old behaviour rather than a new one.
 
 Version-agnostic on purpose. It drives the PUBLIC app surface (load, focus,
 edit_on/off, the message-level add/remove actions, the stream callbacks, the
-undo/redo actions, abort) and dumps plain data; it must NOT use the new
-ChatView accessors, which the base tree does not have. The accessors
-themselves are pinned by test_chat_smoke.py, which imports this file.
+undo/redo actions, abort) and dumps plain data, so it can drive a tree that
+looks nothing like this one. The invariants of THIS tree live in
+test_chat_smoke.py, which imports this file - and so do the fixture chat and the
+stub app that `unit:endpoints`, `unit:handoff` and `unit:recovery` import.
 
 Run it directly to print or regenerate the canonical dump:
 
