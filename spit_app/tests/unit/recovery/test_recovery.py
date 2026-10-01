@@ -256,11 +256,12 @@ def t5b_no_journal_means_one_plain_sentence():
     asyncio.run(run_case(drive))
 
 
-def t6_the_notice_keeps_the_window():
+def t6_the_notice_keeps_the_tree():
     """The notice is appended as a message, so the ChatView's invariant is
-    untouched by it - and both halves are asserted: the window still projects a
-    contiguous slice of the data, AND the notice itself has a widget at the tail
-    (the absence would pass on a view that mounted nothing at all)."""
+    untouched by it - and both halves are asserted: the widget tree still
+    projects the WHOLE history one child per message, AND the notice itself has
+    a widget at the tail (the absence would pass on a view that mounted nothing
+    at all)."""
     async def drive(app, pilot, server):
         old = await fail_a_turn(app, pilot)
         appeared = await recovery_appeared(pilot)
@@ -271,11 +272,15 @@ def t6_the_notice_keeps_the_window():
         for _ in range(6):
             await pilot.pause()
         view = old.chat_view
-        check("t6-the-window-is-still-consistent", view.window_consistent(), True)
+        check("t6-the-tree-still-projects-the-whole-history",
+              len(view.children) == len(old.messages)
+              and all(child.message is old.messages[position]
+                      for position, child in enumerate(view.children)), True)
         tail = len(old.messages) - 1
         check("t6-the-notice-is-the-tail-of-the-data",
               "Recovery:" in message_text(old.messages[tail]), True)
-        check("t6-the-notice-has-its-widget", view.widget(tail) is not None, True)
+        check("t6-the-notice-has-its-widget",
+              view.children[tail].message is old.messages[tail], True)
         check("t6-the-notice-is-a-user-message", old.messages[tail]["role"], "user")
 
     asyncio.run(run_case(drive))
@@ -288,5 +293,5 @@ if __name__ == "__main__":
     guarded("t4-draft", t4_the_draft_when_the_probe_hears_nothing)
     guarded("t5-journal", t5_the_journal_rides_the_brief_when_there_is_one)
     guarded("t5b-no-journal", t5b_no_journal_means_one_plain_sentence)
-    guarded("t6-window", t6_the_notice_keeps_the_window)
+    guarded("t6-tree", t6_the_notice_keeps_the_tree)
     summary()

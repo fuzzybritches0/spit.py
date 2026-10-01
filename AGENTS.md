@@ -13,7 +13,7 @@ Quick map:
 | `doc/TOOLS.md` | Tool development guide (attributes, structure, full specs) |
 | `doc/TESTING.md` | Test infrastructure, fixtures, verification methods |
 | `doc/RUNTIME-RUN-COMMAND.md` | The run/sandbox/terminal subsystem |
-| `doc/UI-ONDEMAND-LOADING.md` | Windowed message loading on Textual: proven anchor mechanism, work packages A-F — **all six done, P8 closed 2026-09-20** (DECISIONS 76; the limits found are P9) |
+| `doc/DECISIONS.md` 76 + 89 | The windowed message loading of 2026-09: built, measured, and **REVERTED 2026-10-01** (89). Its doc is deleted; the numbers and the four ways it failed the user are the record. The chat view is P8 again, and the route question is P22 |
 | `doc/DECISIONS.md` | Design decision log — the *why*; append-only |
 | `doc/TASKS-IN-PROGRESS.md` | Check first — half-finished work may need recovery; the agents' own crash-recovery file, and agents close their own entries |
 | `doc/TASKS-PLANNED.md` | Pick up work here |

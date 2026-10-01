@@ -179,17 +179,11 @@ class Chat(Vertical):
                 entry["abort"] = True
             return None
         self.work.cancel()
-        # The last MESSAGE, addressed by data index - not `children[-1]`, the
-        # last MOUNTED widget: with the sliding window live those are
-        # different things once the bottom has been pruned, and abort must
-        # tear down the streaming tail wherever the view is. `materialize`
-        # (WP-C) brings the tail's widget back - mount-only, the dict is being
-        # removed a line later - before it is removed from both sides.
-        index = len(self.chat_view.messages) - 1
-        tail = await self.chat_view.materialize(index, render=False)
-        async with tail.lock:
-            await tail.remove()
-        del self.chat_view.messages[index]
+        # The streaming tail: with the whole history mounted, `children[-1]` IS
+        # its widget and there is nothing else to address.
+        async with self.chat_view.children[-1].lock:
+            await self.chat_view.children[-1].remove()
+        del self.chat_view.messages[-1]
         self.refresh_bindings()
 
     def action_settings(self) -> None:

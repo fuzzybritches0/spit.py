@@ -522,15 +522,19 @@ async def t14_stale_signal(server):
 
         # CONTROL: the same handler, a LIVE index - its widget appears. Without
         # this row every absence above is just a handler that does nothing.
+        # "Its widget" is asked of the tree by dict identity and not by position:
+        # this harness never ran `load()`, so the child count is not the message
+        # count and a child POSITION would answer nothing about this message.
         app.chat.messages.append({"role": "assistant", "reasoning": "",
                                   "content": [{"type": "text", "text": "mm-live"}]})
         live = len(app.chat.messages) - 1
+        mounted = app.chat.messages[live]
         check("t14-G-CONTROL-the-live-index-has-no-widget-before-the-signal",
-              view.widget(live), None)
+              any(child.message is mounted for child in view.children), False)
         await view.on_stream_callback(StreamCallback(live, 1))
         await settle(pilot)
         check("t14-CONTROL-a-live-signal-still-mounts-its-message",
-              view.widget(live) is not None, True)
+              any(child.message is mounted for child in view.children), True)
 
 
 def main():

@@ -532,9 +532,10 @@ def t4_silence_never_removes_a_note():
 def t5_the_messages_list_is_untouched():
     """Invariant (d), the constraint that shapes all of P13 and the premise of
     WP-A: a note never becomes a message. `chat.messages` is the index space the
-    whole UI addresses - the sliding window projects it by dict identity
-    (`window_consistent()`), `StreamCallback`/`RemoveMessage` carry those
-    indexes, `Undo` stores them, and a mid-stream `ToolCall` holds a
+    whole UI addresses - the widget tree projects it one child per message, by
+    dict identity - `children[i].message is messages[i]` - and
+    `StreamCallback`/`RemoveMessage` carry those same indexes, `Undo` stores
+    them, and a mid-stream `ToolCall` holds a
     `message_index` into it. So: same list object, same length, same message
     identities in the same order, nothing but `system` added to any of them."""
     chat = fixture()

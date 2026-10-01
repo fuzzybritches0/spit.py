@@ -27,19 +27,9 @@ class ChatTextArea(TextArea):
         else:
             self.messages.append({"role": "user", "content": [{"type": "text", "text": self.text}]})
             self.chat.undo.append_undo("insert", self.messages[-1], len(self.messages)-1)
-            # Mount by data index through the window, not by appending to the
-            # child list: with the bottom pruned a bare `mount` would place the
-            # widget behind the wrong neighbour and break the window's
-            # contiguity. `materialize` closes any gap first and mounts the
-            # target unfinished (render=False) - the next lines finish it.
-            await self.chat_view.materialize(len(self.messages) - 1, render=False)
+            await self.chat_view.mount(Message(self.chat, self.messages[-1]))
         self.chat.write_chat_history()
-        # The message just submitted IS the last message, so address it by data
-        # index rather than by `children[-1]` (the last MOUNTED widget - the same
-        # widget only while the bottom is whole). The materialize above already
-        # guaranteed a widget at this index; finish it, and the scroll_end folds
-        # the view back to the bottom (the plan's note for this site).
-        await self.chat_view.require_widget(len(self.messages) - 1).finish()
+        await self.chat_view.children[-1].finish()
         self.chat_view.scroll_end(animate=False, immediate=True)
         self.text = ""
         self.chat._work = Work(self.chat)

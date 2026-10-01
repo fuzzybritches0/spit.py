@@ -284,11 +284,14 @@ class Work:
         that widget's queue. Textual dispatches a widget's queue IN ORDER; the
         removal therefore runs after those signals, while the dict they are about
         still exists. `remove_message_at` awaited straight from this worker races
-        them: it deletes the data, the queued signal-1 then mounts the index the
-        window is growing over, and `_grow_down` hits `self.messages[index]` one
-        past the end - `IndexError` out of a Textual message handler, which takes
-        the app down (and takes the retry with it, which is the thing P19 is for).
-        The awaited seam is not the wrong shape - it is the wrong ORDER.
+        them: it deletes the data, the queued signal-1 then addresses the index
+        the data just moved back from, and `message_start` hits
+        `self.messages[index]` one past the end - `IndexError` out of a Textual
+        message handler, which takes the app down (and takes the retry with it,
+        which is the thing P19 is for). The awaited seam is not the wrong shape -
+        it is the wrong ORDER. (`on_stream_callback` bounds-checks the index now,
+        so the stale signal is dropped; the ORDER is still what makes the live
+        signals and the removal agree on which dict they are talking about.)
 
         The wait's exit condition is the invariant the next attempt needs: the
         message list back to where this attempt found it. It is bounded, and a
@@ -297,12 +300,12 @@ class Work:
         """
         if len(self.messages) <= index:
             return True
-        # The flag does three jobs here, all of them wanted, and the handler
+        # The flag does its jobs here, all of them wanted, and the handler
         # releases it (`remove_message_at`'s last statement is `is_removing =
-        # False`): prune refuses while the removal is in flight, the Message's own
-        # remove action cannot post a second one behind this one, and a wait on it
-        # is a wait on the handler - the same handshake the user's own remove
-        # already uses.
+        # False`): every Message binding is refused while the removal is in flight
+        # (`check_action` answers False on `chat_view.is_removing`), so no second
+        # `RemoveMessage` can queue behind this one, and a wait on the flag is a
+        # wait on the handler - the same handshake the user's own remove uses.
         self.chat_view.is_removing = True
         self.chat_view.post_message(RemoveMessage(index))
         for _ in range(200):
@@ -310,8 +313,8 @@ class Work:
                 return True
             await asyncio.sleep(0.01)
         # Nobody ran the handler. Let the flag go (a held `is_removing` would keep
-        # prune away for the rest of the chat's life) and say so: the caller stops
-        # asking rather than stacking a second reply on the corpse.
+        # every message binding refused for the rest of the chat's life) and say
+        # so: the caller stops asking rather than stacking a second reply on it.
         self.chat_view.is_removing = False
         return len(self.messages) <= index
 

@@ -6,52 +6,45 @@ class CallbackMixIn:
         self.post_message(StreamCallback(message_index, signal))
 
     def is_present(self, index: int) -> bool:
-        """Does message `index` have a widget? The window-aware question, and the
-        only place the answer comes from: `widget()` (UI-ONDEMAND-LOADING.md WP-B).
+        """Does message `index` already have a widget?
 
-        The pre-window form was `index < len(self.children)`, which answered True
-        for a NEGATIVE index and then indexed the last child - the wrong widget.
-        A negative index is not a message: every index that reaches here is a
-        position in `chat.messages`. Filed in the WP-B entry; the one place where
-        the accessor is deliberately narrower than the indexing it replaced.
+        The whole history is mounted, so the answer is the child count - with
+        the one exception this method exists for: while a reply streams, its
+        dict is appended BEFORE signal 1 mounts its widget, so the data runs one
+        ahead of the tree and `message_finish`/`message_process` legitimately
+        meet an index with no child yet.
+
+        The bound is two-sided (`0 <=`) and not the `index < len(...)` this site
+        had: a NEGATIVE index passed that test and then indexed from the END of
+        the child list - the wrong widget, silently. A negative index is not a
+        message; every index that reaches here is a position in `chat.messages`.
         """
-        return self.widget(index) is not None
+        return 0 <= index < len(self.children)
 
     async def message_finish(self, index: int) -> None:
         self.chat.write_chat_history()
         self.chat.undo.append_undo("insert", self.chat.messages[index], index)
-        message = self.widget(index)
-        if message is not None:
-            async with message.lock:
-                await message.finish()
+        if self.is_present(index):
+            async with self.children[index].lock:
+                await self.children[index].finish()
 
     async def message_start(self, index: int) -> None:
-        # The third `children[-1]` sharp edge, addressed by data index: the
-        # streaming message's dict exists but its widget is mounted only here,
-        # and with a sliding window the bottom it lands on may have been
-        # pruned while the model thought. `materialize` closes the gap below
-        # the window (gap widgets are history: rendered from their dicts) and
-        # mounts the TARGET unfinished (`render=False` - the stream owns the
-        # target's content until signal 0). With the window whole this mounts
-        # exactly what the plain `mount(...)` it replaced mounted, nothing more.
-        message = await self.materialize(index, render=False)
-        await message.wait_for_refresh()
-        self.focus_message(index)
+        await self.mount(Message(self.chat, self.messages[index]))
+        if self.is_present(index):
+            await self.children[index].wait_for_refresh()
+            self.focus_message(index)
 
     def focus_message(self, index: int) -> None:
-        message = self.require_widget(index)
         if self.chat.display:
-            message.focus(scroll_visible=False)
+            self.children[index].focus(scroll_visible=False)
         else:
-            message.on_focus()
+            self.children[index].on_focus()
 
     async def message_process(self, index: int) -> None:
-        message = self.widget(index)
-        if message is None:
-            return None
-        async with message.lock:
-            if self.display and (message.has_focus or message.has_focus_within):
-                await message.process()
+        if self.is_present(index):
+            async with self.children[index].lock:
+                if self.display and (self.children[index].has_focus or self.children[index].has_focus_within):
+                    await self.children[index].process()
 
     async def on_stream_callback(self, message: StreamCallback) -> None:
         # A signal about a message that is NO LONGER A MESSAGE is a signal about a
@@ -63,11 +56,11 @@ class CallbackMixIn:
         # behind) and `Work.stream_attempts`, which AWAITS `remove_message_at`
         # between attempts because the next request must not start on the corpse.
         # Without this guard the stale signal-1 reaches `message_start` ->
-        # `materialize(index)` -> `self.messages[index]` on an index one past the
-        # end: an IndexError out of a Textual message handler (measured, t14's
-        # abort case). The guard fires ONLY on a reply that no longer exists:
-        # signal 1 is posted immediately after `messages.append(...)`, and signals
-        # 2 and 0 while that dict stands, so a live reply can never match it.
+        # `self.messages[index]` on an index one past the end: an IndexError out of
+        # a Textual message handler (measured, t14's abort case). The guard fires
+        # ONLY on a reply that no longer exists: signal 1 is posted immediately
+        # after `messages.append(...)`, and signals 2 and 0 while that dict stands,
+        # so a live reply can never match it.
         if not 0 <= message.index < len(self.messages):
             return None
         if message.signal == 0:

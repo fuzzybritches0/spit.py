@@ -16,13 +16,10 @@ development of the project; everything here reflects the repo at
    - `TOOLS.md` - tool development (attribute matrix, structure, full specs)
    - `TESTING.md` - test harness, fixtures, verification methods
    - `RUNTIME-RUN-COMMAND.md` - the run/sandbox/terminal subsystem
-   - `UI-ONDEMAND-LOADING.md` - windowed message loading on Textual (P8): proven
-     anchor mechanism, work packages A-F - **all six done, P8 closed 2026-09-20**.
-     The widget tree is a window over the message data: 7-15 mounted at every
-     scroll depth at 1k and at 5k, and the numbers, the four instrument lessons
-     and what the window does NOT buy are DECISIONS 76. The one hole it found is
-     P9 in `TASKS-PLANNED.md`, a code change of its own (no `Go!` is asked for one:
-     the owner's ruling of 2026-09-28, see Ground rules).
+   - there is **no UI section doc** since 2026-10-01: the one that existed,
+     `UI-ONDEMAND-LOADING.md` (windowed message loading, WP-A..F), describes code
+     that was **REVERTED** the same day. Its measurements and its four failure
+     modes are DECISIONS 76 and 89; the work itself is P8 and P22.
 5. `TASKS-IN-PROGRESS.md` - is someone's work half-done? Recover it first.
 6. `TASKS-PLANNED.md` - pick up work here.
 7. `TASKS-FINISHED.md` - what is already done (do not redo or "fix" it).
@@ -97,11 +94,12 @@ spit_app/tests/run_tests.sh  runs everything, prints one line per suite
 spit_app/tests/tools/        per-tool shell suites (layout: TESTING.md)
 spit_app/tests/unit/         unit suites: arguments, sandbox, prompt,
                              run_script, render (pure python), terminal
-                             (libtmux), anchored / chat_smoke / chat_window
-                             (headless Textual), endpoints (httpx + headless
-                             Textual, canned localhost server), system_note
-                             (bare python: the note generator and its hook) -
-                             see TESTING.md
+                             (libtmux), chat_smoke (headless Textual over a real
+                             Chat; its smoke_scenario.py is the fixture harness
+                             the other UI suites import), endpoints / handoff /
+                             recovery (httpx + headless Textual, canned
+                             localhost server), system_note / journal
+                             (bare python) - see TESTING.md
 ```
 
 ## How to run things
@@ -120,12 +118,15 @@ bare system python3**. The app runs elsewhere (container/venv). Consequences:
 - Test scripts in `spit_app/tests/tools/` and `tests/unit/sandbox/` are built
   to need no Textual (sandbox tests drive `Run` through `stub_app.py`).
 - **Five suites need a dependency and say so**: `tests/unit/terminal/` drives a
-  real tmux through `libtmux`; `tests/unit/anchored/`, `tests/unit/chat_smoke/`
-  and `tests/unit/chat_window/` drive a real headless Textual (`App.run_test`)
-  for the `AnchoredScroll` container, the `ChatView` accessor differential and
-  the sliding window; `tests/unit/endpoints/` needs **httpx** because
-  `endpoints/llamacpp.py` imports it (and Textual too, for its counts-row
-  file), so it cannot run on the bare interpreter at all. Build the venv once
+  real tmux through `libtmux`; `tests/unit/chat_smoke/` drives a real headless
+  Textual (`App.run_test`) over a real `Chat`, and its `smoke_scenario.py` is the
+  fixture harness the other three import; `tests/unit/endpoints/`,
+  `tests/unit/handoff/` and `tests/unit/recovery/` need **httpx** as well, because
+  `endpoints/llamacpp.py` imports it, and they drive the wired chat against a
+  canned localhost server. None of the five runs on the bare interpreter.
+  (Two UI suites of the 2026-09 windowing experiment — `anchored` and
+  `chat_window` — are GONE: the code they pinned was reverted 2026-10-01,
+  DECISIONS 89.) Build the venv once
   with `bash spit_app/tests/create_venv.sh` (it unsets `PIP_USER`, which this
   environment exports and which a virtualenv refuses). Without it that row
   reports FAIL 1 with the command to run — never a silent zero (TESTING.md).

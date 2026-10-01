@@ -19,20 +19,6 @@ bindings = [
 
 class ChatViewActionsMixIn:
     def show_cots(self, show: bool = True) -> None:
-        # Iterating the mounted children is window-only, and WP-E measured that
-        # this is COMPLETE, not lossy - there is nothing to replay on remount:
-        # the mode is inherited AT MOUNT (`Message.maybe_mount_content` reads
-        # `chat_view.is_edit`), so a widget materialized later shows its CoT or
-        # hides it according to the mode of the moment it enters the window -
-        # measured with a fixture carrying reasoning: materializing the same
-        # index below the window gives `cnt["reasoning"].display` False with the
-        # mode off and True with it on, and a widget already mounted flips
-        # False->True on `action_edit_on` and back on `action_edit_off`. An
-        # already-mounted child is what this loop is for. The per-WIDGET edit
-        # state (`child.is_edit`, which `reset_message_edit` below clears) can
-        # never be evicted anyway: `_prune_pinned` pins it, and `prune()` now
-        # refuses while the mode is on. So the only debt here was this comment.
-        # (/tmp/wp-e-probe-inherit.py; the suite check is t28.)
         for message in self.children:
             if "reasoning" in message.cnt:
                 message.cnt["reasoning"].display = show
@@ -67,24 +53,14 @@ class ChatViewActionsMixIn:
         self.refresh_bindings()
 
     def action_previous_message(self) -> None:
-        # The walk is window-tolerant: the neighbour exists as a widget only
-        # inside the window, and this action is synchronous (a `materialize`
-        # page-load on the way is WP-D's trigger, not the focus walk's). Out
-        # of window the focus stays put - the answer the data end gives, never
-        # an IndexError: `require_widget` here compiled fine only while the
-        # window was whole.
         index = self.chat.message_index(self.focused_message.message) - 1
         if not index < 0:
-            neighbour = self.widget(index)
-            if neighbour is not None:
-                neighbour.focus()
+            self.children[index].focus()
 
     def action_next_message(self) -> None:
         index = self.chat.message_index(self.focused_message.message) + 1
         if index > 0 and index < len(self.messages):
-            neighbour = self.widget(index)
-            if neighbour is not None:
-                neighbour.focus()
+            self.children[index].focus()
 
     async def action_undo(self) -> None:
         await self.chat.undo.undo()
@@ -96,9 +72,9 @@ class ChatViewActionsMixIn:
         self.messages.append({"role": "user", "content": []})
         self.chat.undo.append_undo("insert", self.messages[0], 0)
         await self.mount(Message(self.chat, self.messages[0]))
-        await self.require_widget(0).status.update("")
+        await self.children[0].status.update("")
         self.chat.write_chat_history()
-        self.require_widget(0).focus()
+        self.children[0].focus()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         if action == "continue":
