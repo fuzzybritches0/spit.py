@@ -27,7 +27,7 @@ class Server(HelpersMixIn):
         self.log = ""
         self.server = None
         self.active_models = []
-        self.model_load_progress = 0
+        self.model_loaded = False
 
     async def model_action(self, model: str, action: str) -> bool:
         endpoint = f"http://127.0.0.1:{self.gets('server_port')}/models/{action}"
@@ -144,25 +144,8 @@ class Server(HelpersMixIn):
                     self.app.exception= Exception(line.strip())
 
     def model_loading_progress(self, line) -> None:
-        mark = "cmd_child_to_router:state:"
-        line = line.split(" ", 1)[-1]
-        if not line.startswith(mark):
-            return None
-        line = line[len(mark)-1:][1:-1]
-        try:
-            state = json.loads(line)
-        except:
-            return None
-        if "state" in state and "payload" in state:
-            if state["state"] == "ready" and "id" in state["payload"]:
-                self.active_models.append(state["payload"]["id"])
-                self.model_load_progress = 0
-            elif (state["state"] == "loading" and "stages" in state["payload"]
-                  and "value" in state["payload"] and "current" in state["payload"]):
-                stages = state["payload"]["stages"]
-                value = round(state["payload"]["value"] * 100) / len(stages)
-                current = stages.index(state["payload"]["current"])
-                self.model_load_progress = round((100 / len(stages) * current) + value)
+        if "model loaded" in line:
+            self.model_loaded = True
 
     async def load_model(self, load_model: str) -> None:
         if load_model in self.active_models:
@@ -176,13 +159,14 @@ class Server(HelpersMixIn):
         self.app.push_screen(self.app.load_progress_bar_screen)
         self.app.load_progress_bar_screen.update_text(f"Loading {load_model}...")
         self.app.load_progress_bar_screen.update_total(100)
+        self.app.load_progress_bar_screen.update_progress(50)
         while True:
-            if load_model in self.active_models:
+            if self.model_loaded:
+                self.app.load_progress_bar_screen.update_progress(100)
+                self.model_loaded = False
+                self.active_models.append(load_model)
+                await asyncio.sleep(1)
                 break
-            if self.app.load_progress_bar_screen:
-                self.app.load_progress_bar_screen.update_progress(self.model_load_progress)
-            else:
-                return None
             await asyncio.sleep(1)
         await self.app.load_progress_bar_screen.dismiss()
         self.app.load_progress_bar_screen = None
@@ -203,8 +187,8 @@ class Server(HelpersMixIn):
         cmd += self.compose_server_arguments()
         self.app.action_notify(f"Starting Llama.cpp Server Version {self.gets('active_version')}...")
         async for line in self.run(cmd, "server"):
-            self.model_loading_progress(line)
             self.server_error(line)
+            self.model_loading_progress(line)
             self.log += line
         self.app.action_notify(f"Stopped Llama.cpp Server Version {self.gets('active_version')}.")
         self.init()
