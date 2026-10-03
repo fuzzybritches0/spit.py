@@ -7,8 +7,8 @@ from .server_settings import ServerSettings
 class HandlersMixIn:
     async def on_mount(self) -> None:
         await self.edit_manage_screen()
+        await self.update_input_llamacpp_version()
         self.children[2].focus()
-        self.work_update_input_llamacpp_version()
         self.update_models_select_list()
 
     async def on_download_failed(self, message: DownloadFailed) -> None:

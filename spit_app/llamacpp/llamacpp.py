@@ -164,12 +164,6 @@ class Llamacpp(CallbacksMixIn, HandlersMixIn, ButtonsMixIn, ValidationMixIn, Hel
             latest_version = 0
         self.query_one("#llamacpp_version").value = "b" + str(latest_version)
 
-    @work(exclusive=True, exit_on_error=False)
-    async def work_update_input_llamacpp_version(self) -> None:
-        while True:
-            await self.update_input_llamacpp_version()
-            await asyncio.sleep(600)
-
     def ensure_is_highlighted(self) -> None:
         side_panel = self.app.query_one("#side-panel")
         side_panel.can_focus = False
